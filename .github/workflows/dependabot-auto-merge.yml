@@ -1,0 +1,173 @@
+# ============================================================================
+#  aphrody — Dependabot auto-merge
+#  Codifies the triage rules established 2026-05-17:
+#    - patch updates: always safe to auto-merge (except pinned deps)
+#    - minor dev-dep updates: auto-merge
+#    - everything else: rebase comment + manual-review notice
+#
+#  Deny-list (pinned per CLAUDE.md §7 or flagged NEEDS-REVIEW this session):
+#    tracing-subscriber, rand, flume, notify-debouncer-full, rusqlite,
+#    schemars, toml, foldhash, zod
+#
+#  Trigger: pull_request_target — required so the workflow runs with write
+#  permissions on PRs originating from the dependabot[bot] fork context.
+#  See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
+# ============================================================================
+name: dependabot-auto-merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  dependabot-merge:
+    name: dependabot auto-merge triage
+    runs-on: ubuntu-latest
+    # Hard gate: only run for dependabot PRs.
+    if: github.actor == 'dependabot[bot]'
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Fetch dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ------------------------------------------------------------------
+      # Evaluate deny-list and update-type rules.
+      #
+      # Auto-merge criteria (ALL must hold):
+      #   (a) update-type is semver-patch, OR
+      #       update-type is semver-minor AND dependency-type is direct:development
+      #   (b) dependency name is NOT in the deny-list
+      #
+      # Deny-list rationale:
+      #   tracing-subscriber  — pinned to 0.3.22 (0.3.23+ mod-env packaging bug)
+      #   rand                — pinned to 0.8 (imposed by denokv_proto)
+      #   flume               — triaged NEEDS-REVIEW (API surface change risk)
+      #   notify-debouncer-full — triaged NEEDS-REVIEW (filesystem event API)
+      #   rusqlite            — triaged NEEDS-REVIEW (C FFI surface, ABI risk)
+      #   schemars            — triaged NEEDS-REVIEW (derive macro ABI)
+      #   toml                — triaged NEEDS-REVIEW (parse API breakage history)
+      #   foldhash            — triaged NEEDS-REVIEW (niche hasher, pin for reproducibility)
+      #   zod                 — triaged NEEDS-REVIEW (npm, schema breakage risk)
+      # ------------------------------------------------------------------
+      - name: Evaluate merge eligibility
+        id: evaluate
+        uses: actions/github-script@v7
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPENDENCY_TYPE: ${{ steps.meta.outputs.dependency-type }}
+          DEPENDENCY_NAMES: ${{ steps.meta.outputs.dependency-names }}
+        with:
+          script: |
+            const updateType    = process.env.UPDATE_TYPE    ?? '';
+            const depType       = process.env.DEPENDENCY_TYPE ?? '';
+            const depNamesRaw   = process.env.DEPENDENCY_NAMES ?? '';
+
+            // Deny-list — must match CLAUDE.md §7 and session triage notes.
+            const DENY_LIST = new Set([
+              'tracing-subscriber',
+              'rand',
+              'flume',
+              'notify-debouncer-full',
+              'rusqlite',
+              'schemars',
+              'toml',
+              'foldhash',
+              'zod',
+            ]);
+
+            // dependabot/fetch-metadata returns a comma-separated list when
+            // a PR updates multiple packages (grouped updates).
+            const depNames = depNamesRaw
+              .split(',')
+              .map(n => n.trim())
+              .filter(Boolean);
+
+            const inDenyList = depNames.some(name => DENY_LIST.has(name));
+
+            const isPatch  = updateType === 'version-update:semver-patch';
+            const isMinorDev =
+              updateType === 'version-update:semver-minor' &&
+              depType    === 'direct:development';
+
+            const eligible = (isPatch || isMinorDev) && !inDenyList;
+
+            core.setOutput('eligible', eligible ? 'true' : 'false');
+            core.setOutput('deny_hit',  inDenyList ? depNames.filter(n => DENY_LIST.has(n)).join(', ') : '');
+            core.setOutput('dep_names', depNames.join(', '));
+
+            core.info(`update-type:     ${updateType}`);
+            core.info(`dependency-type: ${depType}`);
+            core.info(`dep-names:       ${depNames.join(', ')}`);
+            core.info(`deny-list hit:   ${inDenyList}`);
+            core.info(`eligible:        ${eligible}`);
+
+      # ------------------------------------------------------------------
+      # Happy path: squash-merge the PR.
+      # ------------------------------------------------------------------
+      - name: Auto-merge eligible PR
+        if: steps.evaluate.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request.number;
+
+            await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number: pr,
+              merge_method: 'squash',
+            });
+
+            core.info(`PR #${pr} auto-merged (squash).`);
+
+      # ------------------------------------------------------------------
+      # Sad path: leave a rebase comment + manual-review note.
+      # ------------------------------------------------------------------
+      - name: Comment — manual review required
+        if: steps.evaluate.outputs.eligible == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request.number;
+
+            const denyHit  = '${{ steps.evaluate.outputs.deny_hit }}';
+            const depNames = '${{ steps.evaluate.outputs.dep_names }}';
+
+            const denyLine = denyHit
+              ? `**Deny-list match**: \`${denyHit}\` — pinned per CLAUDE.md §7 or triaged NEEDS-REVIEW.`
+              : `**Update type / dependency type** not eligible for auto-merge (\`${{ steps.meta.outputs.update-type }}\`, \`${{ steps.meta.outputs.dependency-type }}\`).`;
+
+            const body = [
+              `@dependabot rebase`,
+              ``,
+              `---`,
+              `**Manual review required — see [CLAUDE.md §7](../../blob/main/CLAUDE.md#7-pi%C3%A8ges-connus-m%C3%A9moire-institutionnelle).**`,
+              ``,
+              denyLine,
+              ``,
+              `Packages in this PR: \`${depNames}\``,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr,
+              body,
+            });
+
+            core.info(`PR #${pr} flagged for manual review.`);

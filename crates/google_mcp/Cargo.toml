@@ -22,18 +22,14 @@ serde_json         = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 reqwest            = { workspace = true }
+# Direct `rustls` dep enables `ring::default_provider()` in main() to satisfy
+# the `rustls-no-provider` contract on reqwest. `ring` requires a C compiler;
+# cross-compiling Windows→Linux requires `cargo zigbuild` (Zig as cc).
+rustls             = { workspace = true }
 schemars           = { workspace = true }
 axum               = { workspace = true }
 sysinfo            = { workspace = true }
 backend            = { path = "../backend" }
-
-# rustls is required on all non-wasm targets to install the ring CryptoProvider
-# before the first reqwest::Client is built (reqwest uses rustls-no-provider).
-# The `ring` crate needs a C compiler when cross-compiling; on native Linux/macOS
-# the system cc is available, so the dep is unconditional. The wasm32 arch never
-# builds this binary.
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-rustls             = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows            = { workspace = true }
