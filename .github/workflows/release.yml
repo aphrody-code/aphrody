@@ -28,7 +28,7 @@ jobs:
     name: build gemini-cli (bun --compile cross)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -38,7 +38,7 @@ jobs:
         working-directory: packages/gemini-cli
         run: bun run build:binary
       - name: Upload gemini binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gemini-cli-binaries
           path: |
@@ -84,12 +84,12 @@ jobs:
             archive: tar.gz
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
           targets: ${{ matrix.target }}
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Install zigbuild (cross-targets)
         if: ${{ matrix.cross == 'zigbuild' }}
@@ -112,7 +112,7 @@ jobs:
             -p cli
 
       - name: Download gemini-cli binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: gemini-cli-binaries
           path: gemini-bin
@@ -143,7 +143,7 @@ jobs:
           shasum -a 256 "artifacts/$STAGE.${{ matrix.archive }}" > "artifacts/$STAGE.${{ matrix.archive }}.sha256"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-${{ matrix.target }}
           path: artifacts/
@@ -153,11 +153,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name || inputs.tag }}
           files: artifacts/**/*
