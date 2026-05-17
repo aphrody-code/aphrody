@@ -24,8 +24,15 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
+  # sccache temporarily disabled — GitHub Actions cache backend was returning
+  # 503 ("Our services aren't available right now") across 3 consecutive runs
+  # (25991429828, 25991561638, 25991684987), causing every step that invoked
+  # rustc via sccache to error with
+  #   sccache: error: Server startup failed: cache storage failed to read
+  # CI works without it (just slower). Re-enable once GHA cache recovers OR
+  # migrate to a non-GHA-backed sccache store.
+  # SCCACHE_GHA_ENABLED: "true"
+  # RUSTC_WRAPPER: "sccache"
   CARGO_INCREMENTAL: 0
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   CARGO_PROFILE_DEV_DEBUG: "limited"
