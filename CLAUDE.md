@@ -86,6 +86,14 @@ cargo audit-machete        # unused deps
 cargo audit-udeps          # nightly unused deps
 ```
 
+> [!NOTE]
+> **`cargo machete` false-positives** (cfg-gated transitive deps) → ajouter
+> `[package.metadata.cargo-machete] ignored = ["wasm-bindgen", ...]` dans le
+> `Cargo.toml` concerné. Exemples vivants : `aphrody-wasm`, `base`, `a2a-pb`.
+>
+> **`docs/SUMMARY.md`** est auto-généré par `bun run scripts/gen_summary.ts`.
+> Ne PAS éditer à la main — re-run le script après tout ajout de doc.
+
 ## 4. Architecture (post-pivot)
 
 Monorepo Rust + Bun.
@@ -196,6 +204,17 @@ Toute la surface skills est centralisée et documentée :
   NASM prebuilt + Ninja (variables `AWS_LC_SYS_PREBUILT_NASM=1`,
   `CMAKE_GENERATOR=Ninja` dans `.cargo/config.toml`). Sur Linux : OpenSSL
   système (`apt install pkg-config libssl-dev` sur Ubuntu).
+- **rustls 0.23 CryptoProvider** : le binaire panic `No provider set` au boot
+  si `rustls::crypto::ring::default_provider().install_default()` n'est pas
+  appelé AVANT le premier `reqwest::Client::new()`. Cf. `crates/cli/src/main.rs:160`.
+- **cargo-zigbuild + `--icf=all`** : incompatible — zigcc rejette le flag.
+  Retiré de `.cargo/config.toml` pour x86_64-unknown-linux-gnu. `--gc-sections` reste.
+- **`a2a-pb` build.rs** : `src/gen/` est l'authoritative source ; codegen
+  `tonic_prost_build` gated derrière `A2A_PB_REGEN=1` (sinon crates.io rejette :
+  build scripts must only write to `$OUT_DIR`).
+- **Package `cli` renommé `aphrody`** : utiliser `-p aphrody` partout (build,
+  check, workflows, scripts). Le dir reste `crates/cli/` (historical, évite
+  `git mv` churn).
 - **tracing-subscriber** pinné à `0.3.22` (0.3.23+ a un bug `mod env` packaging).
 - **`base = ...` (path-bases RFC 3529)** : feature instable nightly 1.97, à
   activer quand stable.
