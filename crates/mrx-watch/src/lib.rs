@@ -12,9 +12,7 @@
 //! full re-audit. The audit itself runs in `tokio::task::spawn_blocking` so the
 //! watcher loop keeps draining events while we scan.
 
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use notify::RecursiveMode;
@@ -22,25 +20,10 @@ use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 use parking_lot::Mutex;
 
 const WATCH_DIRS: &[&str] = &["apps", "packages"];
-const WATCH_FILES: &[&str] = &[
-    ".gitmodules",
-    "turbo.json",
-    "package.json",
-    "bun.lock",
-    "Cargo.toml",
-    "pnpm-workspace.yaml",
-];
-const IGNORE_SEGMENTS: &[&str] = &[
-    "node_modules",
-    ".next",
-    ".turbo",
-    ".bun-cache",
-    "target",
-    "dist",
-    "build",
-    ".git",
-    ".cache",
-];
+const WATCH_FILES: &[&str] =
+    &[".gitmodules", "turbo.json", "package.json", "bun.lock", "Cargo.toml", "pnpm-workspace.yaml"];
+const IGNORE_SEGMENTS: &[&str] =
+    &["node_modules", ".next", ".turbo", ".bun-cache", "target", "dist", "build", ".git", ".cache"];
 
 pub fn run(root: &Path, audit_out: &Path, map_out: &Path, debounce_ms: u64) -> Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -115,9 +98,8 @@ async fn run_async(root: &Path, audit_out: &Path, map_out: &Path, debounce_ms: u
             let recv = rx.recv_async().await;
             match recv {
                 Ok(Ok(events)) => {
-                    let relevant = events
-                        .into_iter()
-                        .any(|e| e.event.paths.iter().any(|p| !is_noisy(p)));
+                    let relevant =
+                        events.into_iter().any(|e| e.event.paths.iter().any(|p| !is_noisy(p)));
                     if !relevant {
                         continue;
                     }
@@ -146,12 +128,12 @@ async fn run_async(root: &Path, audit_out: &Path, map_out: &Path, debounce_ms: u
                             Err(e) => tracing::error!("audit failed: {e:#}"),
                         }
                     });
-                }
+                },
                 Ok(Err(errs)) => {
                     for e in errs {
                         tracing::warn!("watch error: {e:?}");
                     }
-                }
+                },
                 Err(_) => break,
             }
         }
@@ -171,8 +153,5 @@ fn is_noisy(path: &Path) -> bool {
             return true;
         }
     }
-    matches!(
-        path.extension().and_then(|e| e.to_str()),
-        Some("log" | "tmp" | "swp" | "swx")
-    )
+    matches!(path.extension().and_then(|e| e.to_str()), Some("log" | "tmp" | "swp" | "swx"))
 }

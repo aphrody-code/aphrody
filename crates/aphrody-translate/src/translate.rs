@@ -1,17 +1,20 @@
 //! Traduction EN → FR via MyMemory (API publique gratuite, sans clé).
 //!
 //! - Quota anonyme : 5000 mots/jour. Avec email noreply : 50000 mots/jour.
-//! - Tout résultat est mis en cache disque dans `.aphrody-translate-cache.json`
-//!   à la racine du projet. Les ré-exécutions sont alors instantanées.
-//! - Si l'API renvoie une erreur ou est saturée, le texte source est laissé tel
-//!   quel et un avertissement est tracé.
+//! - Tout résultat est mis en cache disque dans `.aphrody-translate-cache.json` à la racine du
+//!   projet. Les ré-exécutions sont alors instantanées.
+//! - Si l'API renvoie une erreur ou est saturée, le texte source est laissé tel quel et un
+//!   avertissement est tracé.
+
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::{Context, Result};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use tracing::warn;
 
 const ENDPOINT: &str = "https://api.mymemory.translated.net/get";
@@ -58,12 +61,7 @@ impl Translator {
                 cache.insert(k, v);
             }
         }
-        Ok(Self {
-            client,
-            cache,
-            cache_path,
-            contact_email,
-        })
+        Ok(Self { client, cache, cache_path, contact_email })
     }
 
     fn key(text: &str) -> String {
@@ -82,10 +80,7 @@ impl Translator {
             return Ok(hit.clone());
         }
 
-        let mut url = format!(
-            "{ENDPOINT}?q={}&langpair=en|fr",
-            urlencoding::encode(stripped)
-        );
+        let mut url = format!("{ENDPOINT}?q={}&langpair=en|fr", urlencoding::encode(stripped));
         if let Some(mail) = &self.contact_email {
             url.push_str(&format!("&de={}", urlencoding::encode(mail)));
         }
@@ -96,20 +91,20 @@ impl Translator {
                     let fr = parsed.response_data.translated_text;
                     self.cache.insert(key, fr.clone());
                     Ok(fr)
-                }
+                },
                 Ok(other) => {
                     warn!(status = other.response_status, "mymemory non-200 status");
                     Ok(stripped.to_string())
-                }
+                },
                 Err(e) => {
                     warn!(error = %e, "mymemory parse error");
                     Ok(stripped.to_string())
-                }
+                },
             },
             Err(e) => {
                 warn!(error = %e, "mymemory network error");
                 Ok(stripped.to_string())
-            }
+            },
         }
     }
 

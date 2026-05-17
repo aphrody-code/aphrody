@@ -4,9 +4,11 @@
 //! Windows, WASM compute-only) et sans dépendance native C par grammaire.
 //! Précision suffisante pour les commentaires hors-chaîne (>95% du code réel).
 
-use crate::{Comment, CommentStyle, Lang};
-use regex::Regex;
 use std::sync::OnceLock;
+
+use regex::Regex;
+
+use crate::{Comment, CommentStyle, Lang};
 
 static RE_SLASHSLASH_DOC: OnceLock<Regex> = OnceLock::new();
 static RE_SLASHSLASH: OnceLock<Regex> = OnceLock::new();
@@ -22,9 +24,7 @@ fn re_slashslash_doc() -> &'static Regex {
 fn re_slashslash() -> &'static Regex {
     // Capture les `//` en début de ligne ET en fin de ligne après du code.
     // Le caractère négatif `[^:/]` (ou ligne nouvelle) avant évite les URL `https://`.
-    RE_SLASHSLASH.get_or_init(|| {
-        Regex::new(r"(?m)(?:^|[^:/])//[ \t]?([^/\n][^\n]*)?").unwrap()
-    })
+    RE_SLASHSLASH.get_or_init(|| Regex::new(r"(?m)(?:^|[^:/])//[ \t]?([^/\n][^\n]*)?").unwrap())
 }
 fn re_block_doc() -> &'static Regex {
     RE_BLOCK_DOC.get_or_init(|| Regex::new(r"(?s)/\*\*\s*(.+?)\s*\*/").unwrap())
@@ -55,20 +55,12 @@ pub fn extract(source: &str, lang: Lang) -> Vec<Comment> {
         if covered.iter().any(|(s, e)| !(end <= *s || start >= *e)) {
             return;
         }
-        let body = body_cap
-            .map(|c| c.as_str().trim().to_string())
-            .unwrap_or_default();
+        let body = body_cap.map(|c| c.as_str().trim().to_string()).unwrap_or_default();
         if body.is_empty() {
             return;
         }
         covered.push((start, end));
-        out.push(Comment {
-            raw: m.as_str().to_string(),
-            body,
-            start,
-            end,
-            style,
-        });
+        out.push(Comment { raw: m.as_str().to_string(), body, start, end, style });
     };
 
     match lang {
@@ -93,7 +85,7 @@ pub fn extract(source: &str, lang: Lang) -> Vec<Comment> {
                 let body = c.get(1);
                 push(&mut out, &mut covered, full, body, CommentStyle::BlockSlashStar);
             }
-        }
+        },
         Lang::TypeScript | Lang::JavaScript | Lang::Go | Lang::C | Lang::Cpp => {
             for c in re_block_doc().captures_iter(source) {
                 let full = c.get(0).unwrap();
@@ -110,7 +102,7 @@ pub fn extract(source: &str, lang: Lang) -> Vec<Comment> {
                 let body = c.get(1);
                 push(&mut out, &mut covered, full, body, CommentStyle::LineSlashSlash);
             }
-        }
+        },
         Lang::Python => {
             for c in re_python_triple().captures_iter(source) {
                 let full = c.get(0).unwrap();
@@ -122,22 +114,22 @@ pub fn extract(source: &str, lang: Lang) -> Vec<Comment> {
                 let body = c.get(1);
                 push(&mut out, &mut covered, full, body, CommentStyle::LineHash);
             }
-        }
+        },
         Lang::Shell | Lang::Toml => {
             for c in re_hash().captures_iter(source) {
                 let full = c.get(0).unwrap();
                 let body = c.get(1);
                 push(&mut out, &mut covered, full, body, CommentStyle::LineHash);
             }
-        }
+        },
         Lang::Markdown => {
             for c in re_html_block().captures_iter(source) {
                 let full = c.get(0).unwrap();
                 let body = c.get(1);
                 push(&mut out, &mut covered, full, body, CommentStyle::HtmlBlock);
             }
-        }
-        Lang::Other => {}
+        },
+        Lang::Other => {},
     }
 
     out.sort_by_key(|c| c.start);

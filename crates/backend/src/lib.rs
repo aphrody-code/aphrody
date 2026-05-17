@@ -6,8 +6,7 @@ use reqwest::Client;
 use tokio::fs;
 use tracing::{error, info};
 
-#[cfg(target_os = "windows")]
-pub mod chromium;
+#[cfg(target_os = "windows")] pub mod chromium;
 pub mod dns;
 pub struct Md3Mirror {
     client: Client,

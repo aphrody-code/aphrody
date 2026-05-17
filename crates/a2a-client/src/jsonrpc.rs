@@ -475,7 +475,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::test_utils::rcgen_self_signed_ca_pem;
+    use crate::test_utils::{install_rustls_provider, rcgen_self_signed_ca_pem};
 
     /// Helper: build an SSE byte stream from raw text chunks.
     fn byte_stream(
