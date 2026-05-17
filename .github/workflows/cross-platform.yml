@@ -44,6 +44,14 @@ jobs:
   lint:
     name: clippy + rustfmt (Linux)
     runs-on: ubuntu-latest
+    env:
+      # .cargo/config.toml sets `target = "x86_64-pc-windows-msvc"` as the
+      # default for Windows-host developer ergonomics. On a Linux CI runner
+      # that default cross-compiles for MSVC, and cc-rs falls back to gcc
+      # for the C dependencies (ring, aws-lc-sys), which then rejects the
+      # MSVC `-W0` flag (`cc: error: unrecognized command-line option '-W0'`).
+      # Pin the build target to native Linux for this job.
+      CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
     permissions:
       contents: read
     steps:
@@ -51,6 +59,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
           components: clippy, rustfmt
       - uses: mozilla-actions/sccache-action@v0.0.4
       - uses: Swatinem/rust-cache@v2
