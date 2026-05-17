@@ -65,6 +65,24 @@ pub const GEMINI_YELLOW: u32 = 0xFFFA_E366;
 /// Garcia's "warm, spatial, rounded quality" description).
 pub const GEMINI_GREEN: u32 = 0xFFBF_F28D;
 
+/// Aphrody-extension cyan tone — used by the terminal demo for cool-status
+/// affordances (info chips, secondary metrics). Sourced from Material You
+/// teal-400 (`#00BCD4`).
+pub const APHRODY_CYAN: u32 = 0xFF00_BCD4;
+
+/// Aphrody-extension orange tone — used for warn-status affordances and
+/// "in-flight" markers in the terminal demo. Sourced from Material You
+/// deep-orange-400 (`#FF7043`).
+pub const APHRODY_ORANGE: u32 = 0xFFFF_7043;
+
+/// Aphrody-extension red tone — used for error-status affordances. Sourced
+/// from Material You red-600 (`#E53935`).
+pub const APHRODY_RED: u32 = 0xFFE5_3935;
+
+/// Companion deep-green tone used as the start of the "success" gradient
+/// (Material You green-600 `#34A853`).
+pub const APHRODY_GREEN_DEEP: u32 = 0xFF34_A853;
+
 /// The four-color dot lineage colors cited in the article as the visual
 /// reference point for Gemini's rounded language. Order: blue, red,
 /// yellow, green — matches the Google logo lineage.
@@ -191,6 +209,164 @@ pub fn export_css() -> String {
     s
 }
 
+/// Emit a comprehensive `:root` block exposing the **Aphrody** brand cascade
+/// consumed by the HTML/WASM examples (notably
+/// `crates/aphrody-wasm/examples/aphrody-terminal-demo.html`, which used to
+/// hand-mirror these tokens).
+///
+/// The emitted CSS contains, in this order:
+///
+/// 1. Eight `--aphrody-brand-*` color tokens (blue, purple, pink, yellow,
+///    green, cyan, orange, red) — uppercase `#RRGGBB`.
+/// 2. Four `--aphrody-*-tone` / `--aphrody-spectrum-shift` linear gradients
+///    (spectrum-shift, warm-tone, success-tone, shimmer).
+/// 3. Terminal monospace font stack (`--aphrody-mono-font`).
+/// 4. Three corner radii (`--aphrody-corner-card`, `-pill`, `-chip`).
+/// 5. The companion M3 baseline scale referenced by the HTML demo
+///    (`--m3-color-primary` family + `--m3-corner-*` + `--m3-typescale-*`).
+///
+/// All values are computed from the Rust constants in this module and from
+/// the M3 baseline cascade ([`crate::color::BASELINE`], [`crate::shape`],
+/// [`crate::typography`]) so that the HTML examples never drift out of sync
+/// with the canonical source.
+#[cfg(feature = "std")]
+#[must_use]
+pub fn export_aphrody_brand_css() -> String {
+    use crate::color::BASELINE;
+    use crate::shape as sh;
+    use crate::typography as ty;
+
+    // Uppercase hex helper, matching the existing HTML convention.
+    fn hex_upper(argb: u32) -> String {
+        format!("#{:06X}", argb & 0x00_FF_FF_FF)
+    }
+
+    let mut s = String::with_capacity(4096);
+    s.push_str(":root {\n");
+
+    // ── M3 baseline color cascade (mirrors crates/m3-tokens/src/color.rs) ──
+    s.push_str("  /* M3 baseline color roles (crates/m3-tokens/src/color.rs) */\n");
+    let m3_pairs: [(&str, u32); 14] = [
+        ("primary", BASELINE.primary),
+        ("on-primary", BASELINE.on_primary),
+        ("primary-container", BASELINE.primary_container),
+        ("on-primary-container", BASELINE.on_primary_container),
+        ("secondary", BASELINE.secondary),
+        ("on-secondary", BASELINE.on_secondary),
+        ("secondary-container", BASELINE.secondary_container),
+        ("on-secondary-container", BASELINE.on_secondary_container),
+        ("tertiary", BASELINE.tertiary),
+        ("background", BASELINE.background),
+        ("on-background", BASELINE.on_background),
+        ("surface", BASELINE.surface),
+        ("on-surface", BASELINE.on_surface),
+        ("outline", BASELINE.outline),
+    ];
+    for (name, argb) in m3_pairs {
+        s.push_str(&format!("  --m3-color-{name}: {};\n", hex_upper(argb)));
+    }
+
+    // ── M3 corner radius scale (mirrors crates/m3-tokens/src/shape.rs) ─────
+    s.push_str("\n  /* M3 shape corner scale (crates/m3-tokens/src/shape.rs) */\n");
+    let m3_corners: [(&str, u16); 6] = [
+        ("xs", sh::EXTRA_SMALL.dp),
+        ("sm", sh::SMALL.dp),
+        ("md", sh::MEDIUM.dp),
+        ("lg", sh::LARGE.dp),
+        ("xl", sh::EXTRA_LARGE.dp),
+        ("full", sh::FULL.dp),
+    ];
+    for (name, dp) in m3_corners {
+        s.push_str(&format!("  --m3-corner-{name}: {dp}px;\n"));
+    }
+
+    // ── M3 typescale (mirrors crates/m3-tokens/src/typography.rs) ──────────
+    s.push_str("\n  /* M3 typescale (crates/m3-tokens/src/typography.rs) */\n");
+    let m3_type: [(&str, ty::TypeStyle); 15] = [
+        ("display-large", ty::DISPLAY_LARGE),
+        ("display-medium", ty::DISPLAY_MEDIUM),
+        ("display-small", ty::DISPLAY_SMALL),
+        ("headline-large", ty::HEADLINE_LARGE),
+        ("headline-medium", ty::HEADLINE_MEDIUM),
+        ("headline-small", ty::HEADLINE_SMALL),
+        ("title-large", ty::TITLE_LARGE),
+        ("title-medium", ty::TITLE_MEDIUM),
+        ("title-small", ty::TITLE_SMALL),
+        ("body-large", ty::BODY_LARGE),
+        ("body-medium", ty::BODY_MEDIUM),
+        ("body-small", ty::BODY_SMALL),
+        ("label-large", ty::LABEL_LARGE),
+        ("label-medium", ty::LABEL_MEDIUM),
+        ("label-small", ty::LABEL_SMALL),
+    ];
+    for (name, style) in m3_type {
+        s.push_str(&format!(
+            "  --m3-typescale-{name}-size: {}px;\n",
+            style.size_dp as u32
+        ));
+        s.push_str(&format!(
+            "  --m3-typescale-{name}-line-height: {}px;\n",
+            style.line_height_dp as u32
+        ));
+        s.push_str(&format!("  --m3-typescale-{name}-weight: {};\n", style.weight));
+    }
+
+    // ── Aphrody brand colors (extends gemini_brand canonical 5) ────────────
+    s.push_str("\n  /* Aphrody brand palette (crates/m3-tokens/src/gemini_brand.rs) */\n");
+    let brand_colors: [(&str, u32); 8] = [
+        ("blue", GEMINI_BLUE),
+        ("purple", GEMINI_PURPLE),
+        ("pink", GEMINI_PINK),
+        ("yellow", GEMINI_YELLOW),
+        ("green", GEMINI_GREEN),
+        ("cyan", APHRODY_CYAN),
+        ("orange", APHRODY_ORANGE),
+        ("red", APHRODY_RED),
+    ];
+    for (name, argb) in brand_colors {
+        s.push_str(&format!("  --aphrody-brand-{name}: {};\n", hex_upper(argb)));
+    }
+
+    // ── Aphrody gradients (spectrum-shift, warm-tone, success-tone, shimmer) ─
+    s.push_str("\n  /* Aphrody brand gradients */\n");
+    s.push_str(
+        "  --aphrody-spectrum-shift: linear-gradient(90deg, \
+         var(--aphrody-brand-blue) 0%, \
+         var(--aphrody-brand-purple) 50%, \
+         var(--aphrody-brand-pink) 100%);\n",
+    );
+    s.push_str(
+        "  --aphrody-warm-tone: linear-gradient(45deg, \
+         var(--aphrody-brand-yellow) 0%, \
+         var(--aphrody-brand-pink) 100%);\n",
+    );
+    s.push_str(&format!(
+        "  --aphrody-success-tone: linear-gradient(135deg, \
+         {} 0%, \
+         var(--aphrody-brand-green) 100%);\n",
+        hex_upper(APHRODY_GREEN_DEEP),
+    ));
+    s.push_str(
+        "  --aphrody-shimmer: linear-gradient(90deg, \
+         transparent 0%, \
+         color-mix(in srgb, white 35%, transparent) 50%, \
+         transparent 100%);\n",
+    );
+
+    // ── Aphrody terminal-specific tokens ───────────────────────────────────
+    s.push_str("\n  /* Aphrody terminal-specific tokens */\n");
+    s.push_str(
+        "  --aphrody-mono-font: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', \
+         'Menlo', 'Consolas', 'Liberation Mono', monospace;\n",
+    );
+    s.push_str(&format!("  --aphrody-corner-card: {}px;\n", sh::LARGE.dp));
+    s.push_str(&format!("  --aphrody-corner-pill: {}px;\n", sh::FULL.dp));
+    s.push_str(&format!("  --aphrody-corner-chip: {}px;\n", sh::MEDIUM.dp));
+
+    s.push_str("}\n");
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,5 +438,95 @@ mod tests {
         ] {
             assert!(css.contains(token), "expected `{token}` in export_css output");
         }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn aphrody_extension_colors_are_opaque() {
+        for argb in [APHRODY_CYAN, APHRODY_ORANGE, APHRODY_RED, APHRODY_GREEN_DEEP] {
+            assert_eq!(argb >> 24, 0xFF, "expected opaque ARGB: 0x{argb:08X}");
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn export_aphrody_brand_css_well_formed() {
+        let css = export_aphrody_brand_css();
+
+        // Structural framing
+        assert!(css.starts_with(":root {"), "CSS must open with `:root {{`, got: {css:.80}");
+        assert!(css.trim_end().ends_with('}'), "CSS must end with `}}` close brace");
+
+        // No Rust formatting leftovers (escaped braces leaking into output)
+        assert!(!css.contains("{{"), "unexpected `{{{{` in CSS — formatter leak");
+        assert!(!css.contains("}}"), "unexpected `}}}}` in CSS — formatter leak");
+
+        // Required token families
+        let required = [
+            // M3 baseline colors
+            "--m3-color-primary:",
+            "--m3-color-on-primary:",
+            "--m3-color-secondary:",
+            "--m3-color-surface:",
+            // M3 corners
+            "--m3-corner-xs:",
+            "--m3-corner-sm:",
+            "--m3-corner-md:",
+            "--m3-corner-lg:",
+            "--m3-corner-xl:",
+            "--m3-corner-full:",
+            // M3 typescale
+            "--m3-typescale-display-large-size:",
+            "--m3-typescale-display-large-line-height:",
+            "--m3-typescale-display-large-weight:",
+            "--m3-typescale-body-medium-size:",
+            "--m3-typescale-label-small-weight:",
+            // Aphrody brand colors (all 8)
+            "--aphrody-brand-blue:",
+            "--aphrody-brand-purple:",
+            "--aphrody-brand-pink:",
+            "--aphrody-brand-yellow:",
+            "--aphrody-brand-green:",
+            "--aphrody-brand-cyan:",
+            "--aphrody-brand-orange:",
+            "--aphrody-brand-red:",
+            // Aphrody gradients
+            "--aphrody-spectrum-shift:",
+            "--aphrody-warm-tone:",
+            "--aphrody-success-tone:",
+            "--aphrody-shimmer:",
+            // Terminal tokens
+            "--aphrody-mono-font:",
+            "--aphrody-corner-card:",
+            "--aphrody-corner-pill:",
+            "--aphrody-corner-chip:",
+        ];
+        for token in required {
+            assert!(css.contains(token), "expected `{token}` in export_aphrody_brand_css output");
+        }
+
+        // Hand-mirrored values from the HTML demo must match exactly
+        assert!(css.contains("--aphrody-brand-blue: #4285F4;"));
+        assert!(css.contains("--aphrody-brand-purple: #9168C0;"));
+        assert!(css.contains("--aphrody-brand-pink: #EC4899;"));
+        assert!(css.contains("--aphrody-brand-cyan: #00BCD4;"));
+        assert!(css.contains("--aphrody-brand-orange: #FF7043;"));
+        assert!(css.contains("--aphrody-brand-red: #E53935;"));
+
+        // M3 primary baseline (purple seed #6750A4)
+        assert!(css.contains("--m3-color-primary: #6750A4;"));
+
+        // M3 display-large size = 57dp per spec
+        assert!(css.contains("--m3-typescale-display-large-size: 57px;"));
+
+        // Token-line count sanity (≥ 30 declarations — not a stub)
+        let decl_lines = css.lines().filter(|l| l.contains(": ") && l.trim().ends_with(';')).count();
+        assert!(
+            decl_lines >= 30,
+            "expected at least 30 CSS token declarations, got {decl_lines}"
+        );
+
+        // Single :root opener / single closer (well-formed block)
+        assert_eq!(css.matches(":root {").count(), 1, "exactly one `:root {{` block expected");
     }
 }

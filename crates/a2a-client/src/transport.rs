@@ -24,6 +24,15 @@ pub type ServiceParams = HashMap<String, Vec<String>>;
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[auto_impl(Box)]
 pub trait Transport: Send + Sync {
+    /// Stable identifier for the protocol binding (e.g. `"jsonrpc"`, `"http+json"`,
+    /// `"grpc"`). Used by diagnostics, logging, and the [`TransportKind`] surface
+    /// that exposes the cross-platform default transport at runtime.
+    ///
+    /// Default implementation returns `"unknown"`; concrete bindings override.
+    fn protocol_name(&self) -> &'static str {
+        "unknown"
+    }
+
     async fn send_message(
         &self,
         params: &ServiceParams,
@@ -110,4 +119,126 @@ pub trait TransportFactory: Send + Sync {
         card: &AgentCard,
         iface: &AgentInterface,
     ) -> Result<Box<dyn Transport>, A2AError>;
+}
+
+/// Cross-platform identifier for the underlying HTTP backend the [`Transport`]
+/// implementations use at runtime.
+///
+/// Returned by [`default_transport_kind`]. The variant is selected at compile
+/// time from `cfg(target_arch)` / `cfg(target_os)`:
+///
+/// | Target                       | Backend          | Variant      |
+/// |------------------------------|------------------|--------------|
+/// | `x86_64-unknown-linux-gnu`   | tokio + hyper + rustls (HTTP/2) | `NativeHyper` |
+/// | `x86_64-pc-windows-msvc`     | tokio + hyper + rustls (IOCP)   | `NativeHyper` |
+/// | `aarch64-apple-darwin`       | tokio + hyper + rustls          | `NativeHyper` |
+/// | `wasm32-unknown-unknown`     | browser `fetch` API             | `BrowserFetch` |
+/// | `wasm32-wasip1`              | none — modules stripped         | `Unsupported` |
+///
+/// The `NativeHyper` backend is the same object on all native targets (reqwest
+/// 0.13 → hyper 1.x), so platform-specific OS layers (epoll, IOCP, kqueue) are
+/// hidden behind the tokio runtime. The `BrowserFetch` backend uses the host
+/// browser's `Window.fetch` via the reqwest 0.13 wasm shim — no TLS crate is
+/// involved (TLS is delegated to the browser).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TransportKind {
+    /// Native reqwest backend: tokio + hyper + rustls. Used on Linux, Windows,
+    /// macOS, Android, iOS.
+    NativeHyper,
+    /// Browser `fetch` API backend via reqwest's wasm shim. Used on
+    /// `wasm32-unknown-unknown`.
+    BrowserFetch,
+    /// No HTTP transport available at this build target. Currently
+    /// `wasm32-wasip1` falls in this bucket because reqwest 0.13 still requires
+    /// socket2/mio on `target_os = "wasi"`. Lift once WASI p2 / wasi-http is
+    /// the default.
+    Unsupported,
+}
+
+impl TransportKind {
+    /// Human-readable name, suitable for logs and CLI output.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            TransportKind::NativeHyper => "native-hyper",
+            TransportKind::BrowserFetch => "browser-fetch",
+            TransportKind::Unsupported => "unsupported",
+        }
+    }
+}
+
+impl core::fmt::Display for TransportKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// Returns the [`TransportKind`] that this build of `a2a-client` will use for
+/// HTTP I/O.
+///
+/// This is a `const fn` so it can be referenced from feature flags and
+/// `static` initialisers. It performs no allocation, no I/O, no FFI.
+///
+/// ```
+/// use a2a_client::transport::{default_transport_kind, TransportKind};
+///
+/// let kind = default_transport_kind();
+/// assert_ne!(kind, TransportKind::Unsupported); // unless on wasi
+/// println!("a2a-client backend: {kind}");
+/// ```
+#[must_use]
+pub const fn default_transport_kind() -> TransportKind {
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    {
+        TransportKind::BrowserFetch
+    }
+    #[cfg(target_os = "wasi")]
+    {
+        TransportKind::Unsupported
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+        TransportKind::NativeHyper
+    }
+}
+
+#[cfg(test)]
+mod kind_tests {
+    use super::{TransportKind, default_transport_kind};
+
+    #[test]
+    fn kind_str_is_stable() {
+        assert_eq!(TransportKind::NativeHyper.as_str(), "native-hyper");
+        assert_eq!(TransportKind::BrowserFetch.as_str(), "browser-fetch");
+        assert_eq!(TransportKind::Unsupported.as_str(), "unsupported");
+    }
+
+    #[test]
+    fn kind_display_matches_as_str() {
+        for k in [
+            TransportKind::NativeHyper,
+            TransportKind::BrowserFetch,
+            TransportKind::Unsupported,
+        ] {
+            assert_eq!(k.to_string(), k.as_str());
+        }
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    #[test]
+    fn default_is_native_on_native_targets() {
+        assert_eq!(default_transport_kind(), TransportKind::NativeHyper);
+    }
+
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    #[test]
+    fn default_is_browser_fetch_on_wasm_browser() {
+        assert_eq!(default_transport_kind(), TransportKind::BrowserFetch);
+    }
+
+    #[cfg(target_os = "wasi")]
+    #[test]
+    fn default_is_unsupported_on_wasi() {
+        assert_eq!(default_transport_kind(), TransportKind::Unsupported);
+    }
 }

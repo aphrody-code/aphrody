@@ -48,6 +48,12 @@ scraper                   = { workspace = true }
 backend                   = { path = "../backend" }
 rustls                    = { workspace = true }
 aphrody-terminal-backend  = { path = "../aphrody-terminal-backend" }
+# Natural-language fallback (`auto_command`) routes prompts to a running
+# A2A agent over JSON-RPC; reqwest-backed transports are native-only.
+a2a                       = { workspace = true }
+a2a-client                = { workspace = true }
+futures                   = { workspace = true }
+thiserror                 = { workspace = true }
 
 # --- WebAssembly targets ---------------------------------------------------
 # Minimal tokio surface (the only features supported on wasm).

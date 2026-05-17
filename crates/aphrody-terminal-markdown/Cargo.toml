@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-terminal-markdown"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Inline CommonMark renderer for aphrody-terminal: comrak AST -> ANSI 24-bit, syntect code highlight, OSC aphrody-md detector."
+
+[lints]
+workspace = true
+
+[dependencies]
+# CommonMark / GFM parser. Drop default (CLI + xdg + shortcodes) to keep the
+# dep surface minimal: we only need the AST + parse_document.
+comrak    = { version = "0.52", default-features = false, features = ["syntect"] }
+
+# Syntax highlight for fenced code blocks. We use `default-fancy` (pure-Rust
+# fancy-regex) instead of `default-onig` to avoid the C/C++ Oniguruma build
+# (works on Linux + Windows MSVC + WASM-host-tools without extra system deps).
+syntect   = { version = "5.3", default-features = false, features = ["default-fancy"] }
+
+# OSC aphrody-md payload is base64-encoded UTF-8 markdown (cf.
+# crates/aphrody-terminal-llm/src/osc.rs#parse_aphrody_llm_osc).
+base64    = { workspace = true }
+
+thiserror = { workspace = true }
+once_cell = { workspace = true }
+
+[dev-dependencies]
+# kept empty: integration tests under tests/integration.rs use std only.

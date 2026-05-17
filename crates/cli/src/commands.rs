@@ -12,6 +12,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::{
     context::{GoogleContext, TerminalCommand},
+    nl_tokens::{
+        BUN_COMMANDS, BYPASS_ENGINES, CARGO_COMMANDS, SCRIPT_EXTS, STANDARD_ACTIONS, UV_COMMANDS,
+    },
     platform,
     scrape::ScrapeClient,
 };
@@ -460,48 +463,26 @@ impl TerminalCommand for AutoCommand {
 
         let first_arg = &self.args[0];
 
-        let bun_commands = [
-            "x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback",
-        ];
-        let uv_commands = [
-            "auth", "version", "sync", "lock", "export", "tree", "format", "tool", "python", "pip",
-            "venv", "cache", "self",
-        ];
-        let cargo_commands =
-            ["check", "clippy", "doc", "fmt", "fetch", "fix", "clean", "metadata", "tree"];
-
-        let bypass_engines = [
-            "bun", "uv", "cargo", "winget", "apt", "go", "npm", "yarn", "pnpm", "node", "npx",
-            "deno", "python", "pip", "git", "docker", "make", "cmake",
-        ];
+        // All four category lists (BYPASS_ENGINES, BUN_COMMANDS,
+        // UV_COMMANDS, CARGO_COMMANDS, STANDARD_ACTIONS, SCRIPT_EXTS)
+        // come from `crate::nl_tokens` so the NL detector in `main.rs`
+        // and this dispatcher cannot drift.
 
         // Explicit engine bypass
-        if bypass_engines.contains(&first_arg.as_str()) {
+        if BYPASS_ENGINES.contains(&first_arg.as_str()) {
             return Self::run_process(first_arg, &self.args[1..]);
         }
         // Specific commands
-        else if uv_commands.contains(&first_arg.as_str()) {
+        else if UV_COMMANDS.contains(&first_arg.as_str()) {
             return Self::run_process("uv", &self.args[..]);
-        } else if bun_commands.contains(&first_arg.as_str()) {
+        } else if BUN_COMMANDS.contains(&first_arg.as_str()) {
             return Self::run_process("bun", &self.args[..]);
-        } else if cargo_commands.contains(&first_arg.as_str()) {
+        } else if CARGO_COMMANDS.contains(&first_arg.as_str()) {
             return Self::run_process("cargo", &self.args[..]);
         }
 
-        let standard_actions = [
-            "run", "exec", "test", "build", "dev", "start", "install", "i", "add", "remove", "rm",
-            "fmt", "lint", "check", "clean", "update", "upgrade", "publish", "npm", "yarn", "pnpm",
-            "node", "npx", "deno", "python", "pip", "git", "docker", "make", "cmake",
-        ];
-
-        let is_known_technical_command = standard_actions.contains(&first_arg.as_str());
-        let is_script_file = first_arg.ends_with(".py")
-            || first_arg.ends_with(".js")
-            || first_arg.ends_with(".ts")
-            || first_arg.ends_with(".jsx")
-            || first_arg.ends_with(".tsx")
-            || first_arg.ends_with(".rs")
-            || first_arg.ends_with(".sh");
+        let is_known_technical_command = STANDARD_ACTIONS.contains(&first_arg.as_str());
+        let is_script_file = SCRIPT_EXTS.iter().any(|ext| first_arg.ends_with(ext));
 
         // Overlapping Universal Commands (run, install, add, remove, test, build...)
         let is_run_script = first_arg == "run" || first_arg == "exec";

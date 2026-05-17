@@ -58,6 +58,11 @@ members = [
     "crates/aphrody-terminal-backend",
     "crates/aphrody-terminal-llm",
     "crates/aphrody-terminal-browser",
+    "crates/aphrody-terminal-json-out",
+    "crates/aphrody-terminal-markdown",
+    "crates/aphrody-terminal-config",
+    # aphrody-tui — pure-Rust ratatui-style DSL (canonical long-term native TUI, 60fps target)
+    "crates/aphrody-tui",
 ]
 exclude = [
     "crates/coreutils",
@@ -187,6 +192,7 @@ tempfile           = { version = "3" }
 filetime           = { version = "0.2" }
 notify             = { version = "8" }
 which              = { version = "8" }
+dirs               = { version = "6" }
 rustix             = { version = "1.0", default-features = false, features = ["std", "fs", "event", "process", "net"] }
 
 # --- Crypto / security ----------------------------------------------------

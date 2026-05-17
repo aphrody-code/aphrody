@@ -9,8 +9,10 @@
 // a2a transports) cannot be linked on wasm and live behind
 // `cfg(not(target_arch = "wasm32"))`.
 
+#[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
+#[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
 
@@ -255,6 +257,12 @@ pub(crate) enum BxcAction {
     },
 }
 
+// Natural-language prompt detection lives in `crate::nl_tokens`. The
+// canonical token inventory and the detector are shared with
+// `commands::AutoCommand::execute` to guarantee both call sites agree.
+#[cfg(not(target_arch = "wasm32"))]
+use crate::nl_tokens::is_natural_language_prompt;
+
 // ===========================================================================
 // Native entry point — full command dispatch.
 // ===========================================================================
@@ -329,7 +337,25 @@ async fn main() -> miette::Result<()> {
             clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
         },
         Some(Commands::Auto(args)) => {
-            commands::AutoCommand { args }.execute(&ctx).await?;
+            // Route NL prompts to the native A2A JSON-RPC client; defer to
+            // the legacy bun/uv/cargo engine dispatcher only for tokens
+            // that clearly look like a CLI command (known engine name,
+            // standard subcommand, or a script file).
+            if is_natural_language_prompt(&args) {
+                let opts = auto_command::AutoCommand::new(args.join(" "));
+                match auto_command::run(opts).await {
+                    Ok(_) => {},
+                    Err(err) => {
+                        eprintln!("aphrody: {err}");
+                        return Err(miette::miette!(
+                            "auto_command failed (exit {})",
+                            err.exit_code()
+                        ));
+                    },
+                }
+            } else {
+                commands::AutoCommand { args }.execute(&ctx).await?;
+            }
         },
         None => {
             commands::AutoCommand { args: vec![] }.execute(&ctx).await?;

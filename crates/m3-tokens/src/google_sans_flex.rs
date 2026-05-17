@@ -193,7 +193,7 @@ mod tests {
         ];
         for required in ["wght", "opsz", "wdth", "GRAD", "slnt", "ROND"] {
             assert!(
-                tags.iter().any(|t| *t == required),
+                tags.contains(&required),
                 "axis `{required}` must be present in ALL_AXES"
             );
         }

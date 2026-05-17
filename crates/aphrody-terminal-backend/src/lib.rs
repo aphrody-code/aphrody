@@ -20,6 +20,12 @@
 
 #![deny(unsafe_code)]
 
+pub mod coord;
+pub use coord::{
+    CoordError, CoordProxy, CoordResponseKind, HttpResponse as CoordHttpResponse,
+    NDJSON_CONTENT_TYPE, SSE_CONTENT_TYPE,
+};
+
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
