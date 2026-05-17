@@ -104,7 +104,7 @@ typed-arena        = { version = "2" }
 scopeguard         = { version = "1" }
 self_cell          = { version = "1" }
 once_cell          = { version = "1" }
-foldhash           = { version = "0.1" }
+foldhash           = { version = "0.2" }
 rustc-hash         = { version = "2" }
 itoa               = { version = "1" }
 
