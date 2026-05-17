@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" role="img" aria-label="aphrody — cross-platform Rust CLI with embedded A2A coordination">
+  <title>aphrody</title>
+  <rect width="1280" height="640" fill="#FAFAFA"/>
+  <g transform="translate(880 192) scale(1.25)">
+    <path d="M 64 104 Q 128 16 192 104" stroke="#212121" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path d="M 64 152 Q 128 240 192 152" stroke="#212121" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <circle cx="64" cy="128" r="40" fill="#4A148C"/>
+    <circle cx="64" cy="128" r="14" fill="#00BCD4"/>
+    <circle cx="192" cy="128" r="40" fill="#00BCD4"/>
+    <circle cx="192" cy="128" r="14" fill="#4A148C"/>
+  </g>
+  <text x="80" y="260" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Menlo, monospace" font-size="120" font-weight="bold" fill="#212121">aphrody</text>
+  <text x="80" y="360" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Menlo, monospace" font-size="36" fill="#4A148C">cross-platform Rust CLI</text>
+  <text x="80" y="410" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Menlo, monospace" font-size="36" fill="#4A148C">with embedded A2A coordination</text>
+  <text x="1200" y="600" text-anchor="end" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Menlo, monospace" font-size="24" fill="#212121">github.com/aphrody-code/aphrody</text>
+</svg>
