@@ -120,10 +120,19 @@ CMAKE_GENERATOR     = { value = "Ninja", force = true }
 AWS_LC_SYS_PREBUILT_NASM = { value = "1", force = true }
 AWS_LC_SYS_CMAKE_BUILDER = { value = "1", force = true }
 # MSVC 14.51 emits new C4xxx warnings the aws-lc-sys -WX promotes to errors.
-# Disable warnings-as-errors for vendored C/C++ build scripts.
-AWS_LC_SYS_CFLAGS   = { value = "-W0", force = true }
-CFLAGS              = { value = "-W0", force = true }
-CXXFLAGS            = { value = "-W0", force = true }
+# Disable warnings-as-errors for vendored C/C++ build scripts — MSVC ONLY.
+# These vars use cc-rs's per-target convention (CFLAGS_<TRIPLE_WITH_UNDERSCORES>)
+# so they apply only when targeting x86_64-pc-windows-msvc. The previous
+# global CFLAGS=-W0 broke every gcc/clang build (Linux, WSL, macOS) because
+# `-W0` is an MSVC-only flag that gcc rejects with
+#   `cc: error: unrecognized command-line option '-W0'`.
+AWS_LC_SYS_CFLAGS_x86_64_pc_windows_msvc = { value = "-W0", force = true }
+CFLAGS_x86_64_pc_windows_msvc            = { value = "-W0", force = true }
+CXXFLAGS_x86_64_pc_windows_msvc          = { value = "-W0", force = true }
+# Same for aarch64 Windows (also MSVC).
+AWS_LC_SYS_CFLAGS_aarch64_pc_windows_msvc = { value = "-W0", force = true }
+CFLAGS_aarch64_pc_windows_msvc            = { value = "-W0", force = true }
+CXXFLAGS_aarch64_pc_windows_msvc          = { value = "-W0", force = true }
 
 # ----------------------------------------------------------------------------
 # Registry / network
