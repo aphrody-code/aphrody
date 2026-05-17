@@ -100,6 +100,7 @@ pub fn encrypt_aes_gcm(plaintext: &[u8], key: &[u8]) -> Result<Vec<u8>, JsValue>
 ///
 /// Separated from the `#[wasm_bindgen]`-decorated export so that native unit
 /// tests can call it without a `JsValue` return type.
+#[allow(dead_code)]
 fn encrypt_aes_gcm_impl(plaintext: &[u8], key: &[u8]) -> Result<Vec<u8>, String> {
     use aes_gcm::{
         aead::{Aead, AeadCore, KeyInit, OsRng},

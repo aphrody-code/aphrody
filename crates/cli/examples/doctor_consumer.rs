@@ -14,7 +14,9 @@
 use std::process::Command;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let output = Command::new(env!("CARGO_BIN_EXE_aphrody"))
+    let bin = std::env::var("CARGO_BIN_EXE_aphrody")
+        .unwrap_or_else(|_| "aphrody".to_string());
+    let output = Command::new(bin)
         .args(["doctor", "--json"])
         .output()?;
 

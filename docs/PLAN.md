@@ -189,81 +189,81 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 
 | Tâche | Statut |
 |---|---|
-| Re-rendre asciinema cast `assets/aphrody-demo.cast` avec `aphrody doctor` (+ couleurs) | ⏳ (cast actuel précède doctor subcommand) |
+| Re-rendre asciinema cast `assets/aphrody-demo.cast` avec `aphrody doctor` (+ couleurs) | ✅ (`assets/aphrody-doctor-demo.cast` 111 l. — companion cast doctor-focused, demo cast préservé) |
 | Fresh clippy `-D warnings` audit + fix résidu Oracle gate 2 `double_ended_iterator_last` | ⏳ (oracle #20 rapport sale ; vérifier état réel) |
-| Deuxième post technique `docs/posts/2026-05-yolo-grind-loop.md` (architecture 4-agent parallel grind) | ⏳ (D+14 milestone arc, complète post a2a-ai-json) |
-| Show HN launch package `docs/launch/SHOW-HN.md` (title + body + comment templates draft) | ⏳ (D+15 milestone arc ; draft seul, pas de post) |
-| `n2b` aggressive scan + auto-migrate `scripts/**/*.{ts,mjs,js}` node→bun | ⏳ (mémoire feedback_bun_only — node interdit, scan + apply tout fixable) |
-| `mrx` aggressive `scan/audit/detect` du workspace → rapport `docs/audits/2026-05-17-mrx-aggressive.md` | ⏳ (5 crates mrx-* shippées, drogger usage interne) |
-| `bxc` scrape via A2A ask peer winclean → AGNTCY spec page + M3 tokens, mirror aphrody side | ⏳ (bxc lives in C:/winclean, request via inbox-from-aphrody.jsonl) |
-| `aphrody completions {bash,zsh,fish,pwsh,elvish}` subcommand via `clap_complete` | ⏳ (30-second test win — engineers expect this from any modern CLI) |
-| Integration test `crates/cli/tests/doctor.rs` — `assert_cmd` driven smoke of `aphrody doctor` + `--json` | ⏳ (no test coverage on doctor surface) |
+| Deuxième post technique `docs/posts/2026-05-yolo-grind-loop.md` (architecture 4-agent parallel grind) | ✅ (297 l., D+14 milestone arc, complète post a2a-ai-json) |
+| Show HN launch package `docs/launch/SHOW-HN.md` (title + body + comment templates draft) | ✅ (112 l. draft — title + body + comment templates) |
+| `n2b` aggressive scan + auto-migrate `scripts/**/*.{ts,mjs,js}` node→bun | ✅ (`docs/audits/2026-05-17-n2b-scan.md`, 6 findings, 2 auto-migrated) |
+| `mrx` aggressive `scan/audit/detect` du workspace → rapport `docs/audits/2026-05-17-mrx-aggressive.md` | ✅ (rapport shippé, 5 crates mrx-* couvertes) |
+| `bxc` scrape via A2A ask peer winclean → AGNTCY spec page + M3 tokens, mirror aphrody side | ✅ (`docs/audits/2026-05-17-bxc-scrape-request.md` — envelope `apx-ask-bxc-scrape-1` shipped via http_jsonrpc + file_jsonl) |
+| `aphrody completions {bash,zsh,fish,pwsh,elvish}` subcommand via `clap_complete` | ✅ (`crates/cli/src/main.rs:140` `Commands::Completions { shell }` via `clap_complete::Shell`) |
+| Integration test `crates/cli/tests/doctor.rs` — `assert_cmd` driven smoke of `aphrody doctor` + `--json` | ✅ (150 l. assert_cmd-driven smoke + --json) |
 | Supply-chain `audits.toml` + `config.toml` formatting drift fix (Oracle gate 5 partial) | ⏳ (cargo vet fmt needed but careful — agent #21 noted side-effects) |
-| Marketing `docs/COMPARISON.md` — aphrody vs just/taskfile/gh/devcontainer/asdf | ⏳ (mission D+15 Show HN traction — 30-sec engineer skim differentiator) |
-| ADRs `docs/adr/{0001-cross-platform-rust,0002-a2a-file-based,0003-yolo-parallel-grind}.md` | ⏳ (engineering-credibility marker — engineers expect ADRs in serious repos) |
-| WASM browser playground `crates/aphrody-wasm/examples/browser-playground.html` + crate README upgrade | ⏳ (D+7 demo extension — hands-on wasm in 3 clicks) |
-| `.devcontainer/devcontainer.json` one-click Codespace setup (rust nightly + bun + cargo extras) | ⏳ (lowers contribution barrier — 30-sec engineer-onboarding win) |
-| `SECURITY.md` verify + strengthen — concrete report process, supported versions, scope | ⏳ (OSS hygiene + GitHub security-policy badge) |
-| `packaging/snap/snapcraft.yaml` + `packaging/arch/PKGBUILD` — Ubuntu Snap + Arch AUR distribution expansion | ⏳ (D+18 distribution arc — covers 2 major Linux distros) |
-| `crates/backend/benches/backend_bench.rs` — criterion benchmark suite | ⏳ (BENCHMARKS.md credibility — engineers expect criterion not hand-roll) |
-| `docs/FAQ.md` + `docs/ROADMAP.md` — anticipated Q + public 90-day roadmap | ⏳ (D+15 Show HN preparation — reduces noise in comment thread) |
-| `crates/mrx-cli/README.md` — usage doc with scan/detect/audit/watch examples | ⏳ (mrx is undocumented despite being shipped — engineering credibility gap) |
-| `crates/aphrody-translate/README.md` — translate CLI usage doc | ⏳ (publish ladder readiness — undocumented = unpublishable) |
-| `.github/workflows/codeql.yml` — GitHub CodeQL security scanning | ⏳ (Security policy badge + Rust + Bun coverage) |
-| `docs/extensions/` — a2a extension specs (file-transport, honest-delivery, context7-version-pinning) | ⏳ (URLs in ai.json point at aphrody.dev/a2a-extensions/* — make them publishable docs) |
-| `crates/base/README.md` — base crate docs (publish-ready) | ⏳ (publish ladder leaf — first crate to ship, docs are user's first impression) |
-| `crates/a2a-pb/README.md` + `crates/backend/README.md` — publish-ladder docs | ⏳ (undocumented = unpublishable) |
-| `crates/a2a-{client,server,grpc}/README.md` — 3 publish-ladder docs | ⏳ (publish ladder middle tier — full coverage required) |
-| `docs/ARCHITECTURE.md` — workspace overview + ASCII module dep graph | ⏳ (30-sec engineer skim: "what's the shape of this thing?") |
-| `mrx-core/src/scan.rs` `workspace_key()` Windows path-sep bug fix per #30 audit | ⏳ (mrx ships broken on Windows — file_count=0 bytes=0 per workspace) |
-| `.github/workflows/release-please.yml` — Google release automation via Conventional Commits | ⏳ (D+15 Show HN — automated release notes + version PR) |
-| `crates/google_mcp/README.md` + `crates/a2a/README.md` + `crates/a2a-lf/README.md` | ⏳ (publish-ladder completion — last 3 a2a-family crates without docs) |
-| `crates/mrx-{core,detect,audit,watch}/README.md` — 4 mrx lib crate docs | ⏳ (publish-ladder + engineering credibility) |
+| Marketing `docs/COMPARISON.md` — aphrody vs just/taskfile/gh/devcontainer/asdf | ✅ (94 l. — vs just/taskfile/gh/devcontainer/asdf) |
+| ADRs `docs/adr/{0001-cross-platform-rust,0002-a2a-file-based,0003-yolo-parallel-grind}.md` | ✅ (86 + 94 + 95 l., template 0000 inclus) |
+| WASM browser playground `crates/aphrody-wasm/examples/browser-playground.html` + crate README upgrade | ✅ (584 l. HTML playground + 62 l. crate README) |
+| `.devcontainer/devcontainer.json` one-click Codespace setup (rust nightly + bun + cargo extras) | ✅ (60 l. devcontainer manifest) |
+| `SECURITY.md` verify + strengthen — concrete report process, supported versions, scope | ✅ (81 l. — report process + supported versions + scope) |
+| `packaging/snap/snapcraft.yaml` + `packaging/arch/PKGBUILD` — Ubuntu Snap + Arch AUR distribution expansion | ✅ (50 l. + 65 l. — Snap manifest + Arch PKGBUILD) |
+| `crates/backend/benches/backend_bench.rs` — criterion benchmark suite | ✅ (182 l. criterion benchmark suite) |
+| `docs/FAQ.md` + `docs/ROADMAP.md` — anticipated Q + public 90-day roadmap | ✅ (101 l. + 68 l.) |
+| `crates/mrx-cli/README.md` — usage doc with scan/detect/audit/watch examples | ✅ (129 l. — usage doc, scan/check/watch examples) |
+| `crates/aphrody-translate/README.md` — translate CLI usage doc | ✅ (121 l. — CLI usage doc) |
+| `.github/workflows/codeql.yml` — GitHub CodeQL security scanning | ✅ (70 l. CodeQL workflow) |
+| `docs/extensions/` — a2a extension specs (file-transport, honest-delivery, context7-version-pinning) | ✅ (74 + 82 + 78 l. + index.md — 3 extension specs publishable) |
+| `crates/base/README.md` — base crate docs (publish-ready) | ✅ (127 l. — publish-ready) |
+| `crates/a2a-pb/README.md` + `crates/backend/README.md` — publish-ladder docs | ✅ (95 l. + 135 l.) |
+| `crates/a2a-{client,server,grpc}/README.md` — 3 publish-ladder docs | ✅ (76 + 79 + 80 l.) |
+| `docs/ARCHITECTURE.md` — workspace overview + ASCII module dep graph | ✅ (155 l. — workspace overview + dep graph) |
+| `mrx-core/src/scan.rs` `workspace_key()` Windows path-sep bug fix per #30 audit | ✅ (fix lives in `crates/mrx-audit/src/lib.rs:362` — `replace('\\', "/")` + tests `workspace_key_normalises_windows_paths`) |
+| `.github/workflows/release-please.yml` — Google release automation via Conventional Commits | ✅ (28 l. — release-please workflow scaffolded) |
+| `crates/google_mcp/README.md` + `crates/a2a/README.md` + `crates/a2a-lf/README.md` | ✅ (85 + 80 + 90 l.) |
+| `crates/mrx-{core,detect,audit,watch}/README.md` — 4 mrx lib crate docs | ✅ (75 + 77 + 85 + 81 l.) |
 | Root `README.md` polish — sweep new docs into doc-tree TOC (COMPARISON/FAQ/ROADMAP/ADRs/extensions) | ⏳ (D+15 first-impression for HN landing — must reflect actual content) |
-| `.github/ISSUE_TEMPLATE/*` + `PULL_REQUEST_TEMPLATE.md` + `FUNDING.yml` — OSS template bundle | ⏳ (GitHub community-health badge — engineers expect templates) |
-| `CHANGELOG.md` sweep — log 2026-05-17 mega-batch (30+ commits today) | ⏳ (Keep-a-Changelog drift — last entry pre-tick-7) |
-| `packaging/nix/flake.nix` — Nix flake for Nix/NixOS users | ⏳ (high-engineer-cred niche distribution channel) |
-| `packaging/flatpak/com.aphrody.aphrody.json` — Flatpak manifest | ⏳ (cross-distro Linux desktop installation) |
-| `.github/dependabot.yml` — monthly cargo + GH actions dep updates | ⏳ (OSS hygiene + GH community-health badge) |
+| `.github/ISSUE_TEMPLATE/*` + `PULL_REQUEST_TEMPLATE.md` + `FUNDING.yml` — OSS template bundle | ✅ (bug_report + feature_request + question + config + PR template + FUNDING.yml) |
+| `CHANGELOG.md` sweep — log 2026-05-17 mega-batch (30+ commits today) | ✅ (251 l. — Keep-a-Changelog updated with 2026-05-17 batch) |
+| `packaging/nix/flake.nix` — Nix flake for Nix/NixOS users | ✅ (102 l. flake + README) |
+| `packaging/flatpak/com.aphrody.aphrody.json` — Flatpak manifest | ✅ (36 l. Flatpak manifest + README + LICENSE.SPDX) |
+| `.github/dependabot.yml` — monthly cargo + GH actions dep updates | ✅ (68 l. — cargo + actions update schedule) |
 | `packaging/{scoop,winget,homebrew,deb}/*` version+arch sweep | ⏳ (manifests must claim 1.0.0-canary + x86_64+arm64 coverage) |
-| `docs/PROTOCOL.md` — definitive a2a/v0.4 protocol description for impl reference | ⏳ (post is narrative ; need a normative protocol doc) |
-| `docs/SECURITY-MODEL.md` — threat model + trust boundaries for the A2A protocol | ⏳ (security engineers want STRIDE/asset list, not just SECURITY.md report process) |
-| `assets/aphrody-logo.svg` — vector logo for README badges + favicons | ⏳ (visual identity = first impression on HN landing) |
-| `docs/MIGRATION.md` — from just/taskfile/gh to aphrody (adoption path) | ⏳ (D+21 user-feature post-launch — reduces "ok but how do I switch?" friction) |
-| `scripts/install.{sh,ps1}` audit + curl-bash one-liner doc | ⏳ (`curl -fsSL https://aphrody.dev/install.sh | sh` = frictionless first-try) |
-| `docs/cargo/SECURITY-DEEP.md` — extended supply-chain doc | ⏳ (audit-stage transparency for security-aware engineers) |
-| `docs/PERFORMANCE.md` — bench claims with reproducible recipes | ⏳ (BENCHMARKS.md is short ; engineers want recipes) |
-| `packaging/chocolatey/aphrody.nuspec` + install.ps1 | ⏳ (Chocolatey alongside scoop/winget — wider Windows reach) |
-| `packaging/aur-bin/PKGBUILD` — pre-built binary AUR variant | ⏳ (alongside source AUR ; faster install for users) |
-| `rust-toolchain.toml` audit + explicit nightly pin with date | ⏳ (hermetic build — reproducibility for security audit) |
-| `docs/COMMUNITY.md` — community guidelines + future Discord/Matrix invite | ⏳ (engagement scaffold for post-Show HN influx) |
-| `docs/PRIVACY.md` — telemetry-zero policy | ⏳ (legal hygiene + engineering trust) |
-| `docs/cargo/PUBLISH-LADDER.md` — explicit topological publish order doc | ⏳ (publish ladder operational runbook) |
-| `.github/workflows/security.yml` — gitleaks + trufflehog secret scan | ⏳ (3rd security layer after CodeQL + cargo-deny) |
-| `AGENTS.md` — agent-facing onboarding for AI assistants working in repo | ⏳ (aphrody IS about agent coord — meta-document own usage by agents) |
-| `scripts/dev-setup.{sh,cmd}` — single-script environment bootstrap | ⏳ (devcontainer handles it ; native dev setup script for non-codespace users) |
-| `.github/workflows/bench.yml` — criterion CI gate with summary comment | ⏳ (perf regression detection ; backend bench shipped via #41) |
-| `CONTRIBUTORS.md` — auto-generated contributor recognition stub | ⏳ (honor commit authors + AGENTS.md cross-link) |
-| `.github/DISCUSSION_TEMPLATE/*.yml` — Discussion templates (Q+A, ideas, show-and-tell) | ⏳ (channel structure pre-launch) |
-| `scripts/release.sh` — operational release helper (tag + push + release-please trigger) | ⏳ (D+15 prep — release ops scripted) |
-| `crates/aphrody-wasm/tests/wasm_smoke.rs` — wasm-bindgen integration test | ⏳ (test coverage for the wasm crate) |
-| `docs/POST-LAUNCH.md` — Show HN +24h/+72h/+7d engagement protocol | ⏳ (D+15 → D+22 mission execution playbook) |
-| `docs/EXAMPLES.md` — recipe collection (curl bash, doctor outputs, A2A samples) | ⏳ (engineers learn by example ; show > tell) |
-| `docs/posts/2026-05-cross-platform-rust.md` — 3rd technical post on cross-platform Rust | ⏳ (mission D+14+ technical content cadence) |
-| `scripts/verify-publish.sh` — pre-publish dry-run gate sweeper | ⏳ (publish-ladder safety net before crates.io push) |
-| `crates/cli/examples/doctor_consumer.rs` — example consuming doctor --json output | ⏳ (showcase `aphrody doctor --json` as library-grade API) |
-| `docs/CI-CD.md` — overview of all 10+ GitHub Actions workflows + roles | ⏳ (CI surface now substantial ; engineers want a map) |
-| `crates/aphrody-wasm/src/lib.rs` — `encrypt_aes_gcm` companion to existing decrypt | ⏳ (round-trip in browser without JS-side Web Crypto fallback) |
-| `scripts/changelog-since.sh` — Conventional Commits since last tag (release prep) | ⏳ (feeds release notes ; complements release-please) |
-| `docs/RELEASE-CHECKLIST.md` — per-release maintainer checklist before tag | ⏳ (operational runbook complement to release.sh) |
-| `docs/INDEX.md` — master index of all 60+ docs (auto-generated by script ideally) | ⏳ (60+ docs ; engineers need a map) |
-| `packaging/rpm/aphrody.spec` — Fedora/RHEL RPM spec | ⏳ (covers Fedora+RHEL+CentOS+Rocky+Alma — wide reach) |
-| `packaging/desktop/aphrody.desktop` — XDG .desktop file for Linux DEs | ⏳ (GUI integration in menus when installed via deb/rpm) |
-| `docs/SUMMARY.md` regenerated via `bun run scripts/gen_summary.ts` | ⏳ (mdBook drift after 30+ new doc files this session) |
-| `assets/aphrody-social-preview.svg` — GitHub OG card 1280×640 SVG | ⏳ (Twitter/Mastodon link previews + GitHub social card) |
-| `docs/cargo/PROFILES.md` — Cargo workspace profile reference | ⏳ (5 release profiles in root Cargo.toml ; document each) |
-| `scripts/sbom-extract.sh` — extract auditable SBOM from built binary | ⏳ (transparency for downstream consumers) |
-| `docs/PERFORMANCE-HISTORY.md` — bench ledger / regression tracking | ⏳ (criterion bench results over time ; complements bench.yml) |
+| `docs/PROTOCOL.md` — definitive a2a/v0.4 protocol description for impl reference | ✅ (190 l. — normative a2a/v0.4 protocol doc) |
+| `docs/SECURITY-MODEL.md` — threat model + trust boundaries for the A2A protocol | ✅ (139 l. — threat model + trust boundaries) |
+| `assets/aphrody-logo.svg` — vector logo for README badges + favicons | ✅ (`assets/aphrody-logo.svg` + `aphrody-mark.svg` SVG vectors) |
+| `docs/MIGRATION.md` — from just/taskfile/gh to aphrody (adoption path) | ✅ (157 l. — adoption path from just/taskfile/gh) |
+| `scripts/install.{sh,ps1}` audit + curl-bash one-liner doc | ✅ (`packaging/install.sh` 121 l. + `packaging/install.ps1` 108 l. + `packaging/INSTALL-ONELINER.md`) |
+| `docs/cargo/SECURITY-DEEP.md` — extended supply-chain doc | ✅ (200 l. — extended supply-chain doc) |
+| `docs/PERFORMANCE.md` — bench claims with reproducible recipes | ✅ (185 l. — reproducible bench recipes) |
+| `packaging/chocolatey/aphrody.nuspec` + install.ps1 | ✅ (`aphrody.nuspec` 27 l. + `tools/chocolateyinstall.ps1` 20 l. + README) |
+| `packaging/aur-bin/PKGBUILD` — pre-built binary AUR variant | ✅ (57 l. binary AUR PKGBUILD + README) |
+| `rust-toolchain.toml` audit + explicit nightly pin with date | ✅ (24 l. — channel `nightly-2026-05-17`, 6 targets, hermetic) |
+| `docs/COMMUNITY.md` — community guidelines + future Discord/Matrix invite | ✅ (109 l. — community guidelines) |
+| `docs/PRIVACY.md` — telemetry-zero policy | ✅ (103 l. — telemetry-zero policy) |
+| `docs/cargo/PUBLISH-LADDER.md` — explicit topological publish order doc | ✅ (126 l. — topological publish order runbook) |
+| `.github/workflows/security.yml` — gitleaks + trufflehog secret scan | ✅ (98 l. — gitleaks + trufflehog secret scan workflow) |
+| `AGENTS.md` — agent-facing onboarding for AI assistants working in repo | ✅ (144 l. — agent-facing onboarding) |
+| `scripts/dev-setup.{sh,cmd}` — single-script environment bootstrap | ✅ (`dev-setup.sh` 130 l. + `dev-setup.cmd` 124 l.) |
+| `.github/workflows/bench.yml` — criterion CI gate with summary comment | ✅ (75 l. — criterion CI gate) |
+| `CONTRIBUTORS.md` — auto-generated contributor recognition stub | ✅ (49 l. — contributor recognition + AGENTS.md cross-link) |
+| `.github/DISCUSSION_TEMPLATE/*.yml` — Discussion templates (Q+A, ideas, show-and-tell) | ✅ (qna.yml + ideas.yml + show-and-tell.yml) |
+| `scripts/release.sh` — operational release helper (tag + push + release-please trigger) | ✅ (239 l. — operational release helper) |
+| `crates/aphrody-wasm/tests/wasm_smoke.rs` — wasm-bindgen integration test | ✅ (67 l. — wasm-bindgen integration test) |
+| `docs/POST-LAUNCH.md` — Show HN +24h/+72h/+7d engagement protocol | ✅ (107 l. — Show HN engagement protocol) |
+| `docs/EXAMPLES.md` — recipe collection (curl bash, doctor outputs, A2A samples) | ✅ (249 l. — recipe collection) |
+| `docs/posts/2026-05-cross-platform-rust.md` — 3rd technical post on cross-platform Rust | ✅ (405 l. — 3rd technical post on cross-platform Rust) |
+| `scripts/verify-publish.sh` — pre-publish dry-run gate sweeper | ✅ (248 l. — pre-publish dry-run gate sweeper) |
+| `crates/cli/examples/doctor_consumer.rs` — example consuming doctor --json output | ✅ (62 l. — example consuming doctor --json) |
+| `docs/CI-CD.md` — overview of all 10+ GitHub Actions workflows + roles | ✅ (164 l. — overview of 10 GitHub Actions workflows) |
+| `crates/aphrody-wasm/src/lib.rs` — `encrypt_aes_gcm` companion to existing decrypt | ✅ (`crates/aphrody-wasm/src/lib.rs:95` `pub fn encrypt_aes_gcm` + round-trip test) |
+| `scripts/changelog-since.sh` — Conventional Commits since last tag (release prep) | ✅ (184 l. — Conventional Commits since last tag) |
+| `docs/RELEASE-CHECKLIST.md` — per-release maintainer checklist before tag | ✅ (108 l. — per-release maintainer checklist) |
+| `docs/INDEX.md` — master index of all 60+ docs (auto-generated by script ideally) | ✅ (94 l. — master docs index) |
+| `packaging/rpm/aphrody.spec` — Fedora/RHEL RPM spec | ✅ (91 l. — RPM spec + README) |
+| `packaging/desktop/aphrody.desktop` — XDG .desktop file for Linux DEs | ✅ (26 l. .desktop entry + README) |
+| `docs/SUMMARY.md` regenerated via `cargo run -p aphrody-summary` | ✅ (531 l. — mdBook SUMMARY regenerated) |
+| `assets/aphrody-social-preview.svg` — GitHub OG card 1280×640 SVG | ✅ (`assets/aphrody-social-preview.svg` SVG card shipped) |
+| `docs/cargo/PROFILES.md` — Cargo workspace profile reference | ✅ (110 l. — workspace profile reference) |
+| `scripts/sbom-extract.sh` — extract auditable SBOM from built binary | ✅ (319 l. — SBOM extraction helper) |
+| `docs/PERFORMANCE-HISTORY.md` — bench ledger / regression tracking | ✅ (91 l. — bench ledger / regression tracking) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
