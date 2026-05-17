@@ -235,7 +235,8 @@ fn parse_rest_error(status: reqwest::StatusCode, body: &str) -> A2AError {
     )
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl Transport for RestTransport {
     async fn send_message(
         &self,
@@ -397,13 +398,15 @@ impl RestTransportFactory {
         RestTransportFactory { client: client.unwrap_or_default() }
     }
 
-    #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
+    // Custom root certificates require TLS crates not available on wasm32.
+    #[cfg(all(not(target_family = "wasm"), any(feature = "rustls-tls", feature = "native-tls")))]
     pub fn with_root_certificates_pem(pem: &[u8]) -> Result<Self, A2AError> {
         Ok(Self { client: crate::build_reqwest_client_with_root_pem(pem)? })
     }
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl TransportFactory for RestTransportFactory {
     fn protocol(&self) -> &str {
         TRANSPORT_PROTOCOL_HTTP_JSON
@@ -418,7 +421,10 @@ impl TransportFactory for RestTransportFactory {
     }
 }
 
-#[cfg(test)]
+// Tests rely on install_rustls_provider / rcgen (native-only) and
+// reqwest::Client::new() which requires a TLS provider on native targets.
+// Gate to native targets to keep wasm32 checks clean.
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use serde_json::json;
 

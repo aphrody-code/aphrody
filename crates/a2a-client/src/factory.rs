@@ -177,7 +177,9 @@ impl A2AClientFactoryBuilder {
     }
 }
 
-#[cfg(test)]
+// Tests instantiate JsonRpcTransportFactory / RestTransportFactory which call
+// reqwest::Client::new() and require a rustls provider installed. Native only.
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
     use crate::test_utils::install_rustls_provider;

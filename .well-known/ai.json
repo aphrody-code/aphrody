@@ -3,8 +3,14 @@
   "schema_url": "https://aphrody-code.github.io/aphrody/schemas/ai.json/v1.json",
   "kind": "agent",
   "id": "aphrody@aphrody-code/aphrody",
-  "generated_at": "2026-05-17T13:52:00Z",
+  "generated_at": "2026-05-17T14:10:00Z",
   "license": "Apache-2.0",
+
+  "canonical_manifest": {
+    "note": "The full A2A CollaborationManifest (AGNTCY a2a/v0.4 compatible, with AgentCards + skills + tasks + transports) is at `C:/src/aphrody/ai.json` (or `../ai.json` from this file). This `.well-known/ai.json` is the lightweight HTTP-discoverable subset listing only the channels peers use to reach aphrody.",
+    "path": "../ai.json",
+    "spec": "a2a/v0.4 + winclean-coord-ext/1"
+  },
 
   "agent": {
     "name": "aphrody",
