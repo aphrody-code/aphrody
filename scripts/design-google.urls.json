@@ -1,0 +1,146 @@
+{
+	"$schema": "https://aphrody-code.dev/schemas/bxc-mass-scrape-urls/v1",
+	"version": "1.0.0",
+	"description": "design.google end-to-end ingest URL list — discovered via scripts/design-google-ingest.ts (Edge headless virtual-time=20000) + seed catalogue. Consumed by the design-google-ingest skill via scripts/edge-mass-scrape.ts.",
+	"urls": [
+		{
+			"url": "https://design.google/",
+			"category": "site",
+			"tags": [
+				"home"
+			]
+		},
+		{
+			"url": "https://design.google/about",
+			"category": "site",
+			"tags": [
+				"about"
+			]
+		},
+		{
+			"url": "https://design.google/events",
+			"category": "site",
+			"tags": [
+				"events"
+			]
+		},
+		{
+			"url": "https://design.google/library",
+			"category": "site",
+			"tags": [
+				"library-index"
+			]
+		},
+		{
+			"url": "https://design.google/library/accessibility",
+			"category": "library",
+			"tags": [
+				"foundations",
+				"a11y"
+			]
+		},
+		{
+			"url": "https://design.google/library/color-theory-ruxandra-duru",
+			"category": "library",
+			"tags": [
+				"foundations",
+				"color"
+			]
+		},
+		{
+			"url": "https://design.google/library/david-reinfurt-teaches-design",
+			"category": "library",
+			"tags": [
+				"foundations"
+			]
+		},
+		{
+			"url": "https://design.google/library/design-notes-material-3-expressive-liam-spradlin",
+			"category": "library",
+			"tags": [
+				"m3"
+			]
+		},
+		{
+			"url": "https://design.google/library/design-systems",
+			"category": "library",
+			"tags": [
+				"foundations"
+			]
+		},
+		{
+			"url": "https://design.google/library/expressive-material-design-google-research",
+			"category": "library",
+			"tags": [
+				"m3"
+			]
+		},
+		{
+			"url": "https://design.google/library/gemini-ai-visual-design",
+			"category": "library",
+			"tags": [
+				"gemini"
+			]
+		},
+		{
+			"url": "https://design.google/library/google-sans-flex-font",
+			"category": "library",
+			"tags": [
+				"brand",
+				"type"
+			]
+		},
+		{
+			"url": "https://design.google/library/hardware-and-software-can-work-together",
+			"category": "library",
+			"tags": [
+				"foundations"
+			]
+		},
+		{
+			"url": "https://design.google/library/material-3-design-tokens",
+			"category": "library",
+			"tags": [
+				"m3",
+				"tokens"
+			]
+		},
+		{
+			"url": "https://design.google/library/material-design-3",
+			"category": "library",
+			"tags": [
+				"m3"
+			]
+		},
+		{
+			"url": "https://design.google/library/open-source-custom-fonts-google",
+			"category": "library",
+			"tags": [
+				"brand",
+				"type"
+			]
+		},
+		{
+			"url": "https://design.google/library/transparent-screens",
+			"category": "library",
+			"tags": [
+				"brand"
+			]
+		},
+		{
+			"url": "https://design.google/library/ux-design-system-dance",
+			"category": "library",
+			"tags": [
+				"foundations",
+				"ux"
+			]
+		},
+		{
+			"url": "https://design.google/products",
+			"category": "site",
+			"tags": [
+				"products"
+			]
+		}
+	]
+}
