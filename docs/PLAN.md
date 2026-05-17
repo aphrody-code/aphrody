@@ -248,6 +248,14 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `scripts/release.sh` — operational release helper (tag + push + release-please trigger) | ⏳ (D+15 prep — release ops scripted) |
 | `crates/aphrody-wasm/tests/wasm_smoke.rs` — wasm-bindgen integration test | ⏳ (test coverage for the wasm crate) |
 | `docs/POST-LAUNCH.md` — Show HN +24h/+72h/+7d engagement protocol | ⏳ (D+15 → D+22 mission execution playbook) |
+| `docs/EXAMPLES.md` — recipe collection (curl bash, doctor outputs, A2A samples) | ⏳ (engineers learn by example ; show > tell) |
+| `docs/posts/2026-05-cross-platform-rust.md` — 3rd technical post on cross-platform Rust | ⏳ (mission D+14+ technical content cadence) |
+| `scripts/verify-publish.sh` — pre-publish dry-run gate sweeper | ⏳ (publish-ladder safety net before crates.io push) |
+| `crates/cli/examples/doctor_consumer.rs` — example consuming doctor --json output | ⏳ (showcase `aphrody doctor --json` as library-grade API) |
+| `docs/CI-CD.md` — overview of all 10+ GitHub Actions workflows + roles | ⏳ (CI surface now substantial ; engineers want a map) |
+| `crates/aphrody-wasm/src/lib.rs` — `encrypt_aes_gcm` companion to existing decrypt | ⏳ (round-trip in browser without JS-side Web Crypto fallback) |
+| `scripts/changelog-since.sh` — Conventional Commits since last tag (release prep) | ⏳ (feeds release notes ; complements release-please) |
+| `docs/RELEASE-CHECKLIST.md` — per-release maintainer checklist before tag | ⏳ (operational runbook complement to release.sh) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
