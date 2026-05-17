@@ -1,0 +1,21 @@
+[package]
+name = "mrx-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "mrx — CLI binary entry point"
+
+[[bin]]
+name = "mrx"
+path = "src/main.rs"
+
+[dependencies]
+mrx-core = { workspace = true }
+mrx-audit = { workspace = true }
+mrx-watch = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
