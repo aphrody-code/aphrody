@@ -150,16 +150,16 @@ qui documente le contrat de divergence avec upstream.
 
 ```bash
 # Linux (cible #1)
-cargo build --release -p cli                          # natif
-cargo build --release -p cli --target x86_64-unknown-linux-gnu
+cargo build --release -p aphrody                          # natif
+cargo build --release -p aphrody --target x86_64-unknown-linux-gnu
 
 # Windows (cible #2)
-cargo build --release -p cli                          # depuis Windows
-cargo build --release -p cli --target x86_64-pc-windows-msvc
+cargo build --release -p aphrody                          # depuis Windows
+cargo build --release -p aphrody --target x86_64-pc-windows-msvc
 
 # WebAssembly (cible #3)
-cargo build --release -p cli --target wasm32-wasi
-cargo build --release -p cli --target wasm32-unknown-unknown
+cargo build --release -p aphrody --target wasm32-wasi
+cargo build --release -p aphrody --target wasm32-unknown-unknown
 ```
 
 ### Validation (zéro tolérance warnings)
@@ -175,9 +175,9 @@ cargo audit-machete    # unused deps detector
 ### Cross-platform check (avant chaque PR)
 
 ```bash
-cargo check -p cli --target x86_64-unknown-linux-gnu --locked   # bloquant
-cargo check -p cli --target x86_64-pc-windows-msvc --locked     # bloquant
-cargo check -p cli --target wasm32-unknown-unknown --locked     # bloquant
+cargo check -p aphrody --target x86_64-unknown-linux-gnu --locked   # bloquant
+cargo check -p aphrody --target x86_64-pc-windows-msvc --locked     # bloquant
+cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 ```
 
 ## 6. Supply-chain (Google-grade)
@@ -233,14 +233,14 @@ cargo check -p cli --target wasm32-unknown-unknown --locked     # bloquant
 
 ### Phase P-Linux (PRIORITÉ ABSOLUE)
 
-- [ ] Validation `cargo build --release -p cli` sur Ubuntu 26.04 natif.
-- [ ] Validation `cargo nextest run -p cli` sur Ubuntu 26.04.
+- [ ] Validation `cargo build --release -p aphrody` sur Ubuntu 26.04 natif.
+- [ ] Validation `cargo nextest run -p aphrody` sur Ubuntu 26.04.
 - [ ] CI runner `ubuntu-26.04` (sinon `ubuntu-latest`).
 - [ ] Package `apt` / PPA pour distribution Ubuntu.
 
 ### Phase P-Win11
 
-- [ ] Validation `cargo build --release -p cli` sur Win11 Insider Canary.
+- [ ] Validation `cargo build --release -p aphrody` sur Win11 Insider Canary.
 - [ ] Package `scoop` + `winget` manifest.
 
 ### Phase P-Wasm

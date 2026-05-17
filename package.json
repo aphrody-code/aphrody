@@ -8,7 +8,7 @@
     "packages/gemini-cli/packages/*"
   ],
   "scripts": {
-    "start": "cargo run -p cli --locked --",
+    "start": "cargo run -p aphrody --locked --",
     "start:terminal": "cargo run -p backend --release --locked & cargo run -p gui --release --locked",
     "build:all": "turbo run build",
     "build:rust": "cargo build --workspace --locked",

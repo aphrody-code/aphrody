@@ -95,7 +95,7 @@ bun run docs:summary:check    # SUMMARY drift
 
 Et idéalement (CI matrix) :
 ```bash
-cargo check -p cli --target <each-of-14-targets> --locked
+cargo check -p aphrody --target <each-of-14-targets> --locked
 ```
 
 ## Outils à installer (Google Mode setup)

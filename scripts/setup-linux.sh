@@ -196,4 +196,4 @@ case "$MODE" in
         ;;
 esac
 
-info "Done. Build with: cargo build --release -p cli --target x86_64-unknown-linux-gnu"
+info "Done. Build with: cargo build --release -p aphrody --target x86_64-unknown-linux-gnu"

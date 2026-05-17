@@ -109,7 +109,7 @@ jobs:
           ${{ matrix.cross == 'zigbuild' && 'cargo zigbuild' || 'cargo auditable build' }} \
             --locked --profile reproducible \
             --target ${{ matrix.target }} \
-            -p cli
+            -p aphrody
 
       - name: Download gemini-cli binaries
         uses: actions/download-artifact@v4

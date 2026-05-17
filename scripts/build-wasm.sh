@@ -40,8 +40,8 @@ ensure_target() {
 build_wasi() {
     local tgt="wasm32-wasi"
     ensure_target "$tgt"
-    info "cargo build --release -p cli --target $tgt"
-    CARGO_BUILD_TARGET="$tgt" cargo build --release -p cli --target "$tgt" --locked
+    info "cargo build --release -p aphrody --target $tgt"
+    CARGO_BUILD_TARGET="$tgt" cargo build --release -p aphrody --target "$tgt" --locked
     local out="target/$tgt/release/${BIN_NAME}.wasm"
     if [[ -f "$out" ]]; then
         ok "WASI bundle: $out ($(du -h "$out" | cut -f1))"
@@ -54,8 +54,8 @@ build_wasi() {
 build_web() {
     local tgt="wasm32-unknown-unknown"
     ensure_target "$tgt"
-    info "cargo build --release -p cli --target $tgt"
-    CARGO_BUILD_TARGET="$tgt" cargo build --release -p cli --target "$tgt" --locked
+    info "cargo build --release -p aphrody --target $tgt"
+    CARGO_BUILD_TARGET="$tgt" cargo build --release -p aphrody --target "$tgt" --locked
     local raw="target/$tgt/release/${BIN_NAME}.wasm"
     if [[ ! -f "$raw" ]]; then
         fail "web wasm artifact missing at $raw"
@@ -78,8 +78,8 @@ build_web() {
 check_only() {
     for tgt in wasm32-wasi wasm32-unknown-unknown; do
         ensure_target "$tgt"
-        info "cargo check -p cli --target $tgt"
-        CARGO_BUILD_TARGET="$tgt" cargo check -p cli --target "$tgt" --locked
+        info "cargo check -p aphrody --target $tgt"
+        CARGO_BUILD_TARGET="$tgt" cargo check -p aphrody --target "$tgt" --locked
         ok "check passed: $tgt"
     done
 }

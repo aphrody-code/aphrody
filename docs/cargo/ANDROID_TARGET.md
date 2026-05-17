@@ -27,10 +27,10 @@ cargo install --locked cargo-ndk
 cargo ndk --platform 28 \
           -t armeabi-v7a -t arm64-v8a -t x86_64 \
           -o ./out/android/jniLibs \
-          build --release -p cli
+          build --release -p aphrody
 
 # Un seul target via alias maison
-cargo ndk --platform 28 -t aarch64-linux-android build -p cli --locked --profile dist
+cargo ndk --platform 28 -t aarch64-linux-android build -p aphrody --locked --profile dist
 ```
 
 Le flag `--platform 28` cible Android 9+ (API 28). Adapter selon support minimum.
@@ -82,7 +82,7 @@ android:
       with: { ndk-version: r26d }
     - uses: taiki-e/install-action@v2
       with: { tool: cargo-ndk }
-    - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p cli --locked
+    - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p aphrody --locked
 ```
 
 ## Limites connues
@@ -95,7 +95,7 @@ android:
 
 ```bash
 # Build pour distribution
-cargo ndk --platform 28 -t aarch64-linux-android build --release -p cli --locked
+cargo ndk --platform 28 -t aarch64-linux-android build --release -p aphrody --locked
 
 # Le binaire se trouve dans :
 ls target/aarch64-linux-android/release/cli
@@ -107,7 +107,7 @@ ls target/aarch64-linux-android/release/cli
 
 ```bash
 # 1. Build binaire pour ARM64
-cargo ndk --platform 28 -t aarch64-linux-android build --release -p cli --locked
+cargo ndk --platform 28 -t aarch64-linux-android build --release -p aphrody --locked
 
 # 2. Push sur device
 adb push target/aarch64-linux-android/release/cli /data/local/tmp/
