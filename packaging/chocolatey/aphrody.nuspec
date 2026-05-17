@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>aphrody</id>
+    <version>1.0.0-canary</version>
+    <title>aphrody</title>
+    <authors>aphrody-code</authors>
+    <owners>aphrody-code</owners>
+    <projectUrl>https://github.com/aphrody-code/aphrody</projectUrl>
+    <licenseUrl>https://github.com/aphrody-code/aphrody/blob/main/LICENSE</licenseUrl>
+    <iconUrl>https://github.com/aphrody-code/aphrody/raw/main/assets/aphrody-mark.svg</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Cross-platform Rust CLI with embedded AGNTCY a2a/v0.4 manifest for agent-to-agent coordination.</description>
+    <summary>aphrody — cross-platform a2a-aware CLI</summary>
+    <tags>cli rust a2a agent agntcy cross-platform yolo grind</tags>
+    <projectSourceUrl>https://github.com/aphrody-code/aphrody</projectSourceUrl>
+    <packageSourceUrl>https://github.com/aphrody-code/aphrody/tree/main/packaging/chocolatey</packageSourceUrl>
+    <docsUrl>https://aphrody-code.github.io/aphrody</docsUrl>
+    <bugTrackerUrl>https://github.com/aphrody-code/aphrody/issues</bugTrackerUrl>
+    <copyright>Copyright © 2026 aphrody-code</copyright>
+    <releaseNotes>https://github.com/aphrody-code/aphrody/blob/main/CHANGELOG.md</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

@@ -1,10 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# aphrody — one-line installer for Windows (PowerShell 7+).
+# aphrody — one-line installer for Windows (PowerShell 5.1+ / 7+).
 #
-# Usage:
+# Canonical (recommended, once a release is published):
+#   iwr -useb https://github.com/aphrody-code/aphrody/releases/latest/download/install.ps1 | iex
+#
+# Pre-release / main-branch fallback (always works, no release required):
 #   irm https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.ps1 | iex
-#   $env:APHRODY_VERSION = "v0.2.0"; irm ... | iex
+#
+# Pin a specific version:
+#   $env:APHRODY_VERSION = 'v0.2.0'
+#   iwr -useb https://github.com/aphrody-code/aphrody/releases/latest/download/install.ps1 | iex
 #
 # What it does:
 #   1. Detects architecture (x86_64 / aarch64).
@@ -13,7 +19,11 @@
 #   3. Downloads the matching .zip + .sha256 from the GitHub Release.
 #   4. Verifies the SHA-256, aborts on mismatch.
 #   5. Extracts to $env:APHRODY_BIN (default: %LOCALAPPDATA%\aphrody\bin),
-#      adds the directory to the user PATH if absent.
+#      adds the directory to the user PATH if absent (idempotent — checks
+#      first, never duplicates entries).
+#
+# The script NEVER invokes the installed binary; it only stages it.
+# Never requires elevation: installs per-user under %LOCALAPPDATA%.
 
 [CmdletBinding()]
 param()

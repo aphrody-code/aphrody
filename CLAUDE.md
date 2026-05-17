@@ -35,6 +35,9 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 
 ## 2. Politique de langages
 
+> Toolchain pinned via `rust-toolchain.toml` to `nightly-2026-05-17`.
+> Re-pin requires PR (audit trail).
+
 - **Tout nouveau code** : Rust nightly (Edition 2024).
 - **C/C++** : interdit dans le code distribué (`crates/cli`, `crates/base`, etc.).
   Tolerable uniquement pour des wrappers FFI inévitables (`cxx::bridge`).
