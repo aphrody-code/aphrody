@@ -54,6 +54,21 @@ mutable slice (sound). No I/O, no process spawning, no panics on external input.
 `#[no_std]`. RustCrypto project.
 """
 
+[[audits.constant_time_eq]]
+who = "aphrody-code <noreply@aphrody.dev>"
+criteria = "safe-to-deploy"
+version = "0.4.2"
+notes = """
+1407 LOC implementing constant-time byte comparison to defend against timing side-channels.
+Unsafe blocks are used exclusively for: (1) `core::arch::asm!` optimizer-barrier stubs in
+classic.rs that pass values through an inline comment NOP — documented as pure/nomem/nostack,
+sound by construction since inout value is a register-sized Copy u8; (2) aarch64 DIT (Data
+Independent Timing) system-register read/write via inline asm in dit.rs — requires `unsafe`
+to access privileged aarch64 registers at EL0, preconditions verified by cpufeatures detection.
+No I/O, no process spawning, no dynamic allocation. `#[no_std]`. Used by rustls and aes-gcm
+for secret-data comparison. Constant-time property is a correctness contract, not a safety one.
+"""
+
 [[audits.opaque-debug]]
 who = "aphrody-code"
 criteria = "safe-to-run"
@@ -62,6 +77,46 @@ notes = """
 Zero unsafe blocks. Single-file `#[no_std]` declarative-macro crate that emits
 an opaque `Debug` impl (`StructName { ... }`). No I/O, no process spawning.
 RustCrypto project.
+"""
+
+[[audits.rustls-platform-verifier-android]]
+who = "aphrody-code <noreply@aphrody.dev>"
+criteria = "safe-to-deploy"
+version = "0.1.1"
+notes = """
+Pure metadata crate (75 LOC, single src/lib.rs). `#![forbid(unsafe_code)]` declared at crate root.
+Contains only doc comments explaining the design rationale for distributing a prebuilt AAR maven
+repository for Android TLS certificate validation via rustls-platform-verifier. Zero Rust logic:
+no unsafe blocks, no process spawning, no network calls, no file-system writes at runtime.
+Published under the rustls project umbrella (rustls/rustls-platform-verifier).
+"""
+
+[[audits.rustls-webpki]]
+who = "aphrody-code <noreply@aphrody.dev>"
+criteria = "safe-to-deploy"
+version = "0.103.13"
+notes = """
+10081 LOC, `#![no_std]`, zero `unsafe` blocks, zero `extern` FFI anywhere in src/. Pure Rust
+X.509/PKI certificate path building and validation library: DER parsing in der.rs, certificate
+chain verification in verify_cert.rs, subject name/SAN matching in subject_name/, revocation
+via CRL in crl/. All algorithms (RSA, ECDSA, Ed25519) are delegated to the ring or aws-lc-rs
+feature backends — this crate owns none of the crypto math. Input is untrusted DER bytes;
+all index arithmetic uses checked slice operations with no manual pointer arithmetic. Used
+directly by rustls 0.23 for TLS certificate validation in aphrody's HTTPS client stack.
+Brian Smith and the rustls project; actively maintained, ISRG-sponsored.
+"""
+
+[[audits.shell-words]]
+who = "aphrody-code <noreply@aphrody.dev>"
+criteria = "safe-to-deploy"
+version = "1.1.1"
+notes = """
+508 LOC, single src/lib.rs. `#![forbid(unsafe_code)]` at crate root — zero unsafe blocks.
+Implements POSIX shell word splitting (split) and joining (join) using pure safe-Rust state
+machine. No I/O, no process spawning, no network, no file-system access. Handles quoting,
+backslash escapes, and whitespace according to IEEE Std 1003.1 §2.3. Used by portable-pty
+for command parsing. The only dependency is std (with optional no_std/alloc path). Entire
+logic fits in one file; diff vs 1.1.0 is 14 lines (3 files changed) adding a minor fix.
 """
 
 [[audits.subtle]]
@@ -98,45 +153,6 @@ build system temp dirs, no network, no process spawning at macro-expansion time.
 Compile-time only. Official wasm-bindgen project (rustwasm WG).
 """
 
-[[audits.rustls-platform-verifier-android]]
-who = "aphrody-code <noreply@aphrody.dev>"
-criteria = "safe-to-deploy"
-version = "0.1.1"
-notes = """
-Pure metadata crate (75 LOC, single src/lib.rs). `#![forbid(unsafe_code)]` declared at crate root.
-Contains only doc comments explaining the design rationale for distributing a prebuilt AAR maven
-repository for Android TLS certificate validation via rustls-platform-verifier. Zero Rust logic:
-no unsafe blocks, no process spawning, no network calls, no file-system writes at runtime.
-Published under the rustls project umbrella (rustls/rustls-platform-verifier).
-"""
-
-[[audits.shell-words]]
-who = "aphrody-code <noreply@aphrody.dev>"
-criteria = "safe-to-deploy"
-version = "1.1.1"
-notes = """
-508 LOC, single src/lib.rs. `#![forbid(unsafe_code)]` at crate root — zero unsafe blocks.
-Implements POSIX shell word splitting (split) and joining (join) using pure safe-Rust state
-machine. No I/O, no process spawning, no network, no file-system access. Handles quoting,
-backslash escapes, and whitespace according to IEEE Std 1003.1 §2.3. Used by portable-pty
-for command parsing. The only dependency is std (with optional no_std/alloc path). Entire
-logic fits in one file; diff vs 1.1.0 is 14 lines (3 files changed) adding a minor fix.
-"""
-
-[[audits.which]]
-who = "aphrody-code <noreply@aphrody.dev>"
-criteria = "safe-to-deploy"
-version = "8.0.2"
-notes = """
-1637 LOC. Two unsafe blocks, both bounded by documented preconditions. On Unix: a single
-`libc::access(path.as_ptr(), libc::X_OK)` call over a CString constructed from a known
-non-null path — sound because CString guarantees a valid NUL-terminated pointer. On Windows:
-`GetBinaryTypeW` and `GetLastError` imported via raw-dylib from kernel32.dll — standard WinAPI
-path, pointer is a null-terminated Vec<u16> (wide string) allocated on the stack before the call.
-No global mutable state, no network, no subprocess spawning. `#[forbid(unsafe_code)]` applies to
-all non-FFI modules. Used by aphrody CLI for locating toolchain binaries at startup.
-"""
-
 [[audits.wasm-streams]]
 who = "aphrody-code <noreply@aphrody.dev>"
 criteria = "safe-to-deploy"
@@ -151,32 +167,16 @@ over web_sys::ReadableStream and WritableStream. Used by reqwest's WASM fetch ba
 under the rustwasm WG.
 """
 
-[[audits.constant_time_eq]]
+[[audits.which]]
 who = "aphrody-code <noreply@aphrody.dev>"
 criteria = "safe-to-deploy"
-version = "0.4.2"
+version = "8.0.2"
 notes = """
-1407 LOC implementing constant-time byte comparison to defend against timing side-channels.
-Unsafe blocks are used exclusively for: (1) `core::arch::asm!` optimizer-barrier stubs in
-classic.rs that pass values through an inline comment NOP — documented as pure/nomem/nostack,
-sound by construction since inout value is a register-sized Copy u8; (2) aarch64 DIT (Data
-Independent Timing) system-register read/write via inline asm in dit.rs — requires `unsafe`
-to access privileged aarch64 registers at EL0, preconditions verified by cpufeatures detection.
-No I/O, no process spawning, no dynamic allocation. `#[no_std]`. Used by rustls and aes-gcm
-for secret-data comparison. Constant-time property is a correctness contract, not a safety one.
-"""
-
-[[audits.rustls-webpki]]
-who = "aphrody-code <noreply@aphrody.dev>"
-criteria = "safe-to-deploy"
-version = "0.103.13"
-notes = """
-10081 LOC, `#![no_std]`, zero `unsafe` blocks, zero `extern` FFI anywhere in src/. Pure Rust
-X.509/PKI certificate path building and validation library: DER parsing in der.rs, certificate
-chain verification in verify_cert.rs, subject name/SAN matching in subject_name/, revocation
-via CRL in crl/. All algorithms (RSA, ECDSA, Ed25519) are delegated to the ring or aws-lc-rs
-feature backends — this crate owns none of the crypto math. Input is untrusted DER bytes;
-all index arithmetic uses checked slice operations with no manual pointer arithmetic. Used
-directly by rustls 0.23 for TLS certificate validation in aphrody's HTTPS client stack.
-Brian Smith and the rustls project; actively maintained, ISRG-sponsored.
+1637 LOC. Two unsafe blocks, both bounded by documented preconditions. On Unix: a single
+`libc::access(path.as_ptr(), libc::X_OK)` call over a CString constructed from a known
+non-null path — sound because CString guarantees a valid NUL-terminated pointer. On Windows:
+`GetBinaryTypeW` and `GetLastError` imported via raw-dylib from kernel32.dll — standard WinAPI
+path, pointer is a null-terminated Vec<u16> (wide string) allocated on the stack before the call.
+No global mutable state, no network, no subprocess spawning. `#[forbid(unsafe_code)]` applies to
+all non-FFI modules. Used by aphrody CLI for locating toolchain binaries at startup.
 """
