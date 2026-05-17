@@ -27,8 +27,15 @@
 #[cfg(feature = "std")] extern crate std;
 
 pub mod color;
+#[cfg(test)]
+pub mod dynamic;
 pub mod elevation;
+pub mod gemini_brand;
+pub mod google_sans_flex;
 pub mod motion;
+pub mod shape;
+pub mod state;
+pub mod tonal;
 pub mod typography;
 
 // Re-export the CSS exporter at crate root when std is available.
