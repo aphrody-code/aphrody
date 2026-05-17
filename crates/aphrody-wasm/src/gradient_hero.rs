@@ -225,7 +225,7 @@ impl GradientHero {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or(GradientError::NoAdapter)?;
+            .map_err(|_| GradientError::NoAdapter)?;
 
         // 5. Request a device + queue (asynchronous).
         let (device, queue) = adapter
@@ -234,6 +234,8 @@ impl GradientHero {
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                 memory_hints: wgpu::MemoryHints::Performance,
+                // wgpu 26: `trace` field controls API-call tracing; disabled here.
+                trace: Default::default(),
             })
             .await
             .map_err(|e| GradientError::DeviceCreation(e.to_string()))?;
@@ -258,7 +260,7 @@ impl GradientHero {
             width,
             height,
             present_mode: wgpu::PresentMode::AutoVsync,
-            alpha_mode: wgpu::CompositeAlphaMode::Premultiplied,
+            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
@@ -382,6 +384,8 @@ impl GradientHero {
                 label: Some("gradient_hero_pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
+                    // depth_slice: None for a non-3D texture view (standard 2D canvas).
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {

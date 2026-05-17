@@ -5,6 +5,7 @@
 //! bridges the tokio broadcast channel over `wasm-bindgen-futures`.
 #![deny(unsafe_code)]
 
+pub mod docs_preview;
 pub mod hook;
 pub mod mcp;
 pub mod osc;
@@ -12,6 +13,7 @@ pub mod skill;
 pub mod sub_agent;
 pub mod task;
 
+pub use docs_preview::DocsPreviewPane;
 pub use hook::{HookEntry, HookEventLog};
 pub use mcp::{
     McpServerSpec, McpServerStatus, McpStatusRegistry, McpTransport, OAuthConfig, load_mcp_json,

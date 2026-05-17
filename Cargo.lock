@@ -379,6 +379,7 @@ name = "aphrody-summary"
 version = "1.0.0-canary"
 dependencies = [
  "anyhow",
+ "tempfile",
 ]
 
 [[package]]
@@ -443,7 +444,9 @@ version = "1.0.0-canary"
 dependencies = [
  "anyhow",
  "aphrody-mcp",
+ "aphrody-summary",
  "aphrody-terminal-config",
+ "aphrody-terminal-vt",
  "base64",
  "reqwest",
  "serde",
@@ -459,6 +462,7 @@ dependencies = [
 name = "aphrody-terminal-markdown"
 version = "1.0.0-canary"
 dependencies = [
+ "aphrody-terminal-vt",
  "base64",
  "comrak",
  "once_cell",

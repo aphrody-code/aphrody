@@ -217,14 +217,30 @@ impl CoordProxy {
     ///
     /// Missing file: the stream waits, polling at `tail_interval`, until
     /// the file appears.
+    ///
+    /// The byte offset is **seeded eagerly** here (not on first poll),
+    /// so any data appended between the call to `tail_stream()` and the
+    /// first `.next().await` is reliably observed.
     pub async fn tail_stream(&self) -> BoxStream<'static, Result<String, CoordError>> {
-        Box::pin(tail_impl(self.jsonl_path.clone(), self.tail_interval, false))
+        let offset = seed_offset(&self.jsonl_path).await;
+        Box::pin(tail_impl(
+            self.jsonl_path.clone(),
+            self.tail_interval,
+            false,
+            offset,
+        ))
     }
 
     /// Like [`Self::tail_stream`] but each emitted item is already
     /// wrapped in the SSE `data: <line>\n\n` envelope.
     pub async fn tail_stream_sse(&self) -> BoxStream<'static, Result<String, CoordError>> {
-        Box::pin(tail_impl(self.jsonl_path.clone(), self.tail_interval, true))
+        let offset = seed_offset(&self.jsonl_path).await;
+        Box::pin(tail_impl(
+            self.jsonl_path.clone(),
+            self.tail_interval,
+            true,
+            offset,
+        ))
     }
 }
 
@@ -274,10 +290,24 @@ struct TailState {
     sse: bool,
     /// Byte offset already consumed from the file. Sentinel `None`
     /// means "not yet seeded": on the first successful open we seek to
-    /// end-of-file and record the position here.
+    /// end-of-file and record the position here. The seeding step is
+    /// normally performed eagerly by [`seed_offset`] before the stream
+    /// is constructed, but we keep the `None` fallback so a file that
+    /// only appears mid-stream is handled gracefully.
     offset: Option<u64>,
     /// Lines parsed from the latest read but not yet yielded.
     pending: VecDeque<String>,
+}
+
+/// Eagerly capture the current end-of-file offset for `path`.
+///
+/// Returns `Some(len)` if the file exists, `None` if it does not — in
+/// which case the tail loop will seed on first appearance.
+async fn seed_offset(path: &Path) -> Option<u64> {
+    match File::open(path).await {
+        Ok(mut f) => f.seek(SeekFrom::End(0)).await.ok(),
+        Err(_) => None,
+    }
 }
 
 /// Tail implementation shared by [`CoordProxy::tail_stream`] and
@@ -286,12 +316,13 @@ fn tail_impl(
     path: PathBuf,
     interval: Duration,
     sse: bool,
+    initial_offset: Option<u64>,
 ) -> impl Stream<Item = Result<String, CoordError>> + Send + 'static {
     let init = TailState {
         path,
         interval,
         sse,
-        offset: None,
+        offset: initial_offset,
         pending: VecDeque::new(),
     };
 
@@ -343,14 +374,11 @@ async fn poll_new_lines(state: &mut TailState) -> Result<bool, CoordError> {
 
     let end = file.seek(SeekFrom::End(0)).await?;
 
-    // First successful open — seed offset to current EOF (tail -f style).
-    let prev_offset = match state.offset {
-        Some(o) => o,
-        None => {
-            state.offset = Some(end);
-            return Ok(false);
-        }
-    };
+    // Resolve the previous offset. If we had no eager seed (the file
+    // was missing when the stream was constructed and only appeared
+    // now), treat the entire file as new content — this matches the
+    // operator expectation: "wait for the file, then show everything".
+    let prev_offset = state.offset.unwrap_or(0);
 
     // File rotated / truncated → rebase to start.
     let start_offset = if end < prev_offset { 0 } else { prev_offset };

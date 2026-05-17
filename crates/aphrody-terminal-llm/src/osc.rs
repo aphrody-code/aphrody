@@ -14,6 +14,7 @@
 //! `None` after logging via `tracing::warn!`.
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
+use aphrody_terminal_vt::strip_osc_envelope_required;
 
 use crate::LlmEvent;
 
@@ -22,18 +23,13 @@ use crate::LlmEvent;
 /// `input` must be the raw bytes of the full sequence including the leading
 /// `\x1b]` and the trailing `\x07` (BEL) or `\x1b\\` (ST). Returns `None` if
 /// the sequence is not an aphrody LLM sequence or if any field is malformed.
+///
+/// The envelope strip is delegated to
+/// [`aphrody_terminal_vt::strip_osc_envelope_required`] (T6 dedup lane —
+/// vt is the canonical layer that owns OSC framing).
 pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
-    // Require ESC ] prefix.
-    let body = input.strip_prefix(b"\x1b]")?;
-
-    // Strip BEL or ST terminator.
-    let body = if let Some(b) = body.strip_suffix(b"\x07") {
-        b
-    } else if let Some(b) = body.strip_suffix(b"\x1b\\") {
-        b
-    } else {
-        return None;
-    };
+    // Require ESC ] prefix + BEL/ST terminator.
+    let body = strip_osc_envelope_required(input)?;
 
     // Require "aphrody-" prefix.
     let body = body.strip_prefix(b"aphrody-")?;

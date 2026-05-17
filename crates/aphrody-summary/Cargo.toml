@@ -11,8 +11,19 @@ description.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[lib]
+name = "aphrody_summary"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aphrody-summary"
+path = "src/main.rs"
+
 [dependencies]
 anyhow.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

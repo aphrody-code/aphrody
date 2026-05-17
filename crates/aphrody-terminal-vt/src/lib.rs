@@ -31,10 +31,15 @@ use bitflags::bitflags;
 use vte::{Params, Perform};
 
 mod alt_screen;
+pub mod envelope;
 pub mod mouse;
 mod osc;
 
 use alt_screen::ScreenSnapshot;
+pub use envelope::{
+    BEL, OSC_INTRODUCER, ST, strip_osc_envelope, strip_osc_envelope_required,
+    strip_osc_envelope_str,
+};
 pub use mouse::{
     decode_sgr_1006, encode_sgr_1006, MouseButton, MouseEvent, MouseEventKind, MouseModifiers,
 };
