@@ -19,18 +19,33 @@ a2a = { workspace = true }
 a2a-pb = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true }
 tokio-stream = { workspace = true }
 futures = { workspace = true }
 async-trait = { workspace = true }
 auto_impl = { workspace = true }
-reqwest = { workspace = true }
 bytes = "1"
 tracing = { workspace = true }
 uuid = { workspace = true }
 semver = { workspace = true }
 pin-project-lite = { workspace = true }
+
+# Native (Linux / Windows / macOS): full tokio + reqwest with TLS.
+# reqwest uses OS networking (mio, hyper, rustls) — not available on wasm32.
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
 rustls = { workspace = true, optional = true, features = ["ring"] }
+
+# wasm32 (unknown-unknown / wasip1): minimal tokio (no I/O reactor, no net) +
+# reqwest in wasm mode (browser fetch API; no TLS crate needed).
+# Cargo does not allow overriding workspace `default-features`, so we pin the
+# version directly here instead of inheriting from workspace.
+# reqwest with default-features=false on wasm32 uses `fetch` internally and
+# does not pull mio / tokio-net / hyper.
+[target.'cfg(target_family = "wasm")'.dependencies]
+tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+# `stream` enables bytes_stream() on Response; `query` enables RequestBuilder::query().
+reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "query"] }
 
 [dev-dependencies]
 rcgen = { workspace = true }
@@ -38,4 +53,5 @@ rcgen = { workspace = true }
 [features]
 default = ["rustls-tls"]
 native-tls = ["reqwest/native-tls"]
+# rustls-tls: only meaningful on native targets; wasm uses browser fetch (no TLS crate).
 rustls-tls = ["reqwest/rustls-no-provider", "dep:rustls"]

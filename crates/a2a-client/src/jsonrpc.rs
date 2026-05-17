@@ -303,7 +303,8 @@ pub(crate) fn parse_sse_stream_rest(
     })
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl Transport for JsonRpcTransport {
     async fn send_message(
         &self,
@@ -442,13 +443,15 @@ impl JsonRpcTransportFactory {
         JsonRpcTransportFactory { client: client.unwrap_or_default() }
     }
 
-    #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
+    // Custom root certificates require TLS crates not available on wasm32.
+    #[cfg(all(not(target_family = "wasm"), any(feature = "rustls-tls", feature = "native-tls")))]
     pub fn with_root_certificates_pem(pem: &[u8]) -> Result<Self, A2AError> {
         Ok(Self { client: crate::build_reqwest_client_with_root_pem(pem)? })
     }
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl TransportFactory for JsonRpcTransportFactory {
     fn protocol(&self) -> &str {
         TRANSPORT_PROTOCOL_JSONRPC
@@ -463,7 +466,10 @@ impl TransportFactory for JsonRpcTransportFactory {
     }
 }
 
-#[cfg(test)]
+// Integration tests that bind a TcpListener require tokio::net, unavailable
+// on wasm32. Gate the entire module; wasm tests for the pure SSE parser can
+// be added separately when a wasm test runner is in place.
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use a2a_pb::protojson_conv;
     use futures::StreamExt;
