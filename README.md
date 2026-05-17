@@ -16,6 +16,8 @@
 [![Supply-chain](https://img.shields.io/badge/supply--chain-cargo--vet%20%2B%20cargo--deny-green.svg)](supply-chain/config.toml)
 [![Cross-platform](https://img.shields.io/badge/cross--platform-Linux%20%7C%20Win%20%7C%20wasm-blueviolet.svg)](docs/cargo/CROSS_PLATFORM.md)
 
+> 📝 Latest deep-dive: [**ai.json — a file-based A2A manifest two Claude Codes used to coordinate across repos**](docs/posts/2026-05-ai-json.md) (2 000 mots, vraies traces, schéma + listener Bun, AGNTCY a2a/v0.4 compatible).
+
 ---
 
 ## Demo — `mrx scan` on this repo (real run, no edit)

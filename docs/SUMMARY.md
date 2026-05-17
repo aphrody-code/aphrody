@@ -15,6 +15,7 @@
 - [MCP-SETUP](MCP_SETUP.md)
 - [SOURCE-OF-TRUTH](SOURCE_OF_TRUTH.md)
 - [WINCLEAN-AUDIT](WINCLEAN-AUDIT.md)
+- [Iecode-Public-Endpoints](iecode-public-endpoints.md)
 
 - [WASM](WASM/README.md)
   - [Build-Targets](WASM/build-targets.md)
@@ -441,6 +442,8 @@
         - [N2b-Wabt](plugin/n2b/wasm/n2b-reports/n2b-wabt.md)
         - [N2b-Wasm-Bindgen](plugin/n2b/wasm/n2b-reports/n2b-wasm-bindgen.md)
         - [N2b-Wasm-Pack](plugin/n2b/wasm/n2b-reports/n2b-wasm-pack.md)
+- [Posts]()
+  - [2026-05-Ai-Json](posts/2026-05-ai-json.md)
 - [Pwa](pwa/README.md)
   - [FORENSICS](pwa/FORENSICS.md)
 - [Pwsh](pwsh/README.md)

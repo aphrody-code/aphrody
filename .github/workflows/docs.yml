@@ -5,9 +5,9 @@ name: docs
 
 on:
   push:
-    branches: [master, stable]
+    branches: [main, stable]
   pull_request:
-    branches: [master, stable]
+    branches: [main, stable]
   workflow_dispatch:
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@main
         with:
           toolchain: nightly
       - uses: Swatinem/rust-cache@v2
@@ -76,7 +76,7 @@ jobs:
           EOF
 
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
@@ -84,7 +84,7 @@ jobs:
   deploy:
     name: deploy to GitHub Pages
     needs: build-docs
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
