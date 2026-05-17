@@ -266,6 +266,36 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `scripts/sbom-extract.sh` — extract auditable SBOM from built binary | ✅ (319 l. — SBOM extraction helper) |
 | `docs/PERFORMANCE-HISTORY.md` — bench ledger / regression tracking | ✅ (91 l. — bench ledger / regression tracking) |
 
+### Phase T — Terminal LLM-first WASM+M3 (génération tick post-PLAN-MOONSHOT)
+
+**Pivot 2026-05-17 soir** : aphrody-terminal n'est PAS un wterm/Windows-Terminal
+clone. C'est le **terminal LLM-first** — conçu spécifiquement pour sub-agents,
+skills, hooks, MCP servers, Ink/React TUIs (Claude Code + Gemini CLI), avec
+**JSON output partout**, **markdown rendu inline**, **config JSON full**.
+Spec normative : [`docs/design/aphrody-terminal-spec.md`](design/aphrody-terminal-spec.md).
+
+Worktrees référence : `vercel-labs/wterm` (API surface, TS+Zig WASM Apache-2.0)
++ `microsoft/terminal` (algorithmes Buffer/Renderer/AtlasEngine/ConPTY MIT).
+Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integration_policy`.
+
+| Tick | Tâche | Statut |
+|---|---|---|
+| T-1 | Worktrees `vercel-labs/wterm` + `microsoft/terminal` (15 entries, ~1095 MB) | ✅ |
+| T-1 | `docs/design/aphrody-terminal-spec.md` — spec normative LLM-first | ✅ |
+| T-1 | `crates/aphrody-terminal-vt` — VT base (vte + ScreenBuffer + SGR 16-color) | ⏳ (rust-architect en vol) |
+| T-1 | `crates/aphrody-terminal-wasm` — wasm-bindgen DOM + M3 + keyboard ANSI | ⏳ (même dispatch) |
+| T-1 | `crates/aphrody-terminal-backend` — portable-pty (ConPTY/openpty) + WS | ⏳ (même dispatch) |
+| T-2 | VT extension Ink/React TUI essentials (alt-screen, mouse SGR 1006, true color 24-bit, cursor save/restore, bracketed paste, focus events, DECSTBM, insert/delete line, OSC 0 title, OSC 52 clipboard) | ⏳ |
+| T-3 | `crates/aphrody-terminal-llm` — sub-agent stream multiplexer + MCP status bus + hook event surface + skill activation slot | ⏳ |
+| T-4 | `crates/aphrody-terminal-markdown` — comrak CommonMark + syntect highlight + OSC `aphrody-md` detector | ⏳ |
+| T-5 | `crates/aphrody-terminal-json-out` — frame stdout/stderr in JSONL envelopes + passthrough app-JSON | ⏳ |
+| T-6 | `crates/aphrody-terminal-config` — `~/.aphrody/terminal.json` strict schema + claude.json / mcp.json / settings.json import shims | ⏳ |
+| T-6b | `crates/aphrody-terminal-browser` — bridge LLM ↔ DOM (bxc in-process + agent-browser RPC + edge headless fallback) + OSC `aphrody-browser-*` extensions | ⏳ |
+| T-7 | `aphrody term` CLI subcommand (serves backend + prints WASM UI URL) | ⏳ |
+| T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ⏳ |
+| T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ⏳ |
+| T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ⏳ |
+
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
 | Métrique | Valeur | Cible |

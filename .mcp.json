@@ -9,6 +9,18 @@
       "headers": {
         "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "bxc": {
+      "_comment": "bxc MCP server (aphrody-code/bxc @ aphrody branch). Stdio transport via bun. Exposes 7 tools: tune_memory_sqlite, vision_analyze, start_scraping_subagent, auto_detect_skills, bxc_cdp_snapshot, bxc_cdp_evaluate, bxc_cdp_logs. SQLite memory persisted at var/data/bxc-memory.sqlite (gitignored, var/ matched by .gitignore line 52). Source: C:/worktree/bxc/packages/bxc-extension/server.ts (cloned via scripts/setup-worktrees.ts).",
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "run",
+        "C:/worktree/bxc/packages/bxc-extension/server.ts"
+      ],
+      "env": {
+        "BXC_MEMORY_DB": "C:/src/aphrody/var/data/bxc-memory.sqlite"
+      }
     }
   }
 }
