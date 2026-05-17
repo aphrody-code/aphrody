@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+[Desktop Entry]
+Type=Application
+Name=aphrody
+GenericName=Cross-platform Rust CLI
+Comment=AGNTCY a2a/v0.4 cross-agent coordination CLI
+Exec=aphrody
+Icon=aphrody
+Terminal=true
+Categories=Development;Utility;ConsoleOnly;
+Keywords=cli;rust;a2a;agent;agntcy;cross-platform;
+StartupNotify=false
+StartupWMClass=aphrody
+
+# Action: open diagnostic
+Actions=Doctor;Version;
+
+[Desktop Action Doctor]
+Name=Run aphrody doctor
+Exec=aphrody doctor
+Terminal=true
+
+[Desktop Action Version]
+Name=Show version
+Exec=aphrody --version
+Terminal=true

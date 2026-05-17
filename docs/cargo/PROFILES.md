@@ -1,142 +1,110 @@
-# Build profiles
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
-> Réf. : `[profile.*]` dans `Cargo.toml` racine.
+# Cargo workspace profile reference
 
-## Vue d'ensemble
+Reference: `[profile.*]` in the workspace root `Cargo.toml`.
 
-Le workspace définit **6 profils** spécialisés selon le cas d'usage :
+## 1. Available profiles
 
-| Profil | Cas d'usage | LTO | Codegen units | Strip | Panic | Debug |
-|---|---|---|---|---|---|---|
-| `dev` | Dev local, itération rapide | off | 256 | no | unwind | limited |
-| `release` | Build de référence (`cargo build --release`) | fat | 1 | symbols | abort | false |
-| `dist` | **Binaire distribuable production** | fat | 1 | symbols | abort | false |
-| `release-fast` | **CI** (LTO thin pour vitesse) | thin | 16 | symbols | abort | false |
-| `release-debug` | **Profiling / `perf`** | fat | 1 | none | abort | line-tables-only |
-| `bench` | Criterion benchmarks | thin | 16 | none | abort | line-tables-only |
+The root `Cargo.toml` defines nine profiles:
 
-## Profil `dev`
+- `dev` — default `cargo build` (debug, fast iteration).
+- `release` — default `cargo build --release` (fat LTO, stripped).
+- `dist` — distribution-grade release (inherits `release`, room for PGO/BOLT).
+- `release-fast` — CI-friendly release (thin LTO, parallel codegen).
+- `release-debug` — release opts with line-table symbols for profiling.
+- `bench` — Criterion harness (thin LTO + symbols for flamegraphs).
+- `asan` — AddressSanitizer (nightly Linux only).
+- `careful` — `cargo-careful` checked test runs (extra UB checks).
+- `reproducible` — deterministic dist (used by `release.yml`).
 
-```toml
-[profile.dev]
-opt-level         = 0
-debug             = "limited"
-debug-assertions  = true
-overflow-checks   = true
-lto               = false
-codegen-units     = 256
-incremental       = true
-split-debuginfo   = "unpacked"
-panic             = "unwind"
+There is no `release-perf`, `release-min`, or `release-android` profile. WASM and Android rely on overrides plus per-target `RUSTFLAGS` from `.cargo/config.toml`.
 
-[profile.dev.build-override]
-opt-level     = 3      # Build scripts compilés avec opts
-codegen-units = 16
+## 2. Profile selection matrix
 
-[profile.dev.package."*"]
-opt-level     = 1      # Deps tierces compilées avec -O1
-codegen-units = 16
+| Use case | Profile | Compile time | Binary size | Runtime perf |
+|---|---|---|---|---|
+| Local dev | `dev` | seconds | large | slow |
+| CI fast smoke | `release-fast` | ~1 min | medium | ~80% of release |
+| Default ship build | `release` | ~2-4 min | small (stripped) | fast |
+| Tagged release artefact | `reproducible` | ~3-5 min | smallest, deterministic | fast |
+| Criterion benchmarks | `bench` | ~1-2 min | medium | fastest realistic |
+| Profiling | `release-debug` | ~3 min | large | fast |
+| Memory bug hunt | `asan` | ~3 min | large | slow |
+| UB test stress | `careful` | seconds | large | slow |
 
-[profile.dev.package.aes-gcm]   { opt-level = 3 }
-[profile.dev.package.sha2]      { opt-level = 3 }
-[profile.dev.package.rustls]    { opt-level = 3 }
+## 3. Profile internals
+
+Settings from the root manifest:
+
+- `dev`: opt-level 0, lto off, codegen-units 256, panic unwind, debug "limited", incremental, split-debuginfo unpacked. Build scripts and deps overridden to opt-level 3 / 1.
+- `release`: opt-level 3, lto "fat", codegen-units 1, panic abort, strip symbols, debug false, incremental false, rpath false.
+- `dist`: inherits `release`, identical today, reserved for PGO/BOLT.
+- `release-fast`: inherits `release` with `lto = "thin"`, `codegen-units = 16`. ~20% runtime cost for 3-5x faster builds.
+- `release-debug`: inherits `release` with `debug = "line-tables-only"`, `strip = "none"`, `split-debuginfo = "packed"`. For `perf`, ETW, samply.
+- `bench`: inherits `release` with thin LTO, codegen-units 16, line-table debug.
+- `asan`: inherits `release-debug`, opt-level 1, debug full, lto off. Pair with `RUSTFLAGS="-Z sanitizer=address"`.
+- `careful`: inherits `dev`, debug-assertions + overflow-checks on.
+- `reproducible`: inherits `dist`. Requires `SOURCE_DATE_EPOCH` and `--remap-path-prefix` (set in `.cargo/config.toml`).
+
+Crypto crates (`aes-gcm`, `sha2`, `rustls`) get opt-level 3 under `dev` via `[profile.dev.package.<crate>]` overrides.
+
+## 4. How to invoke
+
+```bash
+cargo build --release                            # release profile
+cargo build --profile dist --workspace --locked  # ship-grade
+cargo build --profile release-fast -p aphrody    # CI smoke per-crate
+cargo bench --workspace --locked                 # bench auto-applied
+cargo build --profile reproducible --locked      # deterministic dist
 ```
 
-**Pourquoi `package."*"` opt-level=1 ?** Énorme gain sur `cargo check` / `cargo build` répétés : les deps tierces (souvent énormes — serde, tokio, regex) sont compilées une seule fois avec optims légères et restent en cache. Le code workspace reste à `-O0` pour itération rapide.
+## 5. Per-crate overrides
 
-## Profil `release` (par défaut `--release`)
-
-```toml
-[profile.release]
-opt-level         = 3
-debug             = false
-debug-assertions  = false
-overflow-checks   = false
-lto               = "fat"
-codegen-units     = 1
-panic             = "abort"
-strip             = "symbols"
-incremental       = false
-rpath             = false
-split-debuginfo   = "off"
-```
-
-## Profil `dist` (ship target)
-
-```toml
-[profile.dist]
-inherits          = "release"
-opt-level         = 3
-lto               = "fat"
-codegen-units     = 1
-panic             = "abort"
-strip             = "symbols"
-debug             = false
-```
-
-Identique à `release` pour l'instant — réservé aux ajouts PGO/BOLT futurs.
-
-**Usage** : `cargo build --profile dist --workspace --locked`
-
-## Profil `release-fast` (CI builds)
-
-```toml
-[profile.release-fast]
-inherits          = "release"
-lto               = "thin"          # ← key difference
-codegen-units     = 16              # ← parallelism
-incremental       = false
-strip             = "symbols"
-```
-
-**Quand utiliser :** PR validation CI. LTO thin + 16 codegen units offrent ~80% des perfs `release` avec un build 3-5× plus rapide.
-
-**Usage** : `cargo build --profile release-fast --workspace --locked`
-
-## Profil `release-debug` (profiling)
-
-```toml
-[profile.release-debug]
-inherits          = "release"
-debug             = "line-tables-only"
-strip             = "none"
-split-debuginfo   = "packed"
-```
-
-**Quand utiliser :** debugging d'une race condition observée uniquement en release, profiling avec `perf` / VTune / Windows Performance Analyzer.
-
-**Usage** : `cargo build --profile release-debug --workspace`
-
-## Profil `bench` (Criterion)
-
-```toml
-[profile.bench]
-inherits          = "release"
-debug             = "line-tables-only"
-lto               = "thin"
-codegen-units     = 16
-strip             = "none"
-```
-
-Compromis perf/build-time : suffisant pour les benchmarks Criterion qui amortissent le temps de build sur des milliers d'itérations.
-
-**Usage** : `cargo bench --workspace --locked`
-
-## Pourquoi `panic = "abort"` ?
-
-- Binaire plus petit (~5-10%).
-- Pas de stack unwinding → optimisations plus agressives.
-- Comportement clair : un panic = un crash, pas de récupération.
-- Compatible avec `catch_unwind` désactivé dans nos crates.
-
-**Implication** : pas de `std::panic::catch_unwind` dans le code de prod. Les boundaries FFI doivent garantir qu'aucun panic ne traverse la frontière C (cf. `[workspace.lints.rust] ffi_unwind_calls = "warn"`).
-
-## Quand changer un profil ?
-
-Pour un cas particulier d'une seule crate, **n'éditez pas** `[profile.*]` dans Cargo.toml workspace — utilisez une override locale :
+Workspace profiles can be tightened per-crate in `crates/<name>/Cargo.toml`:
 
 ```toml
 [profile.release.package.heavy-crate]
-opt-level = 3
+opt-level     = 3
 codegen-units = 1
 ```
+
+Discouraged outside hot loops — prefer central workspace control. Legitimate cases: forcing opt-level 3 on crypto in `dev` (already done at workspace level), or shrinking a WASM-only crate.
+
+## 6. WASM profile considerations
+
+`crates/aphrody-wasm` ships via `wasm-pack` and post-processes with `wasm-opt`:
+
+```toml
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-simd", "--enable-bulk-memory"]
+```
+
+- Base `release` (fat LTO + abort + strip) is already WASM-friendly.
+- `--enable-simd` required because `aes-gcm` auto-vectorizes via LLVM.
+- `wasm-opt -O` adds 30-50% size reduction after `rustc`.
+- For size-critical builds, override per-crate with `opt-level = "s"` or `"z"`; never change workspace `release` to `s` (regresses CLI perf).
+
+## 7. Profile and CI matrix
+
+- `.github/workflows/cross-platform.yml` — default `release` profile for the matrix (Linux, Windows, WASM); caps `CARGO_PROFILE_DEV_DEBUG=limited`.
+- `.github/workflows/bench.yml` — Criterion harness auto-selects `bench`.
+- `.github/workflows/release.yml` — shipped binary built with `--profile reproducible` for byte-for-byte verifiable artefacts.
+- `.github/workflows/build.yml` — workspace defaults, no override.
+
+## 8. Choosing a profile
+
+- Iterating locally: `dev`.
+- Committing a PR: `release-fast` for the quickest meaningful signal.
+- Tagging a release: `reproducible` (the shipped artefact).
+- Benchmarking: `bench`.
+- Profiling a release-only bug: `release-debug` plus `perf` / samply.
+- Hunting UB: `careful` for tests, `asan` for runtime memory bugs.
+- WASM bundle: `dist` plus a per-crate `opt-level = "s"` override.
+
+## 9. References
+
+- Cargo profiles: https://doc.rust-lang.org/cargo/reference/profiles.html
+- `docs/PERFORMANCE.md` — bench recipes per profile.
+- `docs/cargo/SECURITY-DEEP.md` — `cargo-auditable` wraps `release`.
+- `docs/cargo/CROSS_PLATFORM.md` — per-target `RUSTFLAGS` in `.cargo/config.toml`.

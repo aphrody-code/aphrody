@@ -288,6 +288,7 @@ dependencies = [
 name = "aphrody-wasm"
 version = "1.0.0-canary"
 dependencies = [
+ "aes-gcm",
  "base",
  "console_error_panic_hook",
  "console_log",
