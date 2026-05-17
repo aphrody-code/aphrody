@@ -43,6 +43,7 @@ description and we'll either accept or add it to PLAN as a tracked item.
   needs to be a stub today, it returns a typed error — never `todo!()`.
 - **Anonymisation**: don't write personal usernames into tracked files.
   Use `aphrody-code` (the org handle) and `noreply@aphrody-code.dev`.
+- Every PR should append a line to the `[Unreleased]` section of `CHANGELOG.md` under the relevant category.
 
 ## What's out of scope (PRs will be closed)
 
