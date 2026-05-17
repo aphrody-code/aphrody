@@ -156,6 +156,12 @@ enum ChromiumActions {
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 async fn main() -> miette::Result<()> {
+    // rustls 0.23 requires an explicit CryptoProvider install before any
+    // reqwest::Client::new() call (otherwise reqwest panics at runtime in
+    // async_impl/client.rs:2461). `GoogleContext::new()` builds a reqwest
+    // client immediately, so this must come first.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let ctx = GoogleContext::new().map_err(|e| miette::miette!(e.to_string()))?;
     let cli = Cli::parse();
 
