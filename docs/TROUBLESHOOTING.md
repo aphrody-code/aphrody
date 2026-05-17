@@ -76,7 +76,7 @@ using `.github/ISSUE_TEMPLATE/bug_report.yml`.
 
 - **Cause**: Hand edits or a doc was added/removed without regenerating.
 - **Fix**: DO NOT hand-edit `docs/SUMMARY.md`. Re-run
-  `bun run scripts/gen_summary.ts` after any doc add, remove, or rename. The
+  `cargo run -p aphrody-summary` after any doc add, remove, or rename. The
   script is the single source of truth.
 
 ## 9. `a2a-pb` build fails with "build scripts must only write to $OUT_DIR"

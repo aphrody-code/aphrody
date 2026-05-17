@@ -27,7 +27,6 @@ best-effort, cf. `CLAUDE.md` §0).
 
 | Script                       | Purpose                                                            |
 | ---------------------------- | ------------------------------------------------------------------ |
-| `gen_summary.ts`             | Regenerate `docs/SUMMARY.md` (auto, do not edit by hand).          |
 | `generate_summary.py`        | Legacy Python equivalent (kept for parity).                        |
 | `skills-sync.ts`             | Sync external skill catalogues (Vercel labs, Anthropic official).  |
 | `optimize-assets.ts`         | Lossless asset optimisation (PNG/SVG/etc.).                        |

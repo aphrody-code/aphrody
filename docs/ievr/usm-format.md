@@ -69,7 +69,7 @@ titles ship unencrypted.
   source, free for non-commercial use. Correctness oracle.
 - **ffmpeg with USM patches** — community patches; fallback.
 - **WannaCRI** (Python) — open-source demuxer / remuxer; cross-check
-  oracle for Rust parser bring-up.
+  oracle for Rust bring-up.
 
 ## 8. IEVR-specific notes
 

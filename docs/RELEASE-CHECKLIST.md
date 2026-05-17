@@ -41,7 +41,7 @@ and tick boxes as you go.
       merged work since last tag (run
       [`scripts/changelog-since.sh`](../scripts/changelog-since.sh) for preview).
 - [ ] [`docs/SUMMARY.md`](SUMMARY.md) regenerated
-      (`bun run scripts/gen_summary.ts`).
+      (`cargo run -p aphrody-summary`).
 - [ ] All cross-links resolve (manual spot-check on
       [`README.md`](../README.md), [`PLAN.md`](PLAN.md), recent
       [`docs/posts/`](posts/) entries).
