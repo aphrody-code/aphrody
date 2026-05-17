@@ -181,13 +181,13 @@ pub fn run(root: &Path, audit_out: &Path, map_out: &Path) -> Result<RunResult> {
     let overall = if total_findings == 0 { Status::ProductionReady } else { Status::Findings };
 
     let audit = AuditReport {
-        audit_name: "VPS Monorepo Path Hardening",
+        audit_name: "Monorepo Path Hardening",
         status: overall,
         date: today.clone(),
         last_updated: now.clone(),
         generator: "mrx (rust)",
         scope: Scope {
-            directories_audited: SCAN_DIRS.iter().map(|s| format!("vps/{s}")).collect(),
+            directories_audited: SCAN_DIRS.iter().map(|s| (*s).to_string()).collect(),
             excluded: IGNORE_SEGMENTS.iter().map(|s| s.to_string()).collect(),
             host: host.clone(),
             os: os.clone(),
@@ -197,18 +197,23 @@ pub fn run(root: &Path, audit_out: &Path, map_out: &Path) -> Result<RunResult> {
             note: "Absolute paths are intentionally preserved in infrastructure configuration \
                    files and documentation."
                 .into(),
+            // Generic exceptions: infrastructure paths often live under
+            // `infra/`, `deploy/`, `docs/`, or top-level configuration files
+            // and are exempt from the path-hardening rule because they encode
+            // host-specific filesystem invariants that don't move with code.
             directories: vec![
-                "vps/infra/systemd".into(),
-                "vps/infra/nginx".into(),
-                "vps/docs".into(),
-                "vps/CLAUDE.md".into(),
+                "infra".into(),
+                "deploy".into(),
+                "docs".into(),
             ],
         },
         submodules: SubmoduleSection { tracked: submodules.clone() },
         conclusion: if overall == Status::ProductionReady {
-            "All source code (apps and packages) exclusively relies on workspace-aware utilities \
-             and environment variables for file resolution."
-                .into()
+            format!(
+                "All source code under {} exclusively relies on workspace-aware utilities \
+                 and environment variables for file resolution.",
+                SCAN_DIRS.join(" / "),
+            )
         } else {
             format!(
                 "{total_findings} finding(s) detected — review `findings.*.matches` and remediate."
