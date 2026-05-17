@@ -244,6 +244,10 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `scripts/dev-setup.{sh,cmd}` — single-script environment bootstrap | ⏳ (devcontainer handles it ; native dev setup script for non-codespace users) |
 | `.github/workflows/bench.yml` — criterion CI gate with summary comment | ⏳ (perf regression detection ; backend bench shipped via #41) |
 | `CONTRIBUTORS.md` — auto-generated contributor recognition stub | ⏳ (honor commit authors + AGENTS.md cross-link) |
+| `.github/DISCUSSION_TEMPLATE/*.yml` — Discussion templates (Q+A, ideas, show-and-tell) | ⏳ (channel structure pre-launch) |
+| `scripts/release.sh` — operational release helper (tag + push + release-please trigger) | ⏳ (D+15 prep — release ops scripted) |
+| `crates/aphrody-wasm/tests/wasm_smoke.rs` — wasm-bindgen integration test | ⏳ (test coverage for the wasm crate) |
+| `docs/POST-LAUNCH.md` — Show HN +24h/+72h/+7d engagement protocol | ⏳ (D+15 → D+22 mission execution playbook) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
