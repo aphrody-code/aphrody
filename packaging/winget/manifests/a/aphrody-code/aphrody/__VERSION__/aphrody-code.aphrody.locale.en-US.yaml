@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 PackageIdentifier: aphrody-code.aphrody
-PackageVersion: __VERSION__
+PackageVersion: 1.0.0-canary
 PackageLocale: en-US
 Publisher: aphrody-code
 PublisherUrl: https://github.com/aphrody-code

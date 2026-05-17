@@ -224,6 +224,10 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `CHANGELOG.md` sweep — log 2026-05-17 mega-batch (30+ commits today) | ⏳ (Keep-a-Changelog drift — last entry pre-tick-7) |
 | `packaging/nix/flake.nix` — Nix flake for Nix/NixOS users | ⏳ (high-engineer-cred niche distribution channel) |
 | `packaging/flatpak/com.aphrody.aphrody.json` — Flatpak manifest | ⏳ (cross-distro Linux desktop installation) |
+| `.github/dependabot.yml` — monthly cargo + GH actions dep updates | ⏳ (OSS hygiene + GH community-health badge) |
+| `packaging/{scoop,winget,homebrew,deb}/*` version+arch sweep | ⏳ (manifests must claim 1.0.0-canary + x86_64+arm64 coverage) |
+| `docs/PROTOCOL.md` — definitive a2a/v0.4 protocol description for impl reference | ⏳ (post is narrative ; need a normative protocol doc) |
+| `docs/SECURITY-MODEL.md` — threat model + trust boundaries for the A2A protocol | ⏳ (security engineers want STRIDE/asset list, not just SECURITY.md report process) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 

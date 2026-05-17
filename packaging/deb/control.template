@@ -6,10 +6,14 @@
 # or passing --deb-version to `cargo deb`.
 #
 # Architecture note:
-#   - Primary build target: amd64 (x86_64-unknown-linux-gnu).
-#   - For arm64 (aarch64-unknown-linux-gnu) change Architecture field to
-#     "arm64" and run `cargo deb --target aarch64-unknown-linux-gnu`.
-#     cargo-deb names the output aphrody___VERSION___arm64.deb automatically.
+#   - Multi-arch package: amd64 (x86_64-unknown-linux-gnu) + arm64
+#     (aarch64-unknown-linux-gnu). The Debian convention is to declare both
+#     architectures space-separated; cargo-deb / dpkg-deb emit one .deb per
+#     target invocation:
+#       cargo deb --target x86_64-unknown-linux-gnu   -> aphrody_1.0.0~canary_amd64.deb
+#       cargo deb --target aarch64-unknown-linux-gnu  -> aphrody_1.0.0~canary_arm64.deb
+#     The release pipeline runs both, then uploads both .deb assets to the
+#     GitHub release.
 #
 # Depends note:
 #   - libssl3 is provided by OpenSSL 3.x on Ubuntu 22.04+ / Debian 12+.
@@ -20,8 +24,8 @@
 #     into the binary itself via `features = ["vendored"]` on the openssl crate).
 
 Package: aphrody
-Version: __VERSION__
-Architecture: amd64
+Version: 1.0.0~canary
+Architecture: amd64 arm64
 Maintainer: aphrody-code <noreply@aphrody-code.dev>
 Description: Cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly).
  Hermetic Google-grade supply chain.
