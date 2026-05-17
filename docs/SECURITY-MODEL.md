@@ -121,16 +121,16 @@ explicit operator acknowledgement.
 
 ## 8. Known gaps and roadmap
 
-- No Subresource Integrity hash on the published WASM bundle. Planned Q3
-  2026 alongside the first signed `aphrody-wasm` npm release.
-- No manifest signing. Planned Q4 2026; will rely on a long-lived per-agent
-  Ed25519 key with annotated rotation log.
-- The inbox JSONL has no rate limit on file-based writes (only the HTTP
-  overlay benefits from OS-level connection limits). A file-watcher rate
-  limiter is tracked in `docs/PLAN.md`.
+- No SRI hash on the published WASM bundle. Planned Q3 2026 with the first
+  signed `aphrody-wasm` npm release.
+- No manifest signing. Planned Q4 2026; long-lived per-agent Ed25519 key
+  with annotated rotation log.
+- Inbox JSONL has no rate limit on file-based writes (only the HTTP overlay
+  benefits from OS-level connection limits). A file-watcher rate limiter is
+  tracked in `docs/PLAN.md`.
 - No production fuzzing of the envelope parser. A `cargo-fuzz` skeleton is
-  checked in; targets for `envelope.parse`, `manifest.load`, and
-  `coord.append` are pending.
+  checked in; targets for `envelope.parse`, `manifest.load`, `coord.append`
+  are pending.
 
 ## 9. Reporting a finding
 

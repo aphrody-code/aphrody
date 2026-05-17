@@ -1,11 +1,16 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 #
 # aphrody — one-line installer for Linux + macOS.
 #
-# Usage:
-#   curl -sSf https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.sh | sh
-#   curl -sSf https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.sh | APHRODY_VERSION=v0.2.0 sh
+# Canonical (recommended, once a release is published):
+#   curl -fsSL https://github.com/aphrody-code/aphrody/releases/latest/download/install.sh | bash
+#
+# Pre-release / main-branch fallback (always works, no release required):
+#   curl -fsSL https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.sh | bash
+#
+# Pin a specific version (skips the GitHub Releases API roundtrip):
+#   curl -fsSL https://github.com/aphrody-code/aphrody/releases/latest/download/install.sh | APHRODY_VERSION=v0.2.0 bash
 #
 # What it does:
 #   1. Detects OS (linux/darwin) + arch (x86_64/aarch64).
@@ -15,10 +20,13 @@
 #   4. Verifies the SHA-256 (shasum -a 256), aborts on mismatch.
 #   5. Extracts to a temp dir and installs `aphrody` into $APHRODY_BIN
 #      (default: $HOME/.local/bin).
+#   6. Hints the user to add $APHRODY_BIN to PATH if it is not already there.
+#      Never modifies the user's shell rc files automatically (idempotent).
 #
-# Designed to be POSIX sh — no bashisms — so it runs under dash/ash/busybox.
+# The script NEVER invokes the installed binary; it only stages it.
+# Requires bash (for `set -o pipefail`). Tested with bash 4 and 5.
 
-set -eu
+set -euo pipefail
 
 OWNER="aphrody-code"
 REPO="aphrody"

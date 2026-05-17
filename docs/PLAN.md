@@ -228,6 +228,14 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `packaging/{scoop,winget,homebrew,deb}/*` version+arch sweep | ⏳ (manifests must claim 1.0.0-canary + x86_64+arm64 coverage) |
 | `docs/PROTOCOL.md` — definitive a2a/v0.4 protocol description for impl reference | ⏳ (post is narrative ; need a normative protocol doc) |
 | `docs/SECURITY-MODEL.md` — threat model + trust boundaries for the A2A protocol | ⏳ (security engineers want STRIDE/asset list, not just SECURITY.md report process) |
+| `assets/aphrody-logo.svg` — vector logo for README badges + favicons | ⏳ (visual identity = first impression on HN landing) |
+| `docs/MIGRATION.md` — from just/taskfile/gh to aphrody (adoption path) | ⏳ (D+21 user-feature post-launch — reduces "ok but how do I switch?" friction) |
+| `scripts/install.{sh,ps1}` audit + curl-bash one-liner doc | ⏳ (`curl -fsSL https://aphrody.dev/install.sh | sh` = frictionless first-try) |
+| `docs/cargo/SECURITY-DEEP.md` — extended supply-chain doc | ⏳ (audit-stage transparency for security-aware engineers) |
+| `docs/PERFORMANCE.md` — bench claims with reproducible recipes | ⏳ (BENCHMARKS.md is short ; engineers want recipes) |
+| `packaging/chocolatey/aphrody.nuspec` + install.ps1 | ⏳ (Chocolatey alongside scoop/winget — wider Windows reach) |
+| `packaging/aur-bin/PKGBUILD` — pre-built binary AUR variant | ⏳ (alongside source AUR ; faster install for users) |
+| `rust-toolchain.toml` audit + explicit nightly pin with date | ⏳ (hermetic build — reproducibility for security audit) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 

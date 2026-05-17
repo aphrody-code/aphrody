@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" role="img" aria-label="aphrody mark">
+  <title>aphrody</title>
+  <g>
+    <path d="M 64 104 Q 128 16 192 104" stroke="#212121" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path d="M 64 152 Q 128 240 192 152" stroke="#212121" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <circle cx="64" cy="128" r="40" fill="#4A148C"/>
+    <circle cx="64" cy="128" r="14" fill="#00BCD4"/>
+    <circle cx="192" cy="128" r="40" fill="#00BCD4"/>
+    <circle cx="192" cy="128" r="14" fill="#4A148C"/>
+  </g>
+</svg>
