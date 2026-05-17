@@ -18,11 +18,18 @@ pub(crate) struct VersionCommand;
 
 #[async_trait]
 impl TerminalCommand for VersionCommand {
-    async fn execute(&self, ctx: &GoogleContext) -> miette::Result<()> {
-        println!("{}", format!("🚀 Google OS Terminal CLI v{}", ctx.version).bold().cyan());
-        // Résolution de la racine pour vérification
-        let root = ctx.vfs.resolve("/var/mirror").unwrap_or_default();
-        println!("🛡️ VFS /var/mirror: {}", root.display().to_string().yellow());
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        // Format mirrors `gh --version` / `rustc -Vv` — flat key:value, no
+        // emoji, no styling (terminals downstream may pipe to grep).
+        println!("aphrody {}", env!("CARGO_PKG_VERSION"));
+        println!("commit:    {}", env!("APHRODY_GIT_SHA"));
+        println!("built:     {} (unix epoch)", env!("APHRODY_BUILD_UNIX"));
+        println!("target:    {}", env!("APHRODY_TARGET"));
+        println!("profile:   {}", env!("APHRODY_PROFILE"));
+        println!();
+        println!("repo:      https://github.com/aphrody-code/aphrody");
+        println!("license:   Apache-2.0");
+        println!("a2a:       ai.json v1 (AGNTCY a2a/v0.4) @ /ai.json + /.well-known/ai.json");
         Ok(())
     }
 }

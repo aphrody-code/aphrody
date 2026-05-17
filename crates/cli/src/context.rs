@@ -7,8 +7,15 @@ use miette::Result;
 
 /// GoogleContext : L'état global injecté dans chaque commande (Pattern Starship/Cargo)
 pub(crate) struct GoogleContext {
+    /// VFS pour les commandes forensics (chromium, mirror) — pas utilisé par
+    /// la commande `version` qui passe par env! au compile-time.
+    #[allow(dead_code)]
     pub vfs: Arc<Vfs>,
     pub mirror: Arc<Md3Mirror>,
+    /// Version exposée pour les commandes qui en ont besoin runtime ;
+    /// `version` print direct env!("CARGO_PKG_VERSION") pour la cohérence
+    /// avec build.rs et le rich-output.
+    #[allow(dead_code)]
     pub version: &'static str,
 }
 
