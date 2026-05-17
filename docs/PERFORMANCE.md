@@ -6,10 +6,9 @@ Performance claims for `aphrody` with reproducible recipes. Complements
 wider workspace: CLI cold start, criterion micro-benchmarks in `backend`,
 A2A coordination latency, WASM artifact size, and memory footprint.
 
-Numbers are honest priors — measured on a 2024-class x86_64 laptop (~4.0 GHz,
-AES-NI, NVMe SSD), Windows 11 Insider Canary, Rust nightly 1.97 release
-profile (`lto = "fat"`, `codegen-units = 1`). Your numbers will differ. That
-is the point of running the recipes below yourself.
+Numbers are honest priors from a 2024-class x86_64 laptop (~4.0 GHz, AES-NI,
+NVMe SSD), Windows 11 Insider Canary, Rust nightly 1.97 release profile
+(`lto = "fat"`, `codegen-units = 1`). Yours will differ — run the recipes.
 
 ## 1. Headline claims (honest)
 
@@ -166,9 +165,9 @@ ms_print massif.out.*
 tokio-console http://127.0.0.1:6669
 ```
 
-For a quick "is this hot?" answer without setup, `cargo bench -p backend --
---quick` finishes in seconds and tells you whether a refactor moved any of
-the five micro-benches outside its expected band.
+For a quick "is this hot?" answer, `cargo bench -p backend -- --quick`
+finishes in seconds and tells you whether a refactor moved any of the five
+benches outside its expected band.
 
 ## 10. Performance regressions
 
