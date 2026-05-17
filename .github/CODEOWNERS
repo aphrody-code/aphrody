@@ -1,0 +1,3 @@
+# Default owner for everything in every repo.
+# Required reviewer when branch protection enables CODEOWNERS enforcement.
+* @aphrody-code

@@ -80,7 +80,7 @@ aphrody/
 
 ```powershell
 # Cloner le repo
-git clone https://github.com/nicmusic/aphrody.git
+git clone https://github.com/aphrody-code/aphrody.git
 cd aphrody
 
 # Appliquer la configuration déclarative (installe les 24 packages)
