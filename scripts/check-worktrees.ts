@@ -52,6 +52,17 @@ const EXPECTED: readonly ExpectedWorktree[] = [
 	{ slug: "vercel-agent-skills", dirName: "vercel-agent-skills", consumers: ["packages/aphrody-skills/src/sources.ts"] },
 	{ slug: "vercel-skills", dirName: "vercel-skills", consumers: ["packages/aphrody-skills/src/sources.ts"] },
 	{ slug: "open-agents", dirName: "open-agents", consumers: ["packages/aphrody-skills/src/sources.ts"] },
+	{ slug: "wterm", dirName: "wterm", consumers: [
+		"crates/aphrody-terminal-vt/",
+		"crates/aphrody-terminal-wasm/",
+		"crates/aphrody-terminal-backend/",
+	] },
+	{ slug: "terminal", dirName: "terminal", consumers: [
+		"crates/aphrody-terminal-vt/ (Buffer + Renderer reference)",
+		"crates/aphrody-terminal-wasm/ (AtlasEngine reference)",
+		"crates/aphrody-terminal-backend/ (ConPTY reference)",
+		"crates/aphrody-terminal-settings/ (profiles.schema.json compat)",
+	] },
 ];
 
 interface Args {

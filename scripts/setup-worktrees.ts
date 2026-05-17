@@ -183,6 +183,33 @@ const WORKTREES: readonly WorktreeSpec[] = [
 		approxMb: 50,
 		shallow: true,
 	},
+	{
+		slug: "wterm",
+		repo: "vercel-labs/wterm",
+		dirName: "wterm",
+		reason: "WASM terminal emulator reference. Drives crates/aphrody-terminal-* (pure Rust replacement).",
+		consumers: [
+			"crates/aphrody-terminal-vt/ (architecture reference)",
+			"crates/aphrody-terminal-wasm/ (API surface mirror)",
+			"crates/aphrody-terminal-backend/ (WS transport reference)",
+		],
+		approxMb: 40,
+		shallow: true,
+	},
+	{
+		slug: "terminal",
+		repo: "microsoft/terminal",
+		dirName: "terminal",
+		reason: "Windows Terminal — algorithmic reference for tabs/panes/profiles/settings.json/command-palette. WASM port lives in crates/aphrody-terminal-* (Rust-native, M3-themed).",
+		consumers: [
+			"crates/aphrody-terminal-vt/ (Buffer + Renderer reference)",
+			"crates/aphrody-terminal-wasm/ (AtlasEngine + TerminalControl reference)",
+			"crates/aphrody-terminal-backend/ (ConPTY integration reference)",
+			"crates/aphrody-terminal-settings/ (profiles.schema.json compat)",
+		],
+		approxMb: 120,
+		shallow: true,
+	},
 ];
 
 interface Args {

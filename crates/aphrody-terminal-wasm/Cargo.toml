@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-terminal-wasm"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "wasm-bindgen DOM renderer for aphrody-terminal-vt (browser/WASM only)."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-terminal-vt = { path = "../aphrody-terminal-vt" }
+m3-tokens           = { path = "../m3-tokens" }
+
+# WASM-only deps: cfg-gated so `cargo check --workspace` on a native host
+# does not attempt to link against non-existent browser APIs.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys       = { workspace = true }
+web-sys      = { workspace = true, features = [
+    "Window",
+    "Document",
+    "HtmlElement",
+    "HtmlSpanElement",
+    "KeyboardEvent",
+    "Event",
+    "EventTarget",
+    "Element",
+    "Node",
+    "CssStyleDeclaration",
+    "EventListenerOptions",
+] }
+console_error_panic_hook = { workspace = true }
+
+# cargo-machete cannot introspect cfg-conditional dependency sections and
+# will incorrectly report wasm-only deps as unused when scanning the host target.
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "m3-tokens"]
