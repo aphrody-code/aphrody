@@ -523,7 +523,7 @@ collapsible_match              = "allow"
 # --- dev: fast iteration, debug info, no LTO -------------------------------
 [profile.dev]
 opt-level         = 0
-debug             = "limited"
+debug             = "line-tables-only"
 debug-assertions  = true
 overflow-checks   = true
 lto               = false

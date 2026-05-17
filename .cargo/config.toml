@@ -14,14 +14,14 @@
 # bun-src   = "vendor/bun/src"
 
 [build]
-# Shared compilation cache — opt-in via `RUSTC_WRAPPER=sccache` (env var
-# overrides this file). We do NOT hard-code `rustc-wrapper = "sccache"`
-# here because it makes every fresh machine — local dev box, WSL Ubuntu,
-# containerized CI step that lacks sccache — fail with
-#   `could not execute process \`sccache rustc -vV\`: No such file or directory`
-# CI workflows opt in explicitly (mozilla-actions/sccache-action + env var).
-# Developers who want it: `cargo install sccache && export RUSTC_WRAPPER=sccache`.
-# rustc-wrapper = "sccache"
+# sccache 0.15.0 installed via WinGet -- active on this machine.
+# Linux CI: set RUSTC_WRAPPER via mozilla-actions/sccache-action.
+# To bypass temporarily: RUSTC_WRAPPER="" cargo ...
+rustc-wrapper  = "C:\\Users\\yohan\\AppData\\Local\\Microsoft\\WinGet\\Links\\sccache.exe"
+# Use 7 of 8 logical cores; leave 1 for linker + sccache overhead.
+jobs           = 7
+
+
 # Default host target. Override with `--target <triple>` for cross-builds
 # (see aliases `build-linux-x64`, `build-darwin-arm64`, `build-wasm`, …).
 # Cross-compile pre-reqs:
@@ -59,6 +59,8 @@ rustflags = [
     "-C", "link-arg=/DYNAMICBASE",
     "-C", "link-arg=/NXCOMPAT",
     "-C", "link-arg=/DEBUG:NONE",
+    # /INCREMENTAL:NO: incompatible with fat LTO+strip; saves link time in release/dist.
+    "-C", "link-arg=/INCREMENTAL:NO",
 ]
 
 [target.aarch64-pc-windows-msvc]
@@ -178,6 +180,9 @@ ci-offline     = ["clippy", "--workspace", "--all-targets", "--all-features", "-
 ci-frozen      = ["clippy", "--workspace", "--all-targets", "--all-features", "--frozen",  "--", "-D", "warnings"]
 xt             = ["nextest", "run", "--workspace", "--all-features", "--locked"]
 xt-offline     = ["nextest", "run", "--workspace", "--all-features", "--locked", "--offline"]
+# Fast check-only: no clippy overhead, ideal for sccache warm dev iteration.
+ci-fast        = ["check", "--workspace", "--all-targets", "--locked", "--offline"]
+xt-fast        = ["nextest", "run", "--workspace", "--locked", "--offline"]
 # `build-dist` (was `dist`) renamed to free the `dist` name for cargo-dist
 # binary (`cargo install cargo-dist` provides `cargo dist init/build/...`).
 build-dist     = ["build", "--profile", "dist", "--workspace", "--locked"]
@@ -234,3 +239,15 @@ mutants        = ["mutants", "--workspace"]
 # subcommand). Invoke directly: `dist init`, `dist build`, `dist plan`.
 # Aliases below remain valid because they target the Rust toolchain itself.
 # Use `cargo build-dist` for the in-tree release-profile workspace build.
+
+# --- Ultra-fast iteration aliases (added 2026-05-18, pipeline-optimization)
+# These are tuned for local hot-loop with sccache+incremental, --offline to
+# skip registry checks, --message-format=short to cut terminal IO time, and
+# --jobs 7 to leave one core free for sccache + linker. See
+# docs/cargo/PIPELINE-OPTIMIZATION.md for measured speedups vs the `ci-*`
+# family.
+dev-fast       = ["check", "--workspace", "--message-format=short", "--offline", "--jobs", "7"]
+lint-fast      = ["clippy", "--workspace", "--message-format=short", "--offline", "--jobs", "7", "--", "-D", "warnings"]
+bench-fast     = ["bench", "--workspace", "--no-default-features", "--jobs", "4"]
+build-fast     = ["build", "--release", "-p", "aphrody", "--jobs", "7"]
+test-fast      = ["nextest", "run", "--workspace", "--no-fail-fast", "--jobs", "7"]

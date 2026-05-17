@@ -24,25 +24,47 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  # sccache temporarily disabled — GitHub Actions cache backend was returning
-  # 503 ("Our services aren't available right now") across 3 consecutive runs
-  # (25991429828, 25991561638, 25991684987), causing every step that invoked
-  # rustc via sccache to error with
-  #   sccache: error: Server startup failed: cache storage failed to read
-  # CI works without it (just slower). Re-enable once GHA cache recovers OR
-  # migrate to a non-GHA-backed sccache store.
-  # SCCACHE_GHA_ENABLED: "true"
-  # RUSTC_WRAPPER: "sccache"
+  # sccache re-enabled 2026-05-18 (pipeline-optimization tick). Prior outage
+  # context (GHA cache backend 503s, runs 25991429828 / 25991561638 /
+  # 25991684987) is archived in docs/cargo/PIPELINE-OPTIMIZATION.md §2.
+  # Graceful fallback: every rustc step is followed by a non-fatal
+  # `sccache --show-stats || true` so a transient cache backend outage
+  # surfaces in the log without failing the job.
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
   CARGO_INCREMENTAL: 0
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   CARGO_PROFILE_DEV_DEBUG: "limited"
 
 jobs:
   # --------------------------------------------------------------------------
-  # 1. Lint & format (Linux, fail fast — bloque toute la matrice)
+  # 1a. rustfmt (Linux, fail fast — bloque la matrice). Split from clippy to
+  #     parallelize: rustfmt is ~30s, clippy is 2-3min ; running concurrently
+  #     shaves ~30s off the critical path.
   # --------------------------------------------------------------------------
-  lint:
-    name: clippy + rustfmt (Linux)
+  lint-fmt:
+    name: rustfmt (Linux)
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  # --------------------------------------------------------------------------
+  # 1b. clippy (Linux, fail fast — bloque la matrice)
+  # --------------------------------------------------------------------------
+  lint-clippy:
+    name: clippy (Linux)
     runs-on: ubuntu-latest
     env:
       # .cargo/config.toml sets `target = "x86_64-pc-windows-msvc"` as the
@@ -62,18 +84,22 @@ jobs:
         with:
           toolchain: nightly
           targets: x86_64-unknown-linux-gnu
-          components: clippy, rustfmt
-      - uses: mozilla-actions/sccache-action@v0.0.4
+          components: clippy
+      - uses: mozilla-actions/sccache-action@v0.0.5
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
+        with:
+          shared-key: lint-clippy
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: sccache stats (non-fatal)
+        if: always()
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 2. PRIORITÉ #1 — Linux Ubuntu (BLOQUANT)
   # --------------------------------------------------------------------------
   linux-priority:
     name: "[#1] Linux x86_64 (build + test)"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -86,7 +112,7 @@ jobs:
           toolchain: nightly
           targets: x86_64-unknown-linux-gnu
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.5
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: linux-x86_64
@@ -104,6 +130,9 @@ jobs:
         run: |
           ./target/x86_64-unknown-linux-gnu/release/aphrody --version
           ./target/x86_64-unknown-linux-gnu/release/aphrody --help
+      - name: sccache stats (non-fatal)
+        if: always()
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 2b. PLAN gate — Linux native build + nextest workspace (BLOQUANT)
@@ -114,7 +143,7 @@ jobs:
   # --------------------------------------------------------------------------
   linux-native:
     name: "[#1-native] Linux aphrody build + nextest + smoke"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     runs-on: ubuntu-latest
     env:
       CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
@@ -148,6 +177,9 @@ jobs:
         run: ./target/release/aphrody --help
       - name: smoke — aphrody doctor
         run: ./target/release/aphrody doctor
+      - name: sccache stats (non-fatal)
+        if: always()
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 2c. BEST-EFFORT — macOS (non bloquant, per CLAUDE.md)
@@ -155,7 +187,7 @@ jobs:
   macos-native:
     name: macOS (best-effort)
     runs-on: macos-latest
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     continue-on-error: true
     permissions:
       contents: read
@@ -189,7 +221,7 @@ jobs:
   # --------------------------------------------------------------------------
   windows-priority:
     name: "[#2] Windows x86_64 (build + test)"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     runs-on: windows-latest
     permissions:
       contents: read
@@ -202,7 +234,7 @@ jobs:
           toolchain: nightly
           targets: x86_64-pc-windows-msvc
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.5
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: windows-x86_64
@@ -218,13 +250,17 @@ jobs:
         run: |
           .\target\x86_64-pc-windows-msvc\release\aphrody.exe --version
           .\target\x86_64-pc-windows-msvc\release\aphrody.exe --help
+      - name: sccache stats (non-fatal)
+        if: always()
+        shell: bash
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 4. PRIORITÉ #3 — WebAssembly (BLOQUANT)
   # --------------------------------------------------------------------------
   wasm-priority:
     name: "[#3] WebAssembly (check)"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -246,19 +282,22 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.target }}
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.5
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.target }}
       - name: cargo check -p cli --target ${{ matrix.target }}
         run: cargo check -p cli --target ${{ matrix.target }} --locked
+      - name: sccache stats (non-fatal)
+        if: always()
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 5. BEST-EFFORT — macOS / Linux ARM / Windows ARM (non bloquant)
   # --------------------------------------------------------------------------
   cross-extended:
     name: "[best-effort] ${{ matrix.target }}"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -292,7 +331,7 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.target }}
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.5
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.target }}
@@ -312,6 +351,10 @@ jobs:
       - name: cargo nextest
         if: ${{ matrix.build_cmd == 'test' }}
         run: cargo nextest run -p cli --target ${{ matrix.target }} --locked
+      - name: sccache stats (non-fatal)
+        if: always()
+        shell: bash
+        run: sccache --show-stats || true
 
   # --------------------------------------------------------------------------
   # 6. Supply-chain gate (cargo-deny + cargo-vet) — BLOQUANT
@@ -357,7 +400,7 @@ jobs:
   # --------------------------------------------------------------------------
   android:
     name: "[best-effort] Android NDK"
-    needs: lint
+    needs: [lint-fmt, lint-clippy]
     continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
@@ -404,7 +447,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          # Primary key keys off both lockfile formats so a switch between
+          # bun.lock (text) and bun.lockb (binary) does not invalidate the
+          # cache. restore-keys fall back to any previous bun cache snapshot.
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
           restore-keys: |
             ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
