@@ -120,7 +120,8 @@ external-default-features = "allow"
 
 # Crates that MUST NOT enter the dep graph (hard ban; build fails).
 deny = [
-    { crate = "git2", reason = "Pulls libgit2 + OpenSSL; use gix instead." },
+    { crate = "git2",      reason = "Pulls libgit2 + OpenSSL; use gix instead." },
+    { crate = "wee_alloc", reason = "Repo archived 2023-02-28 (GitHub archived:true); unbounded memory leak (#106), pages never returned to host (#85). Use default allocator + wasm-opt -Oz for size." },
 ]
 
 # Crates we discourage but tolerate transitively from upstream choices.
