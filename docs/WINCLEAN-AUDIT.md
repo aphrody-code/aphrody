@@ -26,7 +26,7 @@ Total size : 8.2 GB (post-cache exclusion). Stack : Bun + C# NativeAOT + Python 
 |---|---|---|
 | **`packages/n2b/` (9 crates Rust workspace)** | `packages/n2b/{crates,skills}` | Compare with the upstream `aphrody-code/n2b` branch already referenced by aphrody. If winclean's local copy is ahead, propose an upstream PR on `aphrody-code/n2b`. Layout : `n2b-{types,util,rules,scanners,report,ai,github,core,cli,native}`. |
 | **n2b skills (10)** | `packages/n2b/skills/{analyze,deploy,dream,gemini-cli-cli,gemini-cli-jsx,green-gate,move,n2b,regen-baseline,run}` | Some may already be in aphrody's plugin ; diff before copying. |
-| **`iecode` submodule** (C++20 + FFI C ABI) | `packages/iecode/` | NOT to migrate — but reference as an **external dep** if aphrody ever needs the game-asset pipeline. The `cli/include/iecode/ffi.h` C ABI is consumable from Rust via `bindgen`, from Bun via `bun:ffi`, and from WASM via Emscripten. Suggest hosting at `aphrody-code/iecode`. |
+| **`iecode` submodule** (C# .NET 10 core + C++ overlay) | `packages/iecode/` | Original codebase is **C# .NET 10**, with a C++ overlay added later that exposes a C ABI (`cli/include/iecode/ffi.h`) — making the toolkit consumable from Rust via `bindgen`, from Bun via `bun:ffi`, and from WASM via Emscripten. NOT to migrate into aphrody — reference as an external dep if the game-asset pipeline ever lands. Suggest hosting at `aphrody-code/iecode`. |
 | **`apps/iecode-web/`** | iecode browser host | Reference implementation for OPFS write-through + WebGPU 120 Hz loop + lazy WASM module load. Pattern transferable to `aphrody-code/ui`. |
 
 ### 🟠 P3 — Reference only
