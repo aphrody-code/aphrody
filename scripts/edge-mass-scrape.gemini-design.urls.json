@@ -1,0 +1,11 @@
+{
+	"$schema": "https://aphrody-code.dev/schemas/bxc-mass-scrape-urls/v1",
+	"version": "1.0.0",
+	"description": "Gemini AI Visual Design reference — design.google/library article + neighbour pages for visual-system context.",
+	"urls": [
+		{ "url": "https://design.google/library/gemini-ai-visual-design", "category": "gemini-visual", "tags": ["primary", "article"] },
+		{ "url": "https://design.google/library", "category": "gemini-visual", "tags": ["library-index"] },
+		{ "url": "https://gemini.google.com/", "category": "gemini-visual", "tags": ["product"] },
+		{ "url": "https://ai.google.dev/gemini-api", "category": "gemini-visual", "tags": ["api-portal"] }
+	]
+}
