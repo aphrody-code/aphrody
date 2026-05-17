@@ -372,3 +372,12 @@ crates/util-linux/
 .husky/
 .lefthook.yml
 lefthook.yml
+
+# ----------------------------------------------------------------------------
+# 19. Cross-Claude noise sink
+# ----------------------------------------------------------------------------
+# Peer Claude session in winclean has dropped Steam-monitor screenshots into
+# aphrody root twice this session. Off-scope here; canonical location is
+# C:/winclean/var/steam-monitor-snapshot*.png. Block at root.
+/steam.png
+/steam*.png
