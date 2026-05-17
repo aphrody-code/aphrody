@@ -115,22 +115,81 @@ __pypackages__/
 *.profdata
 
 # ----------------------------------------------------------------------------
-# 7. Environment & secrets
+# 7. Environment & secrets (hardened 2026-05-17 — ZERO leak tolerated)
 # ----------------------------------------------------------------------------
+# Env files
 .env
 .env.*
 !.env.example
+!.env.template
+!.env.sample
+
+# Cryptographic material
 *.pem
 *.key
+*.pkcs8
+*.pkcs12
 *.pfx
 *.p12
+*.jks
+*.keystore
 *.crt
 *.cer
+*.cert
+*.csr
 *.gpg
 *.asc
+*.kdbx
+*.kdb
+*.opvault
+*.1pif
+
+# SSH / Git
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+id_ed25519_sk
+.ssh/
+known_hosts
+.netrc
+_netrc
+
+# Tokens & PATs (any file whose basename screams "credential")
+*.token
+*.tokens
+*.pat
+*token.json
+*tokens.json
+*secret.json
+*secrets.json
+auth.json
+!.vscode/auth.json
+*credentials*.json
+*credentials*.yaml
+*credentials*.yml
+*api[-_]key*
+*apikey*
+github_token*
+gh_token*
+bearer.txt
+
+# Directories of credentials
 secrets/
+.secrets/
 .credentials/
-credentials.json
+.creds/
+.aws/credentials
+.gcp/
+.azure/
+.kube/config
+
+# Cloud + service keys
+service-account*.json
+service_account*.json
+gcloud-key*.json
+firebase-adminsdk*.json
+*serviceaccount*.json
 
 # ----------------------------------------------------------------------------
 # 8. Logs & crash dumps
