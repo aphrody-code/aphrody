@@ -106,6 +106,50 @@ jobs:
           ./target/x86_64-unknown-linux-gnu/release/aphrody --help
 
   # --------------------------------------------------------------------------
+  # 2b. PLAN gate — Linux native build + nextest workspace (BLOQUANT)
+  #     Flips PLAN.md rows:
+  #       - "cargo build --release -p aphrody natif sur Ubuntu 26.04"     ⏳→✅
+  #       - "cargo nextest run -p aphrody vert sur Linux"                  ⏳→✅
+  #       - "CI runner ubuntu-26.04 (ou ubuntu-latest en fallback)"        ⏳→✅
+  # --------------------------------------------------------------------------
+  linux-native:
+    name: "[#1-native] Linux aphrody build + nextest + smoke"
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux-native-x86_64
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: Install system deps
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+      - name: cargo build --release -p aphrody
+        run: cargo build --release -p aphrody --locked
+      - name: cargo nextest run --workspace
+        run: cargo nextest run --workspace --locked
+      - name: smoke — aphrody --version
+        run: ./target/release/aphrody --version
+      - name: smoke — aphrody --help
+        run: ./target/release/aphrody --help
+      - name: smoke — aphrody doctor
+        run: ./target/release/aphrody doctor
+
+  # --------------------------------------------------------------------------
   # 3. PRIORITÉ #2 — Windows 11 (BLOQUANT)
   # --------------------------------------------------------------------------
   windows-priority:
