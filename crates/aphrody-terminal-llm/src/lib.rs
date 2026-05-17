@@ -13,7 +13,12 @@ pub mod sub_agent;
 pub mod task;
 
 pub use hook::{HookEntry, HookEventLog};
-pub use mcp::{McpServerStatus, McpStatusRegistry};
+pub use mcp::{
+    McpServerSpec, McpServerStatus, McpStatusRegistry, McpTransport, OAuthConfig, load_mcp_json,
+    probe_loop, probe_server,
+};
+#[cfg(feature = "mcp-default-servers")]
+pub use mcp::default_server_specs;
 pub use osc::parse_aphrody_llm_osc;
 pub use skill::{SkillSlot, SkillState};
 pub use sub_agent::{SubAgentInfo, SubAgentRegistry};

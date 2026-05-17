@@ -9,7 +9,7 @@ authors.workspace      = true
 homepage.workspace     = true
 repository.workspace   = true
 license.workspace      = true
-description            = "A2A protocol UI: WASM channel viewer for ai.json + .coord JSONL mailbox."
+description            = "A2A protocol UI: WASM channel viewer + native ratatui TUI for ai.json + .coord JSONL mailbox."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -17,13 +17,46 @@ crate-type = ["cdylib", "rlib"]
 [lints]
 workspace = true
 
-# Cross-platform: a2a-pb is pure Rust (proto types), works on native + wasm32.
+# ---------------------------------------------------------------------------
+# Feature flags
+# ---------------------------------------------------------------------------
+[features]
+default = []
+# `native` pulls in the full ratatui TUI backend.  Excluded from wasm32
+# builds so the cdylib stays lean (no crossterm / tokio event loop).
+native = [
+    "dep:ratatui",
+    "dep:crossterm",
+    "dep:tokio",
+    "dep:anyhow",
+    "dep:tracing",
+    "dep:chrono",
+    "m3-tokens",
+]
+# `m3-tokens` may also be enabled standalone if the caller only wants the
+# palette adapter without the full TUI (e.g. for colour-only helpers).
+m3-tokens = ["dep:m3-tokens"]
+
+# ---------------------------------------------------------------------------
+# Core dependencies — cross-platform (native + wasm32)
+# ---------------------------------------------------------------------------
 [dependencies]
 a2a-pb     = { path = "../a2a-pb" }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 
-# WASM-only: browser-side rendering surface. Gated so native builds stay clean.
+# Optional: native TUI backend (gated behind `native` feature).
+ratatui   = { workspace = true, optional = true }
+crossterm = { workspace = true, optional = true }
+tokio     = { workspace = true, optional = true, features = ["rt", "fs", "io-util", "macros", "time"] }
+anyhow    = { workspace = true, optional = true }
+tracing   = { workspace = true, optional = true }
+chrono    = { workspace = true, optional = true }
+m3-tokens = { path = "../m3-tokens", optional = true }
+
+# ---------------------------------------------------------------------------
+# WASM-only: browser-side rendering surface.
+# ---------------------------------------------------------------------------
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen             = { workspace = true }
 js-sys                   = { workspace = true }
@@ -39,7 +72,22 @@ web-sys                  = { workspace = true, features = [
     "NodeList",
 ] }
 
-# All wasm-bindgen-family deps are cfg-gated; cargo-machete cannot introspect
-# cfg-conditional dep sections and reports them as unused on a native host scan.
+# ---------------------------------------------------------------------------
+# Dev / example dependencies — never compiled into the cdylib.
+# ---------------------------------------------------------------------------
+[dev-dependencies]
+clap     = { workspace = true }
+anyhow   = { workspace = true }
+tempfile = { workspace = true }
+# ratatui TestBackend needed by native_smoke.rs
+ratatui  = { workspace = true }
+
+# cargo-machete cannot introspect cfg-conditional dep sections and reports
+# wasm-bindgen-family deps as unused on a native host scan.
 [package.metadata.cargo-machete]
 ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook"]
+
+# Example binary requires the native TUI feature stack.
+[[example]]
+name = "a2a-tui"
+required-features = ["native"]

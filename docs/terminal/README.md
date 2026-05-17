@@ -73,6 +73,14 @@ Plein détails dans `BUILD.md`.
 
 ## À consulter en complément
 
+- [`../design/aphrody-terminal-spec.md`](../design/aphrody-terminal-spec.md) :
+  **spec normative aphrody-terminal LLM-first** (5 piliers, WASM-native,
+  M3-themed) — successeur Rust pur du modèle vendor/terminal Win-only.
+- [`../design/aphrody-terminal-integration-matrix.md`](../design/aphrody-terminal-integration-matrix.md) :
+  matrice contract-de-vie par crate (chaque crate du workspace a un slot
+  dans `aphrody-terminal`).
+- [`../PLAN-MOONSHOT.md`](../PLAN-MOONSHOT.md) : plan 30 jours qui drive
+  l'ambition `aphrody-terminal`.
 - `vendor/terminal/README.md` : README officiel Microsoft.
 - `vendor/terminal/doc/building.md` : procédure de build amont.
 - `vendor/terminal/doc/ORGANIZATION.md` : description de l'organisation
