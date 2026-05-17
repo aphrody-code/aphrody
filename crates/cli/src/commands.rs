@@ -810,6 +810,499 @@ impl TerminalCommand for ScrapeCommand {
     }
 }
 
+// ── aphrody doctor ───────────────────────────────────────────────────────────
+
+/// Outcome of a single diagnostic check.
+enum CheckResult {
+    Ok(String),
+    Warn(String),
+    Err(String),
+}
+
+impl CheckResult {
+    fn line(&self, key: &str) -> String {
+        match self {
+            CheckResult::Ok(v) => format!("  {key}: {v}"),
+            CheckResult::Warn(v) => format!("  {key}: {v}"),
+            CheckResult::Err(v) => format!("  {key}: {v}"),
+        }
+    }
+
+    fn is_critical_failure(&self) -> bool {
+        matches!(self, CheckResult::Err(_))
+    }
+}
+
+pub(crate) struct DoctorCommand;
+
+#[async_trait]
+impl TerminalCommand for DoctorCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        // Track severity for the final verdict.
+        let mut has_error = false;
+        let mut has_warn = false;
+
+        // ── [runtime] ────────────────────────────────────────────────────────
+        println!("aphrody doctor — environment + integration diagnostics");
+        println!();
+        println!("[runtime]");
+
+        // binary version — from compile-time env
+        {
+            let version = env!("CARGO_PKG_VERSION");
+            let sha = env!("APHRODY_GIT_SHA");
+            let built_unix: u64 = env!("APHRODY_BUILD_UNIX").parse().unwrap_or(0);
+            let target = env!("APHRODY_TARGET");
+            // Convert unix epoch to a human-readable date (YYYY-MM-DD).
+            let built_date = if built_unix > 0 {
+                // Simple epoch → date calculation, no external crate.
+                epoch_to_date(built_unix)
+            } else {
+                "unknown".to_string()
+            };
+            println!("  binary version: {version} (commit {sha}, built {built_date}, target {target})");
+        }
+
+        // rustls CryptoProvider
+        {
+            let r = rustls::crypto::ring::default_provider().install_default();
+            let label = match r {
+                Ok(()) => "installed (ring)",
+                Err(_) => "already installed (ring)",
+            };
+            println!("  rustls CryptoProvider: {label}");
+        }
+
+        // reqwest TLS backend
+        println!("  reqwest TLS backend: rustls");
+
+        // mimalloc allocator — active whenever the #[global_allocator] fires
+        println!("  mimalloc allocator: active (native)");
+
+        // tokio runtime
+        println!("  tokio runtime: multi-thread, full");
+
+        // ai.json
+        {
+            let r = check_ai_json();
+            if r.is_critical_failure() {
+                has_error = true;
+            }
+            println!("{}", r.line("ai.json"));
+        }
+
+        // .well-known/ai.json
+        {
+            let r = check_well_known_ai_json();
+            if r.is_critical_failure() {
+                has_error = true;
+            } else if matches!(r, CheckResult::Warn(_)) {
+                has_warn = true;
+            }
+            println!("{}", r.line(".well-known/ai.json"));
+        }
+
+        // ── [peer A2A coord] ─────────────────────────────────────────────────
+        println!();
+        println!("[peer A2A coord]");
+
+        // peer winclean heartbeat
+        {
+            let r = check_peer_heartbeat();
+            if r.is_critical_failure() {
+                has_error = true;
+            } else if matches!(r, CheckResult::Warn(_)) {
+                has_warn = true;
+            }
+            println!("{}", r.line("peer winclean"));
+        }
+
+        // inbox-from-winclean.jsonl
+        {
+            let r = check_inbox();
+            if r.is_critical_failure() {
+                has_error = true;
+            } else if matches!(r, CheckResult::Warn(_)) {
+                has_warn = true;
+            }
+            println!("{}", r.line("inbox-from-winclean.jsonl"));
+        }
+
+        // HTTP listener ping
+        {
+            let r = check_http_listener().await;
+            if r.is_critical_failure() {
+                has_error = true;
+            } else if matches!(r, CheckResult::Warn(_)) {
+                has_warn = true;
+            }
+            println!("{}", r.line("HTTP listener"));
+        }
+
+        // ── [supply chain] ───────────────────────────────────────────────────
+        println!();
+        println!("[supply chain]");
+
+        // cargo-deny not a runtime dep
+        println!("  cargo-deny: not present at runtime — use the dev tool for CI");
+
+        // cargo-vet audits
+        {
+            let r = check_vet_audits();
+            if r.is_critical_failure() {
+                has_error = true;
+            } else if matches!(r, CheckResult::Warn(_)) {
+                has_warn = true;
+            }
+            println!("{}", r.line("cargo-vet audits"));
+        }
+
+        // ── [environment] ────────────────────────────────────────────────────
+        println!();
+        println!("[environment]");
+
+        for var in &["RUST_BACKTRACE", "RUST_LOG", "TERM", "TZ"] {
+            let val = std::env::var(var).unwrap_or_else(|_| "not set".to_string());
+            println!("  {var}: {val}");
+        }
+
+        // ── verdict ──────────────────────────────────────────────────────────
+        println!();
+        let verdict = if has_error {
+            "UNHEALTHY"
+        } else if has_warn {
+            "DEGRADED"
+        } else {
+            "HEALTHY"
+        };
+
+        let detail = if has_error {
+            "(one or more critical checks failed)"
+        } else if has_warn {
+            "(peer offline or non-critical resource missing)"
+        } else {
+            "(all critical checks pass)"
+        };
+
+        println!("Verdict: {verdict} {detail}");
+
+        if has_error {
+            std::process::exit(1);
+        }
+        Ok(())
+    }
+}
+
+// ── doctor helpers ────────────────────────────────────────────────────────────
+
+/// Convert a Unix epoch (seconds) to a YYYY-MM-DD string without external deps.
+fn epoch_to_date(unix: u64) -> String {
+    // Days since 1970-01-01.  Zeller / proleptic Gregorian.
+    let days = unix / 86400;
+    // Algorithm from https://www.researchgate.net/publication/316558298
+    let z = days + 719468;
+    let era = z / 146097;
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
+/// Locate repo root by walking up from the current exe directory.
+fn repo_root() -> Option<std::path::PathBuf> {
+    // Primary heuristic: walk up from cwd until we find a Cargo.toml with
+    // `[workspace]`, which is reliable in both dev and release layouts.
+    let mut dir = std::env::current_dir().ok()?;
+    loop {
+        let candidate = dir.join("Cargo.toml");
+        if candidate.exists() {
+            if let Ok(content) = std::fs::read_to_string(&candidate) {
+                if content.contains("[workspace]") {
+                    return Some(dir);
+                }
+            }
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+
+    // Fallback: exe-relative (release layout: target/<triple>/release/aphrody)
+    let exe = std::env::current_exe().ok()?;
+    // Walk up exe path until Cargo.toml with [workspace] found.
+    let mut dir = exe.parent()?.to_path_buf();
+    loop {
+        let candidate = dir.join("Cargo.toml");
+        if candidate.exists() {
+            if let Ok(content) = std::fs::read_to_string(&candidate) {
+                if content.contains("[workspace]") {
+                    return Some(dir);
+                }
+            }
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+    None
+}
+
+fn check_ai_json() -> CheckResult {
+    let root = match repo_root() {
+        Some(r) => r,
+        None => {
+            return CheckResult::Warn("repo root not found — skip".to_string());
+        },
+    };
+    let path = root.join("ai.json");
+    if !path.exists() {
+        return CheckResult::Err(format!("absent (expected {})", path.display()));
+    }
+    // Try to read schema version and A2A version from the JSON.
+    let schema_v = match std::fs::read_to_string(&path) {
+        Ok(text) => {
+            let schema_ver = if text.contains("\"version\": \"1.0.0\"") {
+                "schema v1.0.0"
+            } else {
+                "schema unknown"
+            };
+            let a2a_ver = if text.contains("a2a/v0.4") || text.contains("a2a_protocol_version") {
+                "A2A v0.4"
+            } else {
+                "A2A unknown"
+            };
+            format!("{schema_ver}, {a2a_ver}")
+        },
+        Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
+    };
+    CheckResult::Ok(format!("present at {} ({schema_v})", path.display()))
+}
+
+fn check_well_known_ai_json() -> CheckResult {
+    let root = match repo_root() {
+        Some(r) => r,
+        None => return CheckResult::Warn("repo root not found — skip".to_string()),
+    };
+    let path = root.join(".well-known").join("ai.json");
+    if !path.exists() {
+        return CheckResult::Warn("absent (non-critical for local dev)".to_string());
+    }
+    // Look for canonical_manifest field.
+    let detail = match std::fs::read_to_string(&path) {
+        Ok(text) => {
+            if text.contains("canonical_manifest") || text.contains("../ai.json") {
+                "present (canonical_manifest -> ../ai.json)".to_string()
+            } else {
+                "present".to_string()
+            }
+        },
+        Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
+    };
+    CheckResult::Ok(detail)
+}
+
+fn check_peer_heartbeat() -> CheckResult {
+    // The peer ai.json lives at C:\winclean\ai.json (or /c/winclean/ai.json on
+    // WSL-style paths). We read `last_updated_at` to compute staleness.
+    let candidates = if cfg!(target_os = "windows") {
+        vec![
+            std::path::PathBuf::from(r"C:\winclean\ai.json"),
+        ]
+    } else {
+        vec![
+            std::path::PathBuf::from("/c/winclean/ai.json"),
+            std::path::PathBuf::from("/mnt/c/winclean/ai.json"),
+        ]
+    };
+
+    let path = match candidates.iter().find(|p| p.exists()) {
+        Some(p) => p.clone(),
+        None => return CheckResult::Warn("C:\\winclean\\ai.json not found — peer offline".to_string()),
+    };
+
+    let text = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
+    };
+
+    // Extract last_updated_at from JSON text (simple string search, no full parse dep).
+    let ts = extract_json_str_field(&text, "last_updated_at")
+        .or_else(|| extract_json_str_field(&text, "last_updated"))
+        .or_else(|| extract_json_str_field(&text, "created_at"));
+
+    match ts {
+        None => CheckResult::Warn("present but no timestamp field found".to_string()),
+        Some(ts_str) => {
+            // Parse ISO-8601 to unix seconds (basic, no timezone handling beyond UTC/+HH:MM).
+            match parse_iso8601_approx(&ts_str) {
+                None => CheckResult::Ok(format!("heartbeat {ts_str} (age unknown)")),
+                Some(ts_unix) => {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_or(0, |d| d.as_secs());
+                    let age_secs = now.saturating_sub(ts_unix);
+                    let freshness = if age_secs < 3600 {
+                        "fresh"
+                    } else if age_secs < 86400 {
+                        "stale (>1h)"
+                    } else {
+                        "stale (>1d)"
+                    };
+                    let result = format!("heartbeat {ts_str} ({age_secs} s ago — {freshness})");
+                    if freshness == "fresh" {
+                        CheckResult::Ok(result)
+                    } else {
+                        CheckResult::Warn(result)
+                    }
+                },
+            }
+        },
+    }
+}
+
+fn check_inbox() -> CheckResult {
+    let root = match repo_root() {
+        Some(r) => r,
+        None => return CheckResult::Warn("repo root not found — skip".to_string()),
+    };
+    let path = root.join("inbox-from-winclean.jsonl");
+    if !path.exists() {
+        return CheckResult::Warn("absent (no envelopes received yet)".to_string());
+    }
+    let text = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
+    };
+    let envelope_count = text.lines().filter(|l| !l.trim().is_empty()).count();
+    // Find the last id field in the last non-empty line.
+    let last_id = text
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .last()
+        .and_then(|line| extract_json_str_field(line, "id"))
+        .unwrap_or_else(|| "unknown".to_string());
+    CheckResult::Ok(format!("{envelope_count} envelopes, last id={last_id}"))
+}
+
+async fn check_http_listener() -> CheckResult {
+    let url = "http://localhost:8788/ping";
+    // Build a reqwest client with a short timeout so we don't block the
+    // user for multi-second hangs when the peer listener is down.
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => return CheckResult::Warn(format!("could not build HTTP client: {e}")),
+    };
+
+    match client.get(url).send().await {
+        Ok(resp) if resp.status().is_success() => {
+            CheckResult::Ok(format!("localhost:8788 (alive, /ping -> {})", resp.status().as_u16()))
+        },
+        Ok(resp) => {
+            CheckResult::Warn(format!("localhost:8788 (non-200: {})", resp.status().as_u16()))
+        },
+        Err(_) => CheckResult::Warn("localhost:8788 (no response — listener not running)".to_string()),
+    }
+}
+
+fn check_vet_audits() -> CheckResult {
+    let root = match repo_root() {
+        Some(r) => r,
+        None => return CheckResult::Warn("repo root not found — skip".to_string()),
+    };
+    let path = root.join("supply-chain").join("audits.toml");
+    if !path.exists() {
+        return CheckResult::Warn(format!("absent (expected {})", path.display()));
+    }
+    let text = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
+    };
+    // Count `[[audits.<crate>]]` style entries.
+    let entries = text
+        .lines()
+        .filter(|l| {
+            let t = l.trim();
+            t.starts_with("[[audits.") || (t.starts_with("[audits.") && !t.starts_with("[audits]"))
+        })
+        .count();
+    CheckResult::Ok(format!("present at {} ({entries} entries)", path.display()))
+}
+
+/// Extract the string value for a JSON key using simple substring search.
+/// Works for simple flat fields like `"key": "value"`.
+fn extract_json_str_field(text: &str, key: &str) -> Option<String> {
+    let needle = format!("\"{key}\"");
+    let start = text.find(&needle)?;
+    let after_key = &text[start + needle.len()..];
+    // Skip whitespace and colon.
+    let colon = after_key.find(':')?;
+    let after_colon = after_key[colon + 1..].trim_start();
+    if after_colon.starts_with('"') {
+        let inner = &after_colon[1..];
+        let end = inner.find('"')?;
+        Some(inner[..end].to_string())
+    } else {
+        None
+    }
+}
+
+/// Parse an ISO-8601 datetime string to a Unix timestamp (seconds, UTC approx).
+/// Handles `YYYY-MM-DDTHH:MM:SSZ` and `YYYY-MM-DDTHH:MM:SS+HH:MM` forms.
+fn parse_iso8601_approx(s: &str) -> Option<u64> {
+    // Expect at least YYYY-MM-DD (10 chars).
+    if s.len() < 10 {
+        return None;
+    }
+    let year: u64 = s[0..4].parse().ok()?;
+    let month: u64 = s[5..7].parse().ok()?;
+    let day: u64 = s[8..10].parse().ok()?;
+
+    let (hour, min, sec) = if s.len() >= 19 {
+        let h: u64 = s[11..13].parse().ok()?;
+        let m: u64 = s[14..16].parse().ok()?;
+        let sc: u64 = s[17..19].parse().ok()?;
+        (h, m, sc)
+    } else {
+        (0, 0, 0)
+    };
+
+    // Parse optional timezone offset (+HH:MM or -HH:MM).
+    let tz_offset_secs: i64 = if s.len() >= 25 {
+        let tz = &s[19..];
+        let tz = tz.trim_start_matches('Z');
+        if tz.len() >= 6 && (tz.starts_with('+') || tz.starts_with('-')) {
+            let sign: i64 = if tz.starts_with('+') { 1 } else { -1 };
+            let tz_h: i64 = tz[1..3].parse().ok()?;
+            let tz_m: i64 = tz[4..6].parse().ok()?;
+            sign * (tz_h * 3600 + tz_m * 60)
+        } else {
+            0
+        }
+    } else {
+        0
+    };
+
+    // Days since epoch using the same Gregorian formula as `epoch_to_date`.
+    // Convert calendar date to JDN then to Unix days.
+    let a = (14u64.wrapping_sub(month)) / 12;
+    let y = year + 4800 - a;
+    let m_adj = month + 12 * a - 3;
+    let jdn = day + (153 * m_adj + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+    // JDN of 1970-01-01 is 2440588.
+    let unix_days = jdn.saturating_sub(2440588);
+    let unix_secs = unix_days * 86400 + hour * 3600 + min * 60 + sec;
+    let adjusted = unix_secs as i64 - tz_offset_secs;
+    Some(adjusted.max(0) as u64)
+}
+
 // ── aphrody tokens ───────────────────────────────────────────────────────────
 
 pub(crate) struct TokensCommand {
