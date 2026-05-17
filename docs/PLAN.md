@@ -71,7 +71,7 @@ Matrice validée 2026-05-17 (host : Windows 11) :
 | `base`          | ✅ (getrandom "js" gated)| ✅              |
 | `mrx-core`      | n/a (chrono)             | ✅              |
 | `aphrody-translate` | ❌ (tokio "full")    | ❌              |
-| `cli` (binary)  | ✅ (wasm stub, native deps cfg-gated) | ⏳ |
+| `cli` (binary)  | ✅ (stub minimal)        | ✅ (stub minimal)|
 | `backend`/`a2a*`| ❌                       | ❌              |
 
 Sous-tâches :

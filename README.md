@@ -57,18 +57,28 @@ cargo build --release -p cli
 |-----------------|:----------------------------------:|:----------------------:|
 | `base`          | ✅                                 | ✅                     |
 | `mrx-core`      | n/a                                | ✅                     |
-| `cli` (binary)  | ✅ (wasm stub via cfg-gated deps)  | ⏳ (in progress)       |
-| `backend`/`a2a*`| ❌                                 | ❌                     |
+| `cli` (binary)  | ✅ (stub : `--version` / `--help`) | ✅ (stub)              |
+| `backend`/`a2a*`| ❌ (tokio "full" + mio + reqwest)  | ❌                     |
 
 ```bash
 rustup target add wasm32-unknown-unknown wasm32-wasip1
 
-# Browser-ready (libraries + CLI stub) :
+# Browser-ready :
 cargo check -p base --target wasm32-unknown-unknown      # ✅
-cargo check -p base --target wasm32-wasip1               # ✅
+cargo check -p cli  --target wasm32-unknown-unknown      # ✅ (stub binaire)
+
+# WASI :
+cargo check -p base     --target wasm32-wasip1           # ✅
 cargo check -p mrx-core --target wasm32-wasip1           # ✅
-cargo check -p cli  --target wasm32-unknown-unknown      # ✅ (wasm stub, native deps cfg-gated)
+cargo check -p cli      --target wasm32-wasip1           # ✅ (stub binaire)
 ```
+
+Le binaire `cli` se compile sur `wasm32-*` mais en *stub minimal* : il
+n'expose que `--version` et `--help` ; les commandes OS-bound (`auth`,
+`chromium`, `dns`, …) renvoient un message « pas disponible sur wasm »
+et redirigent vers le binaire natif. Cf. `crates/cli/src/main.rs`
+pour les `cfg(not(target_arch = "wasm32"))` qui isolent `mimalloc`,
+`tokio` *full*, `reqwest`, `rustls`, `backend` et `a2a-client`.
 
 ## Stack 2026
 
