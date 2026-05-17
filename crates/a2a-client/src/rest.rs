@@ -3,7 +3,7 @@
 use a2a::*;
 use a2a_pb::protojson_conv::{self, ProtoJsonPayload};
 use async_trait::async_trait;
-use futures::stream::BoxStream;
+use crate::BoxStream;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::Value;

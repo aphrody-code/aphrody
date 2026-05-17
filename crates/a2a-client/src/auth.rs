@@ -65,7 +65,8 @@ impl AuthInterceptor {
     }
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl CallInterceptor for AuthInterceptor {
     async fn before(&self, _method: &str, params: &mut ServiceParams) -> Result<(), A2AError> {
         params.entry(self.header_name.clone()).or_default().push(self.header_value.clone());

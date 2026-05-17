@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use a2a::{jsonrpc::methods, *};
 use async_trait::async_trait;
-use futures::stream::BoxStream;
+use crate::BoxStream;
 
 use crate::{
     middleware::CallInterceptor,
@@ -164,7 +164,8 @@ impl<T: Transport> A2AClient<T> {
 }
 
 /// Convenience trait to extract client results.
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 pub trait SendMessageExt {
     async fn send_text(
         &self,
@@ -172,7 +173,8 @@ pub trait SendMessageExt {
     ) -> Result<SendMessageResponse, A2AError>;
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl<T: Transport> SendMessageExt for A2AClient<T> {
     async fn send_text(
         &self,
@@ -216,7 +218,8 @@ mod tests {
         }
     }
 
-    #[async_trait]
+    #[cfg_attr(not(target_family = "wasm"), async_trait)]
+    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
     impl Transport for MockTransport {
         async fn send_message(
             &self,
@@ -394,7 +397,8 @@ mod tests {
         events: Arc<Mutex<Vec<String>>>,
     }
 
-    #[async_trait]
+    #[cfg_attr(not(target_family = "wasm"), async_trait)]
+    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
     impl CallInterceptor for RecordingInterceptor {
         async fn before(&self, _method: &str, params: &mut ServiceParams) -> Result<(), A2AError> {
             self.events.lock().unwrap().push(format!("before:{}", self.name));
