@@ -206,7 +206,7 @@ pbjson-build       = { version = "0.9" }
 protoc-bin-vendored = { version = "3" }
 
 # --- Database -------------------------------------------------------------
-rusqlite           = { version = "0.37", features = ["bundled"] }
+rusqlite           = { version = "0.39", features = ["bundled"] }
 denokv_sqlite      = { version = "0.13" }
 denokv_proto       = { version = "0.13" }
 deno_error         = { version = "0.7" }
