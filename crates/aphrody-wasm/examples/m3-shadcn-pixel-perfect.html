@@ -1,0 +1,820 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+  aphrody — M3 ↔ shadcn pixel-perfect coverage demo
+  ===================================================
+  Renders the 12 shadcn-equivalent components via Material Web Components 3
+  (MWC3) custom elements imported directly from the @material/web ESM CDN.
+
+  No React. No build step. Open in a modern browser and you'll see all 12
+  component groups rendered side-by-side in the M3 baseline LIGHT and DARK
+  themes for a pixel-perfect comparison.
+
+  Component coverage (shadcn → Material Web 3):
+    1.  Buttons   →  md-filled-button, md-outlined-button, md-text-button, md-filled-tonal-button
+    2.  Text Field →  md-outlined-text-field, md-filled-text-field
+    3.  Card      →  M3-styled elevated div (md-elevation inside)
+    4.  Dialog    →  md-dialog (triggered by md-filled-button)
+    5.  Tabs      →  md-tabs + md-primary-tab
+    6.  Snackbar  →  custom M3-spec snackbar driven by md-text-button
+    7.  Select    →  md-outlined-select + md-select-option
+    8.  Checkbox  →  md-checkbox (three checked-state variants)
+    9.  Radio     →  md-radio (three options, single group)
+    10. Switch    →  md-switch
+    11. Slider    →  md-slider (continuous + stepped)
+    12. Avatar    →  circular <img> with M3 surface-tint border
+
+  Color tokens are the M3 BASELINE reference palette
+  (m3.material.io/styles/color/static/baseline).
+
+  Usage:
+    bun x serve crates/aphrody-wasm/examples/
+    # or any static server
+    open http://localhost:3000/m3-shadcn-pixel-perfect.html
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aphrody — M3 ↔ shadcn pixel-perfect coverage</title>
+
+  <!--
+    Import map: route every @material/web/* specifier to the esm.run CDN
+    (jsdelivr-backed). This lets the <script type="module"> use bare
+    imports like `import '@material/web/all.js'` with zero build step.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@material/web/": "https://esm.run/@material/web/"
+    }
+  }
+  </script>
+
+  <!--
+    Roboto Flex — the official M3 reference font.
+    Loaded ahead of MWC3 so the components hydrate with correct metrics.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..700&family=Roboto+Mono:wght@400;600&display=swap"
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap"
+  />
+
+  <style>
+    /* ====================================================================== */
+    /* Reset & base                                                            */
+    /* ====================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font-body: "Roboto Flex", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "Roboto Mono", "Cascadia Code", "Consolas", monospace;
+      --radius: 12px;
+      --gap: 1rem;
+    }
+
+    /* ====================================================================== */
+    /* M3 BASELINE color tokens — LIGHT scheme                                 */
+    /* Source: m3.material.io/styles/color/static/baseline (purple seed)       */
+    /* ====================================================================== */
+    .theme-light {
+      --md-sys-color-primary:                    #6750A4;
+      --md-sys-color-on-primary:                 #FFFFFF;
+      --md-sys-color-primary-container:          #EADDFF;
+      --md-sys-color-on-primary-container:       #21005D;
+      --md-sys-color-secondary:                  #625B71;
+      --md-sys-color-on-secondary:               #FFFFFF;
+      --md-sys-color-secondary-container:        #E8DEF8;
+      --md-sys-color-on-secondary-container:     #1D192B;
+      --md-sys-color-tertiary:                   #7D5260;
+      --md-sys-color-on-tertiary:                #FFFFFF;
+      --md-sys-color-tertiary-container:         #FFD8E4;
+      --md-sys-color-on-tertiary-container:      #31111D;
+      --md-sys-color-error:                      #B3261E;
+      --md-sys-color-on-error:                   #FFFFFF;
+      --md-sys-color-error-container:            #F9DEDC;
+      --md-sys-color-on-error-container:         #410E0B;
+      --md-sys-color-background:                 #FEF7FF;
+      --md-sys-color-on-background:              #1D1B20;
+      --md-sys-color-surface:                    #FEF7FF;
+      --md-sys-color-on-surface:                 #1D1B20;
+      --md-sys-color-surface-variant:            #E7E0EC;
+      --md-sys-color-on-surface-variant:         #49454F;
+      --md-sys-color-surface-container-lowest:   #FFFFFF;
+      --md-sys-color-surface-container-low:      #F7F2FA;
+      --md-sys-color-surface-container:          #F3EDF7;
+      --md-sys-color-surface-container-high:     #ECE6F0;
+      --md-sys-color-surface-container-highest:  #E6E0E9;
+      --md-sys-color-outline:                    #79747E;
+      --md-sys-color-outline-variant:            #CAC4D0;
+      --md-sys-color-inverse-surface:            #322F35;
+      --md-sys-color-inverse-on-surface:         #F5EFF7;
+      --md-sys-color-inverse-primary:            #D0BCFF;
+      --md-sys-color-shadow:                     #000000;
+      --md-sys-color-scrim:                      #000000;
+      --md-sys-color-surface-tint:               #6750A4;
+    }
+
+    /* ====================================================================== */
+    /* M3 BASELINE color tokens — DARK scheme                                  */
+    /* ====================================================================== */
+    .theme-dark {
+      --md-sys-color-primary:                    #D0BCFF;
+      --md-sys-color-on-primary:                 #381E72;
+      --md-sys-color-primary-container:          #4F378B;
+      --md-sys-color-on-primary-container:       #EADDFF;
+      --md-sys-color-secondary:                  #CCC2DC;
+      --md-sys-color-on-secondary:               #332D41;
+      --md-sys-color-secondary-container:        #4A4458;
+      --md-sys-color-on-secondary-container:     #E8DEF8;
+      --md-sys-color-tertiary:                   #EFB8C8;
+      --md-sys-color-on-tertiary:                #492532;
+      --md-sys-color-tertiary-container:         #633B48;
+      --md-sys-color-on-tertiary-container:      #FFD8E4;
+      --md-sys-color-error:                      #F2B8B5;
+      --md-sys-color-on-error:                   #601410;
+      --md-sys-color-error-container:            #8C1D18;
+      --md-sys-color-on-error-container:         #F9DEDC;
+      --md-sys-color-background:                 #141218;
+      --md-sys-color-on-background:              #E6E0E9;
+      --md-sys-color-surface:                    #141218;
+      --md-sys-color-on-surface:                 #E6E0E9;
+      --md-sys-color-surface-variant:            #49454F;
+      --md-sys-color-on-surface-variant:         #CAC4D0;
+      --md-sys-color-surface-container-lowest:   #0F0D13;
+      --md-sys-color-surface-container-low:      #1D1B20;
+      --md-sys-color-surface-container:          #211F26;
+      --md-sys-color-surface-container-high:     #2B2930;
+      --md-sys-color-surface-container-highest:  #36343B;
+      --md-sys-color-outline:                    #938F99;
+      --md-sys-color-outline-variant:            #49454F;
+      --md-sys-color-inverse-surface:            #E6E0E9;
+      --md-sys-color-inverse-on-surface:         #322F35;
+      --md-sys-color-inverse-primary:            #6750A4;
+      --md-sys-color-shadow:                     #000000;
+      --md-sys-color-scrim:                      #000000;
+      --md-sys-color-surface-tint:               #D0BCFF;
+    }
+
+    /* ====================================================================== */
+    /* Page chrome — header / footer / grid layout                             */
+    /* ====================================================================== */
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-body);
+      background: #0b0a10;
+      color: #e6e0e9;
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.7rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9b96a4;
+      font-size: 0.92rem;
+      margin-top: 0.35rem;
+    }
+
+    header .legend {
+      display: inline-flex;
+      gap: 0.75rem;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #9b96a4;
+      margin-top: 0.5rem;
+    }
+
+    header .legend code {
+      background: #1b1a22;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    /* Two-theme grid — light pane and dark pane side-by-side */
+    .themes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 980px) {
+      .themes-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ====================================================================== */
+    /* Theme pane — surface-tinted shell that hosts the M3 components          */
+    /* ====================================================================== */
+    .theme-pane {
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.25rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      font-family: var(--font-body);
+    }
+
+    .theme-pane h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .theme-pane h2 .tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    /* ====================================================================== */
+    /* Component group — one block per shadcn equivalent                       */
+    /* ====================================================================== */
+    .group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 0.85rem 1rem;
+      background: var(--md-sys-color-surface-container-low);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: 8px;
+    }
+
+    .group-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--md-sys-color-on-surface-variant);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .group-title .num {
+      display: inline-grid;
+      place-items: center;
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 999px;
+      background: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .row.stack {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    /* ====================================================================== */
+    /* Card group — M3 elevated container                                      */
+    /* ====================================================================== */
+    .m3-card {
+      background: var(--md-sys-color-surface-container);
+      color: var(--md-sys-color-on-surface);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.30),
+        0 1px 3px 1px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .m3-card .title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .m3-card .body {
+      font-size: 0.82rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* ====================================================================== */
+    /* Avatar group                                                            */
+    /* ====================================================================== */
+    .m3-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      display: inline-grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 2px solid var(--md-sys-color-surface-tint);
+      overflow: hidden;
+    }
+
+    .m3-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ====================================================================== */
+    /* Custom snackbar — M3 spec, mounted at the bottom of each pane           */
+    /* ====================================================================== */
+    .m3-snackbar {
+      position: relative;
+      align-self: flex-start;
+      background: var(--md-sys-color-inverse-surface);
+      color: var(--md-sys-color-inverse-on-surface);
+      padding: 0.6rem 0.9rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      display: none;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.32);
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .m3-snackbar.visible { display: inline-flex; }
+
+    .m3-snackbar .action {
+      color: var(--md-sys-color-inverse-primary);
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+    }
+
+    /* Make the MD components inherit Roboto Flex */
+    md-filled-button,
+    md-outlined-button,
+    md-text-button,
+    md-filled-tonal-button,
+    md-outlined-text-field,
+    md-filled-text-field,
+    md-dialog,
+    md-tabs,
+    md-primary-tab,
+    md-outlined-select,
+    md-select-option,
+    md-checkbox,
+    md-radio,
+    md-switch,
+    md-slider {
+      font-family: var(--font-body);
+    }
+
+    footer {
+      border-top: 1px solid #2a2a2a;
+      padding-top: 1rem;
+      color: #6b6675;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    footer a { color: #b8a8d8; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ================================================================== -->
+  <!-- Header                                                              -->
+  <!-- ================================================================== -->
+  <header>
+    <h1>aphrody &mdash; M3 &harr; shadcn pixel-perfect coverage</h1>
+    <p>
+      All 12 shadcn-equivalent components rendered via Material Web Components 3,
+      side-by-side in M3 baseline LIGHT (left) and DARK (right) themes.
+    </p>
+    <span class="legend">
+      <code>import '@material/web/all.js'</code>
+      <span>via</span>
+      <code>esm.run / jsdelivr</code>
+      <span>&middot; zero build step</span>
+    </span>
+  </header>
+
+  <!-- ================================================================== -->
+  <!-- Two-theme grid                                                      -->
+  <!-- ================================================================== -->
+  <div class="themes-grid">
+
+    <!-- =============================================================== -->
+    <!-- LEFT pane &mdash; M3 BASELINE LIGHT                              -->
+    <!-- =============================================================== -->
+    <section class="theme-pane theme-light" id="pane-light">
+      <h2>Light theme <span class="tag">m3-baseline / light</span></h2>
+
+      <!-- 1. Buttons -->
+      <div class="group">
+        <div class="group-title"><span class="num">1</span>Buttons</div>
+        <div class="row">
+          <md-filled-button>Filled</md-filled-button>
+          <md-outlined-button>Outlined</md-outlined-button>
+          <md-text-button>Text</md-text-button>
+          <md-filled-tonal-button>Tonal</md-filled-tonal-button>
+        </div>
+      </div>
+
+      <!-- 2. Text fields -->
+      <div class="group">
+        <div class="group-title"><span class="num">2</span>Text fields</div>
+        <div class="row stack">
+          <md-outlined-text-field label="Email" value="hello@aphrody.dev"></md-outlined-text-field>
+          <md-filled-text-field label="Username" value="aphrody"></md-filled-text-field>
+        </div>
+      </div>
+
+      <!-- 3. Card -->
+      <div class="group">
+        <div class="group-title"><span class="num">3</span>Card</div>
+        <div class="m3-card">
+          <div class="title">Elevated card</div>
+          <div class="body">M3 surface-container with elevation level 1 shadow.</div>
+        </div>
+      </div>
+
+      <!-- 4. Dialog -->
+      <div class="group">
+        <div class="group-title"><span class="num">4</span>Dialog</div>
+        <div class="row">
+          <md-filled-button data-dialog="dlg-light">Open dialog</md-filled-button>
+        </div>
+        <md-dialog id="dlg-light">
+          <div slot="headline">Confirm action</div>
+          <form slot="content" id="dlg-light-form" method="dialog">
+            Do you really want to proceed with the M3 baseline migration?
+          </form>
+          <div slot="actions">
+            <md-text-button form="dlg-light-form" value="cancel">Cancel</md-text-button>
+            <md-filled-button form="dlg-light-form" value="ok">OK</md-filled-button>
+          </div>
+        </md-dialog>
+      </div>
+
+      <!-- 5. Tabs -->
+      <div class="group">
+        <div class="group-title"><span class="num">5</span>Tabs</div>
+        <md-tabs>
+          <md-primary-tab>Overview</md-primary-tab>
+          <md-primary-tab>Tokens</md-primary-tab>
+          <md-primary-tab>Docs</md-primary-tab>
+        </md-tabs>
+      </div>
+
+      <!-- 6. Snackbar -->
+      <div class="group">
+        <div class="group-title"><span class="num">6</span>Snackbar</div>
+        <div class="row">
+          <md-outlined-button data-snackbar="snk-light">Show snackbar</md-outlined-button>
+        </div>
+        <div class="m3-snackbar" id="snk-light">
+          <span>Snackbar triggered.</span>
+          <span class="action" data-dismiss="snk-light">DISMISS</span>
+        </div>
+      </div>
+
+      <!-- 7. Select -->
+      <div class="group">
+        <div class="group-title"><span class="num">7</span>Select</div>
+        <md-outlined-select label="Platform">
+          <md-select-option value="linux" selected>
+            <div slot="headline">Linux Ubuntu 26.04</div>
+          </md-select-option>
+          <md-select-option value="windows">
+            <div slot="headline">Windows 11 Canary</div>
+          </md-select-option>
+          <md-select-option value="wasm">
+            <div slot="headline">WebAssembly</div>
+          </md-select-option>
+        </md-outlined-select>
+      </div>
+
+      <!-- 8. Checkbox -->
+      <div class="group">
+        <div class="group-title"><span class="num">8</span>Checkbox</div>
+        <div class="row">
+          <label><md-checkbox checked></md-checkbox> Checked</label>
+          <label><md-checkbox indeterminate></md-checkbox> Indeterminate</label>
+          <label><md-checkbox></md-checkbox> Off</label>
+        </div>
+      </div>
+
+      <!-- 9. Radio -->
+      <div class="group">
+        <div class="group-title"><span class="num">9</span>Radio</div>
+        <div class="row">
+          <label><md-radio name="rg-light" value="a" checked></md-radio> Alpha</label>
+          <label><md-radio name="rg-light" value="b"></md-radio> Beta</label>
+          <label><md-radio name="rg-light" value="g"></md-radio> Gamma</label>
+        </div>
+      </div>
+
+      <!-- 10. Switch -->
+      <div class="group">
+        <div class="group-title"><span class="num">10</span>Switch</div>
+        <div class="row">
+          <label><md-switch></md-switch> Off</label>
+          <label><md-switch selected></md-switch> On</label>
+        </div>
+      </div>
+
+      <!-- 11. Slider -->
+      <div class="group">
+        <div class="group-title"><span class="num">11</span>Slider</div>
+        <div class="row stack">
+          <md-slider value="35" labeled></md-slider>
+          <md-slider ticks step="10" value="40" labeled></md-slider>
+        </div>
+      </div>
+
+      <!-- 12. Avatar -->
+      <div class="group">
+        <div class="group-title"><span class="num">12</span>Avatar</div>
+        <div class="row">
+          <span class="m3-avatar">
+            <img
+              src="https://api.dicebear.com/9.x/initials/svg?seed=Aphrody&backgroundColor=6750A4&textColor=FFFFFF"
+              alt="Aphrody avatar"
+            />
+          </span>
+          <span class="m3-avatar">AP</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =============================================================== -->
+    <!-- RIGHT pane &mdash; M3 BASELINE DARK                              -->
+    <!-- =============================================================== -->
+    <section class="theme-pane theme-dark" id="pane-dark">
+      <h2>Dark theme <span class="tag">m3-baseline / dark</span></h2>
+
+      <!-- 1. Buttons -->
+      <div class="group">
+        <div class="group-title"><span class="num">1</span>Buttons</div>
+        <div class="row">
+          <md-filled-button>Filled</md-filled-button>
+          <md-outlined-button>Outlined</md-outlined-button>
+          <md-text-button>Text</md-text-button>
+          <md-filled-tonal-button>Tonal</md-filled-tonal-button>
+        </div>
+      </div>
+
+      <!-- 2. Text fields -->
+      <div class="group">
+        <div class="group-title"><span class="num">2</span>Text fields</div>
+        <div class="row stack">
+          <md-outlined-text-field label="Email" value="hello@aphrody.dev"></md-outlined-text-field>
+          <md-filled-text-field label="Username" value="aphrody"></md-filled-text-field>
+        </div>
+      </div>
+
+      <!-- 3. Card -->
+      <div class="group">
+        <div class="group-title"><span class="num">3</span>Card</div>
+        <div class="m3-card">
+          <div class="title">Elevated card</div>
+          <div class="body">M3 surface-container with elevation level 1 shadow.</div>
+        </div>
+      </div>
+
+      <!-- 4. Dialog -->
+      <div class="group">
+        <div class="group-title"><span class="num">4</span>Dialog</div>
+        <div class="row">
+          <md-filled-button data-dialog="dlg-dark">Open dialog</md-filled-button>
+        </div>
+        <md-dialog id="dlg-dark">
+          <div slot="headline">Confirm action</div>
+          <form slot="content" id="dlg-dark-form" method="dialog">
+            Do you really want to proceed with the M3 baseline migration?
+          </form>
+          <div slot="actions">
+            <md-text-button form="dlg-dark-form" value="cancel">Cancel</md-text-button>
+            <md-filled-button form="dlg-dark-form" value="ok">OK</md-filled-button>
+          </div>
+        </md-dialog>
+      </div>
+
+      <!-- 5. Tabs -->
+      <div class="group">
+        <div class="group-title"><span class="num">5</span>Tabs</div>
+        <md-tabs>
+          <md-primary-tab>Overview</md-primary-tab>
+          <md-primary-tab>Tokens</md-primary-tab>
+          <md-primary-tab>Docs</md-primary-tab>
+        </md-tabs>
+      </div>
+
+      <!-- 6. Snackbar -->
+      <div class="group">
+        <div class="group-title"><span class="num">6</span>Snackbar</div>
+        <div class="row">
+          <md-outlined-button data-snackbar="snk-dark">Show snackbar</md-outlined-button>
+        </div>
+        <div class="m3-snackbar" id="snk-dark">
+          <span>Snackbar triggered.</span>
+          <span class="action" data-dismiss="snk-dark">DISMISS</span>
+        </div>
+      </div>
+
+      <!-- 7. Select -->
+      <div class="group">
+        <div class="group-title"><span class="num">7</span>Select</div>
+        <md-outlined-select label="Platform">
+          <md-select-option value="linux" selected>
+            <div slot="headline">Linux Ubuntu 26.04</div>
+          </md-select-option>
+          <md-select-option value="windows">
+            <div slot="headline">Windows 11 Canary</div>
+          </md-select-option>
+          <md-select-option value="wasm">
+            <div slot="headline">WebAssembly</div>
+          </md-select-option>
+        </md-outlined-select>
+      </div>
+
+      <!-- 8. Checkbox -->
+      <div class="group">
+        <div class="group-title"><span class="num">8</span>Checkbox</div>
+        <div class="row">
+          <label><md-checkbox checked></md-checkbox> Checked</label>
+          <label><md-checkbox indeterminate></md-checkbox> Indeterminate</label>
+          <label><md-checkbox></md-checkbox> Off</label>
+        </div>
+      </div>
+
+      <!-- 9. Radio -->
+      <div class="group">
+        <div class="group-title"><span class="num">9</span>Radio</div>
+        <div class="row">
+          <label><md-radio name="rg-dark" value="a" checked></md-radio> Alpha</label>
+          <label><md-radio name="rg-dark" value="b"></md-radio> Beta</label>
+          <label><md-radio name="rg-dark" value="g"></md-radio> Gamma</label>
+        </div>
+      </div>
+
+      <!-- 10. Switch -->
+      <div class="group">
+        <div class="group-title"><span class="num">10</span>Switch</div>
+        <div class="row">
+          <label><md-switch></md-switch> Off</label>
+          <label><md-switch selected></md-switch> On</label>
+        </div>
+      </div>
+
+      <!-- 11. Slider -->
+      <div class="group">
+        <div class="group-title"><span class="num">11</span>Slider</div>
+        <div class="row stack">
+          <md-slider value="35" labeled></md-slider>
+          <md-slider ticks step="10" value="40" labeled></md-slider>
+        </div>
+      </div>
+
+      <!-- 12. Avatar -->
+      <div class="group">
+        <div class="group-title"><span class="num">12</span>Avatar</div>
+        <div class="row">
+          <span class="m3-avatar">
+            <img
+              src="https://api.dicebear.com/9.x/initials/svg?seed=Aphrody&backgroundColor=D0BCFF&textColor=381E72"
+              alt="Aphrody avatar"
+            />
+          </span>
+          <span class="m3-avatar">AP</span>
+        </div>
+      </div>
+
+    </section>
+
+  </div><!-- /.themes-grid -->
+
+  <!-- ================================================================== -->
+  <!-- Footer                                                              -->
+  <!-- ================================================================== -->
+  <footer>
+    <span>aphrody-wasm &middot; M3 baseline coverage demo</span>
+    <span>
+      <a href="https://m3.material.io/styles/color/static/baseline" target="_blank" rel="noopener">m3 baseline</a>
+      &middot;
+      <a href="https://github.com/material-components/material-web" target="_blank" rel="noopener">material-web</a>
+    </span>
+  </footer>
+
+</div><!-- /.container -->
+
+<!-- ====================================================================== -->
+<!-- Module script &mdash; import all MWC3 components from the esm.run CDN.   -->
+<!-- ====================================================================== -->
+<script type="module">
+  // Bundles every md-* component definition in one go (~150 KB gz).
+  import '@material/web/all.js';
+
+  // Wait for one canonical custom-element definition to confirm the bundle
+  // hydrated before we wire up event listeners.
+  await customElements.whenDefined('md-filled-button');
+
+  // ------------------------------------------------------------------ //
+  // Dialog wiring &mdash; each [data-dialog="<id>"] trigger opens its    //
+  // corresponding md-dialog by id.                                      //
+  // ------------------------------------------------------------------ //
+  for (const trigger of document.querySelectorAll('[data-dialog]')) {
+    trigger.addEventListener('click', () => {
+      const dlg = document.getElementById(trigger.dataset.dialog);
+      if (dlg && typeof dlg.show === 'function') {
+        dlg.show();
+      }
+    });
+  }
+
+  // ------------------------------------------------------------------ //
+  // Snackbar wiring &mdash; show on trigger, auto-dismiss after 4s, or  //
+  // dismiss when the user clicks the DISMISS action.                    //
+  // ------------------------------------------------------------------ //
+  const snackbarTimers = new Map();
+
+  function showSnackbar(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('visible');
+    const prev = snackbarTimers.get(id);
+    if (prev) clearTimeout(prev);
+    snackbarTimers.set(id, setTimeout(() => el.classList.remove('visible'), 4000));
+  }
+
+  function dismissSnackbar(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('visible');
+    const prev = snackbarTimers.get(id);
+    if (prev) clearTimeout(prev);
+  }
+
+  for (const trigger of document.querySelectorAll('[data-snackbar]')) {
+    trigger.addEventListener('click', () => showSnackbar(trigger.dataset.snackbar));
+  }
+
+  for (const dismiss of document.querySelectorAll('[data-dismiss]')) {
+    dismiss.addEventListener('click', () => dismissSnackbar(dismiss.dataset.dismiss));
+  }
+
+  // Surface a single console hint so devs know hydration succeeded.
+  console.log('[m3-shadcn-pixel-perfect] MWC3 hydrated, 12 component groups live.');
+</script>
+</body>
+</html>
