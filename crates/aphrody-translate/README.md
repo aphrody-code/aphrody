@@ -1,113 +1,121 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # aphrody-translate
 
-CLI Rust qui parcourt un projet, extrait tous les commentaires source, retire les marqueurs IA et les émoji, traduit en français, puis applique le style **Aphrody** — prose sobre, impersonnelle, centrée sur le code.
+Deterministic CLI that rewrites source-code comments: extract, scrub AI
+co-author trailers and emoji, translate EN -> FR via MyMemory, then enforce
+the Aphrody prose voice. Identifiers, string literals, and code are never
+modified.
 
-## Conception
+## 1. What is aphrody-translate?
 
-Quatre étages successifs, totalement déterministes :
+`aphrody-translate` walks a project tree (respecting `.gitignore`), extracts
+every recognised comment, and runs four stages: `extract` (per-language regex)
+-> `ai_patterns::classify` (`Drop` / `Scrub` / `Keep`) -> `translate` (MyMemory
+MT, SHA-256 cache on disk) -> `aphrodify` (sober, impersonal voice). Default
+target is French. Identifier names are out of scope by design.
 
-```
-walk (ignore-aware)
-  ↓
-extract  (regex purs Rust, par langage)
-  ↓
-ai_patterns::classify → Drop | Scrub | Keep
-  ↓
-translate (MyMemory API gratuite + cache JSON disque)
-  ↓
-aphrodify (rewrite stylistique)
-  ↓
-write (in-place ou dry-run)
-```
-
-Aucun appel à un modèle IA pour transformer le texte : seule la **traduction** passe par MyMemory (qui fait du statistical MT, pas du LLM). Tout le reste est rule-based.
-
-## Pourquoi pas tree-sitter
-
-V1 reste sur regex pour rester pur Rust cross-platform (Linux + Windows) sans dépendance native C par grammaire. Le compromis est fonctionnel : >95 % des commentaires hors-chaîne sont capturés correctement. Tree-sitter sera ajouté en V2 pour gérer les commentaires imbriqués dans des chaînes (rare).
-
-## Langages supportés
-
-| Langage | Styles de commentaires |
-|---------|------------------------|
-| Rust | `///`, `/** */`, `//`, `/* */` |
-| TypeScript / JavaScript | `/** */`, `/* */`, `//` |
-| Python | `# `, `""" """` |
-| Go | `//`, `/* */` |
-| C / C++ | `//`, `/* */` |
-| Shell | `#` |
-| TOML | `#` |
-| Markdown | `<!-- -->` |
-
-## Utilisation
+## 2. Install
 
 ```bash
-# Dry-run (par défaut)
+cargo install --locked aphrody-translate                                              # crates.io
+cargo install --git https://github.com/aphrody-code/aphrody --bin aphrody-translate   # canary monorepo
+```
+
+A workspace checkout also builds it via `cargo build --release -p aphrody-translate`.
+
+## 3. Quick start
+
+`aphrody-translate` is a single flat command (no subcommands). Every option
+is a long flag; the default invocation is a safe dry-run.
+
+```text
+Usage: aphrody-translate [OPTIONS]
+
+Options:
+      --root <ROOT>                    [default: .]
+      --languages <LANGUAGES>          rust,ts,js,py,go,c,cpp,sh,md,toml,all [default: all]
+  -i, --in-place                       rewrite in place (otherwise dry-run)
+      --no-translate                   disable the MyMemory network call
+      --contact-email <CONTACT_EMAIL>  noreply address for MyMemory
+      --cache <CACHE>                  cache path
+      --force                          re-translate even when already French
+      --log <LOG>                      trace|debug|info|warn|error [default: info]
+  -h, --help                           Print help
+  -V, --version                        Print version
+```
+
+## 4. Invocation modes
+
+### Comment translation (default dry-run)
+
+```bash
 aphrody-translate --root .
-
-# Tout réécrire en place
-aphrody-translate --root . --in-place
-
-# Limiter aux fichiers Rust
-aphrody-translate --root . --in-place --languages rust
-
-# Scrub + aphrodify sans appel réseau
-aphrody-translate --root . --no-translate --in-place
-
-# Quota élargi (50 000 mots/jour) en passant un email noreply
-aphrody-translate --root . --in-place \
-    --contact-email 37252373+aphrody-code@users.noreply.github.com
 ```
 
-## Cache
+Translates non-French comments via MyMemory and prints
+`--- DRY: "<path>" would be rewritten` for each file that would change.
 
-Toutes les traductions atterrissent dans `<root>/.aphrody-translate-cache.json`
-(BTreeMap sha256 → traduction). Une ré-exécution sur les mêmes commentaires est
-instantanée et sans réseau. Le fichier est sûr à commiter : il ne contient pas
-de secret, seulement des phrases traduites.
-
-## Règles ai_patterns — extraits
-
-**Drop** (la ligne entière disparaît) :
-- `🤖 Generated with [Claude Code](...)`
-- `Co-Authored-By: Claude|Gemini|Copilot|GPT`
-- `Written/Made/Assisted by AI`
-
-**Scrub** (le fragment est retiré, le reste est gardé) :
-- `with help from Claude|GPT|Gemini|Copilot|...`
-- Tout caractère émoji (plages U+1F300..U+1FAFF, U+2600..U+27BF, etc.)
-
-**Keep** sinon.
-
-## Règles aphrodify — extraits
-
-- Préfixes vides : `Note:`, `Nota bene:`, `Remarque:` → retirés
-- TODO vague (`TODO: implement|finish|complete|do`) → ligne supprimée
-- Filler conversationnel : `Let's`, `Let me`, `I'll`, `We will`, `Voyons`, `D'abord` → retirés
-- Première personne FR : `je`, `j'ai`, `nous`, `notre`, `mon`, `ma`, `mes` → impersonnel
-- Première personne EN : `I`, `we`, `our`, `my` → impersonnel
-- Espaces multiples normalisés, ponctuation orpheline collée
-- Première lettre capitalisée, point final ajouté si manquant
-
-## Tests
+### AI-trailer scrubbing (offline)
 
 ```bash
-cargo test -p aphrody-translate
+aphrody-translate --root . --no-translate --in-place
 ```
 
-13 tests unitaires couvrent extract / ai_patterns / aphrodify avec exemples FR
-et EN.
+Skips network calls and runs only `ai_patterns` plus the Aphrody rewriter.
+Drops trailers such as `Co-Authored-By: Claude`, `Generated with Claude Code`,
+`with help from GPT`, and strips emoji ranges `U+1F300..U+1FAFF` and
+`U+2600..U+27BF`.
 
-## Limites assumées
+### Targeted language run
 
-- Heuristique `is_french` : approximative, basée sur accents et mots-outils. Un
-  faux négatif coûte un aller-retour réseau MyMemory ; un faux positif laisse un
-  commentaire anglais non traduit. Acceptable pour V1.
-- MyMemory peut rate-limit (HTTP 429). Le client tombe alors en mode passthrough
-  (texte original conservé) avec warning dans le log.
-- Réécriture des chaînes de caractères : volontairement non touchée. Seuls les
-  vrais commentaires sont modifiés.
+```bash
+aphrody-translate --root . --in-place --languages rust,ts
+```
 
-## License
+Tokens: `rust|rs`, `ts|tsx`, `js|jsx`, `py|python`, `go`, `c`, `cpp|c++|cxx`,
+`sh|shell|bash`, `md|markdown`, `toml`, `all`. Sample log:
 
-Apache-2.0. Voir `LICENSE` à la racine du workspace.
+```text
+INFO files queued count=128
+INFO rewritten in place file="crates/base/src/lib.rs"
+INFO aphrody-translate done total_comments=842 total_changed=37
+```
+
+## 5. Configuration
+
+There is no config file; every knob is a long flag (see section 3 for the
+full set). Notable details: `--contact-email <addr>` lifts the MyMemory quota
+to 50000 words/day. `--cache <path>` overrides the default
+`<root>/.aphrody-translate-cache.json`. `--log <level>` also honours
+`RUST_LOG`. The cache file is a `BTreeMap<sha256, translation>`; it contains
+no secrets and is safe to commit so reruns are network-free.
+
+## 6. Output format
+
+Default mode is a dry-run: one `--- DRY: "<path>" would be rewritten` line on
+stdout per affected file. Tracing events go through `tracing-subscriber`,
+filtered by `--log` or `RUST_LOG`. With `-i` / `--in-place`, files are
+rewritten atomically via `std::fs::write` and logged as `rewritten in place
+file=...`. There is no diff output; pair the dry-run with `git diff`, or
+inspect staged changes after `--in-place`.
+
+## 7. Honest limitations
+
+- Only `//`, `///`, `/* */`, `#`, `<!-- -->` and equivalents are touched.
+  String literals are never translated; user-facing strings need manual review.
+- Identifier names (function, struct, variable) are never modified by design.
+- AI-trailer scrubbing matches a regex set in `ai_patterns`; unusual formats
+  may slip through. Extend `src/ai_patterns.rs` and its unit tests.
+- The French detector is a small accent + stopword heuristic. False negatives
+  cost one MyMemory round-trip; false positives leave English untranslated.
+- MyMemory may return HTTP 429; the translator falls back to passthrough.
+- WebAssembly targets build a stub binary only.
+
+## 8. Related
+
+- Workspace overview and build/supply-chain policy:
+  [`../../README.md`](../../README.md).
+- Adding translation rules, AI-scrub patterns, or style transforms:
+  [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
+- License: Apache-2.0; see the workspace `LICENSE`.

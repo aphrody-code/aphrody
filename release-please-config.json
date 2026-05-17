@@ -1,0 +1,14 @@
+{
+  "release-type": "rust",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "package-name": "aphrody"
+    }
+  },
+  "include-component-in-tag": true,
+  "include-v-in-tag": true,
+  "draft": false,
+  "prerelease": false,
+  "skip-snapshot": false
+}

@@ -358,7 +358,10 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
     if let Some(name) = file_name {
         let ws_root = path.parent().and_then(|p| p.strip_prefix(root).ok());
         if let Some(ws_rel) = ws_root {
-            let ws_key = ws_rel.display().to_string();
+            // Normalise to forward-slash separators so the key matches the
+            // output of `workspace_key()` on all platforms (Windows
+            // `display()` yields back-slashes, causing file_count=0 otherwise).
+            let ws_key = ws_rel.display().to_string().replace('\\', "/");
             match name {
                 "package.json" => {
                     if let Some((n, v)) = parse_pkg_json(path) {
@@ -596,4 +599,51 @@ fn write_atomic<T: serde::Serialize>(out: &Path, value: &T) -> Result<()> {
     w.flush()?;
     std::fs::rename(&tmp, out).with_context(|| format!("rename -> {}", out.display()))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::workspace_key;
+    use std::path::Path;
+
+    /// `workspace_key` must return a forward-slash-normalised key regardless of
+    /// whether the input path was built from a Windows-style (`apps\foo`) or a
+    /// POSIX-style (`apps/foo`) relative path.  The key is used as a
+    /// `DashMap` lookup key and must be consistent across platforms.
+    #[test]
+    fn workspace_key_normalises_windows_paths() {
+        // POSIX-style relative path (Linux / macOS native)
+        let posix = Path::new("apps/myapp/src/index.ts");
+        let posix_key = workspace_key(posix);
+        assert_eq!(posix_key.as_deref(), Some("apps/myapp"));
+
+        // Windows-style relative path: Path::new on all platforms accepts
+        // back-slashes as a component separator when the path is constructed
+        // from a raw string with `\\` characters, so this simulates what
+        // `strip_prefix` returns on Windows hosts.
+        let win_raw = std::path::PathBuf::from("apps\\myapp\\src\\index.ts");
+        let win_key = workspace_key(&win_raw);
+        assert_eq!(win_key.as_deref(), Some("apps/myapp"));
+
+        // Both representations must produce an identical key so that the
+        // `file_count` / `bytes` accumulation and the metadata write
+        // (package.json / Cargo.toml parse) hit the same DashMap bucket.
+        assert_eq!(posix_key, win_key, "keys must match across path-separator styles");
+    }
+
+    /// Paths outside `apps/` and `packages/` must return `None` — unchanged
+    /// from the original invariant.
+    #[test]
+    fn workspace_key_rejects_non_workspace_paths() {
+        assert_eq!(workspace_key(Path::new("src/lib.rs")), None);
+        assert_eq!(workspace_key(Path::new("crates/foo/src/lib.rs")), None);
+        assert_eq!(workspace_key(Path::new("")), None);
+    }
+
+    /// `packages/` prefix must be accepted in addition to `apps/`.
+    #[test]
+    fn workspace_key_accepts_packages_prefix() {
+        let key = workspace_key(Path::new("packages/utils/index.ts"));
+        assert_eq!(key.as_deref(), Some("packages/utils"));
+    }
 }
