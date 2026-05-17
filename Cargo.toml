@@ -23,6 +23,8 @@ members = [
     "crates/mrx-cli",
     # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
     "crates/aphrody-translate",
+    # aphrody-wasm — browser-facing wasm-bindgen wrapper for base primitives
+    "crates/aphrody-wasm",
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
@@ -360,6 +362,10 @@ wasm-bindgen       = { version = "=0.2.121" }
 wasm-bindgen-futures = { version = "0.4" }
 js-sys             = { version = "0.3" }
 web-sys            = { version = "0.3" }
+# Logging in browser WASM contexts.
+log                        = { version = "0.4" }
+console_log                = { version = "1.0" }
+console_error_panic_hook   = { version = "0.1" }
 
 # --- System info (cross-platform: Linux /proc + Windows WMI-free) ---------
 sysinfo            = { version = "0.39", default-features = false, features = ["system", "disk"] }
