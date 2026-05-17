@@ -1,0 +1,14 @@
+{
+  "$schema": "https://code.claude.com/schema/mcp.json",
+  "_comment": "Team-wide MCP servers for aphrody. Auto-discovered by Claude Code on session start. NEVER commit secrets — use environment variable references (${VAR}) which resolve from the user's shell at runtime.",
+  "mcpServers": {
+    "github": {
+      "_comment": "Official GitHub MCP server (remote streamable-http, no Docker required). Manages issues, PRs, actions on aphrody-code/{aphrody,n2b,bxc,ui,next.js}. Token resolved from env at runtime — set GITHUB_PERSONAL_ACCESS_TOKEN in your shell (e.g. ~/.bashrc or .env loaded before claude). Required scopes: repo, workflow, read:org. Reuse the gh CLI token: GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token).",
+      "type": "streamable-http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
