@@ -1,0 +1,25 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 aphrody-code contributors
+#
+# aphrody — Debian pre-remove maintainer script (prerm).
+# Called by dpkg before package files are removed from the filesystem.
+#
+# aphrody registers no system services (no systemd unit, no init script,
+# no cron job). This script is intentionally minimal: it exits 0 so dpkg
+# proceeds cleanly with file removal.
+
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        ;;
+    failed-upgrade)
+        ;;
+    *)
+        echo "prerm called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

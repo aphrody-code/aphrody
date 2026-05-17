@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 aphrody-code contributors
+#
+# Debian control template for aphrody.
+# The release pipeline (CI) substitutes __VERSION__ before calling `dpkg-deb`
+# or passing --deb-version to `cargo deb`.
+#
+# Architecture note:
+#   - Primary build target: amd64 (x86_64-unknown-linux-gnu).
+#   - For arm64 (aarch64-unknown-linux-gnu) change Architecture field to
+#     "arm64" and run `cargo deb --target aarch64-unknown-linux-gnu`.
+#     cargo-deb names the output aphrody___VERSION___arm64.deb automatically.
+#
+# Depends note:
+#   - libssl3 is provided by OpenSSL 3.x on Ubuntu 22.04+ / Debian 12+.
+#     Ubuntu 26.04 ships OpenSSL 3.x as the default; no extra PPA needed.
+#   - If a fully-static musl binary is produced (target x86_64-unknown-linux-musl
+#     + CARGO_DEB_VARIANT=musl), libssl3 is NOT required; produce a separate
+#     aphrody-musl package with Depends: libc6 only (musl is statically linked
+#     into the binary itself via `features = ["vendored"]` on the openssl crate).
+
+Package: aphrody
+Version: __VERSION__
+Architecture: amd64
+Maintainer: aphrody-code <noreply@aphrody-code.dev>
+Description: Cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly).
+ Hermetic Google-grade supply chain.
+ .
+ aphrody is the primary entry point for the aphrody platform: forensics,
+ A2A agent orchestration, MCP tool server, and monorepo mapper (mrx).
+ Built with Rust nightly, Edition 2024. Verified with cargo-deny + cargo-vet.
+Section: utils
+Priority: optional
+Depends: libc6 (>= 2.38), libssl3 (>= 3.0)
+Homepage: https://github.com/aphrody-code/aphrody
