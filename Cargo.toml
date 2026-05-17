@@ -21,6 +21,8 @@ members = [
     "crates/mrx-audit",
     "crates/mrx-watch",
     "crates/mrx-cli",
+    # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
+    "crates/aphrody-translate",
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
