@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" role="img" aria-label="aphrody logo">
+  <title>aphrody</title>
+  <!-- A2A coordination mark: two agent nodes joined by a flowing channel arc -->
+  <g>
+    <!-- Channel arc: outgoing (top) -->
+    <path d="M 80 112 Q 128 32 176 112" stroke="#212121" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- Channel arc: return (bottom) -->
+    <path d="M 80 144 Q 128 224 176 144" stroke="#212121" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- Agent node 1 (deep purple) -->
+    <circle cx="80" cy="128" r="28" fill="#4A148C"/>
+    <circle cx="80" cy="128" r="10" fill="#00BCD4"/>
+    <!-- Agent node 2 (teal) -->
+    <circle cx="176" cy="128" r="28" fill="#00BCD4"/>
+    <circle cx="176" cy="128" r="10" fill="#4A148C"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="128" y="232" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Menlo, monospace" font-size="36" font-weight="600" fill="#212121" text-anchor="middle" letter-spacing="1">aphrody</text>
+</svg>
