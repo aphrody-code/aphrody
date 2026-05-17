@@ -314,6 +314,7 @@ test_type_info.rs
 .claude/todos/
 .claude/shell-snapshots/
 .claude/statsig/
+.claude/scheduled_tasks.lock
 .claude/ide/
 .opencode/projects/
 .gemini/

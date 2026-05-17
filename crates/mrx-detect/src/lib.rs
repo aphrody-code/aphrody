@@ -89,13 +89,12 @@ pub fn detect_root(root: &Path) -> RootKind {
     }
 
     // Bun/Node workspaces? (package.json with "workspaces")
-    if let Ok(s) = std::fs::read_to_string(root.join("package.json")) {
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&s) {
-            if v.get("workspaces").is_some() {
-                k.has_bun_workspaces = true;
-                push_unique(&mut k.package_managers, "bun");
-            }
-        }
+    if let Ok(s) = std::fs::read_to_string(root.join("package.json"))
+        && let Ok(v) = serde_json::from_str::<serde_json::Value>(&s)
+        && v.get("workspaces").is_some()
+    {
+        k.has_bun_workspaces = true;
+        push_unique(&mut k.package_managers, "bun");
     }
 
     k
