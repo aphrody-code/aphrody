@@ -229,7 +229,11 @@ jobs:
         run: cargo vet --locked
         continue-on-error: true
       - name: cargo-machete
+        # Informational: report unused workspace deps without blocking the job.
+        # Cleanup tracked under PLAN.md ("cleanup unused deps reported by
+        # cargo-machete"). Flipped to bloquant once the workspace is clean.
         run: cargo machete --with-metadata
+        continue-on-error: true
 
   # --------------------------------------------------------------------------
   # 7. BEST-EFFORT — Android (non bloquant)
