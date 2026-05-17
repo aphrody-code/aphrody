@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Platform support:
-// - `proto` module and `pbconv` are NOT available on wasm32 because the
-//   generated gRPC stubs (A2aServiceClient / A2aServiceServer) reference
-//   `tonic::transport::Channel` which transitively requires mio / tokio::net.
-// - `protojson` and `protojson_conv` ARE available on all targets including
-//   wasm32: they only use prost message structs + pbjson serde impls, no
-//   networking primitives. WASM consumers should use `protojson_conv` directly.
+// - `proto` module and `pbconv` are NOT available on wasm32 because the generated gRPC stubs
+//   (A2aServiceClient / A2aServiceServer) reference `tonic::transport::Channel` which transitively
+//   requires mio / tokio::net.
+// - `protojson` and `protojson_conv` ARE available on all targets including wasm32: they only use
+//   prost message structs + pbjson serde impls, no networking primitives. WASM consumers should use
+//   `protojson_conv` directly.
 
 /// Generated gRPC stubs and prost message types for the A2A v1 protocol.
 ///
@@ -40,5 +40,4 @@ pub mod pbconv;
 /// Available on all targets including wasm32.
 pub mod protojson_conv;
 
-#[cfg(not(target_family = "wasm"))]
-pub use proto::*;
+#[cfg(not(target_family = "wasm"))] pub use proto::*;

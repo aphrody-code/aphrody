@@ -1,0 +1,22 @@
+{
+  "name": "@aphrody/gemini-live-aphrody",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headless aphrody fork of google-gemini/live-api-web-console with OAuth (Gemini CLI) and Whisper+gateway backends. No GEMINI_API_KEY required.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --target=bun --outdir=dist",
+    "start": "bun run src/index.ts",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.6.3"
+  }
+}

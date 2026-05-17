@@ -106,9 +106,10 @@ impl Envelope {
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use super::Envelope;
     use wasm_bindgen::prelude::*;
     use web_sys::{Document, Element};
+
+    use super::Envelope;
 
     /// Install the `console_error_panic_hook` panic handler.
     ///
@@ -158,13 +159,9 @@ mod wasm {
             .document()
             .ok_or_else(|| JsValue::from_str("render_envelope_list: no document on window"))?;
 
-        let container: Element = document
-            .get_element_by_id(container_id)
-            .ok_or_else(|| {
-                JsValue::from_str(&format!(
-                    "render_envelope_list: element #{container_id} not found"
-                ))
-            })?;
+        let container: Element = document.get_element_by_id(container_id).ok_or_else(|| {
+            JsValue::from_str(&format!("render_envelope_list: element #{container_id} not found"))
+        })?;
 
         let envelopes: Vec<Envelope> = serde_json::from_str(json).map_err(|e| {
             JsValue::from_str(&format!("render_envelope_list: JSON parse error: {e}"))
@@ -242,7 +239,8 @@ mod tests {
 
     const SAMPLE_V1: &str = r#"{"v":1,"ts":"2026-05-17T20:02:27Z","from":"aphrody","to":"winclean","kind":"fact","topic":"yolo-grind-tick34-mini","body":"workspace gate exit 0"}"#;
 
-    const SAMPLE_LEGACY: &str = r#"{"ts":"2026-05-17T19:00:00Z","from":"winclean","type":"ping","subject":"hello"}"#;
+    const SAMPLE_LEGACY: &str =
+        r#"{"ts":"2026-05-17T19:00:00Z","from":"winclean","type":"ping","subject":"hello"}"#;
 
     #[test]
     fn parses_v1_envelope() {

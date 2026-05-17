@@ -77,10 +77,7 @@ pub struct Palette {
 /// inserting the `0xFF` alpha byte automatically.
 macro_rules! tone {
     ($v:expr, $rgb:expr) => {
-        Tone {
-            value: $v,
-            argb: 0xFF00_0000 | ($rgb as u32),
-        }
+        Tone { value: $v, argb: 0xFF00_0000 | ($rgb as u32) }
     };
 }
 
@@ -95,16 +92,16 @@ macro_rules! tone {
 pub const PRIMARY_BASELINE: Palette = Palette {
     name: "primary",
     tones: [
-        tone!(0, 0x00_0000),   // black
+        tone!(0, 0x00_0000), // black
         tone!(10, 0x21_005D),
         tone!(20, 0x38_1E72),
         tone!(30, 0x4F_378B),
-        tone!(40, 0x67_50A4),  // primary role (light theme)
+        tone!(40, 0x67_50A4), // primary role (light theme)
         tone!(50, 0x7F_67BE),
         tone!(60, 0x9A_82DB),
         tone!(70, 0xB6_9DF8),
-        tone!(80, 0xD0_BCFF),  // primary role (dark theme)
-        tone!(90, 0xEA_DDFF),  // primary_container (light theme)
+        tone!(80, 0xD0_BCFF), // primary role (dark theme)
+        tone!(90, 0xEA_DDFF), // primary_container (light theme)
         tone!(95, 0xF6_EDFF),
         tone!(99, 0xFF_FBFE),
         tone!(100, 0xFF_FFFF), // white
@@ -127,17 +124,17 @@ pub const SECONDARY_BASELINE: Palette = Palette {
     name: "secondary",
     tones: [
         tone!(0, 0x00_0000),
-        tone!(10, 0x1D_192B),  // on_secondary_container (light)
-        tone!(20, 0x33_2D41),  // on_secondary (dark)
-        tone!(30, 0x4A_4458),  // secondary_container (dark)
-        tone!(40, 0x62_5B71),  // secondary (light)
-        tone!(50, 0x7A_7289),  // TODO: verify
-        tone!(60, 0x95_8DA5),  // TODO: verify
-        tone!(70, 0xB0_A7C0),  // TODO: verify
-        tone!(80, 0xCC_C2DC),  // secondary (dark)
-        tone!(90, 0xE8_DEF8),  // secondary_container (light)
-        tone!(95, 0xF6_EDFF),  // TODO: verify (shared neutral base with primary?)
-        tone!(99, 0xFF_FBFE),  // TODO: verify
+        tone!(10, 0x1D_192B), // on_secondary_container (light)
+        tone!(20, 0x33_2D41), // on_secondary (dark)
+        tone!(30, 0x4A_4458), // secondary_container (dark)
+        tone!(40, 0x62_5B71), // secondary (light)
+        tone!(50, 0x7A_7289), // TODO: verify
+        tone!(60, 0x95_8DA5), // TODO: verify
+        tone!(70, 0xB0_A7C0), // TODO: verify
+        tone!(80, 0xCC_C2DC), // secondary (dark)
+        tone!(90, 0xE8_DEF8), // secondary_container (light)
+        tone!(95, 0xF6_EDFF), // TODO: verify (shared neutral base with primary?)
+        tone!(99, 0xFF_FBFE), // TODO: verify
         tone!(100, 0xFF_FFFF),
     ],
 };
@@ -156,17 +153,17 @@ pub const TERTIARY_BASELINE: Palette = Palette {
     name: "tertiary",
     tones: [
         tone!(0, 0x00_0000),
-        tone!(10, 0x31_111D),  // on_tertiary_container (light)
-        tone!(20, 0x49_2532),  // on_tertiary (dark)
-        tone!(30, 0x63_3B48),  // tertiary_container (dark)
-        tone!(40, 0x7D_5260),  // tertiary (light)
-        tone!(50, 0x98_6977),  // TODO: verify
-        tone!(60, 0xB5_8392),  // TODO: verify
-        tone!(70, 0xD2_9DAC),  // TODO: verify
-        tone!(80, 0xEF_B8C8),  // tertiary (dark)
-        tone!(90, 0xFF_D8E4),  // tertiary_container (light)
-        tone!(95, 0xFF_ECF1),  // TODO: verify
-        tone!(99, 0xFF_FBFF),  // TODO: verify
+        tone!(10, 0x31_111D), // on_tertiary_container (light)
+        tone!(20, 0x49_2532), // on_tertiary (dark)
+        tone!(30, 0x63_3B48), // tertiary_container (dark)
+        tone!(40, 0x7D_5260), // tertiary (light)
+        tone!(50, 0x98_6977), // TODO: verify
+        tone!(60, 0xB5_8392), // TODO: verify
+        tone!(70, 0xD2_9DAC), // TODO: verify
+        tone!(80, 0xEF_B8C8), // tertiary (dark)
+        tone!(90, 0xFF_D8E4), // tertiary_container (light)
+        tone!(95, 0xFF_ECF1), // TODO: verify
+        tone!(99, 0xFF_FBFF), // TODO: verify
         tone!(100, 0xFF_FFFF),
     ],
 };
@@ -183,15 +180,15 @@ pub const ERROR_BASELINE: Palette = Palette {
     name: "error",
     tones: [
         tone!(0, 0x00_0000),
-        tone!(10, 0x41_0E0B),  // on_error_container (light)
-        tone!(20, 0x60_1410),  // on_error (dark)
-        tone!(30, 0x8C_1D18),  // error_container (dark)
-        tone!(40, 0xB3_261E),  // error (light)
+        tone!(10, 0x41_0E0B), // on_error_container (light)
+        tone!(20, 0x60_1410), // on_error (dark)
+        tone!(30, 0x8C_1D18), // error_container (dark)
+        tone!(40, 0xB3_261E), // error (light)
         tone!(50, 0xDC_362E),
         tone!(60, 0xE4_6962),
         tone!(70, 0xEC_928E),
-        tone!(80, 0xF2_B8B0),  // error (dark)
-        tone!(90, 0xF9_DEDC),  // error_container (light)
+        tone!(80, 0xF2_B8B0), // error (dark)
+        tone!(90, 0xF9_DEDC), // error_container (light)
         tone!(95, 0xFF_EDEA),
         tone!(99, 0xFF_FBFF),
         tone!(100, 0xFF_FFFF),
@@ -215,17 +212,17 @@ pub const NEUTRAL_BASELINE: Palette = Palette {
     name: "neutral",
     tones: [
         tone!(0, 0x00_0000),
-        tone!(10, 0x1C_1B1F),  // on_background / on_surface (light)
-        tone!(20, 0x31_3033),  // inverse_surface (light)
-        tone!(30, 0x48_4649),  // TODO: verify
-        tone!(40, 0x60_5D62),  // TODO: verify
-        tone!(50, 0x78_7579),  // TODO: verify
-        tone!(60, 0x93_9094),  // TODO: verify
-        tone!(70, 0xAE_AAAF),  // TODO: verify
-        tone!(80, 0xCA_C5CA),  // TODO: verify
-        tone!(90, 0xE6_E1E5),  // on_surface (dark)
-        tone!(95, 0xF4_EFF4),  // inverse_on_surface (light) / dark theme surface
-        tone!(99, 0xFF_FBFE),  // background / surface (light)
+        tone!(10, 0x1C_1B1F), // on_background / on_surface (light)
+        tone!(20, 0x31_3033), // inverse_surface (light)
+        tone!(30, 0x48_4649), // TODO: verify
+        tone!(40, 0x60_5D62), // TODO: verify
+        tone!(50, 0x78_7579), // TODO: verify
+        tone!(60, 0x93_9094), // TODO: verify
+        tone!(70, 0xAE_AAAF), // TODO: verify
+        tone!(80, 0xCA_C5CA), // TODO: verify
+        tone!(90, 0xE6_E1E5), // on_surface (dark)
+        tone!(95, 0xF4_EFF4), // inverse_on_surface (light) / dark theme surface
+        tone!(99, 0xFF_FBFE), // background / surface (light)
         tone!(100, 0xFF_FFFF),
     ],
 };
@@ -246,17 +243,17 @@ pub const NEUTRAL_VARIANT_BASELINE: Palette = Palette {
     name: "neutral-variant",
     tones: [
         tone!(0, 0x00_0000),
-        tone!(10, 0x1D_192B),  // TODO: verify (shares secondary 10? Plausible but unconfirmed)
-        tone!(20, 0x33_2D41),  // TODO: verify
-        tone!(30, 0x49_454F),  // on_surface_variant (light)
-        tone!(40, 0x60_5D6A),  // TODO: verify
-        tone!(50, 0x79_747E),  // outline (light)
-        tone!(60, 0x93_8F99),  // TODO: verify
-        tone!(70, 0xAF_A6BA),  // TODO: verify
-        tone!(80, 0xCA_C4D0),  // outline_variant / on_surface_variant (dark)
-        tone!(90, 0xE7_E0EC),  // surface_variant (light)
-        tone!(95, 0xF5_EEFB),  // TODO: verify
-        tone!(99, 0xFF_FBFE),  // TODO: verify
+        tone!(10, 0x1D_192B), // TODO: verify (shares secondary 10? Plausible but unconfirmed)
+        tone!(20, 0x33_2D41), // TODO: verify
+        tone!(30, 0x49_454F), // on_surface_variant (light)
+        tone!(40, 0x60_5D6A), // TODO: verify
+        tone!(50, 0x79_747E), // outline (light)
+        tone!(60, 0x93_8F99), // TODO: verify
+        tone!(70, 0xAF_A6BA), // TODO: verify
+        tone!(80, 0xCA_C4D0), // outline_variant / on_surface_variant (dark)
+        tone!(90, 0xE7_E0EC), // surface_variant (light)
+        tone!(95, 0xF5_EEFB), // TODO: verify
+        tone!(99, 0xFF_FBFE), // TODO: verify
         tone!(100, 0xFF_FFFF),
     ],
 };
@@ -343,12 +340,9 @@ mod tests {
         for palette in ALL_BASELINE {
             for (i, tone) in palette.tones.iter().enumerate() {
                 assert_eq!(
-                    tone.value,
-                    TONE_VALUES[i],
+                    tone.value, TONE_VALUES[i],
                     "palette '{}' index {i}: tone.value={} but TONE_VALUES[{i}]={}",
-                    palette.name,
-                    tone.value,
-                    TONE_VALUES[i],
+                    palette.name, tone.value, TONE_VALUES[i],
                 );
             }
         }
@@ -380,8 +374,7 @@ mod tests {
             .find(|t| t.value == 40)
             .expect("tone 40 must exist in primary palette");
         assert_eq!(
-            tone_40.argb,
-            0xFF6750A4,
+            tone_40.argb, 0xFF6750A4,
             "primary tone 40 should be 0xFF6750A4, got {:#010X}",
             tone_40.argb,
         );
@@ -395,8 +388,7 @@ mod tests {
             let css = export_css(palette);
             let count = css.matches("--md-ref-palette-").count();
             assert_eq!(
-                count,
-                13,
+                count, 13,
                 "export_css for '{}' emitted {count} variables, expected 13",
                 palette.name,
             );

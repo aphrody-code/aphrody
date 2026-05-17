@@ -2,11 +2,8 @@
 //! `shadcn Slider` → `<md-slider>`.
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{create_mwc_element, set_attr_bool, set_attr_opt};
@@ -30,14 +27,7 @@ pub struct SliderProps {
 
 impl Default for SliderProps {
     fn default() -> Self {
-        Self {
-            value: 0.0,
-            min: 0.0,
-            max: 100.0,
-            step: 1.0,
-            disabled: false,
-            on_change_id: None,
-        }
+        Self { value: 0.0, min: 0.0, max: 100.0, step: 1.0, disabled: false, on_change_id: None }
     }
 }
 

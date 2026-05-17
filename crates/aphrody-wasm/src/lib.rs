@@ -8,14 +8,11 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
 // Pull in the panic hook and console logger only when targeting the browser.
 // On native targets these imports do not exist, which is correct: native tests
 // use the standard test harness and `tracing`.
-#[cfg(target_arch = "wasm32")]
-use console_error_panic_hook;
+#[cfg(target_arch = "wasm32")] use console_error_panic_hook;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
 
 /// Installs the browser panic hook and wires `log` macros to `console.*`.
 ///
@@ -70,14 +67,13 @@ pub fn platform_short_name() -> String {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn decrypt_aes_gcm(ciphertext: &[u8], key: &[u8]) -> Result<Vec<u8>, JsValue> {
-    base::Crypto::decrypt_aes_gcm(ciphertext, key)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    base::Crypto::decrypt_aes_gcm(ciphertext, key).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Encrypts a plaintext buffer using AES-256-GCM with the given key.
 ///
-/// Wire format: `[b'v', b'1', b'0']` (3 bytes) + `[12-byte nonce]` + `[ciphertext + 16-byte GCM tag]`.
-/// The output is directly consumable by [`decrypt_aes_gcm`] and by
+/// Wire format: `[b'v', b'1', b'0']` (3 bytes) + `[12-byte nonce]` + `[ciphertext + 16-byte GCM
+/// tag]`. The output is directly consumable by [`decrypt_aes_gcm`] and by
 /// `base::Crypto::decrypt_aes_gcm` on native targets.
 ///
 /// # Arguments
@@ -103,8 +99,8 @@ pub fn encrypt_aes_gcm(plaintext: &[u8], key: &[u8]) -> Result<Vec<u8>, JsValue>
 #[allow(dead_code)]
 fn encrypt_aes_gcm_impl(plaintext: &[u8], key: &[u8]) -> Result<Vec<u8>, String> {
     use aes_gcm::{
-        aead::{Aead, AeadCore, KeyInit, OsRng},
         Aes256Gcm, Key,
+        aead::{Aead, AeadCore, KeyInit, OsRng},
     };
 
     if key.len() != 32 {
@@ -114,9 +110,8 @@ fn encrypt_aes_gcm_impl(plaintext: &[u8], key: &[u8]) -> Result<Vec<u8>, String>
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
 
-    let ciphertext = cipher
-        .encrypt(&nonce, plaintext)
-        .map_err(|e| format!("AES-GCM encrypt failed: {e}"))?;
+    let ciphertext =
+        cipher.encrypt(&nonce, plaintext).map_err(|e| format!("AES-GCM encrypt failed: {e}"))?;
 
     // Wire format: 3-byte version prefix identical to what base::Crypto::decrypt_aes_gcm
     // expects at bytes [0..3]; nonce at [3..15]; ciphertext+tag at [15..].

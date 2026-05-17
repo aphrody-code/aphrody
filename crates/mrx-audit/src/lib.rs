@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 //! mrx-audit — native Rust monorepo audit.
 //!
 //! Single `run()` performs, in this order:
@@ -603,8 +603,9 @@ fn write_atomic<T: serde::Serialize>(out: &Path, value: &T) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::workspace_key;
     use std::path::Path;
+
+    use super::workspace_key;
 
     /// `workspace_key` must return a forward-slash-normalised key regardless of
     /// whether the input path was built from a Windows-style (`apps\foo`) or a

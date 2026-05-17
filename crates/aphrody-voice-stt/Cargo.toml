@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-voice-stt"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Speech-to-text (STT) provider trait + OpenAI Whisper adapter + ElevenLabs STT adapter."
+
+[lints]
+workspace = true
+
+[features]
+# Enable the local offline Whisper backend (requires C++ toolchain + libwhisper.cpp model weights).
+local-whisper = ["dep:whisper-rs"]
+
+[dependencies]
+tokio       = { workspace = true, features = ["rt", "macros", "io-util", "fs"] }
+async-trait = { workspace = true }
+futures     = { workspace = true }
+reqwest     = { workspace = true, features = ["json", "stream", "multipart", "rustls-no-provider"] }
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+bytes       = { workspace = true }
+thiserror   = { workspace = true }
+
+[dependencies.whisper-rs]
+version  = "0.13"
+optional = true
+
+[dev-dependencies]
+tokio      = { workspace = true, features = ["rt", "macros"] }
+serde_json = { workspace = true }

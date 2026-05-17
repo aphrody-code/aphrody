@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-voice"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Voice synthesis (TTS) provider trait + ElevenLabs adapter + openclaw Discord shim."
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio       = { workspace = true, features = ["rt", "macros", "io-util"] }
+async-trait = { workspace = true }
+futures     = { workspace = true }
+reqwest     = { workspace = true, features = ["json", "stream", "rustls-no-provider"] }
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+bytes       = { workspace = true }
+thiserror   = { workspace = true }
+
+[dev-dependencies]
+tokio       = { workspace = true, features = ["rt", "macros"] }
+serde_json  = { workspace = true }

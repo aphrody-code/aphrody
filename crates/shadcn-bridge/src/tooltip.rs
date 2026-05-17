@@ -7,22 +7,18 @@
 //! are supported:
 //!
 //! * **plain** — single-line label, surface-inverse background. The default.
-//! * **rich**  — multi-line surface tooltip with optional subtitle + action
-//!   slot. Used for opt-in walkthroughs and help affordances.
+//! * **rich**  — multi-line surface tooltip with optional subtitle + action slot. Used for opt-in
+//!   walkthroughs and help affordances.
 //!
 //! Class names mirror the public design-token surface used by Google's first
 //! party Material 3 implementations, so the same CSS rules apply whether or
 //! not MWC3 eventually ships a `<md-tooltip>` element.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{document, set_attr_opt};
+#[cfg(target_arch = "wasm32")] use crate::{document, set_attr_opt};
 
 /// Subset of shadcn `<Tooltip>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

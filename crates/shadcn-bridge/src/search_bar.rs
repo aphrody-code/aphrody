@@ -16,14 +16,10 @@
 //! check) without changing the [`SearchBarProps`] surface.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{document, set_attr_opt};
+#[cfg(target_arch = "wasm32")] use crate::{document, set_attr_opt};
 
 /// Subset of shadcn `<SearchBar>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -121,9 +117,7 @@ mod tests {
     fn search_bar_props_default_field_count() {
         let p = SearchBarProps::default();
         let v = serde_json::to_value(&p).expect("serde must serialise SearchBarProps");
-        let map = v
-            .as_object()
-            .expect("SearchBarProps must serialise as object");
+        let map = v.as_object().expect("SearchBarProps must serialise as object");
         assert_eq!(map.len(), SearchBarProps::FIELD_COUNT);
     }
 }

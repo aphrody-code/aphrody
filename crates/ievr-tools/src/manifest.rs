@@ -8,13 +8,16 @@
 //! * Shannon entropy over the full byte histogram.
 //! * Hex dumps of the first and last 256 bytes.
 //! * All hits of known four-byte magic signatures (CRI / CPK / PNG / RIFF …).
-//! * Aligned offsets where a 4-byte big-endian word falls in `[1 MiB, 64 MiB]`,
-//!   which is a heuristic for embedded file-size fields.
+//! * Aligned offsets where a 4-byte big-endian word falls in `[1 MiB, 64 MiB]`, which is a
+//!   heuristic for embedded file-size fields.
+
+use std::{
+    io::{self, BufWriter, Cursor, Write},
+    path::Path,
+};
 
 use anyhow::Context as _;
 use byteorder::{BigEndian, ReadBytesExt as _};
-use std::io::{self, BufWriter, Cursor, Write};
-use std::path::Path;
 
 // ── Known four-byte magic signatures ──────────────────────────────────────
 
@@ -98,8 +101,8 @@ pub struct ManifestProbe {
 /// # Errors
 ///
 /// * File I/O errors (not found, permission denied, …).
-/// * Files larger than 256 MiB are rejected to prevent accidental
-///   exhaustion of process address space.
+/// * Files larger than 256 MiB are rejected to prevent accidental exhaustion of process address
+///   space.
 pub fn probe(path: &Path) -> anyhow::Result<ManifestProbe> {
     const MAX_SIZE: u64 = 256 * 1024 * 1024; // 256 MiB hard cap
     const MAGIC_HIT_CAP: usize = 4_096;
@@ -108,8 +111,7 @@ pub fn probe(path: &Path) -> anyhow::Result<ManifestProbe> {
     const PLAUSIBLE_SIZE_MIN: u32 = 1 * 1024 * 1024; // 1 MiB
     const PLAUSIBLE_SIZE_MAX: u32 = 64 * 1024 * 1024; // 64 MiB
 
-    let metadata = std::fs::metadata(path)
-        .with_context(|| format!("stat `{}`", path.display()))?;
+    let metadata = std::fs::metadata(path).with_context(|| format!("stat `{}`", path.display()))?;
     let size_bytes = metadata.len();
     anyhow::ensure!(
         size_bytes <= MAX_SIZE,
@@ -117,8 +119,8 @@ pub fn probe(path: &Path) -> anyhow::Result<ManifestProbe> {
         path.display()
     );
 
-    let data: Vec<u8> = std::fs::read(path)
-        .with_context(|| format!("read `{}`", path.display()))?;
+    let data: Vec<u8> =
+        std::fs::read(path).with_context(|| format!("read `{}`", path.display()))?;
 
     // ── Shannon entropy ────────────────────────────────────────────────────
     let entropy_bits_per_byte = shannon_entropy(&data);
@@ -134,12 +136,8 @@ pub fn probe(path: &Path) -> anyhow::Result<ManifestProbe> {
     let mut magic_candidates: Vec<MagicHit> = Vec::new();
     if data.len() >= 4 {
         'outer: for offset in 0..=(data.len() - 4) {
-            let window: [u8; 4] = [
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3],
-            ];
+            let window: [u8; 4] =
+                [data[offset], data[offset + 1], data[offset + 2], data[offset + 3]];
             for km in KNOWN_MAGICS {
                 if km.bytes == window {
                     magic_candidates.push(MagicHit {
@@ -199,7 +197,9 @@ impl ManifestProbe {
         let mut w = BufWriter::new(out);
 
         writeln!(w, "=== cpk_list.cfg.bin manifest probe ===")?;
-        writeln!(w, "  size           : {} bytes ({:.3} MiB)",
+        writeln!(
+            w,
+            "  size           : {} bytes ({:.3} MiB)",
             self.size_bytes,
             self.size_bytes as f64 / 1_048_576.0
         )?;
@@ -227,7 +227,9 @@ impl ManifestProbe {
             writeln!(w, "  (none)")?;
         } else {
             for hit in &self.magic_candidates {
-                writeln!(w, "  +0x{:08X}  {:>8}  ascii={:?}  {}",
+                writeln!(
+                    w,
+                    "  +0x{:08X}  {:>8}  ascii={:?}  {}",
                     hit.offset,
                     hex::encode(hit.magic),
                     hit.ascii,
@@ -276,9 +278,7 @@ fn shannon_entropy(data: &[u8]) -> f64 {
 
 /// Render four bytes as printable ASCII; replace non-printable bytes with `'.'`.
 fn bytes_to_printable_ascii(b: &[u8; 4]) -> String {
-    b.iter()
-        .map(|&c| if c.is_ascii_graphic() { c as char } else { '.' })
-        .collect()
+    b.iter().map(|&c| if c.is_ascii_graphic() { c as char } else { '.' }).collect()
 }
 
 /// Write `hex_str` as grouped rows of `cols` hex pairs (cols*2 hex chars per line),
@@ -349,14 +349,10 @@ mod tests {
     fn entropy_of_random_is_near_8() {
         // Deterministic pseudo-random sequence using Knuth's multiplicative hash
         // constant.  The distribution approximates uniform over [0, 255].
-        let buf: Vec<u8> = (0u32..1024)
-            .map(|i| (i.wrapping_mul(2_654_435_761) % 256) as u8)
-            .collect();
+        let buf: Vec<u8> =
+            (0u32..1024).map(|i| (i.wrapping_mul(2_654_435_761) % 256) as u8).collect();
         let h = entropy_of(&buf);
-        assert!(
-            h > 7.0,
-            "pseudo-random buffer should have entropy > 7.0, got {h:.6}"
-        );
+        assert!(h > 7.0, "pseudo-random buffer should have entropy > 7.0, got {h:.6}");
     }
 
     #[test]
@@ -376,21 +372,13 @@ mod tests {
         let result = probe(&tmp_path).expect("probe should succeed on temp file");
         std::fs::remove_file(&tmp_path).ok();
 
-        let utf_hits: Vec<_> = result
-            .magic_candidates
-            .iter()
-            .filter(|h| h.offset == 512)
-            .collect();
+        let utf_hits: Vec<_> = result.magic_candidates.iter().filter(|h| h.offset == 512).collect();
 
         assert!(
             !utf_hits.is_empty(),
             "expected at least one magic hit at offset 512, got: {:?}",
             result.magic_candidates
         );
-        assert_eq!(
-            utf_hits[0].magic,
-            [b'@', b'U', b'T', b'F'],
-            "hit magic bytes must be @UTF"
-        );
+        assert_eq!(utf_hits[0].magic, [b'@', b'U', b'T', b'F'], "hit magic bytes must be @UTF");
     }
 }

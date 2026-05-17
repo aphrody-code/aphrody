@@ -35,6 +35,22 @@ members = [
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
     #   + Ninja generator validated). Tracking: upstream agntcy/agp issue queue.
+    # aphrody-memory — async MemoryBackend trait + JSONL + brute-force HNSW backends
+    "crates/aphrody-memory",
+    # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
+    "crates/aphrody-gateway",
+    # aphrody-mcp — Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728/8414/7591/7636)
+    "crates/aphrody-mcp",
+    # aphrody-voice — TTS provider trait + ElevenLabs adapter + Discord shim
+    "crates/aphrody-voice",
+    # aphrody-voice-stt — STT provider trait + OpenAI Whisper + ElevenLabs STT
+    "crates/aphrody-voice-stt",
+    # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
+    "crates/gemini-runtime",
+    # agui-bridge — AG-UI protocol Rust binding (wire parser + wasm-bindgen renderer)
+    "crates/agui-bridge",
+    # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
+    "crates/aphrody-channels",
 ]
 exclude = [
     "crates/coreutils",
@@ -92,6 +108,7 @@ tokio-rustls       = { version = "0.26" }
 futures            = { version = "0.3" }
 futures-util       = { version = "0.3" }
 async-trait        = { version = "0.1" }
+async-stream       = { version = "0.3" }
 auto_impl          = { version = "1" }
 pin-project-lite   = { version = "0.2" }
 crossbeam          = { version = "0.8" }

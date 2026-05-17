@@ -67,15 +67,8 @@ pub const ALL: [CornerRadius; 7] = [NONE, EXTRA_SMALL, SMALL, MEDIUM, LARGE, EXT
 ///
 /// Matches the CSS custom property suffix defined by the M3 specification:
 /// `--md-sys-shape-corner-<name>`.
-pub const NAMES: [&str; 7] = [
-    "none",
-    "extra-small",
-    "small",
-    "medium",
-    "large",
-    "extra-large",
-    "full",
-];
+pub const NAMES: [&str; 7] =
+    ["none", "extra-small", "small", "medium", "large", "extra-large", "full"];
 
 /// Emits a CSS `:root` block declaring all seven M3 shape corner-radius
 /// custom properties.
@@ -97,10 +90,7 @@ pub const NAMES: [&str; 7] = [
 pub fn export_css() -> String {
     let mut out = String::from(":root {\n");
     for (token, name) in ALL.iter().zip(NAMES.iter()) {
-        out.push_str(&format!(
-            "  --md-sys-shape-corner-{}: {}dp;\n",
-            name, token.dp
-        ));
+        out.push_str(&format!("  --md-sys-shape-corner-{}: {}dp;\n", name, token.dp));
     }
     out.push('}');
     out
@@ -182,10 +172,7 @@ mod tests {
     fn export_css_contains_all_names() {
         let css = export_css();
         for name in NAMES {
-            assert!(
-                css.contains(name),
-                "export_css must contain token name '{name}'"
-            );
+            assert!(css.contains(name), "export_css must contain token name '{name}'");
         }
     }
 }

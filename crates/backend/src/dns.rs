@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;

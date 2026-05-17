@@ -15,10 +15,8 @@
 
 use std::path::PathBuf;
 
+#[cfg(not(target_arch = "wasm32"))] use clap::CommandFactory;
 use clap::{Parser, Subcommand};
-
-#[cfg(not(target_arch = "wasm32"))]
-use clap::CommandFactory;
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
