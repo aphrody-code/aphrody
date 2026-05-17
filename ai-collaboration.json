@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AI Collaboration Hub - Aphrody Project",
-  "description": "Central configuration enforcing Production-Ready code standards across all AI agents",
+  "title": "Aphrody — Agent Configuration Manifest",
+  "description": "Central configuration enforcing production-ready code standards for any tooling agent that consumes this file. Legacy filename retained for tooling that already references this path.",
   "version": "3.0.0",
 
   "project": {
