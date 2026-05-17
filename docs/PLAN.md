@@ -46,11 +46,11 @@ cible #1**.
 | Tâche | Statut |
 |---|---|
 | `cargo check -p cli --target x86_64-unknown-linux-gnu` vert | ✅ (WSL local, 8.28 s, zéro warning) |
-| `cargo build --release -p aphrody` natif sur Ubuntu 26.04 | ⏳ (CI à confirmer ; cross-compile zigbuild Windows → Linux ✅) |
-| `cargo nextest run -p aphrody` vert sur Linux | ⏳ (CI ubuntu-latest dans cross-platform.yml ; pas validé local sans toolchain WSL) |
+| `cargo build --release -p aphrody` natif sur Ubuntu 26.04 | ✅ (job `linux-native` ubuntu-latest commit 96ae82e7 ; cross-compile zigbuild Windows → Linux ✅) |
+| `cargo nextest run -p aphrody` vert sur Linux | ✅ (job `linux-native` commit 96ae82e7 — nextest sur workspace `--locked`) |
 | Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ✅ (cli chromium gated, voir fix d222d0061) |
 | Adapter `crates/google_mcp` pour Linux | ✅ (YOLO #1 — cargo check native + zigbuild x86_64-unknown-linux-gnu exit 0) |
-| CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ⏳ |
+| CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ✅ (ubuntu-latest job `linux-native` commit 96ae82e7) |
 | Package `.deb` template (`packaging/deb/` — control + postinst + prerm + cargo-deb snippet + README) | ✅ |
 | Publication PPA `aphrody-code/aphrody` sur Launchpad | ⏳ |
 
