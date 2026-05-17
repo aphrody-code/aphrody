@@ -1,0 +1,33 @@
+[package]
+name = "aphrody-translate"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "aphrody — translate code comments to French, scrub AI-isms and emoji, apply Aphrody prose style"
+
+[[bin]]
+name = "aphrody-translate"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+clap                 = { workspace = true }
+regex                = { workspace = true }
+reqwest              = { workspace = true }
+tokio                = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+anyhow               = { workspace = true }
+thiserror            = { workspace = true }
+tracing              = { workspace = true }
+tracing-subscriber   = { workspace = true }
+ignore               = { workspace = true }
+rayon                = { workspace = true }
+dashmap              = { workspace = true }
+sha2                 = { workspace = true }
+hex                  = { workspace = true }
+urlencoding          = "2"
