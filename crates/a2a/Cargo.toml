@@ -21,3 +21,9 @@ chrono = { workspace = true }
 base64 = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
+
+# On wasm32 targets (browser or WASI), uuid v4/v7 require a JS entropy source.
+# The `js` feature delegates to `getrandom/js` which uses `Math.random` / CSPRNG
+# available in all browser environments and Node-on-wasm runtimes.
+[target.'cfg(target_family = "wasm")'.dependencies]
+uuid = { workspace = true, features = ["js"] }

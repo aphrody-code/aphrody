@@ -26,6 +26,6 @@
 		"noEmit": true,
 		"types": ["bun", "react", "react-dom"]
 	},
-	"include": ["components/**/*", "src/**/*", "tokens/**/*"],
-	"exclude": ["dist", "node_modules"]
+	"include": ["components/**/*"],
+	"exclude": ["dist", "node_modules", "src", "scripts"]
 }

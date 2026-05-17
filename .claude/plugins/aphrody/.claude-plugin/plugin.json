@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.1.0",
-  "description": "aphrody plugin: pixel-perfect M3 validation skill, n2b-ultra Node->Bun migrator agent, /scrape and /tokens slash commands powered by the bxc-scrapper MCP server, and an oxlint PostToolUse hook. Cross-platform (Linux #1, Windows #2, WASM #3), Bun-only, zero stubs.",
+  "version": "0.2.0",
+  "description": "aphrody plugin: skills (pixel-perfect, rust-target-check, m3-component), agents (n2b-ultra, cross-platform-validator, m3-spec-auditor), /scrape and /tokens slash commands powered by the bxc-scrapper MCP server, and PostToolUse hooks (oxlint, cargo-check, cargo-toml-validate). Cross-platform (Linux #1, Windows #2, WASM #3), Bun-only, zero stubs.",
   "author": {
     "name": "aphrody-code",
     "email": "yohanpierre15@gmail.com",
@@ -20,6 +20,9 @@
     "n2b",
     "bun",
     "oxlint",
+    "rust",
+    "cross-platform",
+    "wasm",
     "claude-code"
   ],
   "category": "productivity",
@@ -29,9 +32,11 @@
     "./commands/tokens.md"
   ],
   "agents": [
-    "./agents/n2b-ultra.md"
+    "./agents/n2b-ultra.md",
+    "./agents/cross-platform-validator.md",
+    "./agents/m3-spec-auditor.md"
   ],
-  "hooks": "./hooks/oxclint.json",
+  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "bxc-scrapper": {
       "command": "bun",

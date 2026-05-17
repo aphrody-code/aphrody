@@ -1,5 +1,17 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+
+// Platform note: `a2a-server` depends on `axum`, `tokio::net`, and `hyper`,
+// which require OS-level TCP sockets. These are incompatible with
+// `wasm32-unknown-unknown` and `wasm32-wasi`. Server-side HTTP/gRPC cannot
+// run in a browser WASM context. Use `a2a-client` with the REST transport
+// for WASM consumer scenarios.
+#[cfg(target_family = "wasm")]
+compile_error!(
+    "a2a-server does not support wasm32 targets: axum/hyper/tokio::net require OS networking. \
+     WASM agents should use a2a-client with RestTransport instead."
+);
+
 pub mod agent_card;
 pub mod executor;
 pub mod handler;

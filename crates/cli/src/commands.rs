@@ -729,7 +729,8 @@ pub(crate) struct ScrapeCommand {
 #[async_trait]
 impl TerminalCommand for ScrapeCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        let client = ScrapeClient::new();
+        let client =
+            ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
 
         let json_value: serde_json::Value = match &self.selector {
             Some(sel) => {
@@ -741,18 +742,15 @@ impl TerminalCommand for ScrapeCommand {
                     .map_err(|e| miette::miette!("JSON serialization error: {e}"))?
             },
             None => {
-                // No selector → full recon. Pass the profile as a query hint via env or
-                // embed it in a wrapper that the BXC daemon honours.
-                let mut result = client
+                // No selector → full recon. Annotate profile in the JSON output
+                // so callers know which rendering mode was active.
+                let result = client
                     .recon(&self.url)
                     .await
                     .map_err(|e| miette::miette!("{e}"))?;
-                // Annotate profile so callers know which mode was active.
                 let mut value = serde_json::to_value(&result)
                     .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
                 value["profile"] = serde_json::Value::String(self.profile.as_str().to_owned());
-                // Satisfy the borrow checker: result is consumed by to_value above.
-                let _ = &mut result;
                 value
             },
         };
@@ -797,7 +795,8 @@ impl TerminalCommand for TokensCommand {
             ));
         }
 
-        let client = ScrapeClient::new();
+        let client =
+            ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
 
         let token_map = client
             .extract_m3_tokens(&self.url)
