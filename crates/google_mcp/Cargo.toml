@@ -26,7 +26,6 @@ schemars           = { workspace = true }
 axum               = { workspace = true }
 sysinfo            = { workspace = true }
 backend            = { path = "../backend" }
-base               = { path = "../base" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows            = { workspace = true }

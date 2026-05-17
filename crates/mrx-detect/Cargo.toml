@@ -9,7 +9,4 @@ description = "mrx — Bun / Turborepo / pnpm / Cargo workspace + lockfile detec
 
 [dependencies]
 mrx-core = { workspace = true }
-serde = { workspace = true }
 serde_json = { workspace = true }
-toml = { workspace = true }
-anyhow = { workspace = true }

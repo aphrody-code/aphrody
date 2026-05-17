@@ -24,4 +24,3 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 mimalloc           = { workspace = true }
 backend    = { path = "../backend" }
-base       = { path = "../base" }

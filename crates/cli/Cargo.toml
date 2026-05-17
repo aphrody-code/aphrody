@@ -37,14 +37,11 @@ anyhow        = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio         = { workspace = true }
 reqwest       = { workspace = true }
-uuid          = { workspace = true }
 indicatif     = { workspace = true }
 colored       = { workspace = true }
 mimalloc      = { workspace = true }
 scraper       = { workspace = true }
 backend       = { path = "../backend" }
-a2a-client    = { workspace = true }
-a2a           = { workspace = true }
 rustls        = { workspace = true }
 
 # --- WebAssembly targets ---------------------------------------------------
