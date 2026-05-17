@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=https://json.schemastore.org/github-issue-forms.json
+name: Question
+description: Ask a question (not a bug or feature request)
+title: "[q] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a question issue, please check:
+
+        - [`docs/FAQ.md`](https://github.com/aphrody-code/aphrody/blob/main/docs/FAQ.md)
+          — pre-answers for the most common questions.
+        - [GitHub Discussions](https://github.com/aphrody-code/aphrody/discussions)
+          — open-ended brainstorming, design debates, and "how do I" threads
+          live there, **not** in the issue tracker.
+
+        Use this template only when you've checked both and still need a
+        structured, tracked answer.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Be specific. "How do I configure X to do Y on Linux?" beats "X is confusing".
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: What you've already tried
+      description: Commands you ran, docs you read, links you followed. Saves a round-trip.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I checked `docs/FAQ.md`
+          required: true
+        - label: I searched existing issues and Discussions
+          required: true
+        - label: This is a question, not a bug report or feature request
+          required: true

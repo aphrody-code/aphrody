@@ -336,18 +336,51 @@ cargo audit-machete  # unused dependencies
 
 ## Documentation
 
-| Section | Contenu |
-|---|---|
-| [`docs/SOURCE_OF_TRUTH.md`](./docs/SOURCE_OF_TRUTH.md) | **Source de vérité unifiée** (pivot, architecture, plateformes) |
-| [`docs/PLAN.md`](./docs/PLAN.md) | Plan stratégique post-pivot |
-| [`docs/SUMMARY.md`](./docs/SUMMARY.md) | Sommaire mdBook (architecture, crates, FFI) |
-| [`docs/DESIGN.md`](./docs/DESIGN.md) | Décisions d'architecture |
-| [`docs/cargo/`](./docs/cargo/) | Workspace, FFI policy, cross-platform |
-| [`docs/winget/`](./docs/winget/) | WinGet : catalogue 40+ packages, DSC |
-| [`docs/pwsh/`](./docs/pwsh/) | PowerShell 7 : profils, modules |
-| [`docs/WASM/`](./docs/WASM/) | Référence WASM (Rust + wgpu + Next.js + Bun) — versions pinned, pièges, migration |
-| [`CLAUDE.md`](./CLAUDE.md), [`GEMINI.md`](./GEMINI.md) | Conventions pour agents CLI tiers (formats standards adoptés par les CLIs respectifs) |
-| [`SECURITY.md`](./SECURITY.md) | Politique de sécurité : versions supportées, reporting privé, scope, safe harbor |
+### Overview
+- [SOURCE_OF_TRUTH.md](./docs/SOURCE_OF_TRUTH.md) — executive overview
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — workspace layers + dep graph
+- [COMPARISON.md](./docs/COMPARISON.md) — aphrody vs just/taskfile/gh/devcontainer/asdf
+- [FAQ.md](./docs/FAQ.md) — anticipated questions
+- [ROADMAP.md](./docs/ROADMAP.md) — Q2 2026 → Q1 2027 targets
+- [BENCHMARKS.md](./BENCHMARKS.md) — mrx scan + criterion micro-benches
+- [PLAN.md](./docs/PLAN.md) — plan stratégique post-pivot
+- [DESIGN.md](./docs/DESIGN.md) — décisions d'architecture
+- [SUMMARY.md](./docs/SUMMARY.md) — sommaire mdBook
+- [docs/cargo/](./docs/cargo/) — workspace, FFI policy, cross-platform
+- [docs/WASM/](./docs/WASM/) — référence WASM (Rust + wgpu + Next.js + Bun)
+- [docs/winget/](./docs/winget/) — WinGet : catalogue 40+ packages, DSC
+- [docs/pwsh/](./docs/pwsh/) — PowerShell 7 : profils, modules
+
+### Technical posts
+- [A2A cross-Claude coordination](./docs/posts/2026-05-ai-json.md)
+- [Parallel YOLO grind loop](./docs/posts/2026-05-yolo-grind-loop.md)
+
+### Architecture decisions
+- [ADR-0000 template](./docs/adr/0000-template.md)
+- [ADR-0001 cross-platform Rust](./docs/adr/0001-cross-platform-rust.md)
+- [ADR-0002 A2A file-based](./docs/adr/0002-a2a-file-based.md)
+- [ADR-0003 YOLO parallel grind](./docs/adr/0003-yolo-parallel-grind.md)
+
+### A2A extensions
+- [Extensions index](./docs/extensions/index.md)
+- [file-transport/v1](./docs/extensions/file-transport-v1.md)
+- [honest-delivery/v1](./docs/extensions/honest-delivery-v1.md)
+- [context7-version-pinning/v1](./docs/extensions/context7-version-pinning-v1.md)
+
+### OSS hygiene
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md) — vulnerability reporting
+- [CHANGELOG.md](./CHANGELOG.md)
+- [CLAUDE.md](./CLAUDE.md), [GEMINI.md](./GEMINI.md) — conventions pour agents CLI tiers
+
+### Launch material (pre-publication)
+- [SHOW-HN.md](./docs/launch/SHOW-HN.md) — title candidates + comment templates
+
+### Internal audits (transparency)
+- [2026-05-17 mrx aggressive](./docs/audits/2026-05-17-mrx-aggressive.md)
+- [2026-05-17 n2b scan](./docs/audits/2026-05-17-n2b-scan.md)
+- [2026-05-17 bxc scrape request](./docs/audits/2026-05-17-bxc-scrape-request.md)
 
 ## Security
 

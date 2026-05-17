@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# FUNDING.yml — disabled until aphrody-code/aphrody-code GH Sponsors profile is set up.
+#
+# Adding a github: entry here when the org has no Sponsors profile causes
+# GitHub to render a 404 link in the repo sidebar, which is worse than
+# omitting funding entirely. Uncomment the line below once the Sponsors
+# profile is live at https://github.com/sponsors/aphrody-code.
+#
+# github: [aphrody-code]
+# custom: ["https://aphrody.dev/sponsor"]

@@ -212,6 +212,18 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `.github/workflows/codeql.yml` — GitHub CodeQL security scanning | ⏳ (Security policy badge + Rust + Bun coverage) |
 | `docs/extensions/` — a2a extension specs (file-transport, honest-delivery, context7-version-pinning) | ⏳ (URLs in ai.json point at aphrody.dev/a2a-extensions/* — make them publishable docs) |
 | `crates/base/README.md` — base crate docs (publish-ready) | ⏳ (publish ladder leaf — first crate to ship, docs are user's first impression) |
+| `crates/a2a-pb/README.md` + `crates/backend/README.md` — publish-ladder docs | ⏳ (undocumented = unpublishable) |
+| `crates/a2a-{client,server,grpc}/README.md` — 3 publish-ladder docs | ⏳ (publish ladder middle tier — full coverage required) |
+| `docs/ARCHITECTURE.md` — workspace overview + ASCII module dep graph | ⏳ (30-sec engineer skim: "what's the shape of this thing?") |
+| `mrx-core/src/scan.rs` `workspace_key()` Windows path-sep bug fix per #30 audit | ⏳ (mrx ships broken on Windows — file_count=0 bytes=0 per workspace) |
+| `.github/workflows/release-please.yml` — Google release automation via Conventional Commits | ⏳ (D+15 Show HN — automated release notes + version PR) |
+| `crates/google_mcp/README.md` + `crates/a2a/README.md` + `crates/a2a-lf/README.md` | ⏳ (publish-ladder completion — last 3 a2a-family crates without docs) |
+| `crates/mrx-{core,detect,audit,watch}/README.md` — 4 mrx lib crate docs | ⏳ (publish-ladder + engineering credibility) |
+| Root `README.md` polish — sweep new docs into doc-tree TOC (COMPARISON/FAQ/ROADMAP/ADRs/extensions) | ⏳ (D+15 first-impression for HN landing — must reflect actual content) |
+| `.github/ISSUE_TEMPLATE/*` + `PULL_REQUEST_TEMPLATE.md` + `FUNDING.yml` — OSS template bundle | ⏳ (GitHub community-health badge — engineers expect templates) |
+| `CHANGELOG.md` sweep — log 2026-05-17 mega-batch (30+ commits today) | ⏳ (Keep-a-Changelog drift — last entry pre-tick-7) |
+| `packaging/nix/flake.nix` — Nix flake for Nix/NixOS users | ⏳ (high-engineer-cred niche distribution channel) |
+| `packaging/flatpak/com.aphrody.aphrody.json` — Flatpak manifest | ⏳ (cross-distro Linux desktop installation) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
