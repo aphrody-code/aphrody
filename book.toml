@@ -6,4 +6,4 @@ src = "docs"
 title = "Google OS & Aphrody Documentation"
 
 [output.html]
-git-repository-url = "https://github.com/nicmusic/aphrody"
+git-repository-url = "https://github.com/aphrody-code/aphrody"

@@ -1,0 +1,84 @@
+name: Bug report
+description: Reproducible defect in production behavior
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Fill **all** required fields — incomplete reports get closed.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `<tool> --version` or commit SHA
+      placeholder: "1.0.0-canary or bf01d95d"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Linux (Ubuntu 26.04)
+        - Linux (other)
+        - Windows 11
+        - Windows 10
+        - macOS
+        - WASM (wasm32-unknown-unknown)
+        - WASM (wasm32-wasi)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal, deterministic. Shell commands preferred.
+      placeholder: |
+        1. `git clone …`
+        2. `cargo run -p X -- --flag=Y`
+        3. Observe …
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include stack trace / panic / error output if any.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Rust toolchain, Bun version, kernel, Windows build, etc.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues — no duplicate
+          required: true
+        - label: I reproduced on the latest `main` commit
+          required: true
+        - label: I redacted any secrets / tokens from the output
+          required: true

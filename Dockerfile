@@ -45,9 +45,9 @@ COPY --from=builder --chown=nonroot:nonroot /tmp/cli /aphrody
 LABEL org.opencontainers.image.title="aphrody"
 LABEL org.opencontainers.image.description="Aphrody -- cross-platform Rust binary."
 LABEL org.opencontainers.image.licenses="Apache-2.0"
-LABEL org.opencontainers.image.source="https://github.com/nicmusic/aphrody"
+LABEL org.opencontainers.image.source="https://github.com/aphrody-code/aphrody"
 LABEL org.opencontainers.image.vendor="Aphrody Authors"
-LABEL org.opencontainers.image.documentation="https://github.com/nicmusic/aphrody/blob/main/README.md"
+LABEL org.opencontainers.image.documentation="https://github.com/aphrody-code/aphrody/blob/main/README.md"
 
 USER nonroot:nonroot
 ENTRYPOINT ["/aphrody"]
