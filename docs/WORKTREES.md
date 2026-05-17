@@ -40,7 +40,7 @@ Flags:
 
 Manifest cache lands in `var/data/worktrees-manifest.json` (gitignored).
 
-## Catalogue (13 worktrees)
+## Catalogue (15 worktrees)
 
 | Slug                  | Upstream                                              | Shallow | Approx | Consumers                                       |
 |---|---|---|---|---|
@@ -57,8 +57,10 @@ Manifest cache lands in `var/data/worktrees-manifest.json` (gitignored).
 | `vercel-agent-skills` | vercel-labs/agent-skills                              | yes     | 10 MB  | `packages/aphrody-skills/src/sources.ts` |
 | `vercel-skills`       | vercel-labs/skills                                    | yes     | 10 MB  | `packages/aphrody-skills/src/sources.ts` |
 | `open-agents`         | vercel-labs/open-agents                               | yes     | 50 MB  | `packages/aphrody-skills/src/sources.ts` |
+| `wterm`               | vercel-labs/wterm                                     | yes     | 40 MB  | `crates/aphrody-terminal-vt/` (architecture ref), `crates/aphrody-terminal-wasm/` (API mirror), `crates/aphrody-terminal-backend/` (WS transport ref) |
+| `terminal`            | microsoft/terminal                                    | yes     | 120 MB | `crates/aphrody-terminal-*/` (Buffer/Renderer/AtlasEngine/ConPTY/profiles.schema.json algorithmic reference — Windows-Terminal-class UX in WASM+M3) |
 
-**Total disk budget after bootstrap: ~ 935 MB.**
+**Total disk budget after bootstrap: ~ 1095 MB.**
 
 ## Verify (CI gate)
 

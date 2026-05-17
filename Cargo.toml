@@ -51,6 +51,10 @@ members = [
     "crates/agui-bridge",
     # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
     "crates/aphrody-channels",
+    # aphrody-terminal — VT parser + WASM renderer + pty backend (wterm-class, pure Rust)
+    "crates/aphrody-terminal-vt",
+    "crates/aphrody-terminal-wasm",
+    "crates/aphrody-terminal-backend",
 ]
 exclude = [
     "crates/coreutils",
@@ -260,6 +264,10 @@ rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.g
 
 # --- Terminal emulation ---------------------------------------------------
 vte                = { version = "0.15" }
+# portable-pty: ConPTY (Windows) + openpty (Unix) via a single API.
+portable-pty       = { version = "0.8" }
+# tokio-tungstenite: async WebSocket client/server on top of tokio.
+tokio-tungstenite  = { version = "0.24" }
 
 # --- Windows bindings -----------------------------------------------------
 windows            = { version = "0.62", features = [
