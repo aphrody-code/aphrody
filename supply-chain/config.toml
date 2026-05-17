@@ -1,39 +1,26 @@
 
-# cargo-vet config file — Aphrody supply-chain manifest.
-#
-# `[imports]` pulls upstream audits from organizations we trust. New crates
-# are auto-considered "safe-to-deploy" if a matching audit exists in any of
-# these feeds. Run `cargo vet` to verify or `cargo vet suggest` for diffs.
+# cargo-vet config file
 
 [cargo-vet]
 version = "0.10"
 
-# ----------------------------------------------------------------------------
-# Trusted audit feeds (Google + Mozilla + ChromeOS + Fuchsia + BCA).
-# ----------------------------------------------------------------------------
+[imports.bytecode-alliance]
+url = "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml"
+
+[imports.chromeos]
+url = "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/rust/chromium_crates_io/supply-chain/audits.toml?format=TEXT"
+
+[imports.embark-studios]
+url = "https://raw.githubusercontent.com/EmbarkStudios/rust-ecosystem/main/audits.toml"
+
+[imports.fuchsia]
+url = "https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/third_party/rust_crates/supply-chain/audits.toml?format=TEXT"
+
 [imports.google]
 url = "https://raw.githubusercontent.com/google/rust-crate-audits/main/audits.toml"
 
 [imports.mozilla]
 url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
-
-[imports.fuchsia]
-url = "https://fuchsia.googlesource.com/fuchsia/+/refs/heads/main/third_party/rust_crates/supply-chain/audits.toml?format=TEXT"
-
-# Chromium / ChromeOS Rust audits feed.
-# Upstream relocated the path in 2026; the legacy
-# `chromiumos/third_party/rust_crates` URL now returns 404. The current
-# Chromium-side feed lives under chromium/src — keep Mozilla / Fuchsia / Google
-# entries above as primary trust anchors. Re-pin this if Google publishes a
-# stable ChromeOS-side mirror again.
-[imports.chromeos]
-url = "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/rust/chromium_crates_io/supply-chain/audits.toml?format=TEXT"
-
-[imports.bytecode-alliance]
-url = "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml"
-
-[imports.embark-studios]
-url = "https://raw.githubusercontent.com/EmbarkStudios/rust-ecosystem/main/audits.toml"
 
 [imports.zcash]
 url = "https://raw.githubusercontent.com/zcash/rust-ecosystem/main/supply-chain/audits.toml"

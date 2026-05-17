@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { join, dirname } from "path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
 
 const tokensDir = join(__dirname, "../tokens");
 const colorsJson = JSON.parse(readFileSync(join(tokensDir, "colors.json"), "utf-8"));

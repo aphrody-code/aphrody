@@ -266,6 +266,8 @@ rstest             = { version = "0.26" }
 proptest           = { version = "1" }
 criterion          = { version = "0.8" }
 pretty_assertions  = { version = "1" }
+assert_cmd         = { version = "2" }
+predicates         = { version = "3" }
 
 # --- Agent skills (SKILL.md ecosystem) ------------------------------------
 # `skill` (docs.rs/skill) is the blazing-fast Vercel Skills CLI reborn in Rust.

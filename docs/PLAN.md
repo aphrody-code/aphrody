@@ -182,6 +182,37 @@ Toute tâche trop vaste pour une passe est divisée en sous-tâches **chacune
 Avant tout push : `cargo ci-offline && cargo deny check` doit être vert
 **sur Linux d'abord**.
 
+### Phase Q — Mission D+7 → D+15 polish (génération auto tick 7)
+
+Mission 100k stars / 30 jours — actions mission-direct entre D+7 (demo) et
+D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
+
+| Tâche | Statut |
+|---|---|
+| Re-rendre asciinema cast `assets/aphrody-demo.cast` avec `aphrody doctor` (+ couleurs) | ⏳ (cast actuel précède doctor subcommand) |
+| Fresh clippy `-D warnings` audit + fix résidu Oracle gate 2 `double_ended_iterator_last` | ⏳ (oracle #20 rapport sale ; vérifier état réel) |
+| Deuxième post technique `docs/posts/2026-05-yolo-grind-loop.md` (architecture 4-agent parallel grind) | ⏳ (D+14 milestone arc, complète post a2a-ai-json) |
+| Show HN launch package `docs/launch/SHOW-HN.md` (title + body + comment templates draft) | ⏳ (D+15 milestone arc ; draft seul, pas de post) |
+| `n2b` aggressive scan + auto-migrate `scripts/**/*.{ts,mjs,js}` node→bun | ⏳ (mémoire feedback_bun_only — node interdit, scan + apply tout fixable) |
+| `mrx` aggressive `scan/audit/detect` du workspace → rapport `docs/audits/2026-05-17-mrx-aggressive.md` | ⏳ (5 crates mrx-* shippées, drogger usage interne) |
+| `bxc` scrape via A2A ask peer winclean → AGNTCY spec page + M3 tokens, mirror aphrody side | ⏳ (bxc lives in C:/winclean, request via inbox-from-aphrody.jsonl) |
+| `aphrody completions {bash,zsh,fish,pwsh,elvish}` subcommand via `clap_complete` | ⏳ (30-second test win — engineers expect this from any modern CLI) |
+| Integration test `crates/cli/tests/doctor.rs` — `assert_cmd` driven smoke of `aphrody doctor` + `--json` | ⏳ (no test coverage on doctor surface) |
+| Supply-chain `audits.toml` + `config.toml` formatting drift fix (Oracle gate 5 partial) | ⏳ (cargo vet fmt needed but careful — agent #21 noted side-effects) |
+| Marketing `docs/COMPARISON.md` — aphrody vs just/taskfile/gh/devcontainer/asdf | ⏳ (mission D+15 Show HN traction — 30-sec engineer skim differentiator) |
+| ADRs `docs/adr/{0001-cross-platform-rust,0002-a2a-file-based,0003-yolo-parallel-grind}.md` | ⏳ (engineering-credibility marker — engineers expect ADRs in serious repos) |
+| WASM browser playground `crates/aphrody-wasm/examples/browser-playground.html` + crate README upgrade | ⏳ (D+7 demo extension — hands-on wasm in 3 clicks) |
+| `.devcontainer/devcontainer.json` one-click Codespace setup (rust nightly + bun + cargo extras) | ⏳ (lowers contribution barrier — 30-sec engineer-onboarding win) |
+| `SECURITY.md` verify + strengthen — concrete report process, supported versions, scope | ⏳ (OSS hygiene + GitHub security-policy badge) |
+| `packaging/snap/snapcraft.yaml` + `packaging/arch/PKGBUILD` — Ubuntu Snap + Arch AUR distribution expansion | ⏳ (D+18 distribution arc — covers 2 major Linux distros) |
+| `crates/backend/benches/backend_bench.rs` — criterion benchmark suite | ⏳ (BENCHMARKS.md credibility — engineers expect criterion not hand-roll) |
+| `docs/FAQ.md` + `docs/ROADMAP.md` — anticipated Q + public 90-day roadmap | ⏳ (D+15 Show HN preparation — reduces noise in comment thread) |
+| `crates/mrx-cli/README.md` — usage doc with scan/detect/audit/watch examples | ⏳ (mrx is undocumented despite being shipped — engineering credibility gap) |
+| `crates/aphrody-translate/README.md` — translate CLI usage doc | ⏳ (publish ladder readiness — undocumented = unpublishable) |
+| `.github/workflows/codeql.yml` — GitHub CodeQL security scanning | ⏳ (Security policy badge + Rust + Bun coverage) |
+| `docs/extensions/` — a2a extension specs (file-transport, honest-delivery, context7-version-pinning) | ⏳ (URLs in ai.json point at aphrody.dev/a2a-extensions/* — make them publishable docs) |
+| `crates/base/README.md` — base crate docs (publish-ready) | ⏳ (publish ladder leaf — first crate to ship, docs are user's first impression) |
+
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
 | Métrique | Valeur | Cible |

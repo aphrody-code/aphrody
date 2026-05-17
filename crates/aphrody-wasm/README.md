@@ -37,6 +37,26 @@ const plaintext = decrypt_aes_gcm(ciphertext, key);
 </script>
 ```
 
+## Examples
+
+The [`examples/`](examples/) directory contains a self-contained browser playground
+that exercises all three exported functions without any external dependencies:
+
+- **[`examples/browser-playground.html`](examples/browser-playground.html)** — displays
+  `version()` and `platform_short_name()` at page load, then provides an interactive
+  AES-256-GCM encrypt/decrypt panel powered by `decrypt_aes_gcm()`.
+
+Build and serve:
+
+```sh
+cd crates/aphrody-wasm
+wasm-pack build --target web --release
+bun x serve examples/
+# or: python -m http.server -d examples 8000
+```
+
+Open <http://localhost:8000/browser-playground.html>.
+
 ## License
 
 Apache-2.0 — see [LICENSE](../../LICENSE).
