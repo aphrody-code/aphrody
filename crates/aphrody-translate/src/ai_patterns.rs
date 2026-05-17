@@ -38,7 +38,7 @@ fn patterns_drop_whole() -> &'static Vec<Regex> {
             r"(?i)^\s*ai[- ]?(generated|assisted|created)",
             r"(?i)^\s*\[?\s*(claude|gpt|gemini|copilot|anthropic|openai)\s+(generated|assist|wrote)\]?",
         ];
-        raw.iter().map(|p| Regex::new(p).unwrap()).collect()
+        raw.iter().map(|p| Regex::new(p).expect("regex compiles")).collect()
     })
 }
 
@@ -57,7 +57,7 @@ fn patterns_scrub() -> &'static Vec<Regex> {
             r"(?i)\bgithub copilot\b",
             r"(?i)\baphrody is fan of byron\b",
         ];
-        raw.iter().map(|p| Regex::new(p).unwrap()).collect()
+        raw.iter().map(|p| Regex::new(p).expect("regex compiles")).collect()
     })
 }
 
@@ -79,7 +79,7 @@ fn re_emoji() -> &'static Regex {
             r"\u{FE0F}|",
             r"[\u{1F1E6}-\u{1F1FF}]"
         ))
-        .unwrap()
+        .expect("regex compiles")
     })
 }
 
