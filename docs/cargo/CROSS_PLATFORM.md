@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Cross-platform build
 
 > Réf. : `.cargo/config.toml`, `rust-toolchain.toml`, `crates/cli/src/platform.rs`.

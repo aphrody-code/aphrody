@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use a2a::{A2AError, StreamResponse};

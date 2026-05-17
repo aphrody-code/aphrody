@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # PowerShell 7 — Documentation pour Aphrody
 
 > Configuration complète de l'environnement PowerShell 7 utilisé par le projet `aphrody`.

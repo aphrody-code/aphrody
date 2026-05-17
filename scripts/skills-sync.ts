@@ -1,4 +1,5 @@
-#!/usr/bin/env bun
+// SPDX-License-Identifier: Apache-2.0
+// #!/usr/bin/env bun
 /**
  * skills-sync.ts — pull a remote SKILL.md catalog into ./.claude/skills/.
  *

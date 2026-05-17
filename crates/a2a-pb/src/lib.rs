@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 
 // Platform support:
 // - `proto` module and `pbconv` are NOT available on wasm32 because the generated gRPC stubs

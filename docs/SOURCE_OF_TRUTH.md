@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody — Source of Truth
 
 > **Document unique de référence** consolidant les anciens `CLAUDE.md`,

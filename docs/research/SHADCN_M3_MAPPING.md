@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # shadcn-ui ↔ Material Design 3 — Cartographie de refactor
 
 > Document de recherche pour OBJECTIF #2 — refactor aphrody-code/ui@aphrody

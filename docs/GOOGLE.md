@@ -1,4 +1,5 @@
-﻿# GOOGLE.md â€” Alignement Google ecosystem
+﻿<!-- SPDX-License-Identifier: Apache-2.0 -->
+# GOOGLE.md â€” Alignement Google ecosystem
 
 > **Statut :** 2026-05-17 â€” aligned production-grade cross-platform.
 > Ce document remplace l'ancienne version Â« God Mode Â» par une description factuelle

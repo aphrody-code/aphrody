@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Patterns Chromium / Android — adoption dans `aphrody`
 
 > Synthèse appliquée des docs officielles :

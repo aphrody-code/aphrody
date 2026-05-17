@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # 🌐 Architecture des Progressive Web Apps (PWA) Chromium
 
 > Documentation technique détaillée sur l'implémentation des PWA sous Windows via Chromium, et son intégration/parallèle avec l'architecture hybride de Google OS.

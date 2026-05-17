@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Lints policy
 
 > Réf. : `[workspace.lints]` dans `Cargo.toml` racine, `.clippy.toml`.

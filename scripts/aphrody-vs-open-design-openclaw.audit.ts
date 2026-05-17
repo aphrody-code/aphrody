@@ -1,5 +1,5 @@
-#!/usr/bin/env bun
 // SPDX-License-Identifier: Apache-2.0
+// #!/usr/bin/env bun
 /**
  * aphrody-vs-open-design-openclaw.audit.ts
  * ========================================

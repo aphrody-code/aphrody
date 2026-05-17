@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name                  = "base"
 publish               = true  # ladder leaf — first crate to ship
 version.workspace     = true

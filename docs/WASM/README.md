@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WASM — Index
 
 Production WebAssembly reference for the **aphrody** ecosystem. Sourced from upstream library docs (wasm-bindgen 0.2+, wgpu 26+/29, Next.js 16, Bun 1.3+) verified 2026-05-17 via Context7.

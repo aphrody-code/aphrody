@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gemini CLI runtime adapter.
 //!
 //! Cross-platform adapter that locates the `gemini` binary on `PATH`, queries

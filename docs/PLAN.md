@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # PLAN — aphrody
 
 > Plan d'exécution stratégique. Révision : **2026-05-17 (pivot CLI cross-platform)**.

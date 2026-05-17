@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Cargo Cheatsheet — Aphrody
 
 > Réf. : `.cargo/config.toml` `[alias]` section pour les commandes custom.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! # aphrody-memory
 //!
 //! Async [`MemoryBackend`] trait and two production-ready implementations:

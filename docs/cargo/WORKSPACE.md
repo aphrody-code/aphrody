@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Workspace architecture
 
 > Réf. : `Cargo.toml` racine, `.cargo/config.toml`, `rust-toolchain.toml`.

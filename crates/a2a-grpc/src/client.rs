@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 use a2a::{event::StreamResponse, *};
 use a2a_client::transport::{ServiceParams, Transport, TransportFactory};
 use a2a_pb::{pbconv, proto::a2a_service_client::A2aServiceClient};

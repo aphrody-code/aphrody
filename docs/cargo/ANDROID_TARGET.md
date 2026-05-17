@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Android target — Cross-compile via `cargo-ndk`
 
 > Réf. : `rust-toolchain.toml`, `.cargo/config.toml`, `.github/workflows/cross-platform.yml`.

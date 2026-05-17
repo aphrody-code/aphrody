@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import { $ } from "bun";
 import { readdir } from "node:fs/promises";
 import { join, extname } from "node:path";
