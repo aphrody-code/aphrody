@@ -33,7 +33,7 @@ fn dispatch_prompt(rt: &Arc<Runtime>, prompt: String) {
                     for r in &records {
                         info!("  {}", r);
                     }
-                }
+                },
                 Err(e) => error!("DNS OSINT failed for {}: {:#}", domain, e),
             }
         });
@@ -45,7 +45,7 @@ fn dispatch_prompt(rt: &Arc<Runtime>, prompt: String) {
                     if let Err(e) = mirror.start_mirroring().await {
                         error!("Md3Mirror mirroring failed: {:#}", e);
                     }
-                }
+                },
                 Err(e) => error!("Md3Mirror init failed: {:#}", e),
             }
         });
@@ -59,7 +59,7 @@ fn dispatch_prompt(rt: &Arc<Runtime>, prompt: String) {
                     for r in &records {
                         info!("  {}", r);
                     }
-                }
+                },
                 Err(e) => error!("DNS OSINT failed for {}: {:#}", trimmed, e),
             }
         });

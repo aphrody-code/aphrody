@@ -3,46 +3,38 @@
 //! Single `run()` performs, in this order:
 //!   1. Parse `.gitmodules` + enrich via `git submodule status`.
 //!   2. Detect root kind via `mrx_detect::detect_root` (Bun? Turbo? pnpm?).
-//!   3. Walk `apps/` + `packages/` in parallel using `ignore::WalkBuilder`
-//!      (ripgrep's engine — respects .gitignore, .ignore, global excludes).
+//!   3. Walk `apps/` + `packages/` in parallel using `ignore::WalkBuilder` (ripgrep's engine —
+//!      respects .gitignore, .ignore, global excludes).
 //!   4. Per-file in parallel via rayon:
 //!        - pattern matches (`/home/ubuntu`, `/var/www`, `../../../../`),
 //!        - language detection by extension,
 //!        - size aggregation,
 //!        - per-workspace stat bucketing.
-//!   5. Compute a blake3 content hash of root config files
-//!      (turbo.json, package.json, bun.lock, Cargo.toml, .gitmodules, …).
+//!   5. Compute a blake3 content hash of root config files (turbo.json, package.json, bun.lock,
+//!      Cargo.toml, .gitmodules, …).
 //!   6. Atomically write `path.json` + `monorepo-map.json` (.tmp + rename).
 
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufWriter, Read, Write};
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Instant;
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{BufWriter, Read, Write},
+    path::Path,
+    sync::Arc,
+    time::Instant,
+};
 
 use anyhow::{Context, Result};
 use chrono::Utc;
 use dashmap::DashMap;
 use globset::GlobSetBuilder;
 use ignore::{DirEntry, WalkBuilder, WalkState};
+use mrx_core::*;
 use parking_lot::Mutex;
 use serde::Deserialize;
 
-use mrx_core::*;
-
 const SCAN_DIRS: &[&str] = &["apps", "packages"];
-const IGNORE_SEGMENTS: &[&str] = &[
-    "node_modules",
-    ".next",
-    ".turbo",
-    ".bun-cache",
-    "target",
-    "dist",
-    "build",
-    ".git",
-    ".cache",
-];
+const IGNORE_SEGMENTS: &[&str] =
+    &["node_modules", ".next", ".turbo", ".bun-cache", "target", "dist", "build", ".git", ".cache"];
 
 /// Root-level config files that feed the blake3 monorepo content hash.
 /// Mirror Turborepo's notion of "if these change, downstream cache busts".
@@ -169,49 +161,24 @@ pub fn run(root: &Path, audit_out: &Path, map_out: &Path) -> Result<RunResult> {
     let abs_paths = std::mem::take(&mut *acc.hardcoded_home.lock());
     let var_www = std::mem::take(&mut *acc.hardcoded_var_www.lock());
     let deep_rel = std::mem::take(&mut *acc.deep_relative.lock());
-    findings.insert(
-        "absolute_paths".into(),
-        FindingGroup {
-            pattern: "/home/ubuntu".into(),
-            status: if abs_paths.is_empty() {
-                Status::ProductionReady
-            } else {
-                Status::Findings
-            },
-            matches: abs_paths,
-        },
-    );
-    findings.insert(
-        "system_paths".into(),
-        FindingGroup {
-            pattern: "/var/www".into(),
-            status: if var_www.is_empty() {
-                Status::ProductionReady
-            } else {
-                Status::Findings
-            },
-            matches: var_www,
-        },
-    );
-    findings.insert(
-        "fragile_relative_paths".into(),
-        FindingGroup {
-            pattern: "../../../../".into(),
-            status: if deep_rel.is_empty() {
-                Status::ProductionReady
-            } else {
-                Status::Findings
-            },
-            matches: deep_rel,
-        },
-    );
+    findings.insert("absolute_paths".into(), FindingGroup {
+        pattern: "/home/ubuntu".into(),
+        status: if abs_paths.is_empty() { Status::ProductionReady } else { Status::Findings },
+        matches: abs_paths,
+    });
+    findings.insert("system_paths".into(), FindingGroup {
+        pattern: "/var/www".into(),
+        status: if var_www.is_empty() { Status::ProductionReady } else { Status::Findings },
+        matches: var_www,
+    });
+    findings.insert("fragile_relative_paths".into(), FindingGroup {
+        pattern: "../../../../".into(),
+        status: if deep_rel.is_empty() { Status::ProductionReady } else { Status::Findings },
+        matches: deep_rel,
+    });
 
     let total_findings: usize = findings.values().map(|f| f.matches.len()).sum();
-    let overall = if total_findings == 0 {
-        Status::ProductionReady
-    } else {
-        Status::Findings
-    };
+    let overall = if total_findings == 0 { Status::ProductionReady } else { Status::Findings };
 
     let audit = AuditReport {
         audit_name: "VPS Monorepo Path Hardening",
@@ -227,7 +194,9 @@ pub fn run(root: &Path, audit_out: &Path, map_out: &Path) -> Result<RunResult> {
         },
         findings,
         infrastructure_exceptions: InfraExceptions {
-            note: "Absolute paths are intentionally preserved in infrastructure configuration files and documentation.".into(),
+            note: "Absolute paths are intentionally preserved in infrastructure configuration \
+                   files and documentation."
+                .into(),
             directories: vec![
                 "vps/infra/systemd".into(),
                 "vps/infra/nginx".into(),
@@ -235,13 +204,15 @@ pub fn run(root: &Path, audit_out: &Path, map_out: &Path) -> Result<RunResult> {
                 "vps/CLAUDE.md".into(),
             ],
         },
-        submodules: SubmoduleSection {
-            tracked: submodules.clone(),
-        },
+        submodules: SubmoduleSection { tracked: submodules.clone() },
         conclusion: if overall == Status::ProductionReady {
-            "All source code (apps and packages) exclusively relies on workspace-aware utilities and environment variables for file resolution.".into()
+            "All source code (apps and packages) exclusively relies on workspace-aware utilities \
+             and environment variables for file resolution."
+                .into()
         } else {
-            format!("{total_findings} finding(s) detected — review `findings.*.matches` and remediate.")
+            format!(
+                "{total_findings} finding(s) detected — review `findings.*.matches` and remediate."
+            )
         },
     };
 
@@ -319,9 +290,7 @@ fn compute_root_hash(root: &Path) -> String {
 }
 
 fn num_threads() -> usize {
-    std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(4)
+    std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4)
 }
 
 fn hostname() -> String {
@@ -346,15 +315,9 @@ fn should_skip(entry: &DirEntry, ignore_set: &globset::GlobSet) -> bool {
 
 fn build_ignore_globset() -> Result<globset::GlobSet> {
     let mut b = GlobSetBuilder::new();
-    for pat in [
-        "**/*.log",
-        "**/*.tmp",
-        "**/*.swp",
-        "**/*.swx",
-        "**/*.lock",
-        "**/*.min.js",
-        "**/*.min.css",
-    ] {
+    for pat in
+        ["**/*.log", "**/*.tmp", "**/*.swp", "**/*.swx", "**/*.lock", "**/*.min.js", "**/*.min.css"]
+    {
         b.add(globset::Glob::new(pat)?);
     }
     Ok(b.build()?)
@@ -405,7 +368,7 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
                             _ => WorkspaceKind::Node,
                         });
                     }
-                }
+                },
                 "Cargo.toml" => {
                     if let Some((n, v)) = parse_cargo_toml(path) {
                         let mut e = acc.workspaces.entry(ws_key).or_default();
@@ -416,8 +379,8 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
                             _ => WorkspaceKind::Rust,
                         });
                     }
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }
@@ -561,13 +524,7 @@ fn parse_submodules(root: &Path) -> Result<Vec<Submodule>> {
 
     let flush = |out: &mut Vec<Submodule>, path: &mut Option<String>, url: &mut Option<String>| {
         if let (Some(p), Some(u)) = (path.take(), url.take()) {
-            out.push(Submodule {
-                path: p,
-                url: u,
-                sha: None,
-                pinned: None,
-                added: None,
-            });
+            out.push(Submodule { path: p, url: u, sha: None, pinned: None, added: None });
         }
     };
 
@@ -587,11 +544,8 @@ fn parse_submodules(root: &Path) -> Result<Vec<Submodule>> {
     }
     flush(&mut out, &mut current_path, &mut current_url);
 
-    if let Ok(output) = std::process::Command::new("git")
-        .arg("submodule")
-        .arg("status")
-        .current_dir(root)
-        .output()
+    if let Ok(output) =
+        std::process::Command::new("git").arg("submodule").arg("status").current_dir(root).output()
         && output.status.success()
     {
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -602,10 +556,9 @@ fn parse_submodules(root: &Path) -> Result<Vec<Submodule>> {
             let sha = parts.next().unwrap_or("").to_string();
             let rest = parts.next().unwrap_or("");
             let (path_part, pinned) = match rest.find(" (") {
-                Some(i) => (
-                    rest[..i].to_string(),
-                    Some(rest[i + 2..].trim_end_matches(')').to_string()),
-                ),
+                Some(i) => {
+                    (rest[..i].to_string(), Some(rest[i + 2..].trim_end_matches(')').to_string()))
+                },
                 None => (rest.to_string(), None),
             };
             by_path.insert(path_part, (sha, pinned));

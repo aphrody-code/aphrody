@@ -9,8 +9,8 @@
 // alignment. Native targets (Linux, Windows, macOS) are fully supported.
 #[cfg(target_family = "wasm")]
 compile_error!(
-    "a2a-client does not currently support wasm32 targets: reqwest/http2/tokio::net require \
-     OS networking. Track the `wasm` feature flag for future WASM support."
+    "a2a-client does not currently support wasm32 targets: reqwest/http2/tokio::net require OS \
+     networking. Track the `wasm` feature flag for future WASM support."
 );
 
 pub mod agent_card;
@@ -95,6 +95,8 @@ pub(crate) fn build_reqwest_client_with_root_pem(
 
 #[cfg(test)]
 pub(crate) mod test_utils {
+    use std::sync::Once;
+
     pub(crate) fn rcgen_self_signed_ca_pem() -> Vec<u8> {
         let mut params = rcgen::CertificateParams::new(Vec::<String>::new()).unwrap();
         params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
@@ -102,5 +104,18 @@ pub(crate) mod test_utils {
         let key = rcgen::KeyPair::generate().unwrap();
         let cert = params.self_signed(&key).unwrap();
         cert.pem().into_bytes()
+    }
+
+    /// Install the rustls `ring` `CryptoProvider` exactly once for the whole
+    /// test process. Required because `reqwest::Client::new()` and
+    /// `reqwest::Client::builder().build()` instantiate a rustls
+    /// `ClientConfig`, and rustls 0.23+ refuses to pick a default provider
+    /// implicitly. Without this every transport test panics with
+    /// `No provider set` (origin: reqwest/async_impl/client.rs).
+    pub(crate) fn install_rustls_provider() {
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
     }
 }

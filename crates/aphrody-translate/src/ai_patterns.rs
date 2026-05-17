@@ -5,8 +5,9 @@
 //! `Drop` et seront retirés du fichier ; les autres voient juste la signature
 //! enlevée.
 
-use regex::Regex;
 use std::sync::OnceLock;
+
+use regex::Regex;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {

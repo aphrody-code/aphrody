@@ -6,8 +6,9 @@
 //! héritées d'un dialogue assistant (« je vais », « nous allons », « voyons »,
 //! « note que… ») et de remettre le texte au présent technique.
 
-use regex::Regex;
 use std::sync::OnceLock;
+
+use regex::Regex;
 
 static PREFIX_NOTE: OnceLock<Regex> = OnceLock::new();
 static PREFIX_TODO_VAGUE: OnceLock<Regex> = OnceLock::new();
@@ -22,8 +23,9 @@ fn prefix_note() -> &'static Regex {
 }
 
 fn prefix_todo_vague() -> &'static Regex {
-    PREFIX_TODO_VAGUE
-        .get_or_init(|| Regex::new(r"(?i)^\s*todo\s*[:\-]?\s*(implement|finish|complete|do)\s*$").unwrap())
+    PREFIX_TODO_VAGUE.get_or_init(|| {
+        Regex::new(r"(?i)^\s*todo\s*[:\-]?\s*(implement|finish|complete|do)\s*$").unwrap()
+    })
 }
 
 fn filler_openers() -> &'static Vec<Regex> {
@@ -54,9 +56,7 @@ fn first_person_fr() -> &'static Vec<(Regex, &'static str)> {
             (r"\bma\b", "la"),
             (r"\bmes\b", "les"),
         ];
-        raw.iter()
-            .map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r))
-            .collect()
+        raw.iter().map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r)).collect()
     })
 }
 
@@ -73,9 +73,7 @@ fn first_person_en() -> &'static Vec<(Regex, &'static str)> {
             (r"\bour\b", "the"),
             (r"\bmy\b", "the"),
         ];
-        raw.iter()
-            .map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r))
-            .collect()
+        raw.iter().map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r)).collect()
     })
 }
 

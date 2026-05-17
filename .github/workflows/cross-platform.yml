@@ -203,6 +203,11 @@ jobs:
   supply-chain:
     name: supply-chain (cargo-deny + cargo-vet)
     runs-on: ubuntu-latest
+    env:
+      # cargo-deny-action runs inside a container that has no sccache binary.
+      # The workflow-level RUSTC_WRAPPER=sccache would crash cargo metadata.
+      RUSTC_WRAPPER: ""
+      SCCACHE_GHA_ENABLED: ""
     permissions:
       contents: read
     steps:
