@@ -1,0 +1,41 @@
+[package]
+name = "a2a-client-lf"
+version = "0.1.16"
+description = "A2A v1 async client with protocol binding factory"
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "a2a_client"
+
+[lints]
+workspace = true
+
+[dependencies]
+a2a = { workspace = true }
+a2a-pb = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+auto_impl = { workspace = true }
+reqwest = { workspace = true }
+bytes = "1"
+tracing = { workspace = true }
+uuid = { workspace = true }
+semver = { workspace = true }
+pin-project-lite = { workspace = true }
+rustls = { workspace = true, optional = true, features = ["ring"] }
+
+[dev-dependencies]
+rcgen = { workspace = true }
+
+[features]
+default = ["rustls-tls"]
+native-tls = ["reqwest/native-tls"]
+rustls-tls = ["reqwest/rustls-no-provider", "dep:rustls"]

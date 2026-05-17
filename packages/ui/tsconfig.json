@@ -1,0 +1,31 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
+		"jsxImportSource": "react",
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": false,
+		"strict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"exactOptionalPropertyTypes": false,
+		"useUnknownInCatchVariables": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"noEmit": true,
+		"types": ["bun", "react", "react-dom"]
+	},
+	"include": ["components/**/*", "src/**/*", "tokens/**/*"],
+	"exclude": ["dist", "node_modules"]
+}

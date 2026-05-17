@@ -1,0 +1,314 @@
+﻿# ============================================================================
+#  Aphrody â€” .gitignore (refreshed 2026-05-16)
+#  Polyglot: Rust nightly + C/C++ (MSVC) + Bun/TypeScript + Python tooling.
+#  Order: most-frequent triggers first.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 1. Rust / Cargo
+# ----------------------------------------------------------------------------
+target/
+**/*.rs.bk
+**/*.orig
+**/Cargo.lock.tmp
+# NOTE: Cargo.lock IS tracked (lockfile-only supply chain since 2026-05-16).
+# NOTE: supply-chain/imports.lock IS tracked (cargo-vet feed pins).
+
+# ----------------------------------------------------------------------------
+# 2. Bun / Node / npm  (node is FORBIDDEN â€” only bun.lock is committed)
+# ----------------------------------------------------------------------------
+node_modules/
+bun.lockb
+.npm/
+.npmrc
+.yarn/
+.yarnrc
+.pnp.*
+.pnpm-store/
+yarn-error.log
+yarn-debug.log*
+npm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+
+# ----------------------------------------------------------------------------
+# 3. Build outputs & generic caches
+# ----------------------------------------------------------------------------
+dist/
+out/
+build/
+.turbo/
+.cache/
+.parcel-cache/
+.vite/
+.swc/
+.next/
+.nuxt/
+.eslintcache
+.oxlintcache
+*.tsbuildinfo
+coverage/
+*.lcov
+var/
+
+# ----------------------------------------------------------------------------
+# 4. C++ / MSVC / CMake
+# ----------------------------------------------------------------------------
+CMakeFiles/
+CMakeCache.txt
+CMakeUserPresets.json
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+*.obj
+*.ilk
+*.iobj
+*.ipdb
+*.exp
+vcpkg_installed/
+.vcpkg-root
+vcpkg-manifest-install.log
+# NOTE: compile_commands.json kept â€” clangd / clang-tidy need it.
+
+# ----------------------------------------------------------------------------
+# 5. Python tooling (uv / mypy / ruff)
+# ----------------------------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.build/
+*.dist/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+__pypackages__/
+
+# ----------------------------------------------------------------------------
+# 6. Native binary artifacts (build outputs only)
+# ----------------------------------------------------------------------------
+*.pdb
+*.so
+*.so.*
+*.dylib
+*.tgz
+*.a
+*.dll
+*.lib
+*.exe
+*.exp
+*.rlib
+*.rmeta
+*.o
+*.obj
+*.bc
+*.wasm
+*.d
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+
+# ----------------------------------------------------------------------------
+# 7. Environment & secrets
+# ----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+*.gpg
+*.asc
+secrets/
+.credentials/
+credentials.json
+
+# ----------------------------------------------------------------------------
+# 8. Logs & crash dumps
+# ----------------------------------------------------------------------------
+logs/
+*.log
+*.log.lck
+*.log.gz
+*.dmp
+*.minidmp
+crash-*.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ----------------------------------------------------------------------------
+# 9. Databases (SQLite WAL/SHM transients)
+# ----------------------------------------------------------------------------
+*.db-shm
+*.db-wal
+*.db-journal
+
+# ----------------------------------------------------------------------------
+# 10. OS / IDE / editor
+# ----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.idea/
+.idea_modules/
+*.iml
+# VSCode: ignore user-local junk, but TRACK the Google Mode shared config
+# (settings.json, extensions.json, tasks.json, launch.json) so contributors
+# and Claude Code see the rust-analyzer / extension recommendations.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.fleet/
+.zed/
+.nova/
+.history/
+*.code-workspace
+*.swp
+*.swo
+
+# ----------------------------------------------------------------------------
+# 11. AI tooling caches
+# ----------------------------------------------------------------------------
+.copilot/
+.cursor/
+.windsurf/
+.tabnine/
+.aider*
+.claude/settings.local.json
+.opencode/settings.local.json
+
+# ----------------------------------------------------------------------------
+# 12. Auto-generated context files
+# ----------------------------------------------------------------------------
+repo.json
+profile.md
+
+# ----------------------------------------------------------------------------
+# 13. External clones / vendored research mirrors
+# ----------------------------------------------------------------------------
+shared/git/
+opt/
+# NOTE: opt/* contains git submodules (magika, markitdown, material-design-icons,
+# material-web, terminal) declared in .gitmodules.
+# NOTE: vendor/* and packages/* are KEPT in the repo to preserve every
+# source file (Rust, TS, Zig, Python) — even forks with local patches.
+# Only Electron binaries (downloadable from upstream releases) are excluded.
+vendor/electron-prebuilt/
+packages/electron-prebuilt/
+# Heavy upstream icon clone (re-cloned on demand — see packages/material-design-icons/README.md)
+packages/material-design-icons/*
+!packages/material-design-icons/README.md
+
+# ----------------------------------------------------------------------------
+# 14. Vendored sub-projects we do NOT track (regenerated locally)
+# ----------------------------------------------------------------------------
+docs/bun/
+docs/node/
+docs/v8/
+msys64/
+msys2-base.tar.xz
+glibc/
+
+# ----------------------------------------------------------------------------
+# 15. Material Design heavy assets — see section 13.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# 16. Test outputs
+# ----------------------------------------------------------------------------
+test_outputs/
+
+# ----------------------------------------------------------------------------
+# 17. Throwaway dev scripts (cleanup 2026-05-16)
+# ----------------------------------------------------------------------------
+fix_*.py
+auto_refactor.py
+clean_cargo_*.py
+rebuild_cargo.py
+append_deps.py
+check_type_info.rs
+test_type_info.rs
+/test.exe
+/test.pdb
+/test.rs
+/test.js
+/test.ts
+/test.py
+/test.sh
+/test_mcp.jsonl
+
+# ----------------------------------------------------------------------------
+# 18. Local AI / harness scratch (project-level)
+# ----------------------------------------------------------------------------
+.claude/projects/
+.claude/todos/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/ide/
+.opencode/projects/
+.gemini/
+CRUSH.md
+GEMINI.md.local
+
+# ----------------------------------------------------------------------------
+# 19. Lockfile tmp / merge leftovers
+# ----------------------------------------------------------------------------
+*.orig
+*.rej
+*~
+
+# ----------------------------------------------------------------------------
+# 20. Internal reports leaked at root (mis-quoted PowerShell Write-Host
+#     interpreting backslash escapes in C:\aphrody-backup\* paths).
+# ----------------------------------------------------------------------------
+/aphrody-backup*
+/C:*
+/rename-report.json
+/rename-dryrun.json
+/rename-apply.json
+/manifest-scan.json
+/tree-scan.json
+
+# ----------------------------------------------------------------------------
+# 21. MAX-LIGHT REPO (2026-05-17 pivot+2) — drop ALL vendored upstream sources.
+#     ~370 MB cleaned from the git index. Forks are consumed via git+branch=aphrody
+#     (cf. Cargo.toml workspace.dependencies and packages/<name>/README.md).
+# ----------------------------------------------------------------------------
+# vendor/ — keep only the directory placeholder via .gitkeep if needed
+vendor/*
+!vendor/README.md
+!vendor/.gitkeep
+
+# packages — keep only OUR placeholders + work-in-progress (ui, bxc, n2b)
+packages/a2ui/*
+!packages/a2ui/README.md
+packages/gemini-cli/*
+!packages/gemini-cli/README.md
+packages/material-design-icons/*
+!packages/material-design-icons/README.md
+packages/material-web/*
+!packages/material-web/README.md
+packages/next.js/*
+!packages/next.js/README.md
+
+# crates/{coreutils,util-linux} — were git submodules pointing to uutils upstream,
+# excluded from workspace anyway. Drop entirely (re-clone on demand).
+crates/coreutils/
+crates/util-linux/
+
+# Pre-commit / Husky / Lefthook config — REMOVED 2026-05-17, no auto hooks.
+.pre-commit-config.yaml
+.husky/
+.lefthook.yml
+lefthook.yml

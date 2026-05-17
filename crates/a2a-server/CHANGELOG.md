@@ -1,0 +1,93 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.3.0](https://github.com/a2aproject/a2a-rs/compare/a2a-server-lf-v0.2.7...a2a-server-lf-v0.3.0) - 2026-05-11
+
+### Fixed
+
+- use TaskPushNotificationConfig v1.0.0 ([#66](https://github.com/a2aproject/a2a-rs/pull/66))
+- align error code mappings with upstream spec fix (A2A#1627) ([#58](https://github.com/a2aproject/a2a-rs/pull/58))
+
+## [0.2.7](https://github.com/a2aproject/a2a-rs/compare/a2a-server-lf-v0.2.6...a2a-server-lf-v0.2.7) - 2026-04-30
+
+### Added
+
+- built-in TLS (rustls) support for transport factories ([#56](https://github.com/a2aproject/a2a-rs/pull/56))
+- use rustls everywhere and expose TLS backend selection via feature flags ([#47](https://github.com/a2aproject/a2a-rs/pull/47))
+
+## [0.2.6](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.5...agntcy-a2a-server-v0.2.6) - 2026-04-06
+
+### Other
+
+- apply rustfmt to interop changes ([#33](https://github.com/a2aproject/a2a-rs/pull/33))
+
+## [0.2.5](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.4...agntcy-a2a-server-v0.2.5) - 2026-04-06
+
+### Fixed
+
+- *(interop)* align push-config JSON bindings with a2a-go ([#31](https://github.com/a2aproject/a2a-rs/pull/31))
+
+## [0.2.4](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.3...agntcy-a2a-server-v0.2.4) - 2026-04-06
+
+### Added
+
+- *(a2a-server)* support resumable subscriptions and push delivery
+
+## [0.2.3](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.2...agntcy-a2a-server-v0.2.3) - 2026-04-06
+
+### Added
+
+- *(server)* support push configs and gRPC list interop
+
+## [0.2.2](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.1...agntcy-a2a-server-v0.2.2) - 2026-04-05
+
+### Other
+
+- updated the following local packages: agntcy-a2a, agntcy-a2a-pb
+
+## [0.2.1](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.2.0...agntcy-a2a-server-v0.2.1) - 2026-04-05
+
+### Added
+
+- use ProtoJSON for JSON wire payloads
+
+### Other
+
+- format ProtoJSON transport changes
+
+## [0.2.0](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.1.3...agntcy-a2a-server-v0.2.0) - 2026-04-04
+
+### Fixed
+
+- align HTTP+JSON REST interop
+
+## [0.1.3](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.1.2...agntcy-a2a-server-v0.1.3) - 2026-04-04
+
+### Fixed
+
+- drop dotted jsonrpc aliases
+- align jsonrpc and agent-card interop
+
+## [0.1.2](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.1.1...agntcy-a2a-server-v0.1.2) - 2026-04-03
+
+### Other
+
+- updated the following local packages: agntcy-a2a
+
+## [0.1.1](https://github.com/a2aproject/a2a-rs/compare/agntcy-a2a-server-v0.1.0...agntcy-a2a-server-v0.1.1) - 2026-04-03
+
+### Other
+
+- add crate readmes for crates.io
+
+## [0.1.0](https://github.com/a2aproject/a2a-rs/releases/tag/a2a-server-v0.1.0) - 2026-04-03
+
+### Added
+
+- initialize a2a-rs Rust SDK

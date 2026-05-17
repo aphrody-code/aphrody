@@ -1,0 +1,17 @@
+{
+  "$schema": "https://code.claude.com/schema/hooks.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/oxclint.ts\"",
+            "timeout": 30000
+          }
+        ]
+      }
+    ]
+  }
+}

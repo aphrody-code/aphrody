@@ -1,0 +1,100 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://raw.githubusercontent.com/aphrody-code/n2b/main/schema/n2b.schema.json",
+	"title": "N2bManifest",
+	"description": "Configuration n2b.json — pose les défauts d'un projet (mode, ignore globs, overrides de règles, registres locaux). Lue par n2b en remontant l'arbre depuis la racine du scan. Précédence : flags CLI > n2b.json > défauts. Phase 4 §4.7.",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string",
+			"format": "uri"
+		},
+		"mode": {
+			"type": "string",
+			"enum": ["check", "fix", "aggressive", "migrate"],
+			"description": "Mode par défaut quand n2b est invoqué sans flag."
+		},
+		"include": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Globs d'inclusion (allow-list). Si présent, seules les paths matchant un glob sont scannés."
+		},
+		"ignore": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Globs d'exclusion supplémentaires (en plus des défauts node_modules/.git/dist/...)."
+		},
+		"targets": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Cibles spécifiques (utile en monorepo : ['apps/web', 'packages/core'])."
+		},
+		"rules": {
+			"type": "object",
+			"description": "Override par Rule ID. Permet de désactiver ou de re-prioriser une règle.",
+			"additionalProperties": {
+				"oneOf": [
+					{ "type": "string", "enum": ["off", "info", "warn", "error"] },
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"severity": {
+								"type": "string",
+								"enum": ["off", "info", "warn", "error"]
+							},
+							"autofix": { "type": "boolean" }
+						}
+					}
+				]
+			}
+		},
+		"registry": {
+			"type": "object",
+			"description": "Registres locaux — entrées additionnelles fusionnées au registre embarqué. Un id collisionnant fait échec (jamais d'écrasement silencieux).",
+			"additionalProperties": false,
+			"properties": {
+				"packages": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": ["id", "package", "replacement", "note"],
+						"additionalProperties": false,
+						"properties": {
+							"id": { "type": "string" },
+							"package": { "type": "string" },
+							"replacement": { "type": "string" },
+							"note": { "type": "string" },
+							"aggressive": { "type": "boolean" }
+						}
+					}
+				},
+				"apis": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": ["id", "pattern", "message"],
+						"additionalProperties": false,
+						"properties": {
+							"id": { "type": "string" },
+							"pattern": { "type": "string" },
+							"message": { "type": "string" },
+							"import_from": { "type": "string" },
+							"severity": {
+								"type": "string",
+								"enum": ["info", "warn", "error"]
+							},
+							"replace": {
+								"type": "string",
+								"enum": ["none", "static", "template"]
+							},
+							"replacement": { "type": "string" },
+							"aggressive": { "type": "boolean" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

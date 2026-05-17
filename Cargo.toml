@@ -1,0 +1,540 @@
+# ============================================================================
+#  Aphrody — Workspace Manifest (Cargo 1.93+, Rust 2024, Nightly)
+#  Production-grade, Google Style — Fuchsia/Chromium aligned.
+# ============================================================================
+[workspace]
+resolver = "3"
+members = [
+    "crates/cli",
+    "crates/gui",
+    "crates/backend",
+    "crates/base",
+    "crates/google_mcp",
+    "crates/a2a",
+    "crates/a2a-client",
+    "crates/a2a-server",
+    "crates/a2a-grpc",
+    "crates/a2a-pb",
+    # "crates/a2a-slimrpc",
+    # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
+    #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
+    #   + Ninja generator validated). Tracking: upstream agntcy/agp issue queue.
+]
+exclude = [
+    "crates/coreutils",
+    "crates/util-linux",
+    "crates/a2a-slimrpc",
+    "vendor",
+]
+# Pivot 2026-05-17 :
+# - `google_os`  archivé vers C:\google-os-archive\
+# - `bun_ffi`    archivé vers C:\aphrody-archive\ (FFI Bun, pollue le Rust workspace)
+# - `n2b`        archivé vers C:\aphrody-archive\ (réintégré via upstream aphrody-code/n2b branche aphrody)
+# - `google_kv`  archivé vers C:\aphrody-archive\ (orphan, aucun consumer dans le workspace)
+# - `python_ffi` archivé vers C:\aphrody-archive\ (orphan : 0 consumer, dépend de vendor/bun ;
+#                AI tuning / MD = candle/comrak en Rust pur, pas besoin de Python bridge)
+# Upstreams aphrody intégrés (branche aphrody isolée d'upstream main) :
+# - n2b  → https://github.com/aphrody-code/n2b   (Node→Bun linter, 68 rules)
+# - bxc  → https://github.com/aphrody-code/bxc   (Bun+Lightpanda browser engine)
+# Forks UI/web dans packages/ :
+# - ui      → https://github.com/aphrody-code/ui      (fork shadcn-ui/ui)
+# - next.js → https://github.com/aphrody-code/next.js (fork vercel/next.js)
+# Le projet est `aphrody`, un CLI ultime cross-platform
+# (Linux Ubuntu 26.04 > Win11 Canary > wasm).
+
+# ----------------------------------------------------------------------------
+# Direct pin: aws-lc-sys 0.41+ ships builder fixes for newer MSVC (VS 2026).
+# Declared even if only transitively used, so the resolver picks the newer one.
+# ----------------------------------------------------------------------------
+[workspace.metadata.aws-lc-sys]
+notice = "Forced via cargo update -p aws-lc-sys --precise 0.41.0 if needed."
+
+# ----------------------------------------------------------------------------
+# Shared package metadata — inherited via `*.workspace = true`
+# ----------------------------------------------------------------------------
+[workspace.package]
+version      = "1.0.0-canary"
+edition      = "2024"
+rust-version = "1.97"
+authors      = ["aphrody-code"]
+homepage     = "https://github.com/aphrody-code/aphrody"
+repository   = "https://github.com/aphrody-code/aphrody"
+license      = "Apache-2.0"
+description  = "aphrody — the ultimate cross-platform CLI (Linux/Windows/WASM)."
+keywords     = ["cli", "cross-platform", "rust", "linux", "wasm"]
+categories   = ["command-line-utilities", "development-tools"]
+
+# ----------------------------------------------------------------------------
+# Centralized dependencies — every crate uses `{ workspace = true }`.
+# Caret MAJOR.MINOR; Cargo.lock pins exact patches for reproducibility.
+# ----------------------------------------------------------------------------
+[workspace.dependencies]
+# --- Async runtime & primitives -------------------------------------------
+tokio              = { version = "1.52", features = ["full"] }
+tokio-stream       = { version = "0.1" }
+tokio-rustls       = { version = "0.26" }
+futures            = { version = "0.3" }
+futures-util       = { version = "0.3" }
+async-trait        = { version = "0.1" }
+auto_impl          = { version = "1" }
+pin-project-lite   = { version = "0.2" }
+crossbeam          = { version = "0.8" }
+crossbeam-channel  = { version = "0.5" }
+rayon              = { version = "1.12" }
+
+# --- Allocator & FFI ------------------------------------------------------
+mimalloc           = { version = "0.1", default-features = false }
+libc               = { version = "0.2" }
+bytes              = { version = "1" }
+memchr             = { version = "2" }
+memmap2            = { version = "0.9" }
+hashbrown          = { version = "0.17", default-features = false, features = ["inline-more", "allocator-api2"] }
+allocator-api2     = { version = "0.2", default-features = false, features = ["alloc"] }
+smallvec           = { version = "1" }
+bumpalo            = { version = "3", features = ["collections", "boxed"] }
+typed-arena        = { version = "2" }
+scopeguard         = { version = "1" }
+self_cell          = { version = "1" }
+once_cell          = { version = "1" }
+foldhash           = { version = "0.1" }
+rustc-hash         = { version = "2" }
+itoa               = { version = "1" }
+
+# --- Serde / data formats -------------------------------------------------
+serde              = { version = "1", features = ["derive"] }
+serde_json         = { version = "1" }
+serde_yaml         = { version = "0.9" }
+toml               = { version = "0.8" }
+bstr               = { version = "1", default-features = false, features = ["alloc"] }
+hex                = { version = "0.4" }
+base64             = { version = "0.22" }
+uuid               = { version = "1", features = ["v4", "v7"] }
+semver             = { version = "1" }
+chrono             = { version = "0.4", features = ["serde"] }
+jiff               = { version = "0.2" }
+regex              = { version = "1" }
+
+# --- Logging / errors -----------------------------------------------------
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "=0.3.22", features = ["env-filter", "fmt", "json", "regex"] }
+anyhow             = { version = "1" }
+thiserror          = { version = "2" }
+miette             = { version = "7", features = ["fancy"] }
+
+# --- CLI / TUI ------------------------------------------------------------
+clap               = { version = "4", features = ["derive", "color", "env"] }
+clap_complete      = { version = "4" }
+clap_mangen        = { version = "0.2" }
+indicatif          = { version = "0.18" }
+colored            = { version = "3" }
+crossterm          = { version = "0.29" }
+
+# --- Bitflags / enum-utils ------------------------------------------------
+bitflags           = { version = "2" }
+enum-map           = { version = "2" }
+enumset            = { version = "1" }
+strum              = { version = "0.28", features = ["derive"] }
+const_format       = { version = "0.2" }
+phf                = { version = "0.11", features = ["macros"] }
+
+# --- Filesystem / system --------------------------------------------------
+walkdir            = { version = "2" }
+fs_extra           = { version = "1" }
+globset            = { version = "0.4" }
+ignore             = { version = "0.4" }
+tempfile           = { version = "3" }
+filetime           = { version = "0.2" }
+notify             = { version = "8" }
+which              = { version = "8" }
+rustix             = { version = "1.0", default-features = false, features = ["std", "fs", "event", "process", "net"] }
+
+# --- Crypto / security ----------------------------------------------------
+aes-gcm            = { version = "0.10" }
+sha2               = { version = "0.10" }
+sha3               = { version = "0.10" }
+md-5               = { version = "0.10" }
+blake3             = { version = "1" }
+digest             = { version = "0.10" }
+zeroize            = { version = "1", features = ["derive"] }
+rcgen              = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+rustls             = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-pemfile     = { version = "2" }
+getrandom          = { version = "0.2" }
+rand               = { version = "0.8" }
+rand_chacha        = { version = "0.3" }
+
+# --- HTTP / networking ----------------------------------------------------
+reqwest            = { version = "0.13", default-features = false, features = ["json", "stream", "charset", "http2", "system-proxy", "rustls-no-provider", "query", "form"] }
+http               = { version = "1" }
+hyper              = { version = "1" }
+axum               = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
+axum-server        = { version = "0.8", default-features = false, features = ["tls-rustls"] }
+tower              = { version = "0.5", features = ["util"] }
+tower-http         = { version = "0.6", features = ["cors"] }
+dns-lookup         = { version = "2" }
+hostname           = { version = "0.4" }
+url                = { version = "2" }
+
+# --- A2A protocol family --------------------------------------------------
+a2a                = { package = "a2a-lf",        path = "crates/a2a",        version = "0.3" }
+a2a-client         = { package = "a2a-client-lf", path = "crates/a2a-client", version = "0.1", default-features = false }
+a2a-server         = { package = "a2a-server-lf", path = "crates/a2a-server", version = "0.3",  default-features = false }
+a2a-pb             = { package = "a2a-pb",        path = "crates/a2a-pb",     version = "0.1" }
+a2a-grpc           = { package = "a2a-grpc",      path = "crates/a2a-grpc",   version = "0.2" }
+a2a-slimrpc        = { package = "a2a-slimrpc",   path = "crates/a2a-slimrpc", version = "0.1" }
+slim_bindings      = { package = "agntcy-slim-bindings", version = "1" }
+
+# --- gRPC / protobuf ------------------------------------------------------
+tonic              = { version = "0.14" }
+tonic-build        = { version = "0.14" }
+tonic-prost        = { version = "0.14" }
+tonic-prost-build  = { version = "0.14" }
+tonic-tls          = { version = "0.7", default-features = false, features = ["rustls"] }
+prost              = { version = "0.14" }
+prost-types        = { version = "0.14" }
+pbjson             = { version = "0.9" }
+pbjson-types       = { version = "0.9" }
+pbjson-build       = { version = "0.9" }
+protoc-bin-vendored = { version = "3" }
+
+# --- Database -------------------------------------------------------------
+rusqlite           = { version = "0.37", features = ["bundled"] }
+denokv_sqlite      = { version = "0.13" }
+denokv_proto       = { version = "0.13" }
+deno_error         = { version = "0.7" }
+
+# --- UI / desktop ---------------------------------------------------------
+wry                = { version = "0.55" }
+tao                = { version = "0.35" }
+
+# --- Python FFI -----------------------------------------------------------
+pyo3               = { version = "0.24", features = ["auto-initialize", "abi3-py311"] }
+
+# --- HTML / JS tooling ----------------------------------------------------
+scraper            = { version = "0.27" }
+oxc_allocator      = { version = "0.131" }
+oxc_ast            = { version = "0.131" }
+oxc_ast_visit      = { version = "0.131" }
+oxc_parser         = { version = "0.131" }
+oxc_span           = { version = "0.131" }
+schemars           = { version = "0.8" }
+ts-rs              = { version = "12", features = ["serde-compat"] }
+similar            = { version = "3" }
+octocrab           = { version = "0.50" }
+
+# --- MCP -----------------------------------------------------------------
+rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", features = ["server", "transport-io", "macros", "schemars"] }
+
+# --- Terminal emulation ---------------------------------------------------
+vte                = { version = "0.15" }
+
+# --- Windows bindings -----------------------------------------------------
+windows            = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_IO",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Memory",
+    "Win32_System_SystemInformation",
+] }
+windows-sys        = { version = "0.61", features = ["Win32_Foundation"] }
+winapi-util        = { version = "0.1" }
+
+# --- C / C++ FFI (Chromium-style: `cxx` primary, `bindgen` for large APIs) -
+# Use `cxx` for safe, typed bridges declared in `#[cxx::bridge(namespace = "...")]`.
+# Use `bindgen` only when the C/C++ surface is too large to wrap manually.
+# See docs/cargo/FFI_POLICY.md and docs/cargo/CHROMIUM_ANDROID_PATTERNS.md.
+cxx                = { version = "1.0" }
+cxx-build          = { version = "1.0" }
+bindgen            = { version = "0.72" }
+
+# --- POSIX shim helpers (Linux/macOS bridges) -----------------------------
+nix-cross          = { package = "nix", version = "0.31", default-features = false }
+
+# --- Test / bench / fuzz --------------------------------------------------
+rstest             = { version = "0.26" }
+proptest           = { version = "1" }
+criterion          = { version = "0.8" }
+pretty_assertions  = { version = "1" }
+
+# --- Agent skills (SKILL.md ecosystem) ------------------------------------
+# `skill` (docs.rs/skill) is the blazing-fast Vercel Skills CLI reborn in Rust.
+# Library + binary: SkillManager façade for discovering, installing, listing,
+# and removing agent skills declared in `.claude/skills/<name>/SKILL.md`.
+# See docs/cargo/SKILLS.md for the centralized skill inventory + format spec.
+skill              = { version = "0.8", default-features = false, features = ["network"] }
+
+# --- Aphrody upstream forks (branche `aphrody` isolée d'upstream main) ----
+# Intégration native via gh CLI : chaque fork a une branche dédiée `aphrody`
+# avec marker `.aphrody/INTEGRATION.md` et adaptations minimes (anonymisation,
+# rust-version bump). Rewrite massif possible sur cette branche sans toucher
+# au upstream main.
+#
+# n2b — Node.js → Bun migration linter (68 rules, AST-driven via oxc_parser).
+# Workspace de 11 crates (n2b-cli, n2b-core, n2b-types, n2b-util, n2b-rules,
+# n2b-scanners, n2b-report, n2b-ai, n2b-github, n2b-native, n2b-registry).
+# Repo : https://github.com/aphrody-code/n2b   (branch: aphrody)
+n2b-cli            = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-cli" }
+n2b-core           = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-core" }
+n2b-types          = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-types" }
+n2b-util           = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-util" }
+n2b-rules          = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-rules" }
+n2b-scanners       = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-scanners" }
+n2b-report         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-report" }
+n2b-ai             = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-ai" }
+n2b-github         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-github" }
+n2b-native         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-native" }
+n2b-registry       = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-registry" }
+# bxc, ui, next.js sont des packages Bun/TS — voir packages/{bxc,ui,next.js}/README.md.
+
+# --- bxc Rust-bridge (branche aphrody, isolée d'upstream main) ------------
+# Cf. docs/research/BXC_CARTOGRAPHY.md pour la cartographie complète.
+# obscura-* sont les 7 crates Rust de bxc (DOM, net, browser, CDP, JS, MCP, engine).
+obscura-dom        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-dom" }
+obscura-net        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-net" }
+obscura-browser    = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-browser" }
+obscura-cdp        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-cdp" }
+obscura-js         = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-js" }
+obscura-mcp        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-mcp" }
+
+# --- SWC / Vercel Rust ecosystem (publics crates.io) ---------------------
+# Cf. docs/research/NEXTJS_VERCEL_RUST_CRATES.md pour la cartographie complète.
+swc_core                       = { version = "63", features = ["common", "ecma_parser", "ecma_codegen", "ecma_transforms"] }
+swc_sourcemap                  = { version = "10" }
+swc_plugin_backend_wasmtime    = { version = "9" }
+swc_emotion                    = { version = "3" }
+swc_relay                      = { version = "3" }
+styled_components              = { version = "3" }
+styled_jsx                     = { version = "3" }
+modularize_imports             = { version = "3" }
+react_remove_properties        = { version = "3" }
+remove_console                 = { version = "3" }
+preset_env_base                = { version = "7" }
+browserslist-rs                = { version = "0.19" }
+
+# --- Lightning CSS (Vercel/Parcel CSS processor) -------------------------
+lightningcss                   = { version = "1.0.0-alpha.70" }
+lightningcss-napi              = { version = "0.4" }
+
+# --- MDX (markdown + JSX) ------------------------------------------------
+mdxjs                          = { version = "1" }
+
+# --- Turbopack runtime + compiler (branche aphrody, isolée d'upstream canary) ---
+# 60+ crates internes vendored depuis aphrody-code/next.js@aphrody.
+# Pour intégration progressive ; activer crate par crate selon besoin réel.
+# Voir docs/research/NEXTJS_VERCEL_RUST_CRATES.md pour la liste exhaustive.
+turbo-tasks                    = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks" }
+turbo-tasks-fs                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-fs" }
+turbo-tasks-env                = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-env" }
+turbo-tasks-fetch              = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-fetch" }
+turbo-tasks-malloc             = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-malloc" }
+turbopack                      = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack" }
+turbopack-core                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-core" }
+turbopack-ecmascript           = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-ecmascript" }
+turbopack-css                  = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-css" }
+turbopack-image                = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-image" }
+turbopack-wasm                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-wasm" }
+turbopack-mdx                  = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-mdx" }
+turbopack-dev-server           = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-dev-server" }
+turbopack-nodejs               = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-nodejs" }
+turbopack-browser              = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-browser" }
+next-core                      = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-core" }
+next-api                       = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-api" }
+next-build                     = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-build" }
+next-custom-transforms         = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-custom-transforms" }
+
+# --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
+# Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
+wgpu               = { version = "26" }
+wasm-bindgen       = { version = "0.2" }
+wasm-bindgen-futures = { version = "0.4" }
+js-sys             = { version = "0.3" }
+web-sys            = { version = "0.3" }
+
+# --- System info (cross-platform: Linux /proc + Windows WMI-free) ---------
+sysinfo            = { version = "0.39", default-features = false, features = ["system", "disk"] }
+
+# --- Misc -----------------------------------------------------------------
+itertools          = { version = "0.14" }
+nix                = { version = "0.31" }
+
+# ----------------------------------------------------------------------------
+# Workspace-wide lints — RFC 3389. Each crate opts-in with `[lints] workspace = true`.
+# ----------------------------------------------------------------------------
+[workspace.lints.rust]
+# --- Critical safety lints (kept strict) ----------------------------------
+unsafe_op_in_unsafe_fn         = "deny"
+unused_must_use                = "deny"
+non_ascii_idents               = "deny"
+absolute_paths_not_starting_with_crate = "deny"
+keyword_idents                 = { level = "deny", priority = -1 }
+ffi_unwind_calls               = "warn"
+deprecated_in_future           = "warn"
+unused_import_braces           = "warn"
+macro_use_extern_crate         = "warn"
+non_local_definitions          = "warn"
+unreachable_pub                = "warn"
+# --- Style lints (relaxed for FFI / OS-bridge realities) ------------------
+# These are too noisy on a workspace bridging POSIX libc, Bun internals,
+# Windows-rs raw handles, and PoC kernel emulation. Re-enable per-crate
+# (e.g. `crates/base`) once a stylistic pass is done.
+missing_debug_implementations  = "allow"
+missing_copy_implementations   = "allow"
+trivial_numeric_casts          = "allow"
+trivial_casts                  = "allow"
+unused_lifetimes               = "allow"
+unused_qualifications          = "allow"
+single_use_lifetimes           = "allow"
+elided_lifetimes_in_paths      = "allow"
+let_underscore_drop            = "allow"
+explicit_outlives_requirements = "allow"
+redundant_lifetimes            = "allow"
+unused_features                = "allow"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links         = "deny"
+private_intra_doc_links        = "warn"
+missing_crate_level_docs       = "warn"
+invalid_codeblock_attributes   = "warn"
+invalid_html_tags              = "warn"
+bare_urls                      = "warn"
+
+[workspace.lints.clippy]
+# --- Antipatterns kept as deny: leftover debug noise, never legit ---------
+todo                           = "deny"
+unimplemented                  = "deny"
+dbg_macro                      = "deny"
+mem_forget                     = "deny"
+exit                           = "deny"
+lossy_float_literal            = "deny"
+float_cmp_const                = "deny"
+# --- Group strategy: opt-in per-crate via `#[warn(clippy::pedantic)]` -----
+# The workspace-wide deny set above is intentionally tight. Pedantic /
+# nursery / style / suspicious / complexity / correctness / perf are all
+# `allow` here so they don't fire across FFI / kernel-bridge / Bun-vendor
+# code that legitimately violates them. Hardened crates re-enable groups
+# in their own `[lints]` table (priority -1 so granular overrides win).
+pedantic                       = { level = "allow", priority = -1 }
+nursery                        = { level = "allow", priority = -1 }
+suspicious                     = { level = "allow", priority = -1 }
+style                          = { level = "allow", priority = -1 }
+complexity                     = { level = "allow", priority = -1 }
+correctness                    = { level = "allow", priority = -1 }
+perf                           = { level = "warn",  priority = -1 }
+# `cargo` group: muted workspace-wide (publish=false crates lack keywords/categories).
+# Enable per-crate once publish=true. Wildcard deps already denied by cargo-deny.
+cargo                          = { level = "allow", priority = -1 }
+# Selectively re-enable the most impactful cargo lints workspace-wide:
+wildcard_dependencies          = "deny"   # version = "*" in published crates
+# Explicit allows for lints that still escape group muting (clippy bug
+# with priority handling on workspace-inherited tables).
+collapsible_if                 = "allow"
+collapsible_else_if            = "allow"
+collapsible_match              = "allow"
+
+# ============================================================================
+# Profiles — production Google-grade. Nightly enables extra LLVM passes.
+# ============================================================================
+
+# --- dev: fast iteration, debug info, no LTO -------------------------------
+[profile.dev]
+opt-level         = 0
+debug             = "limited"
+debug-assertions  = true
+overflow-checks   = true
+lto               = false
+codegen-units     = 256
+incremental       = true
+split-debuginfo   = "unpacked"
+panic             = "unwind"
+
+# Heavy build-script deps compiled with optimizations so they don't slow dev.
+[profile.dev.build-override]
+opt-level         = 3
+codegen-units     = 16
+
+# Speed up dev-time deps too (huge win on `cargo check`).
+[profile.dev.package."*"]
+opt-level         = 1
+codegen-units     = 16
+
+# --- release: the default ship target --------------------------------------
+[profile.release]
+opt-level         = 3
+debug             = false
+debug-assertions  = false
+overflow-checks   = false
+lto               = "fat"
+codegen-units     = 1
+panic             = "abort"
+strip             = "symbols"
+incremental       = false
+rpath             = false
+split-debuginfo   = "off"
+
+# --- dist: max-aggression release for binary distribution ------------------
+# Used by `cargo build --profile dist`. Adds PGO/BOLT-friendly knobs.
+[profile.dist]
+inherits          = "release"
+opt-level         = 3
+lto               = "fat"
+codegen-units     = 1
+panic             = "abort"
+strip             = "symbols"
+debug             = false
+
+# --- release-fast: CI-friendly release (parallel codegen) ------------------
+[profile.release-fast]
+inherits          = "release"
+lto               = "thin"
+codegen-units     = 16
+incremental       = false
+strip             = "symbols"
+
+# --- release-debug: prod optimizations + symbols for profiling/`perf` ------
+[profile.release-debug]
+inherits          = "release"
+debug             = "line-tables-only"
+strip             = "none"
+split-debuginfo   = "packed"
+
+# --- bench: criterion harness ----------------------------------------------
+[profile.bench]
+inherits          = "release"
+debug             = "line-tables-only"
+lto               = "thin"
+codegen-units     = 16
+strip             = "none"
+
+# --- Override: keep heavy crypto fully optimized even in dev profile ------
+[profile.dev.package.aes-gcm]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.rustls]
+opt-level = 3
+
+# --- sanitizers: AddressSanitizer (nightly) -------------------------------
+# Usage: cargo build --profile asan --target x86_64-unknown-linux-gnu
+#        (set RUSTFLAGS="-Z sanitizer=address" — handled per-target in
+#         .cargo/config.toml when building under this profile)
+[profile.asan]
+inherits          = "release-debug"
+opt-level         = 1
+debug             = "full"
+lto               = false
+codegen-units     = 16
+
+# --- careful: cargo-careful (nightly) — extra UB checks during tests ------
+[profile.careful]
+inherits          = "dev"
+debug-assertions  = true
+overflow-checks   = true
+
+# --- reproducible: deterministic dist for binary verification --------------
+# Requires SOURCE_DATE_EPOCH env var and --remap-path-prefix (see
+# .cargo/config.toml). Same byte-for-byte output across build hosts.
+[profile.reproducible]
+inherits          = "dist"
+codegen-units     = 1
+strip             = "symbols"

@@ -1,0 +1,280 @@
+# ============================================================================
+#  aphrody — Cross-platform CI (Linux-first)
+#  Cible #1 : Linux Ubuntu 26.04 (fallback ubuntu-latest si runner pas dispo)
+#  Cible #2 : Windows 11 Insider Canary (windows-latest)
+#  Cible #3 : WebAssembly (wasm32-wasi + wasm32-unknown-unknown)
+#  Cible #4 : macOS (best-effort, non bloquant)
+#  Cible #5 : Android (best-effort, non bloquant)
+# ============================================================================
+name: cross-platform
+
+on:
+  push:
+    branches: [main, stable, dev]
+  pull_request:
+    branches: [main, stable]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  CARGO_PROFILE_DEV_DEBUG: "limited"
+
+jobs:
+  # --------------------------------------------------------------------------
+  # 1. Lint & format (Linux, fail fast — bloque toute la matrice)
+  # --------------------------------------------------------------------------
+  lint:
+    name: clippy + rustfmt (Linux)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: clippy, rustfmt
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+  # --------------------------------------------------------------------------
+  # 2. PRIORITÉ #1 — Linux Ubuntu (BLOQUANT)
+  # --------------------------------------------------------------------------
+  linux-priority:
+    name: "[#1] Linux x86_64 (build + test)"
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+          components: rust-src
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux-x86_64
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: Install system deps
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+      - name: cargo build --release -p cli
+        run: cargo build --release -p cli --target x86_64-unknown-linux-gnu --locked
+      - name: cargo nextest run -p cli
+        run: cargo nextest run -p cli --target x86_64-unknown-linux-gnu --locked
+
+  # --------------------------------------------------------------------------
+  # 3. PRIORITÉ #2 — Windows 11 (BLOQUANT)
+  # --------------------------------------------------------------------------
+  windows-priority:
+    name: "[#2] Windows x86_64 (build + test)"
+    needs: lint
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: x86_64-pc-windows-msvc
+          components: rust-src
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: windows-x86_64
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: cargo build --release -p cli
+        run: cargo build --release -p cli --target x86_64-pc-windows-msvc --locked
+      - name: cargo nextest run -p cli
+        run: cargo nextest run -p cli --target x86_64-pc-windows-msvc --locked
+
+  # --------------------------------------------------------------------------
+  # 4. PRIORITÉ #3 — WebAssembly (BLOQUANT)
+  # --------------------------------------------------------------------------
+  wasm-priority:
+    name: "[#3] WebAssembly (check)"
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - wasm32-wasi
+          - wasm32-unknown-unknown
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: ${{ matrix.target }}
+          components: rust-src
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.target }}
+      - name: cargo check -p cli --target ${{ matrix.target }}
+        run: cargo check -p cli --target ${{ matrix.target }} --locked
+
+  # --------------------------------------------------------------------------
+  # 5. BEST-EFFORT — macOS / Linux ARM / Windows ARM (non bloquant)
+  # --------------------------------------------------------------------------
+  cross-extended:
+    name: "[best-effort] ${{ matrix.target }}"
+    needs: lint
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            build_cmd: check
+            zigbuild: true
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            build_cmd: check
+            zigbuild: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            build_cmd: test
+            zigbuild: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            build_cmd: test
+            zigbuild: false
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: ${{ matrix.target }}
+          components: rust-src
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.target }}
+      - name: Install zigbuild
+        if: ${{ matrix.zigbuild }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+      - name: Install nextest
+        if: ${{ matrix.build_cmd == 'test' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: cargo check
+        if: ${{ matrix.build_cmd == 'check' }}
+        run: cargo check -p cli --target ${{ matrix.target }} --locked
+      - name: cargo nextest
+        if: ${{ matrix.build_cmd == 'test' }}
+        run: cargo nextest run -p cli --target ${{ matrix.target }} --locked
+
+  # --------------------------------------------------------------------------
+  # 6. Supply-chain gate (cargo-deny + cargo-vet) — BLOQUANT
+  # --------------------------------------------------------------------------
+  supply-chain:
+    name: supply-chain (cargo-deny + cargo-vet)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          arguments: --all-features
+          command: check advisories bans licenses sources
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-vet,cargo-machete
+      - name: cargo-vet
+        run: cargo vet --locked
+        continue-on-error: true
+      - name: cargo-machete
+        run: cargo machete --with-metadata
+
+  # --------------------------------------------------------------------------
+  # 7. BEST-EFFORT — Android (non bloquant)
+  # --------------------------------------------------------------------------
+  android:
+    name: "[best-effort] Android NDK"
+    needs: lint
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-linux-android
+          - x86_64-linux-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: ${{ matrix.target }}
+      - uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-${{ matrix.target }}
+      - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p cli --locked
+
+  # --------------------------------------------------------------------------
+  # 8. Docs drift check
+  # --------------------------------------------------------------------------
+  docs:
+    name: docs (SUMMARY drift)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Cache Bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:summary:check

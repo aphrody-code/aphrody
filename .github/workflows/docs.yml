@@ -1,0 +1,98 @@
+# ============================================================================
+#  Docs workflow — builds rustdoc + mdBook, deploys to GitHub Pages.
+# ============================================================================
+name: docs
+
+on:
+  push:
+    branches: [master, stable]
+  pull_request:
+    branches: [master, stable]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-docs:
+    name: build rustdoc + mdBook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install bun deps (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Drift check docs/SUMMARY.md
+        run: bun run docs:summary:check
+
+      - name: cargo doc (workspace, no deps)
+        env:
+          RUSTDOCFLAGS: "-D warnings --enable-index-page -Zunstable-options"
+        run: cargo doc --workspace --no-deps --all-features --locked
+
+      - name: Install mdBook
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook,mdbook-linkcheck
+
+      - name: Build mdBook
+        run: mdbook build
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p site
+          cp -r book/* site/ 2>/dev/null || true
+          mkdir -p site/api
+          cp -r target/doc/* site/api/
+          # Root index → mdBook book
+          cat > site/_index.html <<'EOF'
+          <!DOCTYPE html><meta http-equiv="refresh" content="0; url=./index.html">
+          EOF
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: deploy to GitHub Pages
+    needs: build-docs
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

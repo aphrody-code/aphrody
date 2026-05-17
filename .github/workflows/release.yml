@@ -1,0 +1,165 @@
+# ============================================================================
+#  Release workflow — builds + uploads `cli` for all supported targets.
+#  Triggered on git tag `v*.*.*` (semver). Aligned `dist` profile.
+# ============================================================================
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0-canary)'
+        required: true
+
+permissions:
+  contents: write   # required to upload release artifacts
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUSTC_WRAPPER: "sccache"
+
+jobs:
+  build-gemini:
+    # Bun cross-compiles to windows-x64 + linux-x64 from any host (we use Linux).
+    # Produces single-file executables consumed by the Rust `build` job below.
+    name: build gemini-cli (bun --compile cross)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build single-file binaries
+        working-directory: packages/gemini-cli
+        run: bun run build:binary
+      - name: Upload gemini binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-cli-binaries
+          path: |
+            target/native/gemini-cli-windows-x64.exe
+            target/native/gemini-cli-linux-x64
+
+  build:
+    name: build (${{ matrix.target }})
+    needs: build-gemini
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            ext: .exe
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            ext: .exe
+            cross: zigbuild
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: ${{ matrix.target }}
+      - uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: Install zigbuild (cross-targets)
+        if: ${{ matrix.cross == 'zigbuild' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Install cargo-auditable (embedded SBOM)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-auditable
+
+      - name: Build (auditable + reproducible profile)
+        env:
+          SOURCE_DATE_EPOCH: ${{ github.event.head_commit.timestamp && '1700000000' || '1700000000' }}
+        run: |
+          ${{ matrix.cross == 'zigbuild' && 'cargo zigbuild' || 'cargo auditable build' }} \
+            --locked --profile reproducible \
+            --target ${{ matrix.target }} \
+            -p cli
+
+      - name: Download gemini-cli binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: gemini-cli-binaries
+          path: gemini-bin
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          BIN_PATH="target/${{ matrix.target }}/reproducible/cli${{ matrix.ext }}"
+          STAGE="cli-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir -p "$STAGE"
+          cp "$BIN_PATH" "$STAGE/"
+          cp README.md LICENSE "$STAGE/"
+          # Bundle the matching gemini-cli single-file binary if we have one for this target.
+          # Bun --compile only supports windows-x64 and linux-x64 today; other targets ship cli-only.
+          case "${{ matrix.target }}" in
+            x86_64-pc-windows-msvc)
+              cp "gemini-bin/gemini-cli-windows-x64.exe" "$STAGE/gemini-cli.exe" || true ;;
+            x86_64-unknown-linux-gnu|x86_64-unknown-linux-musl)
+              cp "gemini-bin/gemini-cli-linux-x64" "$STAGE/gemini-cli" && chmod +x "$STAGE/gemini-cli" || true ;;
+          esac
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            7z a "artifacts/$STAGE.zip" "$STAGE"
+          else
+            tar czf "artifacts/$STAGE.tar.gz" "$STAGE"
+          fi
+          # SHA-256 checksum for verification
+          shasum -a 256 "artifacts/$STAGE.${{ matrix.archive }}" > "artifacts/$STAGE.${{ matrix.archive }}.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: artifacts/
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -1,0 +1,69 @@
+# ============================================================================
+#  cargo-vet audits — Aphrody
+#
+#  Local audits we produce. Imported audits live in `imports.lock`
+#  (auto-managed by `cargo vet fetch-imports`).
+#
+#  Format reference: https://mozilla.github.io/cargo-vet/
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+#  Custom criteria (Fuchsia-style ub-risk-* + project-specific).
+# ----------------------------------------------------------------------------
+
+[criteria.ub-risk-0]
+description = """
+No `unsafe` blocks anywhere in the crate. Safe by construction at the Rust
+level (modulo soundness bugs in the compiler itself).
+"""
+
+[criteria.ub-risk-1]
+description = """
+`unsafe` blocks present and reviewed. Each block has been audited by a
+qualified reviewer and judged sound under the documented preconditions.
+Equivalent of Fuchsia's `ub-risk-1`.
+"""
+implies = ["ub-risk-0"]
+
+[criteria.ub-risk-2]
+description = """
+`unsafe` blocks present, partially reviewed, residual risk acceptable for
+non-privileged contexts. Crate may be used in user-mode code that does not
+handle untrusted input.
+"""
+
+[criteria.ub-risk-3]
+description = """
+`unsafe` blocks present, unreviewed, or known soundness issues exist.
+Use only behind a hard isolation boundary (sandbox, process boundary).
+"""
+
+[criteria.crypto-safe]
+description = """
+The crate implements cryptographic primitives and has been reviewed for:
+- constant-time operations on secret material,
+- no panics on attacker-controlled input,
+- well-vetted upstream (e.g. RustCrypto, ring, aws-lc-rs).
+"""
+implies = ["safe-to-deploy"]
+
+[criteria.does-not-implement-crypto]
+description = """
+The crate does not implement any cryptographic primitive (helpful negative
+audit when the crate name suggests crypto but it's actually a wrapper).
+"""
+
+# ----------------------------------------------------------------------------
+#  Local audits — produced by Aphrody reviewers.
+#  Use `cargo vet certify <crate> <version> --criteria <criteria>` to add.
+# ----------------------------------------------------------------------------
+[audits]
+
+# Example (commented out — uncomment + adapt when you actually audit):
+# [[audits.serde]]
+# version  = "1.0.228"
+# criteria = "safe-to-deploy"
+# notes    = """
+# Reviewed by <reviewer> on <date>. Top 10 crate, no unsafe at the deserialize
+# entry points used by our `*-pb` codegen. Macro hygiene clean.
+# """
