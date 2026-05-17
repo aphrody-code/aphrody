@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// SPDX-License-Identifier: Apache-2.0
 /**
  * scripts/gen_summary.ts
  * ─────────────────────────────────────────────────────────────────────────────
@@ -10,19 +11,59 @@
  *   bun run scripts/gen_summary.ts --check    # CI: fail if SUMMARY.md drifts
  *
  * Behaviour:
+ *   - Root-level docs (README.md, CHANGELOG.md, CONTRIBUTING.md,
+ *     CODE_OF_CONDUCT.md, SECURITY.md, BENCHMARKS.md) are mirrored into
+ *     `docs/_root/` before scanning so mdBook can pick them up. The mirror
+ *     directory is git-ignored.
  *   - Top-level files (docs/*.md) are listed first in a curated order.
  *   - Subdirectories become groups, sorted alphabetically.
  *   - Within a group, README.md surfaces as the group anchor, then other .md
  *     files sorted alphabetically.
- *   - Files starting with `_`, `.`, or named `SUMMARY.md` are skipped.
+ *   - Files starting with `.`, or named `SUMMARY.md`, are skipped.
+ *     The `_root/` mirror is intentionally NOT skipped (handled explicitly).
  *   - Output: `docs/SUMMARY.md`.
  */
 
-import { readdir, stat, readFile, writeFile } from "node:fs/promises";
+import { readdir, stat, readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { join, relative, basename, sep } from "node:path";
 
-const DOCS_ROOT = join(import.meta.dir, "..", "docs");
+const REPO_ROOT = join(import.meta.dir, "..");
+const DOCS_ROOT = join(REPO_ROOT, "docs");
 const SUMMARY_PATH = join(DOCS_ROOT, "SUMMARY.md");
+const ROOT_MIRROR_DIRNAME = "_root";
+const ROOT_MIRROR_DIR = join(DOCS_ROOT, ROOT_MIRROR_DIRNAME);
+
+// Root-level markdown files to mirror into docs/_root/ so the existing
+// recursive scan exposes them to mdBook. Missing files are silently skipped
+// (a fresh checkout may not have all of them).
+// NOTE: README.md is intentionally omitted — docs/README.md is the canonical
+// mdBook landing page (curated as "Accueil"). Mirroring the repo README would
+// shadow it as the _root group anchor.
+const ROOT_DOCS_TO_MIRROR = [
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SECURITY.md",
+  "BENCHMARKS.md",
+];
+
+// Human-readable title for the docs/_root/ group in SUMMARY.md. Overrides the
+// default `titleize("_root")` which would render as "-Root".
+const ROOT_MIRROR_GROUP_TITLE = "Project-Wide";
+
+async function mirrorRootDocs(): Promise<void> {
+  await mkdir(ROOT_MIRROR_DIR, { recursive: true });
+  for (const name of ROOT_DOCS_TO_MIRROR) {
+    const src = join(REPO_ROOT, name);
+    const dst = join(ROOT_MIRROR_DIR, name);
+    try {
+      await stat(src);
+    } catch {
+      continue; // root file absent — skip silently
+    }
+    await copyFile(src, dst);
+  }
+}
 
 // Curated top-level order — anything not here is appended alphabetically.
 const TOP_LEVEL_ORDER = [
@@ -37,6 +78,9 @@ const TOP_LEVEL_ORDER = [
 
 const SKIP_NAMES = new Set(["SUMMARY.md", ".DS_Store"]);
 const SKIP_DIR_PREFIXES = ["_", "."];
+// Directories whose names start with a SKIP_DIR_PREFIXES char but should
+// still be traversed (the root-doc mirror is the canonical example).
+const FORCE_INCLUDE_DIRS = new Set([ROOT_MIRROR_DIRNAME]);
 
 type Entry =
   | { kind: "file"; name: string; relPath: string }
@@ -48,7 +92,11 @@ async function scan(dir: string): Promise<Entry[]> {
 
   for (const name of names.sort()) {
     if (SKIP_NAMES.has(name)) continue;
-    if (SKIP_DIR_PREFIXES.some((p) => name.startsWith(p))) continue;
+    if (
+      SKIP_DIR_PREFIXES.some((p) => name.startsWith(p)) &&
+      !FORCE_INCLUDE_DIRS.has(name)
+    )
+      continue;
 
     const full = join(dir, name);
     let st;
@@ -116,7 +164,10 @@ function renderGroup(dir: Extract<Entry, { kind: "dir" }>, depth: number): strin
   const readme = dir.entries.find(
     (e) => e.kind === "file" && e.name.toLowerCase() === "readme.md",
   ) as Extract<Entry, { kind: "file" }> | undefined;
-  const groupName = titleize(dir.name);
+  const groupName =
+    dir.name === ROOT_MIRROR_DIRNAME
+      ? ROOT_MIRROR_GROUP_TITLE
+      : titleize(dir.name);
 
   if (readme) {
     lines.push(`${indent}- [${groupName}](${readme.relPath})`);
@@ -145,6 +196,7 @@ function renderGroup(dir: Extract<Entry, { kind: "dir" }>, depth: number): strin
 }
 
 async function build(): Promise<string> {
+  await mirrorRootDocs();
   const entries = await scan(DOCS_ROOT);
   const topLevel = renderTopLevel(entries);
   const groups = entries

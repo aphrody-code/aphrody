@@ -19,7 +19,7 @@ use clap::{Parser, Subcommand};
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
-    commands::{ChromiumSyncCommand, MirrorCommand, ScrapeProfile, VersionCommand},
+    commands::{ChromiumSyncCommand, DoctorCommand, MirrorCommand, ScrapeProfile, VersionCommand},
     context::{GoogleContext, TerminalCommand},
 };
 
@@ -66,6 +66,8 @@ enum Commands {
     },
     /// Affiche la version et l'état du système
     Version,
+    /// Diagnostic env + intégration A2A + supply-chain (first-impression)
+    Doctor,
     /// Forensics Chromium
     Chromium {
         #[command(subcommand)]
@@ -172,6 +174,9 @@ async fn main() -> miette::Result<()> {
         Some(Commands::Version) => {
             VersionCommand.execute(&ctx).await?;
         },
+        Some(Commands::Doctor) => {
+            DoctorCommand.execute(&ctx).await?;
+        },
         Some(Commands::Mirror { action }) => {
             MirrorCommand { action }.execute(&ctx).await?;
         },
@@ -247,6 +252,7 @@ fn main() {
                 Commands::Gemini { .. } => "gemini",
                 Commands::Scrape { .. } => "scrape",
                 Commands::Tokens { .. } => "tokens",
+                Commands::Doctor => "doctor",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),
             };

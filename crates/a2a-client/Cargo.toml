@@ -1,5 +1,6 @@
 ﻿[package]
 name = "a2a-client-lf"
+publish = true
 version = "0.1.16"
 description = "A2A v1 async client with protocol binding factory"
 readme = "README.md"

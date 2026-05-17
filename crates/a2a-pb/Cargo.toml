@@ -1,5 +1,6 @@
 ﻿[package]
 name = "a2a-pb"
+publish = true
 version = "0.1.8"
 description = "A2A v1 protobuf-generated types and conversion layer"
 readme = "README.md"
