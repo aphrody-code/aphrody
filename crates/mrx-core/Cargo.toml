@@ -9,4 +9,3 @@ description = "mrx — shared model/types for audit reports and monorepo maps"
 
 [dependencies]
 serde = { workspace = true }
-chrono = { workspace = true }
