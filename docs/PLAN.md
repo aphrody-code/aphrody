@@ -137,7 +137,7 @@ backend/a2a-client. Refactor requis :
 | GitHub Releases workflow (`.github/workflows/release.yml`, 8 targets, SHA-256, SBOM) | ✅ |
 | Premier tag `v*` poussé qui produit un release | ⏳ |
 | Package workspace `cli` → `aphrody` | ✅ (commit 2026-05-17, dir conservé `crates/cli/`) |
-| `cargo install aphrody` documenté | ⏳ (besoin de publier `base`/`backend`/`a2a-*` à crates.io d'abord) |
+| `cargo install aphrody` documenté | ✅ (README + `docs/launch/SHOW-HN.md` mentionnent la commande ; publication crates.io toujours pendante cf. ligne 134) |
 | One-line install (`install.sh` / `install.ps1`) avec vérif SHA-256 | ✅ |
 | Cleanup `cargo machete` — 11 dead deps retirées (cli/google_mcp/gui/mrx-{audit,core,detect}) | ✅ |
 | `aphrody --version` runtime bug — rustls 0.23 CryptoProvider install au boot | ✅ (commit pending) |
@@ -282,21 +282,21 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 |---|---|---|
 | T-1 | Worktrees `vercel-labs/wterm` + `microsoft/terminal` (15 entries, ~1095 MB) | ✅ |
 | T-1 | `docs/design/aphrody-terminal-spec.md` — spec normative LLM-first | ✅ |
-| T-1 | `crates/aphrody-terminal-vt` — VT base (vte + ScreenBuffer + SGR 16-color) | ⏳ (rust-architect en vol) |
-| T-1 | `crates/aphrody-terminal-wasm` — wasm-bindgen DOM + M3 + keyboard ANSI | ⏳ (même dispatch) |
-| T-1 | `crates/aphrody-terminal-backend` — portable-pty (ConPTY/openpty) + WS | ⏳ (même dispatch) |
-| T-2 | VT extension Ink/React TUI essentials (alt-screen, mouse SGR 1006, true color 24-bit, cursor save/restore, bracketed paste, focus events, DECSTBM, insert/delete line, OSC 0 title, OSC 52 clipboard) | ⏳ |
-| T-3 | `crates/aphrody-terminal-llm` — sub-agent stream multiplexer + MCP status bus + hook event surface + skill activation slot | ⏳ |
-| T-4 | `crates/aphrody-terminal-markdown` — comrak CommonMark + syntect highlight + OSC `aphrody-md` detector | ⏳ |
-| T-5 | `crates/aphrody-terminal-json-out` — frame stdout/stderr in JSONL envelopes + passthrough app-JSON | ⏳ |
-| T-6 | `crates/aphrody-terminal-config` — `~/.aphrody/terminal.json` strict schema + claude.json / mcp.json / settings.json import shims | ⏳ |
-| T-6b | `crates/aphrody-terminal-browser` — bridge LLM ↔ DOM (bxc in-process + agent-browser RPC + edge headless fallback) + OSC `aphrody-browser-*` extensions | ⏳ |
-| T-7 | `aphrody term` CLI subcommand (serves backend + prints WASM UI URL) | ⏳ |
-| T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ⏳ |
-| T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ⏳ |
-| T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ⏳ |
-| T-9 | `packages/aphrody-jsx` — Bun-native react-reconciler → `aphrody-jsx-*` OSC bridge (Ink-compatible API, M3 native, dual target vt/wasm) | ⏳ |
-| T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ⏳ |
+| T-1 | `crates/aphrody-terminal-vt` — VT base (vte + ScreenBuffer + SGR 16-color) | ✅ (`crates/aphrody-terminal-vt/src/lib.rs`, 703 l.) |
+| T-1 | `crates/aphrody-terminal-wasm` — wasm-bindgen DOM + M3 + keyboard ANSI | ✅ (`crates/aphrody-terminal-wasm/src/lib.rs`, 361 l.) |
+| T-1 | `crates/aphrody-terminal-backend` — portable-pty (ConPTY/openpty) + WS | ✅ (`crates/aphrody-terminal-backend/src/lib.rs`, 287 l.) |
+| T-2 | VT extension Ink/React TUI essentials (alt-screen, mouse SGR 1006, true color 24-bit, cursor save/restore, bracketed paste, focus events, DECSTBM, insert/delete line, OSC 0 title, OSC 52 clipboard) | ⏳ (VT base shipped mais aucune des extensions Ink présentes — grep `alt_screen|SGR 1006|OSC 52|bracketed_paste|DECSTBM` = 0 hit) |
+| T-3 | `crates/aphrody-terminal-llm` — sub-agent stream multiplexer + MCP status bus + hook event surface + skill activation slot | ✅ (`crates/aphrody-terminal-llm/src/lib.rs` + modules `sub_agent.rs`, `mcp.rs`, `hook.rs`, `skill.rs`, `task.rs`, `osc.rs`) |
+| T-4 | `crates/aphrody-terminal-markdown` — comrak CommonMark + syntect highlight + OSC `aphrody-md` detector | ⏳ (crate inexistant) |
+| T-5 | `crates/aphrody-terminal-json-out` — frame stdout/stderr in JSONL envelopes + passthrough app-JSON | ⏳ (crate inexistant) |
+| T-6 | `crates/aphrody-terminal-config` — `~/.aphrody/terminal.json` strict schema + claude.json / mcp.json / settings.json import shims | ⏳ (crate dédié inexistant ; loader `mcp.json` partiel dans `terminal-llm/src/mcp.rs:506`) |
+| T-6b | `crates/aphrody-terminal-browser` — bridge LLM ↔ DOM (bxc in-process + agent-browser RPC + edge headless fallback) + OSC `aphrody-browser-*` extensions | ✅ (`crates/aphrody-terminal-browser/src/lib.rs` 306 l. + backends `bxc.rs`, `agent_browser.rs`, `edge.rs` + `osc.rs` + `proto.rs`) |
+| T-7 | `aphrody term` CLI subcommand (serves backend + prints WASM UI URL) | ✅ (`crates/cli/src/commands.rs:1411-1445` + `Commands::Term` dispatch dans `main.rs:238`) |
+| T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ⏳ (fichier absent ; examples existants : browser-playground / m3-shadcn / gemini-clone) |
+| T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ⏳ (asset hero non rendu) |
+| T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ⏳ (audit doc absent) |
+| T-9 | `packages/aphrody-jsx` — Bun-native react-reconciler → `aphrody-jsx-*` OSC bridge (Ink-compatible API, M3 native, dual target vt/wasm) | ✅ (`packages/aphrody-jsx/src/reconciler.ts` 455 l. + jsx-runtime + 6 components + 6 hooks + tests + examples) |
+| T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ⏳ (crate absent) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 

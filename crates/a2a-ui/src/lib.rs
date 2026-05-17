@@ -25,6 +25,11 @@
 
 #![forbid(unsafe_code)]
 
+// Native ratatui TUI backend — only compiled when the `native` feature is
+// enabled.  WASM builds are unaffected.
+#[cfg(feature = "native")]
+pub mod native;
+
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------

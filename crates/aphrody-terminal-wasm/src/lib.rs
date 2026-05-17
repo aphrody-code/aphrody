@@ -5,17 +5,37 @@
 //! public item is wrapped in `#[cfg(target_arch = "wasm32")]`.  On native
 //! targets `cargo check --workspace` sees an empty crate and passes cleanly.
 //!
+//! # Modules
+//!
+//! - Root (`lib.rs`) — [`TerminalHandle`]: VT terminal DOM renderer + keyboard
+//!   input.
+//! - [`coord_pane`] — [`mount_a2a_pane`] / [`A2aPaneHandle`]: "Coord channel"
+//!   pane that displays A2A envelopes from the `.coord/` JSONL mailbox.
+//!   Integrates [`a2a_ui`] for envelope parsing and DOM rendering.
+//!
 //! # Usage (JS/TS side)
 //!
 //! ```js
-//! import init, { TerminalHandle } from './pkg/aphrody_terminal_wasm.js';
+//! import init, { TerminalHandle, mount_a2a_pane } from './pkg/aphrody_terminal_wasm.js';
 //! await init();
 //! const term = TerminalHandle.new("terminal-div", 80, 24);
 //! term.set_on_data(bytes => { ws.send(bytes); });
 //! ws.onmessage = e => term.write(new Uint8Array(e.data));
+//!
+//! // Mount the coord pane into a sibling div.
+//! const pane = mount_a2a_pane("coord-pane-div");
+//! // Later, to cancel polling: pane.stop();
 //! ```
 
 #![cfg(target_arch = "wasm32")]
+
+// ── Coord channel pane (T-INT-a2a-ui) ────────────────────────────────────────
+
+/// A2A "Coord channel" pane — mailbox viewer backed by [`a2a_ui`].
+///
+/// Public API: [`mount_a2a_pane`] / [`A2aPaneHandle`].
+pub mod coord_pane;
+pub use coord_pane::{mount_a2a_pane, A2aPaneHandle};
 
 use aphrody_terminal_vt::{Color, TerminalState};
 use js_sys::Function;

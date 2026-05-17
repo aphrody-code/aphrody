@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Integration tests for aphrody-terminal-llm.
 
+use std::sync::Arc;
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use aphrody_terminal_llm::{
-    EventBus, HookEntry, HookEventLog, LlmEvent, McpStatusRegistry, SkillSlot, SkillState,
-    SubAgentRegistry, TaskTree, parse_aphrody_llm_osc,
+    EventBus, HookEntry, HookEventLog, LlmEvent, McpServerSpec, McpStatusRegistry, McpTransport,
+    OAuthConfig, SkillSlot, SkillState, SubAgentRegistry, TaskTree, load_mcp_json,
+    parse_aphrody_llm_osc, probe_loop,
 };
 
 // ---------------------------------------------------------------------------
@@ -278,5 +281,185 @@ fn osc_parse_st_terminator() {
     match ev {
         LlmEvent::Markdown { body } => assert_eq!(body, "## ST terminated"),
         other => panic!("unexpected: {other:?}"),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 14. McpServerSpec: serde roundtrip (stdio + http variants)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn mcp_server_spec_serde_roundtrip() {
+    // Stdio variant.
+    let stdio_spec = McpServerSpec {
+        name: "my-stdio-server".to_owned(),
+        transport: McpTransport::Stdio {
+            command: "my-mcp-binary".to_owned(),
+            args: vec!["--stdio".to_owned()],
+            env: [("DEBUG".to_owned(), "1".to_owned())].into_iter().collect(),
+        },
+    };
+    let json = serde_json::to_string(&stdio_spec).expect("serialize stdio spec");
+    let back: McpServerSpec = serde_json::from_str(&json).expect("deserialize stdio spec");
+    assert_eq!(back.name, "my-stdio-server");
+    match &back.transport {
+        McpTransport::Stdio { command, args, env } => {
+            assert_eq!(command, "my-mcp-binary");
+            assert_eq!(args, &["--stdio"]);
+            assert_eq!(env.get("DEBUG").map(String::as_str), Some("1"));
+        }
+        other => panic!("unexpected transport after roundtrip: {other:?}"),
+    }
+
+    // Http variant with OAuth config.
+    let http_spec = McpServerSpec {
+        name: "my-http-server".to_owned(),
+        transport: McpTransport::Http {
+            url: "https://mcp.example.com/".to_owned(),
+            oauth_provider: Some(OAuthConfig {
+                server_url: "https://mcp.example.com/".to_owned(),
+                redirect_uri: "http://localhost:8080/callback".to_owned(),
+                scope: Some("read write".to_owned()),
+                token_env_var: Some("MCP_TOKEN".to_owned()),
+            }),
+        },
+    };
+    let json2 = serde_json::to_string(&http_spec).expect("serialize http spec");
+    let back2: McpServerSpec = serde_json::from_str(&json2).expect("deserialize http spec");
+    assert_eq!(back2.name, "my-http-server");
+    match &back2.transport {
+        McpTransport::Http { url, oauth_provider } => {
+            assert_eq!(url, "https://mcp.example.com/");
+            let oauth = oauth_provider.as_ref().expect("oauth_provider must be Some");
+            assert_eq!(oauth.token_env_var.as_deref(), Some("MCP_TOKEN"));
+        }
+        other => panic!("unexpected transport after roundtrip: {other:?}"),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 15. probe_loop: publishes LlmEvent::Mcp when state changes
+//     Uses a mock probe by wiring a spec whose command is guaranteed to
+//     fail immediately ("__nonexistent_cmd__"), producing state "error".
+//     The loop must publish the transition from nothing → "error".
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn probe_loop_publishes_event_on_state_change() {
+    let registry = Arc::new(McpStatusRegistry::new());
+    let bus = Arc::new(EventBus::new(16));
+    let mut rx = bus.subscribe();
+
+    // Use a deliberately nonexistent command so the probe returns "error" fast.
+    let specs = vec![McpServerSpec {
+        name: "probe-test-server".to_owned(),
+        transport: McpTransport::Stdio {
+            command: "__nonexistent_cmd_aphrody_test__".to_owned(),
+            args: vec![],
+            env: Default::default(),
+        },
+    }];
+
+    // Run probe_loop for at most one iteration then cancel it.
+    let registry_clone = Arc::clone(&registry);
+    let bus_clone = Arc::clone(&bus);
+    let handle = tokio::spawn(probe_loop(
+        registry_clone,
+        specs,
+        std::time::Duration::from_secs(60), // long interval — we cancel after 1st event
+        bus_clone,
+    ));
+
+    // Wait up to 5 seconds for at least one Mcp event.
+    let received = tokio::time::timeout(std::time::Duration::from_secs(5), rx.recv()).await;
+    handle.abort(); // cancel the loop
+
+    let ev = received
+        .expect("should receive event within 5 s")
+        .expect("broadcast channel must not be closed");
+
+    match ev {
+        LlmEvent::Mcp { server, state, .. } => {
+            assert_eq!(server, "probe-test-server");
+            // Nonexistent command → either "error" or "timeout" depending on OS.
+            assert!(
+                state == "error" || state == "timeout",
+                "expected error or timeout state, got {state:?}"
+            );
+        }
+        other => panic!("unexpected event kind: {other:?}"),
+    }
+
+    // Confirm the registry was updated.
+    let status = registry
+        .get("probe-test-server")
+        .expect("registry must contain probe-test-server after probe");
+    assert!(
+        status.state == "error" || status.state == "timeout",
+        "registry state must be error or timeout, got {:?}",
+        status.state
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 16. load_mcp_json: parses a .mcp.json-compatible file
+// ---------------------------------------------------------------------------
+
+#[test]
+fn load_mcp_json_compat() {
+    // Write a temp file matching the repo .mcp.json format.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("mcp.json");
+
+    std::fs::write(
+        &path,
+        r#"{
+  "$schema": "https://code.claude.com/schema/mcp.json",
+  "mcpServers": {
+    "bxc": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["run", "C:/worktree/bxc/packages/bxc-extension/server.ts"],
+      "env": { "BXC_MEMORY_DB": "C:/src/aphrody/var/data/bxc-memory.sqlite" }
+    },
+    "github": {
+      "type": "streamable-http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}" }
+    }
+  }
+}"#,
+    )
+    .expect("write test mcp.json");
+
+    let specs = load_mcp_json(&path).expect("load_mcp_json must succeed");
+    assert_eq!(specs.len(), 2);
+
+    // bxc spec must be Stdio.
+    let bxc = specs.iter().find(|s| s.name == "bxc").expect("bxc spec must be present");
+    match &bxc.transport {
+        McpTransport::Stdio { command, args, env } => {
+            assert_eq!(command, "bun");
+            assert_eq!(&args[..], &["run", "C:/worktree/bxc/packages/bxc-extension/server.ts"]);
+            assert_eq!(
+                env.get("BXC_MEMORY_DB").map(String::as_str),
+                Some("C:/src/aphrody/var/data/bxc-memory.sqlite")
+            );
+        }
+        other => panic!("bxc transport must be Stdio, got {other:?}"),
+    }
+
+    // github spec must be Http; oauth_provider must carry the env var name.
+    let gh = specs.iter().find(|s| s.name == "github").expect("github spec must be present");
+    match &gh.transport {
+        McpTransport::Http { url, oauth_provider } => {
+            assert_eq!(url, "https://api.githubcopilot.com/mcp/");
+            let oauth = oauth_provider.as_ref().expect("github must have oauth_provider");
+            assert_eq!(
+                oauth.token_env_var.as_deref(),
+                Some("GITHUB_PERSONAL_ACCESS_TOKEN")
+            );
+        }
+        other => panic!("github transport must be Http, got {other:?}"),
     }
 }
