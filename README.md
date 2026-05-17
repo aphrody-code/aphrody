@@ -83,13 +83,13 @@ pour les `cfg(not(target_arch = "wasm32"))` qui isolent `mimalloc`,
 Démo wasmtime (binaire 334 KiB, release LTO) :
 
 ```bash
-$ wasmtime target/wasm32-wasip1/release/cli.wasm --version
+$ wasmtime target/wasm32-wasip1/release/aphrody.wasm --version
 aphrody 1.0.0-canary
 
-$ wasmtime target/wasm32-wasip1/release/cli.wasm --help
+$ wasmtime target/wasm32-wasip1/release/aphrody.wasm --help
 Aphrody — cross-platform Rust binary (Linux / Windows / macOS / wasm).
 
-Usage: cli.wasm [COMMAND]
+Usage: aphrody.wasm [COMMAND]
 
 Commands:
   auth        Authentification Google (God Mode / OAuth2)

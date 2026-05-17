@@ -112,7 +112,7 @@ RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" \
     cargo build --profile dist --target x86_64-pc-windows-msvc
 
 # 2. Run pour générer les traces
-./target/x86_64-pc-windows-msvc/dist/cli.exe ...
+./target/x86_64-pc-windows-msvc/dist/aphrody.exe ...
 
 # 3. Merger les profiles
 llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
