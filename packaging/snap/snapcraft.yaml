@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# snapcraft.yaml — Ubuntu Snap manifest for `aphrody`.
+# Distribution: Ubuntu Software Store (Snap Store).
+# Build: `snapcraft pack` from this directory (or `snapcraft remote-build`).
+# Publish: `snapcraft upload --release=edge aphrody_<ver>_<arch>.snap`.
+# Schema: https://snapcraft.io/docs/snapcraft-yaml-schema
+#
+# NOTE: `version` is kept in sync with `workspace.package.version` in the
+# root Cargo.toml. Bump both when cutting a release.
+
+name: aphrody
+base: core24
+version: 1.0.0-canary
+summary: cross-platform Rust CLI with embedded AGNTCY a2a/v0.4 manifest
+description: |
+  aphrody is the ultimate cross-platform command-line interface written
+  in pure Rust (Edition 2024, nightly toolchain). It targets Linux first
+  (Ubuntu 26.04+), Windows 11 (Insider Canary builds), and WebAssembly
+  (wasm32-unknown-unknown for browser embedding and wasm32-wasi for
+  serverless). The binary is statically linked where possible and embeds
+  a full AGNTCY a2a/v0.4 agent manifest, allowing peer Claude / GPT
+  instances to discover and coordinate with it over a file-based mailbox
+  protocol or HTTP listener out of the box.
+
+  Beyond core CLI scaffolding, aphrody ships a forensics + network
+  backend, a monorepo real-time mapper (mrx), MCP bridges, and a desktop
+  GUI variant (wry + tao, not included in this snap). Use this package
+  to drop a single static binary onto any Ubuntu system, then explore
+  `aphrody --help` for the full subcommand tree. Source code and issue
+  tracker are linked below.
+
+grade: devel
+confinement: classic
+license: Apache-2.0
+source-code: https://github.com/aphrody-code/aphrody
+issues: https://github.com/aphrody-code/aphrody/issues
+
+apps:
+  aphrody:
+    command: bin/aphrody
+
+parts:
+  aphrody:
+    plugin: rust
+    source: .
+    build-packages:
+      - libssl-dev
+      - pkg-config
+    rust-channel: nightly

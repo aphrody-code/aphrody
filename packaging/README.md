@@ -13,6 +13,8 @@ platform target.
 | `winget/` | Windows — WinGet manifest tree |
 | `homebrew/` | macOS — Homebrew formula |
 | `deb/` | Linux — `.deb` package metadata |
+| `snap/` | Linux — Ubuntu Snap (Snap Store) manifest |
+| `arch/` | Linux — Arch User Repository (AUR) `PKGBUILD` |
 | `windows-terminal/` | Windows Terminal profile fragment |
 | `install.sh` | One-liner install (Linux / macOS) |
 | `install.ps1` | One-liner install (Windows PowerShell) |
