@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+  "version": "__VERSION__",
+  "description": "Aphrody — cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly).",
+  "homepage": "https://github.com/aphrody-code/aphrody",
+  "license": "Apache-2.0",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/aphrody-code/aphrody/releases/download/v__VERSION__/aphrody-v__VERSION__-x86_64-pc-windows-msvc.zip",
+      "hash": "__SHA256_X64__",
+      "extract_dir": "aphrody-v__VERSION__-x86_64-pc-windows-msvc"
+    },
+    "arm64": {
+      "url": "https://github.com/aphrody-code/aphrody/releases/download/v__VERSION__/aphrody-v__VERSION__-aarch64-pc-windows-msvc.zip",
+      "hash": "__SHA256_ARM64__",
+      "extract_dir": "aphrody-v__VERSION__-aarch64-pc-windows-msvc"
+    }
+  },
+  "bin": "aphrody.exe",
+  "checkver": {
+    "github": "https://github.com/aphrody-code/aphrody"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/aphrody-code/aphrody/releases/download/v$version/aphrody-v$version-x86_64-pc-windows-msvc.zip",
+        "extract_dir": "aphrody-v$version-x86_64-pc-windows-msvc"
+      },
+      "arm64": {
+        "url": "https://github.com/aphrody-code/aphrody/releases/download/v$version/aphrody-v$version-aarch64-pc-windows-msvc.zip",
+        "extract_dir": "aphrody-v$version-aarch64-pc-windows-msvc"
+      }
+    },
+    "hash": {
+      "url": "$url.sha256",
+      "regex": "([a-fA-F0-9]{64})"
+    }
+  }
+}
