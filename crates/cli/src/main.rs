@@ -67,7 +67,11 @@ enum Commands {
     /// Affiche la version et l'état du système
     Version,
     /// Diagnostic env + intégration A2A + supply-chain (first-impression)
-    Doctor,
+    Doctor {
+        /// Emit diagnostics as a single JSON object instead of human-readable text
+        #[arg(long)]
+        json: bool,
+    },
     /// Forensics Chromium
     Chromium {
         #[command(subcommand)]
@@ -174,8 +178,8 @@ async fn main() -> miette::Result<()> {
         Some(Commands::Version) => {
             VersionCommand.execute(&ctx).await?;
         },
-        Some(Commands::Doctor) => {
-            DoctorCommand.execute(&ctx).await?;
+        Some(Commands::Doctor { json }) => {
+            DoctorCommand { json_output: json }.execute(&ctx).await?;
         },
         Some(Commands::Mirror { action }) => {
             MirrorCommand { action }.execute(&ctx).await?;
@@ -252,7 +256,7 @@ fn main() {
                 Commands::Gemini { .. } => "gemini",
                 Commands::Scrape { .. } => "scrape",
                 Commands::Tokens { .. } => "tokens",
-                Commands::Doctor => "doctor",
+                Commands::Doctor { .. } => "doctor",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),
             };
