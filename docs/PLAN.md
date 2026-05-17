@@ -45,10 +45,10 @@ cible #1**.
 
 | Tâche | Statut |
 |---|---|
-| `cargo check -p cli --target x86_64-unknown-linux-gnu` vert | ⏳ |
-| `cargo build --release -p cli` natif sur Ubuntu 26.04 | ⏳ |
+| `cargo check -p cli --target x86_64-unknown-linux-gnu` vert | ✅ (WSL local, 8.28 s, zéro warning) |
+| `cargo build --release -p cli` natif sur Ubuntu 26.04 | ⏳ (CI à confirmer) |
 | `cargo nextest run -p cli` vert sur Linux | ⏳ |
-| Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ⏳ |
+| Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ✅ (cli chromium gated, voir fix d222d0061) |
 | Adapter `crates/google_mcp` pour Linux | ⏳ |
 | CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ⏳ |
 | Package `apt`/`deb` PPA pour distribution Ubuntu | ⏳ |
