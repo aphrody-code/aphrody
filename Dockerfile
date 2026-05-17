@@ -33,13 +33,13 @@ RUN --mount=type=cache,target=/root/.cargo/registry,sharing=locked \
     esac && \
     rustup target add "$TRIPLE" && \
     cargo build --locked --profile dist --target "$TRIPLE" -p cli && \
-    cp "target/$TRIPLE/dist/cli" /tmp/cli
+    cp "target/$TRIPLE/dist/aphrody" /tmp/aphrody
 
 # --- Stage 2: Distroless runtime --------------------------------------------
 FROM gcr.io/distroless/static-debian12:nonroot AS runtime
 
 # Copy only the static binary -- no glibc, no shell, no root user.
-COPY --from=builder --chown=nonroot:nonroot /tmp/cli /aphrody
+COPY --from=builder --chown=nonroot:nonroot /tmp/aphrody /aphrody
 
 # OCI labels for SBOM / provenance tooling (osv-scanner, syft, cosign).
 LABEL org.opencontainers.image.title="aphrody"
