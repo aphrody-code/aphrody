@@ -118,6 +118,7 @@ pub fn start() {
 // ---------------------------------------------------------------------------
 // Public modules — one per shadcn primitive.
 // ---------------------------------------------------------------------------
+// v1: 12 shadcn primitives.
 pub mod button;
 pub mod input;
 pub mod card;
@@ -130,6 +131,29 @@ pub mod radio_group;
 pub mod switch;
 pub mod slider;
 pub mod avatar;
+
+// v2 batch A: 8 more M3 components (tick 37).
+pub mod list;
+pub mod navigation_bar;
+pub mod navigation_drawer;
+pub mod navigation_rail;
+pub mod app_bar;
+pub mod fab;
+pub mod chip;
+pub mod progress;
+
+// v2 batch B: 8 more M3 components (tick 37).
+pub mod badge;
+pub mod tooltip;
+pub mod icon_button;
+pub mod segmented_button;
+pub mod bottom_sheet;
+pub mod date_picker;
+pub mod time_picker;
+pub mod search_bar;
+
+// Gemini-specific composable atoms (tick 37 — Gemini clone pixel-perfect).
+pub mod gemini;
 
 // ---------------------------------------------------------------------------
 // Native-host smoke tests — assert each Props struct is constructible with a
