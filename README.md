@@ -18,6 +18,45 @@
 
 ---
 
+## Demo — `mrx scan` on this repo (real run, no edit)
+
+```console
+$ aphrody --version
+aphrody 1.0.0-canary
+
+$ mrx scan --root .
+real    0m0.055s     # 55 ms wall-clock (Windows 11, cold disk cache)
+
+$ jq '.stats' monorepo-map.json
+{
+  "total_files":      119,
+  "total_workspaces":   6,
+  "bytes_scanned":  16437373,
+  "scan_duration_ms":  14,        // 14 ms internal walk (rayon + ignore)
+  "languages": {
+    "TypeScript": { "files": 30, "bytes":  81554 },
+    "JSON":       { "files": 16, "bytes":  11297 },
+    "Markdown":   { "files":  5, "bytes":   7460 },
+    "CSS":        { "files":  1, "bytes":   3519 }
+  }
+}
+
+$ jq '.root_kind' monorepo-map.json
+{
+  "task_runners":     ["turbo"],
+  "package_managers": ["bun"],
+  "lockfiles":        ["bun.lock", "Cargo.lock"],
+  "has_cargo_workspace": true,
+  "has_bun_workspaces":  true
+}
+```
+
+That's the binary on its own repo. On a real monorepo (19,213 files / 482 MB)
+the same binary runs in **1.4 s warm** — full numbers + comparisons in
+[`BENCHMARKS.md`](BENCHMARKS.md).
+
+---
+
 ## Install (60 secondes)
 
 ```bash

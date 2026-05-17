@@ -381,3 +381,14 @@ lefthook.yml
 # C:/winclean/var/steam-monitor-snapshot*.png. Block at root.
 /steam.png
 /steam*.png
+
+# ----------------------------------------------------------------------------
+# 20. mrx scan artifacts (written into cwd by default)
+# ----------------------------------------------------------------------------
+# `mrx scan` and `mrx check` write path.json + monorepo-map.json into the
+# scanned root by default. They are reproducible outputs of the binary, not
+# checked-in artefacts. CI exports them as job outputs; locally they should
+# never be committed.
+/path.json
+/monorepo-map.json
+/map.json
