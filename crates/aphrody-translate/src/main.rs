@@ -83,9 +83,8 @@ mod native {
 
         let root = std::fs::canonicalize(&args.root).context("canonicalize root")?;
         let cache_path = args.cache.unwrap_or_else(|| default_cache_path(&root));
-        let translator = Arc::new(Mutex::new(
-            Translator::new(cache_path.clone(), args.contact_email.clone())?,
-        ));
+        let translator =
+            Arc::new(Mutex::new(Translator::new(cache_path.clone(), args.contact_email.clone())?));
 
         let langs = parse_lang_filter(&args.languages);
         info!(?root, ?langs, in_place = args.in_place, "aphrody-translate start");
@@ -123,13 +122,12 @@ mod native {
                     Action::Keep => c.body.clone(),
                 };
 
-                let translated =
-                    if args.no_translate || (!args.force && is_french(&body_clean)) {
-                        body_clean.clone()
-                    } else {
-                        let t = translator.lock().await.translate(&body_clean).await?;
-                        if t.trim().is_empty() { body_clean.clone() } else { t }
-                    };
+                let translated = if args.no_translate || (!args.force && is_french(&body_clean)) {
+                    body_clean.clone()
+                } else {
+                    let t = translator.lock().await.translate(&body_clean).await?;
+                    if t.trim().is_empty() { body_clean.clone() } else { t }
+                };
 
                 let final_body = aphrodify::aphrodify(&translated);
                 if final_body.is_empty() {
@@ -146,8 +144,7 @@ mod native {
             total_changed += 1;
 
             if args.in_place {
-                std::fs::write(&file, &new_source)
-                    .with_context(|| format!("write {:?}", file))?;
+                std::fs::write(&file, &new_source).with_context(|| format!("write {:?}", file))?;
                 info!(?file, "rewritten in place");
             } else {
                 println!("--- DRY: {file:?} would be rewritten");
@@ -212,9 +209,9 @@ mod native {
 
     fn is_french(text: &str) -> bool {
         let lower = text.to_lowercase();
-        let accents = lower.chars().any(|c| {
-            matches!(c, 'é' | 'è' | 'ê' | 'à' | 'â' | 'ô' | 'î' | 'û' | 'ç' | 'ù')
-        });
+        let accents = lower
+            .chars()
+            .any(|c| matches!(c, 'é' | 'è' | 'ê' | 'à' | 'â' | 'ô' | 'î' | 'û' | 'ç' | 'ù'));
         if accents {
             return true;
         }
@@ -251,8 +248,8 @@ fn main() -> anyhow::Result<()> {
 #[cfg(target_arch = "wasm32")]
 fn main() {
     println!(
-        "aphrody-translate {} — wasm stub. \
-         Run the native binary (Linux / Windows / macOS) for full comment-translation.",
+        "aphrody-translate {} — wasm stub. Run the native binary (Linux / Windows / macOS) for \
+         full comment-translation.",
         env!("CARGO_PKG_VERSION"),
     );
 }

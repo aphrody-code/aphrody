@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use a2a::*;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
+
 use crate::BoxStream;
 
 pub type ServiceParams = HashMap<String, Vec<String>>;

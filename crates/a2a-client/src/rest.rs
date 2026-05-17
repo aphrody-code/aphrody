@@ -3,12 +3,12 @@
 use a2a::*;
 use a2a_pb::protojson_conv::{self, ProtoJsonPayload};
 use async_trait::async_trait;
-use crate::BoxStream;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::Value;
 
 use crate::{
+    BoxStream,
     push_config_compat::{
         deserialize_list_task_push_notification_configs_response,
         deserialize_task_push_notification_config,

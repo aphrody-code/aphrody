@@ -96,14 +96,8 @@ pub struct AxisSettings {
 
 impl AxisSettings {
     /// The font's default axis values (matches the static "Regular" cut).
-    pub const DEFAULT: Self = Self {
-        wght: 400.0,
-        opsz: 14.0,
-        wdth: 100.0,
-        grad: 0.0,
-        slnt: 0.0,
-        rond: 0.0,
-    };
+    pub const DEFAULT: Self =
+        Self { wght: 400.0, opsz: 14.0, wdth: 100.0, grad: 0.0, slnt: 0.0, rond: 0.0 };
 
     /// Construct, clamping every field into its axis range.
     #[must_use]
@@ -138,7 +132,8 @@ impl Default for AxisSettings {
 pub fn font_variation_settings(s: &AxisSettings) -> String {
     let s = s.clamped();
     format!(
-        "\"wght\" {wght:.0}, \"opsz\" {opsz:.0}, \"wdth\" {wdth:.0}, \"GRAD\" {grad:.0}, \"slnt\" {slnt:.0}, \"ROND\" {rond:.0}",
+        "\"wght\" {wght:.0}, \"opsz\" {opsz:.0}, \"wdth\" {wdth:.0}, \"GRAD\" {grad:.0}, \"slnt\" \
+         {slnt:.0}, \"ROND\" {rond:.0}",
         wght = s.wght,
         opsz = s.opsz,
         wdth = s.wdth,
@@ -149,7 +144,8 @@ pub fn font_variation_settings(s: &AxisSettings) -> String {
 }
 
 /// Emit a `@font-face` declaration block pointing at the variable font
-/// shipped at `assets/fonts/google-sans-flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf`.
+/// shipped at
+/// `assets/fonts/google-sans-flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf`.
 ///
 /// `relative_url` is the URL prefix used in the consumer page (e.g.
 /// `"../../../assets/fonts/google-sans-flex/"` for the
@@ -161,7 +157,8 @@ pub fn export_font_face(relative_url: &str) -> String {
     s.push_str("@font-face {\n");
     s.push_str("  font-family: 'Google Sans Flex';\n");
     s.push_str(&format!(
-        "  src: url('{relative_url}GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype-variations');\n"
+        "  src: url('{relative_url}GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf'\
+         ) format('truetype-variations');\n"
     ));
     s.push_str("  font-weight: 100 900;\n");
     s.push_str("  font-stretch: 75% 125%;\n");

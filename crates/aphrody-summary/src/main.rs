@@ -6,28 +6,18 @@
 //!   cargo run -p aphrody-summary
 //!   cargo run -p aphrody-summary -- --check    # CI: fail if SUMMARY.md drifts
 
-use anyhow::{Context, Result};
-use std::collections::{BTreeMap, HashSet};
-use std::env;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::{BTreeMap, HashSet},
+    env, fs,
+    path::{Path, PathBuf},
+};
 
-const ROOT_DOCS_TO_MIRROR: &[&str] = &[
-    "CHANGELOG.md",
-    "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
-    "SECURITY.md",
-    "BENCHMARKS.md",
-];
-const TOP_LEVEL_ORDER: &[&str] = &[
-    "README.md",
-    "PLAN.md",
-    "DESIGN.md",
-    "GOOGLE.md",
-    "AWESOME.md",
-    "libc.md",
-    "bun-rs.md",
-];
+use anyhow::{Context, Result};
+
+const ROOT_DOCS_TO_MIRROR: &[&str] =
+    &["CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "BENCHMARKS.md"];
+const TOP_LEVEL_ORDER: &[&str] =
+    &["README.md", "PLAN.md", "DESIGN.md", "GOOGLE.md", "AWESOME.md", "libc.md", "bun-rs.md"];
 const ROOT_MIRROR_DIRNAME: &str = "_root";
 const ROOT_MIRROR_GROUP_TITLE: &str = "Project-Wide";
 
@@ -68,12 +58,15 @@ fn get_repo_root() -> Result<PathBuf> {
 }
 
 fn mirror_root_docs(repo_root: &Path, mirror_dir: &Path) -> Result<()> {
-    fs::create_dir_all(mirror_dir).with_context(|| format!("Failed to create {}", mirror_dir.display()))?;
+    fs::create_dir_all(mirror_dir)
+        .with_context(|| format!("Failed to create {}", mirror_dir.display()))?;
     for name in ROOT_DOCS_TO_MIRROR {
         let src = repo_root.join(name);
         let dst = mirror_dir.join(name);
         if src.exists() {
-            fs::copy(&src, &dst).with_context(|| format!("Failed to copy {} to {}", src.display(), dst.display()))?;
+            fs::copy(&src, &dst).with_context(|| {
+                format!("Failed to copy {} to {}", src.display(), dst.display())
+            })?;
         }
     }
     Ok(())
@@ -112,10 +105,7 @@ fn scan(dir: &Path, docs_root: &Path) -> Result<Vec<Entry>> {
                 entries.push(Entry::Dir { name, entries: inner });
             }
         } else if name.ends_with(".md") {
-            let rel_path = full_path
-                .strip_prefix(docs_root)?
-                .to_string_lossy()
-                .replace('\\', "/");
+            let rel_path = full_path.strip_prefix(docs_root)?.to_string_lossy().replace('\\', "/");
             entries.push(Entry::File { name, rel_path });
         }
     }
@@ -134,11 +124,7 @@ fn render_top_level(entries: &[Entry]) -> String {
     let mut ordered = Vec::new();
     for name in TOP_LEVEL_ORDER {
         if let Some(rel_path) = files.remove(*name) {
-            let title = if *name == "README.md" {
-                "Accueil".to_string()
-            } else {
-                titleize(name)
-            };
+            let title = if *name == "README.md" { "Accueil".to_string() } else { titleize(name) };
             ordered.push(format!("- [{}]({})", title, rel_path));
         }
     }
@@ -156,11 +142,7 @@ fn render_group(name: &str, entries: &[Entry], depth: usize) -> String {
     let mut lines = Vec::new();
 
     let readme = entries.iter().find(|e| {
-        if let Entry::File { name, .. } = e {
-            name.to_lowercase() == "readme.md"
-        } else {
-            false
-        }
+        if let Entry::File { name, .. } = e { name.to_lowercase() == "readme.md" } else { false }
     });
 
     let group_name = if name == ROOT_MIRROR_DIRNAME {
@@ -181,7 +163,7 @@ fn render_group(name: &str, entries: &[Entry], depth: usize) -> String {
         match entry {
             Entry::File { name, .. } if name.to_lowercase() != "readme.md" => files.push(entry),
             Entry::Dir { .. } => subdirs.push(entry),
-            _ => {}
+            _ => {},
         }
     }
 

@@ -76,27 +76,15 @@ pub const DISABLED_CONTAINER: StateLayer = StateLayer { opacity: 0.12 };
 /// All six state tokens in declaration order:
 /// [`HOVER`], [`FOCUS`], [`PRESSED`], [`DRAGGED`],
 /// [`DISABLED_CONTENT`], [`DISABLED_CONTAINER`].
-pub const ALL: [StateLayer; STATE_COUNT] = [
-    HOVER,
-    FOCUS,
-    PRESSED,
-    DRAGGED,
-    DISABLED_CONTENT,
-    DISABLED_CONTAINER,
-];
+pub const ALL: [StateLayer; STATE_COUNT] =
+    [HOVER, FOCUS, PRESSED, DRAGGED, DISABLED_CONTENT, DISABLED_CONTAINER];
 
 /// Human-readable names for each entry in [`ALL`], in the same order.
 ///
 /// These strings mirror the M3 CSS custom-property suffixes used by
 /// [`export_css`].
-pub const NAMES: [&str; STATE_COUNT] = [
-    "hover",
-    "focus",
-    "pressed",
-    "dragged",
-    "disabled-content",
-    "disabled-container",
-];
+pub const NAMES: [&str; STATE_COUNT] =
+    ["hover", "focus", "pressed", "dragged", "disabled-content", "disabled-container"];
 
 // ── CSS export (std only) ─────────────────────────────────────────────────────
 

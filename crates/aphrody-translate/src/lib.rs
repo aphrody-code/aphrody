@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 //! Aphrody Translate — bibliothèque de réécriture des commentaires source.
 //!
 //! Quatre étages :

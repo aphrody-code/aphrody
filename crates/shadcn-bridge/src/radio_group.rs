@@ -3,14 +3,10 @@
 //! `name` attribute (MWC3 groups radios by name, not by parent container).
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{create_mwc_element, document};
+#[cfg(target_arch = "wasm32")] use crate::{create_mwc_element, document};
 
 /// Option entry for the radio group (label + form value pair).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

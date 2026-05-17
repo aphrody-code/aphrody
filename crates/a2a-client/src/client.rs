@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use a2a::{jsonrpc::methods, *};
 use async_trait::async_trait;
-use crate::BoxStream;
 
 use crate::{
+    BoxStream,
     middleware::CallInterceptor,
     transport::{ServiceParams, Transport},
 };

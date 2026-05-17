@@ -17,14 +17,10 @@
 //! renderer remains dependency-free on every host.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{document, set_attr_opt};
+#[cfg(target_arch = "wasm32")] use crate::{document, set_attr_opt};
 
 /// Subset of shadcn `<DatePicker>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -59,7 +55,7 @@ fn days_in_month(year: i32, month: u8) -> u8 {
         2 => {
             let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
             if leap { 29 } else { 28 }
-        }
+        },
         _ => 0,
     }
 }
@@ -70,11 +66,8 @@ fn days_in_month(year: i32, month: u8) -> u8 {
 #[allow(dead_code)]
 fn first_weekday(year: i32, month: u8) -> u8 {
     // Zeller treats Jan/Feb as months 13/14 of the previous year.
-    let (m, y) = if month < 3 {
-        (i32::from(month) + 12, year - 1)
-    } else {
-        (i32::from(month), year)
-    };
+    let (m, y) =
+        if month < 3 { (i32::from(month) + 12, year - 1) } else { (i32::from(month), year) };
     let k = y.rem_euclid(100);
     let j = y.div_euclid(100);
     // Zeller's congruence (Gregorian variant): h = 0 = Saturday.
@@ -200,9 +193,7 @@ mod tests {
     fn date_picker_props_default_field_count() {
         let p = DatePickerProps::default();
         let v = serde_json::to_value(&p).expect("serde must serialise DatePickerProps");
-        let map = v
-            .as_object()
-            .expect("DatePickerProps must serialise as object");
+        let map = v.as_object().expect("DatePickerProps must serialise as object");
         assert_eq!(map.len(), DatePickerProps::FIELD_COUNT);
 
         // Sanity-check the date helpers so a future refactor cannot silently

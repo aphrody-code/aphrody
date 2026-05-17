@@ -46,8 +46,8 @@ fn bench_dns_dedup_sort(c: &mut Criterion) {
             "api.example.com",
             "www.example.com",
             "mail.example.com",
-            "API.Example.com",    // duplicate after lowercase
-            "WWW.EXAMPLE.COM",    // duplicate after lowercase
+            "API.Example.com", // duplicate after lowercase
+            "WWW.EXAMPLE.COM", // duplicate after lowercase
             "cdn.example.com",
             "static.example.com",
             "auth.example.com",
@@ -111,8 +111,8 @@ fn bench_aes_gcm_decrypt_1kb(c: &mut Criterion) {
 
     // Build the Chromium-format wire blob: [3 prefix bytes][12 nonce][ct+tag]
     let mut wire = Vec::with_capacity(3 + 12 + ct.len());
-    wire.extend_from_slice(b"v10");           // 3-byte version prefix
-    wire.extend_from_slice(&raw_nonce);       // 12-byte nonce
+    wire.extend_from_slice(b"v10"); // 3-byte version prefix
+    wire.extend_from_slice(&raw_nonce); // 12-byte nonce
     wire.extend_from_slice(&ct);
 
     c.bench_function("aes_gcm_decrypt_1kb", |b| {

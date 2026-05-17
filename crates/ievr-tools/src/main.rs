@@ -58,12 +58,9 @@ fn main() -> anyhow::Result<()> {
                 inv.total_size(),
                 inv.total_size() as f64 / 1_073_741_824.0
             );
-        }
+        },
         Command::ByExt => {
-            println!(
-                "{:>12}  {:>6}  {:>15}  {}",
-                "ext", "count", "bytes", "MB"
-            );
+            println!("{:>12}  {:>6}  {:>15}  {}", "ext", "count", "bytes", "MB");
             println!("{}", "-".repeat(50));
             for (ext, count, bytes) in inv.by_ext() {
                 let ext_display = if ext.is_empty() { "(none)" } else { &ext };
@@ -75,17 +72,14 @@ fn main() -> anyhow::Result<()> {
                     bytes as f64 / 1_048_576.0
                 );
             }
-        }
+        },
         Command::Top { n } => {
-            println!(
-                "{:>4}  {:>15}  {}",
-                "#", "bytes", "rel_path"
-            );
+            println!("{:>4}  {:>15}  {}", "#", "bytes", "rel_path");
             println!("{}", "-".repeat(70));
             for (i, b) in inv.largest(n).iter().enumerate() {
                 println!("{:>4}. {:>15}  {}", i + 1, b.size_bytes, b.rel_path);
             }
-        }
+        },
     }
 
     Ok(())

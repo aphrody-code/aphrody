@@ -1,0 +1,17 @@
+{
+  "name": "@aphrody/plugin-package-contract",
+  "version": "0.0.0-vendored",
+  "private": true,
+  "type": "module",
+  "description": "Vendored mirror of @openclaw/plugin-package-contract — external plugin compatibility shape + validator (MIT upstream, Apache-2.0 redistribution).",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "aphrody": {
+    "vendoredFrom": "openclaw/openclaw#packages/plugin-package-contract",
+    "upstreamLicense": "MIT",
+    "upstreamCopyright": "Copyright (c) 2025 Peter Steinberger",
+    "refreshScript": "scripts/plugin-contract-port.ts"
+  }
+}

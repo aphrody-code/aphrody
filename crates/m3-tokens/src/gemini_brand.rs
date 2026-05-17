@@ -7,13 +7,13 @@
 //! and contributes the signature elements that distinguish the product
 //! from generic Material Design surfaces:
 //!
-//! - The canonical blue-to-purple-to-pink "spectrum-shift" gradient
-//!   used on the prompt-send affordance, the empty-state sparkle, the
-//!   user avatar ring, and the "thinking" streaming indicator.
-//! - The four sparkle stops (the visual analogue of the Google
-//!   four-color dot lineage cited in the article).
-//! - The rounded-pill brand-shape constants (Gemini's
-//!   "warm, spatial, rounded quality" per Anna Sera Garcia).
+//! - The canonical blue-to-purple-to-pink "spectrum-shift" gradient used on the prompt-send
+//!   affordance, the empty-state sparkle, the user avatar ring, and the "thinking" streaming
+//!   indicator.
+//! - The four sparkle stops (the visual analogue of the Google four-color dot lineage cited in the
+//!   article).
+//! - The rounded-pill brand-shape constants (Gemini's "warm, spatial, rounded quality" per Anna
+//!   Sera Garcia).
 //!
 //! All ARGB constants use `0xFFRRGGBB` (alpha-first u32) to match the
 //! pattern established in [`crate::color`] and [`crate::tonal`].
@@ -79,10 +79,7 @@ pub const FOUR_COLOR_DOTS: [u32; 4] = [
 // Canonical Gemini gradients
 // ---------------------------------------------------------------------------
 
-const NAN_STOP: GradientStop = GradientStop {
-    position: f32::NAN,
-    argb: 0,
-};
+const NAN_STOP: GradientStop = GradientStop { position: f32::NAN, argb: 0 };
 
 /// The signature 3-stop blue-to-purple-to-pink gradient used on the
 /// prompt-send affordance, sparkle, and "thinking" streaming indicator.
@@ -159,11 +156,7 @@ pub fn gradient_to_css(gradient: &LinearGradient) -> String {
         if stop.position.is_nan() {
             continue;
         }
-        parts.push(format!(
-            "{} {:.0}%",
-            argb_to_css(stop.argb),
-            stop.position * 100.0
-        ));
+        parts.push(format!("{} {:.0}%", argb_to_css(stop.argb), stop.position * 100.0));
     }
     format!("linear-gradient({})", parts.join(", "))
 }
@@ -181,43 +174,19 @@ pub fn export_css() -> String {
     let mut s = String::with_capacity(1024);
     s.push_str(":root {\n");
     s.push_str(&format!("  --gemini-brand-blue: {};\n", argb_to_css(GEMINI_BLUE)));
-    s.push_str(&format!(
-        "  --gemini-brand-purple: {};\n",
-        argb_to_css(GEMINI_PURPLE)
-    ));
+    s.push_str(&format!("  --gemini-brand-purple: {};\n", argb_to_css(GEMINI_PURPLE)));
     s.push_str(&format!("  --gemini-brand-pink: {};\n", argb_to_css(GEMINI_PINK)));
-    s.push_str(&format!(
-        "  --gemini-brand-yellow: {};\n",
-        argb_to_css(GEMINI_YELLOW)
-    ));
-    s.push_str(&format!(
-        "  --gemini-brand-green: {};\n",
-        argb_to_css(GEMINI_GREEN)
-    ));
+    s.push_str(&format!("  --gemini-brand-yellow: {};\n", argb_to_css(GEMINI_YELLOW)));
+    s.push_str(&format!("  --gemini-brand-green: {};\n", argb_to_css(GEMINI_GREEN)));
     s.push_str(&format!(
         "  --gemini-spectrum-shift: {};\n",
         gradient_to_css(&SPECTRUM_SHIFT_GRADIENT)
     ));
-    s.push_str(&format!(
-        "  --gemini-sparkle: {};\n",
-        gradient_to_css(&SPARKLE_GRADIENT)
-    ));
-    s.push_str(&format!(
-        "  --gemini-warm-tone: {};\n",
-        gradient_to_css(&WARM_TONE_GRADIENT)
-    ));
-    s.push_str(&format!(
-        "  --gemini-corner-prompt-bar: {}px;\n",
-        BRAND_CORNER_PROMPT_BAR_PX
-    ));
-    s.push_str(&format!(
-        "  --gemini-corner-message: {}px;\n",
-        BRAND_CORNER_MESSAGE_PX
-    ));
-    s.push_str(&format!(
-        "  --gemini-corner-chip: {}px;\n",
-        BRAND_CORNER_CHIP_PX
-    ));
+    s.push_str(&format!("  --gemini-sparkle: {};\n", gradient_to_css(&SPARKLE_GRADIENT)));
+    s.push_str(&format!("  --gemini-warm-tone: {};\n", gradient_to_css(&WARM_TONE_GRADIENT)));
+    s.push_str(&format!("  --gemini-corner-prompt-bar: {}px;\n", BRAND_CORNER_PROMPT_BAR_PX));
+    s.push_str(&format!("  --gemini-corner-message: {}px;\n", BRAND_CORNER_MESSAGE_PX));
+    s.push_str(&format!("  --gemini-corner-chip: {}px;\n", BRAND_CORNER_CHIP_PX));
     s.push_str("}\n");
     s
 }
@@ -228,13 +197,7 @@ mod tests {
 
     #[test]
     fn brand_colors_are_opaque() {
-        for argb in [
-            GEMINI_BLUE,
-            GEMINI_PURPLE,
-            GEMINI_PINK,
-            GEMINI_YELLOW,
-            GEMINI_GREEN,
-        ] {
+        for argb in [GEMINI_BLUE, GEMINI_PURPLE, GEMINI_PINK, GEMINI_YELLOW, GEMINI_GREEN] {
             assert_eq!(argb >> 24, 0xFF, "expected opaque ARGB: 0x{argb:08X}");
         }
     }

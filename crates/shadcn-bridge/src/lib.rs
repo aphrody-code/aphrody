@@ -34,12 +34,11 @@
 //!
 //! Each module exposes:
 //!
-//! 1. A `<Name>Props` struct (`serde`-friendly) reflecting the minimal shadcn
-//!    prop surface.
-//! 2. A pure-Rust `create_<name>(props: &<Name>Props) -> Result<HtmlElement, JsValue>`
-//!    entrypoint that builds the DOM subtree using `web_sys`.
-//! 3. A `#[wasm_bindgen]`-annotated thin wrapper that JS callers can invoke
-//!    directly (`shadcnBridge.create_button(propsJson)`).
+//! 1. A `<Name>Props` struct (`serde`-friendly) reflecting the minimal shadcn prop surface.
+//! 2. A pure-Rust `create_<name>(props: &<Name>Props) -> Result<HtmlElement, JsValue>` entrypoint
+//!    that builds the DOM subtree using `web_sys`.
+//! 3. A `#[wasm_bindgen]`-annotated thin wrapper that JS callers can invoke directly
+//!    (`shadcnBridge.create_button(propsJson)`).
 //!
 //! The native-host build skips every `web_sys` call — modules still compile so
 //! that `cargo check` / `cargo test` succeed on Linux + Windows hosts (only
@@ -47,10 +46,8 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::{Document, HtmlElement};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::{Document, HtmlElement};
 
 // ---------------------------------------------------------------------------
 // Shared internals — only meaningful on wasm32, but we keep the signatures
@@ -72,9 +69,7 @@ pub const M3_ELEVATION_LEVEL_0_DP: u8 = 0;
 #[cfg(target_arch = "wasm32")]
 fn document() -> Result<Document, JsValue> {
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("no window"))?;
-    window
-        .document()
-        .ok_or_else(|| JsValue::from_str("no document on window"))
+    window.document().ok_or_else(|| JsValue::from_str("no document on window"))
 }
 
 /// Creates a Material Web Components custom element by tag name and casts it
@@ -119,38 +114,38 @@ pub fn start() {
 // Public modules — one per shadcn primitive.
 // ---------------------------------------------------------------------------
 // v1: 12 shadcn primitives.
+pub mod avatar;
 pub mod button;
-pub mod input;
 pub mod card;
+pub mod checkbox;
 pub mod dialog;
+pub mod input;
+pub mod radio_group;
+pub mod select;
+pub mod slider;
+pub mod switch;
 pub mod tabs;
 pub mod toast;
-pub mod select;
-pub mod checkbox;
-pub mod radio_group;
-pub mod switch;
-pub mod slider;
-pub mod avatar;
 
 // v2 batch A: 8 more M3 components (tick 37).
+pub mod app_bar;
+pub mod chip;
+pub mod fab;
 pub mod list;
 pub mod navigation_bar;
 pub mod navigation_drawer;
 pub mod navigation_rail;
-pub mod app_bar;
-pub mod fab;
-pub mod chip;
 pub mod progress;
 
 // v2 batch B: 8 more M3 components (tick 37).
 pub mod badge;
-pub mod tooltip;
-pub mod icon_button;
-pub mod segmented_button;
 pub mod bottom_sheet;
 pub mod date_picker;
-pub mod time_picker;
+pub mod icon_button;
 pub mod search_bar;
+pub mod segmented_button;
+pub mod time_picker;
+pub mod tooltip;
 
 // Gemini-specific composable atoms (tick 37 — Gemini clone pixel-perfect).
 pub mod gemini;

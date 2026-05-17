@@ -5,14 +5,10 @@
 //! value (including default) selects `<md-primary-tab>`.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::create_mwc_element;
+#[cfg(target_arch = "wasm32")] use crate::create_mwc_element;
 
 /// Subset of shadcn `<Tabs>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -39,11 +35,8 @@ pub fn create_tabs(props: &TabsProps) -> Result<HtmlElement, JsValue> {
     let container = create_mwc_element("md-tabs")?;
     container.set_attribute("active-tab-index", &props.active_index.to_string())?;
 
-    let child_tag = if props.variant == "secondary" {
-        "md-secondary-tab"
-    } else {
-        "md-primary-tab"
-    };
+    let child_tag =
+        if props.variant == "secondary" { "md-secondary-tab" } else { "md-primary-tab" };
 
     for (i, label) in props.tabs.iter().enumerate() {
         let tab = create_mwc_element(child_tag)?;

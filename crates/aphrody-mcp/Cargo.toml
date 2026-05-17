@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-mcp"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728 + 8414 + 7591 + 7636)."
+
+[lints]
+workspace = true
+
+[dependencies]
+# Async runtime — rt-multi-thread + macros + fs (tokio::fs for cache I/O).
+tokio      = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
+# HTTP client — json feature required; rustls-tls gated by feature flag below.
+reqwest    = { workspace = true }
+# Serialization.
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# URL parsing and manipulation (RFC 3986).
+url        = { workspace = true }
+# base64url encoding for PKCE and state tokens (RFC 7636 §4.2).
+base64     = { workspace = true }
+# SHA-256 digest for PKCE code_challenge derivation.
+sha2       = { workspace = true }
+# CSPRNG for code_verifier and state bytes.
+rand       = { workspace = true }
+# Structured error types.
+thiserror  = { workspace = true }
+# Structured logging (tracing spans on each network call).
+tracing    = { workspace = true }
+
+[dev-dependencies]
+tokio    = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tempfile = { workspace = true }
+rustls   = { workspace = true }
+
+[features]
+# Default: rustls without a hard-wired provider (ring is installed globally by
+# the `cli` binary at startup via `rustls::crypto::ring::default_provider()`).
+# This matches the workspace reqwest dep which uses `rustls-no-provider`, and
+# avoids Cargo resolver conflicts when this crate is used inside the workspace.
+default        = ["rustls-no-provider"]
+rustls-no-provider = ["reqwest/rustls-no-provider"]
