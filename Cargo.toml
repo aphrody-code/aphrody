@@ -354,7 +354,9 @@ next-custom-transforms         = { git = "https://github.com/aphrody-code/next.j
 # --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
 # Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
 wgpu               = { version = "26" }
-wasm-bindgen       = { version = "0.2" }
+# wasm-bindgen MUST be pinned EXACT — schema must match wasm-bindgen-cli byte-for-byte.
+# When bumping, run scripts/install-wasm-bindgen-cli.sh on every dev machine.
+wasm-bindgen       = { version = "=0.2.121" }
 wasm-bindgen-futures = { version = "0.4" }
 js-sys             = { version = "0.3" }
 web-sys            = { version = "0.3" }

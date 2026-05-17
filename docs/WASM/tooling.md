@@ -83,15 +83,49 @@ Wire `twiggy diff` into CI :
     [ -z "$(grep '^+' diff.txt | head -1)" ] || echo "::warning::WASM bundle grew"
 ```
 
-## wasm-bindgen-cli
+## wasm-bindgen-cli — version MUST match the crate exactly
 
-`wasm-pack` already wraps it ; install standalone only if you need to glue something custom :
+The CLI version must match the `wasm-bindgen` crate version in `Cargo.toml`
+**byte-for-byte**. The bindgen schema changes on every publish — mismatches
+produce errors at instantiation time, sometimes silently broken bindings.
+
+Current pin (2026-05-17) : `0.2.121` (released 2026-05-07).
 
 ```bash
-cargo install wasm-bindgen-cli --version "=0.2.99"     # PIN to crate version
+# One-shot install matching the workspace
+cargo install wasm-bindgen-cli --version "=0.2.121" --locked
 ```
 
-The CLI version **must match** the `wasm-bindgen` crate version in `Cargo.toml`. Mismatches produce silent breakage at instantiation time.
+To keep the workspace and CLI in sync automatically, the aphrody root provides :
+
+```bash
+# Reads the exact resolved version from Cargo.lock and installs it
+bash scripts/install-wasm-bindgen-cli.sh
+```
+
+The workspace pins the crate exactly :
+
+```toml
+# Cargo.toml [workspace.dependencies]
+wasm-bindgen = "=0.2.121"      # EXACT — do not relax
+```
+
+Why exact and not caret ? Because Cargo's caret `"0.2"` resolves to the latest
+0.2.x at lock time, and a freshly cloned dev machine running
+`cargo install wasm-bindgen-cli` (without `--version`) will pull a *different*
+latest, producing schema-mismatch errors only at runtime in the browser.
+
+The error looks like :
+```
+wasm-bindgen: schema version mismatch ; expected 0.2.121, found 0.2.122
+```
+
+When bumping wasm-bindgen :
+
+1. Update `wasm-bindgen = "=NEW.VER.SION"` in the root `Cargo.toml`.
+2. `cargo update -p wasm-bindgen`
+3. `scripts/install-wasm-bindgen-cli.sh` (or `cargo install wasm-bindgen-cli --version =NEW.VER.SION --force`).
+4. Re-run any `wasm-pack build` to regenerate the JS shims.
 
 ## wasm-tools — inspection
 
