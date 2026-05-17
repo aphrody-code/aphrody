@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import TurndownService from "turndown";
-import { mkdirSync } from "fs";
-import { dirname } from "path";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 const SITEMAP_URL = Bun.argv[2] || "https://design.google/sitemap.xml/";
 const DB_PATH = "C:\\winclean\\var\\data\\winclean.db";

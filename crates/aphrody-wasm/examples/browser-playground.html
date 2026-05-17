@@ -1,0 +1,584 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+  aphrody-wasm Browser Playground
+  Demonstrates: version(), platform_short_name(), decrypt_aes_gcm()
+
+  Prerequisites:
+    cd crates/aphrody-wasm
+    wasm-pack build --target web --release
+    bun x serve examples/
+    # or: python -m http.server -d examples 8000
+  Then open http://localhost:8000/browser-playground.html
+
+  The script block imports from ../pkg/aphrody_wasm.js which is produced by
+  wasm-pack and must exist relative to the examples/ directory.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aphrody-wasm Playground</title>
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* Reset & base                                                         */
+    /* ------------------------------------------------------------------ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: "Cascadia Code", "Fira Code", "Consolas", "Menlo", monospace;
+      --radius: 6px;
+      --gap: 1rem;
+
+      /* Light palette */
+      --bg:        #f5f5f5;
+      --surface:   #ffffff;
+      --border:    #d0d0d0;
+      --text:      #1a1a1a;
+      --muted:     #666666;
+      --accent:    #3b5bdb;
+      --accent-h:  #2f4ac8;
+      --ok:        #2f9e44;
+      --err:       #c92a2a;
+      --tag-bg:    #e8f0fe;
+      --tag-text:  #3b5bdb;
+      --divider:   #e0e0e0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #111111;
+        --surface:   #1e1e1e;
+        --border:    #3a3a3a;
+        --text:      #e8e8e8;
+        --muted:     #999999;
+        --accent:    #748ffc;
+        --accent-h:  #8fa8ff;
+        --ok:        #69db7c;
+        --err:       #ff6b6b;
+        --tag-bg:    #1e2b55;
+        --tag-text:  #a5b4fc;
+        --divider:   #2a2a2a;
+      }
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Layout                                                               */
+    /* ------------------------------------------------------------------ */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    header {
+      border-bottom: 1px solid var(--divider);
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Card / Section                                                       */
+    /* ------------------------------------------------------------------ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Info row (Section 1)                                                 */
+    /* ------------------------------------------------------------------ */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 540px) {
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    .info-cell {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+    }
+
+    .info-cell .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+    }
+
+    .info-cell .value {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Form elements                                                        */
+    /* ------------------------------------------------------------------ */
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    label span.hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    textarea, input[type="text"] {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.6rem 0.75rem;
+      width: 100%;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    textarea { min-height: 80px; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 540px) {
+      .field-row { grid-template-columns: 1fr; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Buttons                                                              */
+    /* ------------------------------------------------------------------ */
+    button {
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.55rem 1.25rem;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: var(--accent-h); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ------------------------------------------------------------------ */
+    /* Output / status                                                      */
+    /* ------------------------------------------------------------------ */
+    .output {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 2.6rem;
+      color: var(--muted);
+    }
+
+    .output.ok  { color: var(--ok);  border-color: var(--ok); }
+    .output.err { color: var(--err); border-color: var(--err); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--divider);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Loading overlay                                                      */
+    /* ------------------------------------------------------------------ */
+    #wasm-status {
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 0.25rem 0;
+    }
+
+    #wasm-status.ready { color: var(--ok); }
+    #wasm-status.error { color: var(--err); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- -------------------------------------------------------------------- -->
+  <!-- Header                                                                -->
+  <!-- -------------------------------------------------------------------- -->
+  <header>
+    <h1>aphrody-wasm Playground</h1>
+    <p>Interactive demo of the WebAssembly module compiled from Rust.</p>
+    <p id="wasm-status">Loading WASM module…</p>
+  </header>
+
+  <!-- -------------------------------------------------------------------- -->
+  <!-- Section 1 — Module info: version() + platform_short_name()           -->
+  <!-- -------------------------------------------------------------------- -->
+  <section class="card" id="section-info">
+    <h2>Module Info <span class="badge">version() · platform_short_name()</span></h2>
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="label">version()</div>
+        <div class="value" id="out-version">—</div>
+      </div>
+      <div class="info-cell">
+        <div class="label">platform_short_name()</div>
+        <div class="value" id="out-platform">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------------------- -->
+  <!-- Section 2 — AES-GCM Playground                                       -->
+  <!--   Encrypt side uses Web Crypto API (SubtleCrypto) to produce the     -->
+  <!--   exact binary layout expected by the Rust decrypt_aes_gcm():        -->
+  <!--     [3 bytes version prefix "v10"][12 bytes nonce][ciphertext+tag]   -->
+  <!--   Decrypt side calls the wasm-exported decrypt_aes_gcm().            -->
+  <!-- -------------------------------------------------------------------- -->
+  <section class="card" id="section-crypto">
+    <h2>AES-256-GCM Playground <span class="badge">decrypt_aes_gcm()</span></h2>
+
+    <!-- Shared key / nonce inputs -->
+    <div class="field-row">
+      <label>
+        Key (64 hex chars = 32 bytes, AES-256)
+        <span class="hint">Used by both Encrypt and Decrypt</span>
+        <input
+          type="text"
+          id="inp-key"
+          maxlength="64"
+          spellcheck="false"
+          placeholder="000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        />
+      </label>
+      <label>
+        Nonce (24 hex chars = 12 bytes)
+        <span class="hint">Must match between Encrypt and Decrypt</span>
+        <input
+          type="text"
+          id="inp-nonce"
+          maxlength="24"
+          spellcheck="false"
+          placeholder="000000000000000000000000"
+        />
+      </label>
+    </div>
+
+    <!-- Encrypt subsection -->
+    <hr class="divider" />
+    <label>
+      Plaintext to encrypt
+      <textarea id="inp-plaintext" placeholder="Type anything here…"></textarea>
+    </label>
+    <button id="btn-encrypt" disabled>Encrypt with Web Crypto</button>
+    <div class="output" id="out-ciphertext">Ciphertext hex will appear here after clicking Encrypt.</div>
+
+    <!-- Decrypt subsection -->
+    <hr class="divider" />
+    <label>
+      Ciphertext to decrypt (hex)
+      <span class="hint">Paste hex output from Encrypt above, or any aphrody-format blob.</span>
+      <textarea
+        id="inp-ciphertext"
+        placeholder="760000000000000000000000000000…"
+      ></textarea>
+    </label>
+    <button id="btn-decrypt" disabled>Decrypt with WASM</button>
+    <div class="output" id="out-plaintext">Decrypted plaintext will appear here after clicking Decrypt.</div>
+  </section>
+
+</div><!-- /.container -->
+
+<script type="module">
+  // --------------------------------------------------------------------------
+  // Imports — path is relative from examples/ to the wasm-pack output pkg/.
+  // Run `wasm-pack build --target web --release` from crates/aphrody-wasm/
+  // before serving this file.
+  // --------------------------------------------------------------------------
+  import init, {
+    version,
+    platform_short_name,
+    decrypt_aes_gcm,
+  } from '../pkg/aphrody_wasm.js';
+
+  // --------------------------------------------------------------------------
+  // Utility helpers
+  // --------------------------------------------------------------------------
+
+  /** Decode a lowercase hex string to a Uint8Array. */
+  function hexToBytes(hex) {
+    if (hex.length % 2 !== 0) {
+      throw new RangeError(`Hex string must have an even length, got ${hex.length}`);
+    }
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+      const hi = parseInt(hex[i * 2],     16);
+      const lo = parseInt(hex[i * 2 + 1], 16);
+      if (isNaN(hi) || isNaN(lo)) {
+        throw new RangeError(`Invalid hex character at position ${i * 2}`);
+      }
+      bytes[i] = (hi << 4) | lo;
+    }
+    return bytes;
+  }
+
+  /** Encode a Uint8Array to a lowercase hex string. */
+  function bytesToHex(bytes) {
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Set the content and state class of an output element.
+   * @param {HTMLElement} el
+   * @param {string} text
+   * @param {'ok'|'err'|''} state
+   */
+  function setOutput(el, text, state = '') {
+    el.textContent = text;
+    el.className = 'output' + (state ? ` ${state}` : '');
+  }
+
+  // --------------------------------------------------------------------------
+  // WASM initialisation
+  // --------------------------------------------------------------------------
+  const statusEl   = document.getElementById('wasm-status');
+  const btnEncrypt = document.getElementById('btn-encrypt');
+  const btnDecrypt = document.getElementById('btn-decrypt');
+
+  let wasmReady = false;
+
+  try {
+    // init() fetches aphrody_wasm_bg.wasm and instantiates it.
+    // The #[wasm_bindgen(start)] fn `start()` is called automatically
+    // and sets up the panic hook + console logger.
+    await init();
+    wasmReady = true;
+
+    // ---- Section 1: populate module info --------------------------------
+    const v    = version();
+    const plat = platform_short_name();
+
+    document.getElementById('out-version').textContent  = v;
+    document.getElementById('out-platform').textContent = plat;
+
+    statusEl.textContent = `WASM module ready — version ${v} on ${plat}`;
+    statusEl.className   = 'ready';
+
+    btnEncrypt.disabled = false;
+    btnDecrypt.disabled = false;
+
+    console.log('[aphrody-wasm playground] version=' + v + ' platform=' + plat);
+  } catch (err) {
+    statusEl.textContent = `WASM load failed: ${err}`;
+    statusEl.className   = 'error';
+    console.error('[aphrody-wasm playground] init failed', err);
+  }
+
+  // --------------------------------------------------------------------------
+  // Section 2 — Encrypt (Web Crypto → aphrody binary format)
+  //
+  // aphrody binary layout (same as Chromium AES-GCM cookies format):
+  //   offset 0-2  : version prefix — 3 bytes, value "v10" = [0x76, 0x31, 0x30]
+  //   offset 3-14 : nonce — 12 bytes (96-bit, standard GCM IV length)
+  //   offset 15+  : ciphertext || auth-tag (16-byte GCM tag appended by SubtleCrypto)
+  //
+  // SubtleCrypto.encrypt with AES-GCM automatically appends the 16-byte tag.
+  // --------------------------------------------------------------------------
+  const VERSION_PREFIX = new Uint8Array([0x76, 0x31, 0x30]); // "v10"
+
+  btnEncrypt.addEventListener('click', async () => {
+    const outEl = document.getElementById('out-ciphertext');
+    if (!wasmReady) {
+      setOutput(outEl, 'WASM not ready.', 'err');
+      return;
+    }
+
+    const keyHex    = document.getElementById('inp-key').value.trim();
+    const nonceHex  = document.getElementById('inp-nonce').value.trim();
+    const plaintext = document.getElementById('inp-plaintext').value;
+
+    // Validate key
+    if (keyHex.length !== 64) {
+      setOutput(outEl, `Key must be exactly 64 hex characters (32 bytes). Got ${keyHex.length}.`, 'err');
+      return;
+    }
+    // Validate nonce
+    if (nonceHex.length !== 24) {
+      setOutput(outEl, `Nonce must be exactly 24 hex characters (12 bytes). Got ${nonceHex.length}.`, 'err');
+      return;
+    }
+
+    let keyBytes, nonceBytes;
+    try {
+      keyBytes   = hexToBytes(keyHex);
+      nonceBytes = hexToBytes(nonceHex);
+    } catch (e) {
+      setOutput(outEl, `Hex decode error: ${e.message}`, 'err');
+      return;
+    }
+
+    try {
+      // Import raw key material into Web Crypto
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBytes,
+        { name: 'AES-GCM' },
+        false,          // not extractable
+        ['encrypt'],
+      );
+
+      const plaintextBytes = new TextEncoder().encode(plaintext);
+
+      // Encrypt — SubtleCrypto uses iv as the GCM nonce
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: nonceBytes },
+        cryptoKey,
+        plaintextBytes,
+      );
+
+      // Assemble the aphrody binary format: [version(3)][nonce(12)][ciphertext+tag]
+      const encBytes = new Uint8Array(encrypted);
+      const blob     = new Uint8Array(VERSION_PREFIX.length + nonceBytes.length + encBytes.length);
+      blob.set(VERSION_PREFIX, 0);
+      blob.set(nonceBytes,     VERSION_PREFIX.length);
+      blob.set(encBytes,       VERSION_PREFIX.length + nonceBytes.length);
+
+      const hex = bytesToHex(blob);
+      setOutput(outEl, hex, 'ok');
+
+      // Auto-populate the decrypt textarea for one-click round-trip
+      document.getElementById('inp-ciphertext').value = hex;
+    } catch (e) {
+      setOutput(outEl, `Encrypt failed: ${e.message}`, 'err');
+      console.error('[aphrody-wasm playground] encrypt error', e);
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // Section 2 — Decrypt (WASM decrypt_aes_gcm)
+  //
+  // Passes the binary blob and key directly to the Rust implementation.
+  // The wasm function signature:
+  //   decrypt_aes_gcm(ciphertext: Uint8Array, key: Uint8Array) -> Uint8Array
+  // Throws a JS Error on failure (propagated from Rust via JsValue).
+  // --------------------------------------------------------------------------
+  btnDecrypt.addEventListener('click', () => {
+    const outEl = document.getElementById('out-plaintext');
+    if (!wasmReady) {
+      setOutput(outEl, 'WASM not ready.', 'err');
+      return;
+    }
+
+    const keyHex    = document.getElementById('inp-key').value.trim();
+    const ciphHex   = document.getElementById('inp-ciphertext').value.trim();
+
+    if (keyHex.length !== 64) {
+      setOutput(outEl, `Key must be exactly 64 hex characters (32 bytes). Got ${keyHex.length}.`, 'err');
+      return;
+    }
+    if (ciphHex.length === 0) {
+      setOutput(outEl, 'Ciphertext hex is empty.', 'err');
+      return;
+    }
+
+    let keyBytes, ciphBytes;
+    try {
+      keyBytes  = hexToBytes(keyHex);
+      ciphBytes = hexToBytes(ciphHex);
+    } catch (e) {
+      setOutput(outEl, `Hex decode error: ${e.message}`, 'err');
+      return;
+    }
+
+    // Minimum: 3 (version) + 12 (nonce) = 15 bytes — enforced by Rust
+    if (ciphBytes.length < 15) {
+      setOutput(outEl,
+        `Ciphertext too short: ${ciphBytes.length} bytes (minimum 15).`, 'err');
+      return;
+    }
+
+    try {
+      // Call the wasm-exported Rust function
+      const plainBytes = decrypt_aes_gcm(ciphBytes, keyBytes);
+      const plaintext  = new TextDecoder('utf-8', { fatal: true }).decode(plainBytes);
+      setOutput(outEl, plaintext, 'ok');
+    } catch (e) {
+      setOutput(outEl, `decrypt_aes_gcm failed: ${e}`, 'err');
+      console.error('[aphrody-wasm playground] decrypt_aes_gcm error', e);
+    }
+  });
+</script>
+</body>
+</html>

@@ -32,3 +32,12 @@ base               = { path = "../base", version = "1.0.0-canary" }
 # environments, and Chromium credential extraction is Windows-only by nature.
 [target.'cfg(target_os = "windows")'.dependencies]
 rusqlite           = { workspace = true }
+
+[dev-dependencies]
+criterion          = { workspace = true }
+sha2               = { workspace = true }
+aes-gcm            = { workspace = true }
+
+[[bench]]
+name    = "backend_bench"
+harness = false

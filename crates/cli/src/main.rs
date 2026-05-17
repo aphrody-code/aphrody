@@ -18,6 +18,9 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 #[cfg(not(target_arch = "wasm32"))]
+use clap::CommandFactory;
+
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{
     commands::{ChromiumSyncCommand, DoctorCommand, MirrorCommand, ScrapeProfile, VersionCommand},
     context::{GoogleContext, TerminalCommand},
@@ -134,6 +137,11 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+    /// Génère des completions shell pour bash / zsh / fish / pwsh / elvish
+    Completions {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
@@ -216,6 +224,10 @@ async fn main() -> miette::Result<()> {
         Some(Commands::Tokens { url, output, force }) => {
             commands::TokensCommand { url, output, force }.execute(&ctx).await?;
         },
+        Some(Commands::Completions { shell }) => {
+            let mut cmd = Cli::command();
+            clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
+        },
         Some(Commands::Auto(args)) => {
             commands::AutoCommand { args }.execute(&ctx).await?;
         },
@@ -257,6 +269,7 @@ fn main() {
                 Commands::Scrape { .. } => "scrape",
                 Commands::Tokens { .. } => "tokens",
                 Commands::Doctor { .. } => "doctor",
+                Commands::Completions { .. } => "completions",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),
             };

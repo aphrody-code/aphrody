@@ -347,6 +347,15 @@ cargo audit-machete  # unused dependencies
 | [`docs/pwsh/`](./docs/pwsh/) | PowerShell 7 : profils, modules |
 | [`docs/WASM/`](./docs/WASM/) | Référence WASM (Rust + wgpu + Next.js + Bun) — versions pinned, pièges, migration |
 | [`CLAUDE.md`](./CLAUDE.md), [`GEMINI.md`](./GEMINI.md) | Conventions pour agents CLI tiers (formats standards adoptés par les CLIs respectifs) |
+| [`SECURITY.md`](./SECURITY.md) | Politique de sécurité : versions supportées, reporting privé, scope, safe harbor |
+
+## Security
+
+Vulnerabilities should be reported privately. See [`SECURITY.md`](./SECURITY.md)
+for supported versions, the GitHub Security Advisory channel, the
+`security@aphrody.dev` mailbox, the 48 h / 30 d response window, scope, safe
+harbor, and acknowledgement policy. Credited reporters are listed in
+[`SECURITY-HALL-OF-FAME.md`](./SECURITY-HALL-OF-FAME.md).
 
 ## Standards organisationnels
 
