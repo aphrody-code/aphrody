@@ -12,15 +12,12 @@ dependencies = [
  "auto_impl",
  "bytes",
  "futures",
- "pin-project-lite",
  "rcgen",
  "reqwest 0.13.3",
  "rustls",
- "semver",
  "serde",
  "serde_json",
  "tokio",
- "tokio-stream",
  "tracing",
  "uuid",
 ]
@@ -36,7 +33,6 @@ dependencies = [
  "async-trait",
  "futures",
  "http",
- "prost",
  "rcgen",
  "rustls-pemfile",
  "tokio",
@@ -44,7 +40,6 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-tls",
- "tracing",
 ]
 
 [[package]]
@@ -257,14 +252,12 @@ dependencies = [
  "dashmap",
  "hex",
  "ignore",
- "rayon",
  "regex",
  "reqwest 0.12.28",
  "reqwest 0.13.3",
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.18",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -526,13 +519,10 @@ dependencies = [
  "anyhow",
  "base",
  "base64",
- "fs_extra",
- "futures-util",
  "reqwest 0.13.3",
  "rusqlite",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -569,12 +559,8 @@ dependencies = [
  "aes-gcm",
  "anyhow",
  "getrandom 0.2.17",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
  "tracing",
  "windows 0.62.2",
- "zeroize",
 ]
 
 [[package]]
@@ -3769,16 +3755,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
-name = "rayon"
-version = "1.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d"
-dependencies = [
- "either",
- "rayon-core",
-]
-
-[[package]]
 name = "rayon-core"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6359,20 +6335,6 @@ name = "zeroize"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
-dependencies = [
- "zeroize_derive",
-]
-
-[[package]]
-name = "zeroize_derive"
-version = "1.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85a5b4158499876c763cb03bc4e49185d3cccbabb15b33c627f7884f43db852e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
 
 [[package]]
 name = "zerotrie"

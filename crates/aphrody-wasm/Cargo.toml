@@ -39,3 +39,8 @@ web-sys               = { workspace = true, features = ["Window", "Performance",
 console_error_panic_hook = { workspace = true }
 console_log           = { workspace = true }
 log                   = { workspace = true }
+
+# All deps in this crate are wasm32-gated; machete cannot introspect cfg-conditional
+# dep sections and will incorrectly report them as unused on a native host scan.
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "console_log", "log"]

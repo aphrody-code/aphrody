@@ -16,13 +16,14 @@ description           = "Foundational primitives for Aphrody crates (no_std-comp
 workspace = true
 
 [dependencies]
-serde       = { workspace = true }
-serde_json  = { workspace = true }
 anyhow      = { workspace = true }
-thiserror   = { workspace = true }
 tracing     = { workspace = true }
 aes-gcm     = { workspace = true }
-zeroize     = { workspace = true }
+
+# getrandom is gated to wasm32 below; machete cannot see cfg-gated deps,
+# so we suppress the false-positive warning here.
+[package.metadata.cargo-machete]
+ignored = ["getrandom"]
 
 # Browser-WASM: getrandom must opt into the "js" backend so transitively
 # pulled randomness (via aes-gcm → aead → rand_core → getrandom) resolves
