@@ -225,7 +225,7 @@ oxc_ast            = { version = "0.131" }
 oxc_ast_visit      = { version = "0.131" }
 oxc_parser         = { version = "0.131" }
 oxc_span           = { version = "0.131" }
-schemars           = { version = "0.8" }
+schemars           = { version = "1.2" }
 ts-rs              = { version = "12", features = ["serde-compat"] }
 similar            = { version = "3" }
 octocrab           = { version = "0.50" }
