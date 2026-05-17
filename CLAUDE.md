@@ -24,6 +24,33 @@ la compilation sur Linux** : il est strictement gated `#[cfg(target_os = "window
 L'ancien sous-projet `google_os` (kernel emulator hybride Win-NT) a été **sorti
 du workspace** (archivé sous `C:\google-os-archive\`). Ne pas le réintroduire.
 
+## 0.5. MISSION DU JOUR — clore PLAN.md ⏳ items (2026-05-18+)
+
+`docs/PLAN.md` recense ~14 items `⏳` actionables sans intervention humaine.
+Cap : crusher tout ce qui est techniquement faisable en un loop YOLO grind.
+Liste prioritaire (ordonnée par leverage / verify-time court d'abord) :
+
+| # | Item ⏳ | Cible | Fusion sources | Verify |
+|---|---|---|---|---|
+| 1 | T-2 VT extensions Ink/React | `crates/aphrody-terminal-vt` | `vte` crate + worktree `C:/worktree/wterm/packages/vt-decoder` + `C:/worktree/terminal/src/terminal/parser` | `cargo test -p aphrody-terminal-vt alt_screen mouse_sgr_1006 osc_52 bracketed_paste decstbm` |
+| 2 | T-4 terminal-markdown | NEW `crates/aphrody-terminal-markdown` | `comrak` + `syntect` + OSC dispatch déjà dans `aphrody-terminal-llm/src/osc.rs` | `cargo test -p aphrody-terminal-markdown render_commonmark code_block_highlight osc_aphrody_md_emit` |
+| 3 | T-5 terminal-json-out | NEW `crates/aphrody-terminal-json-out` | `serde_json` + framing pattern de `aphrody-terminal-backend/src/ws.rs` | `cargo test -p aphrody-terminal-json-out frame_stdout passthrough_app_json` |
+| 4 | T-6 terminal-config | NEW `crates/aphrody-terminal-config` | loader partiel `aphrody-terminal-llm/src/mcp.rs:506` + `schemars` + JSON schema | `cargo test -p aphrody-terminal-config schema_validate import_claude_json import_mcp_json` |
+| 5 | T-7 aphrody-terminal-demo.html | NEW `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` | `gemini-clone-pixel-perfect.html` (734l) + M3 tokens via `m3-tokens` | `bun run crates/aphrody-wasm/serve-test.mjs` + curl HTTP 200 + screenshot via bxc CDP |
+| 6 | T-8 audit wterm vs ms-terminal vs aphrody | NEW `docs/audits/2026-05-18-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | worktrees + `docs/research/BXC_CARTOGRAPHY.md` template | `wc -l` + `grep -c "^| "` rows ≥ 20 |
+| 7 | T-10 aphrody-tui pure Rust | NEW `crates/aphrody-tui` | `ratatui` ref + pattern `a2a-ui/src` native backend | `cargo test -p aphrody-tui dsl_render layout_engine input_event` |
+| 8 | A2A CLI agent autonome | `crates/cli/src/auto_command.rs` NEW | `AutoCommand` enum hook dans `Commands` + dispatch via `a2a-client::http_jsonrpc` | `aphrody "what is 2+2" → call A2A → reply` (smoke) |
+| 9 | Trait `Transport` portable | `crates/a2a-client/src/transport.rs` refacto | déjà séparé HTTP/SSE/JSON-RPC, ajouter cfg(target_arch="wasm32") fetch path | `cargo check -p a2a-client --target wasm32-unknown-unknown` |
+| 10 | Supply-chain `cargo vet suggest` | run + commit nouvelles entrées dans `supply-chain/audits.toml` | aucune fusion, juste run | `cargo vet suggest` + `cargo vet` exit 0 |
+| 11 | Audit `safe-to-deploy` crates critiques | mêmes audits | `crates/cli` deps : `rustls`, `reqwest`, `tokio` | `cargo vet --locked` exit 0 |
+| 12 | `cargo clippy + miri unsafe sweep` | grep tous `unsafe` workspace → annoter `#[allow(unsafe_op_in_unsafe_fn)]` ou justifier | `crates/aphrody-wasm`, `crates/base` | `cargo +nightly miri test --workspace --lib` exit 0 (best-effort) |
+| 13 | Stress tests `cargo bench` | activer `bench` workflow + ajouter benchmark `crates/base/benches/` | `crates/backend/benches/backend_bench.rs` (existe déjà) | `cargo bench --workspace` exit 0 |
+| 14 | T-8 demo gif Claude Code dans aphrody-terminal | `assets/aphrody-terminal-demo.gif` | `aphrody term` + Claude Code child process + asciinema → agg/vhs | `file assets/aphrody-terminal-demo.gif` mime=image/gif |
+
+**Bloqués upstream / human-gated (ne pas tenter)** : PPA Launchpad, Homebrew tap publish, premier tag `v*` (requires human approval), a2a-slimrpc (upstream agntcy-slim-mls bug), path-bases RFC 3529 (Cargo 1.98), wry GTK4 (CVE pipeline), reqwest 0.13 aws-lc-sys, pyo3 0.22 PyString.
+
+**Mode d'attaque par défaut** : `/aphrody-yolo-grind` (4 lanes parallèles par tick). Voir §8.
+
 ## 1. ZÉRO STUB, 100% PRODUCTION
 
 L'architecture de base est en place. Mode "scaffolding" **interdit**.
@@ -33,6 +60,7 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
   ou `io-uring` crate) — pas d'émulation.
 - Pour le code Windows : `windows-rs` direct, pas de wrapper artificiel.
 - Jamais de `TODO: implement later`. Tu le fais maintenant ou tu ne l'écris pas.
+- **Scaffold interdit** (cf. memory `feedback_no_scaffold`) : aucun package vide ni placeholder. Chaque nouveau fichier fusionne ≥3 ressources existantes du workspace ET ship une feature observable (HTTP 200, fichier généré, exit code attendu, NDJSON event émis) — pas juste `cargo check` / `tsc --noEmit`.
 
 ## 2. Politique de langages
 
@@ -106,6 +134,11 @@ Monorepo Rust + Bun.
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).
+- **Kernel subcommands** (depuis 2026-05-18) :
+  - `aphrody n2b [args]` — façade `packages/n2b/src/cli.ts` via bun.
+  - `aphrody n2b watch --interval N --path P` — boucle infinie tokio (Ctrl-C trap).
+  - `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine `:8765` via `crates/cli/src/scrape.rs::ScrapeClient`.
+  - Install PATH : `scripts/Install-AphrodyToPath.ps1` (Windows HKCU) ou `scripts/install-aphrody-path.sh` (Linux `$HOME/.local/bin`).
 - **UI desktop** : `gui` (wry + tao) — desktop seulement, exclu du binaire CLI
   distribuable.
 - **Agent / IA (A2A)** : `a2a`, `a2a-client`, `a2a-server`, `a2a-pb`, `a2a-grpc`.
@@ -135,6 +168,16 @@ Monorepo Rust + Bun.
 - `crates/google_kv/` → `C:\aphrody-archive\google_kv-*\`. Orphan, aucun consumer.
 - `crates/python_ffi/` → `C:\aphrody-archive\python_ffi-*\`. Orphan, dépend
   de vendor/bun. Pour AI / MD : Rust pur via `candle`, `comrak`, etc.
+
+## 4.1. Scripts d'automatisation haute-perf (`scripts/`)
+
+Wrappers `aphrody n2b` / `aphrody bxc` parity bash↔pwsh (NDJSON streamable, p50/p95, SIGINT trap).
+
+- `n2b-batch.{ps1,sh}` — migration parallèle (`ForEach-Object -Parallel` / `xargs -P`), NDJSON par target.
+- `bxc-crawl.{ps1,sh}` — crawl parallèle URLs × actions (recon|detect|tokens), `--loop --interval N`, cache body-hash.
+- `bxc-supervise.{ps1,sh}` — watchdog daemon bxc, NDJSON heartbeats, auto-restart cooldown.
+- `bunnize-gemini-cli.ts` (template) — JSON-aware surgical pour migration node→bun (8 substitutions idempotentes : `cross-env→drop`, `tsx→bun`, `npm run→bun run`, `npm ci→bun install --frozen-lockfile`, `npm install→bun install`, `npx→bunx`, `node X→bun X`, `vitest→bunx vitest`). Réutiliser pour tout fork.
+- **Gotcha pwsh** : pour trap Ctrl-C, jamais `[Console]::CancelKeyPress.Add({...})` — utiliser `[System.ConsoleCancelEventHandler]` delegate + `add_CancelKeyPress`. Pour here-strings sans expansion : single-quoted `@'..'@` (sinon backticks consommés).
 
 ## 5. Supply-chain (lire avant tout PR qui touche `Cargo.toml`)
 
@@ -235,6 +278,7 @@ Toute la surface skills est centralisée et documentée :
   stale (refresh rare).
 - **mrx scan cwd** : écrit `path.json` + `monorepo-map.json` dans le cwd par défaut
   — gitignored au root (cf. `.gitignore` §20, commit `d89bcb8f3`).
+- **Verify = observable, pas typecheck seul** : `cargo check` / `tsc --noEmit` / `bash -n` ne prouvent QUE la compilation. Toujours coupler avec un comportement vérifiable (curl HTTP 200, fichier généré, NDJSON event émis, exit code attendu, screenshot bxc CDP, audio bytes synth). Sinon FAIT = INCOMPLET déguisé.
 - **Edge headless WebGPU** : `msedge --headless=new --enable-features=Vulkan,WebGPU
   --enable-unsafe-webgpu --virtual-time-budget=10000` insuffisant — `requestAdapter`
   reste pending au moment du screenshot. Gates 3-5 du 5-point UI gate exigent
@@ -264,6 +308,18 @@ bxc + agent-browser + edge headless fallback.
 - **Ink/React TUI compat** : 22 séquences VT essentielles documentées (alt
   screen 1049h, mouse SGR 1006, true color 24-bit, cursor save/restore,
   bracketed paste, DECSTBM, OSC 0 title, OSC 52 clipboard, etc.).
+
+## 7.6. Workflow YOLO grind par défaut (`/aphrody-yolo-grind`)
+
+Mode d'attaque pour clore §0.5 (PLAN ⏳). 1 invocation = 1 tick = 4 agents background parallèles.
+
+- Skill : `.claude/skills/aphrody-yolo-grind/SKILL.md`. Pair avec `/loop 30s /aphrody-yolo-grind` pour run continu.
+- Par tick : rank top-4 ⏳ par leverage (mission-direct > publish-ladder > hygiène) puis dispatch 4 Agent calls `run_in_background: true` en **un seul message** (jamais sérialisé).
+- Agents disponibles (`.claude/agents/`) : `yolo-prod-ready` (généraliste preferred), `rust-engineer`, `rust-architect`, `cpp-engineer`, `ffi-architect`, `cargo-auditor`.
+- Prompt sub-agent : <300 mots, deliverable précis, verify command observable (cf. §7), footer honest-delivery obligatoire (FAIT/INCOMPLET/NON_FAIT), explicit "DO NOT commit" (orchestrateur batch-commit en fin de tick).
+- Batch-commit en fin de tick : Conventional Commits, message scope groupé, footer per-deliverable, `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>` autorisé (seul commit footer permis ; aucun fichier livré ne mentionne Claude/AI/Anthropic).
+- Heartbeat A2A : bump `C:\winclean\.coord\heartbeat-aphrody.txt` + drop fact envelope `inbox-from-aphrody.jsonl` par tick.
+- Break-loop : 3 ticks consécutifs avec 0 FAIT → PLAN exhausted, surface au user.
 
 ## 8. Source of Truth
 
