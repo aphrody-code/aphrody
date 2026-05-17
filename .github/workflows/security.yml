@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  aphrody — Secret & vulnerability scanning (3rd security layer)
+#  Layer 1: CodeQL (codeql.yml)
+#  Layer 2: cargo-deny CVE + license gate (cross-platform.yml)
+#  Layer 3: this file — gitleaks, trufflehog, cargo-audit, trivy
+#  Schedule: every Monday 07:00 UTC (1h after codeql, low contention window)
+# ============================================================================
+name: security
+
+on:
+  push:
+    branches: [main, stable]
+  pull_request:
+    branches: [main, stable]
+  schedule:
+    - cron: '0 7 * * 1'  # Monday 07:00 UTC (1h after codeql)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gitleaks needs full history to scan all commits
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Note: GITLEAKS_LICENSE is only required for org-plan repos; OSS repos are free
+
+  trufflehog:
+    name: trufflehog secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # trufflehog needs full history for diff-based scanning
+      - name: Run trufflehog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified  # only flag VERIFIED secrets (low false-positive rate)
+
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Run cargo audit
+        run: cargo audit --color always
+        # Advisories are informational here; hard CVE gates are already enforced
+        # by cargo-deny in cross-platform.yml — this job is non-blocking.
+        continue-on-error: true
+
+  trivy:
+    name: trivy fs scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run trivy
+        # aquasecurity/trivy-action uses master by convention (stable, no semver tags);
+        # this is an intentional exception to the SHA-pin policy for this action only.
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'HIGH,CRITICAL'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      - name: Upload trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

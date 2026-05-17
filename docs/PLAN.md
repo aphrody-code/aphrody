@@ -236,6 +236,14 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `packaging/chocolatey/aphrody.nuspec` + install.ps1 | ⏳ (Chocolatey alongside scoop/winget — wider Windows reach) |
 | `packaging/aur-bin/PKGBUILD` — pre-built binary AUR variant | ⏳ (alongside source AUR ; faster install for users) |
 | `rust-toolchain.toml` audit + explicit nightly pin with date | ⏳ (hermetic build — reproducibility for security audit) |
+| `docs/COMMUNITY.md` — community guidelines + future Discord/Matrix invite | ⏳ (engagement scaffold for post-Show HN influx) |
+| `docs/PRIVACY.md` — telemetry-zero policy | ⏳ (legal hygiene + engineering trust) |
+| `docs/cargo/PUBLISH-LADDER.md` — explicit topological publish order doc | ⏳ (publish ladder operational runbook) |
+| `.github/workflows/security.yml` — gitleaks + trufflehog secret scan | ⏳ (3rd security layer after CodeQL + cargo-deny) |
+| `AGENTS.md` — agent-facing onboarding for AI assistants working in repo | ⏳ (aphrody IS about agent coord — meta-document own usage by agents) |
+| `scripts/dev-setup.{sh,cmd}` — single-script environment bootstrap | ⏳ (devcontainer handles it ; native dev setup script for non-codespace users) |
+| `.github/workflows/bench.yml` — criterion CI gate with summary comment | ⏳ (perf regression detection ; backend bench shipped via #41) |
+| `CONTRIBUTORS.md` — auto-generated contributor recognition stub | ⏳ (honor commit authors + AGENTS.md cross-link) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 
