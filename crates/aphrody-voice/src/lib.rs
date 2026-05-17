@@ -4,24 +4,45 @@
 //! # Overview
 //!
 //! This crate provides:
-//! - [`VoiceProvider`] — the core async trait for TTS providers.
-//! - [`ElevenLabsProvider`] — production adapter for the ElevenLabs v1 REST API.
+//! - [`VoiceProvider`] — the core async trait for TTS providers (native only).
+//! - [`ElevenLabsProvider`] — production adapter for the ElevenLabs v1 REST API (native only).
 //! - [`DiscordVoiceShim`] — thin HTTP forwarder that delegates synthesised audio to the openclaw
-//!   Gateway endpoint (`OPENCLAW_GATEWAY_URL`).
+//!   Gateway endpoint (`OPENCLAW_GATEWAY_URL`) (native only).
+//! - [`web::WebSpeechSynth`] — browser-native TTS via `window.speechSynthesis` (wasm32 only).
 //!
-//! Voice *input* (STT) is out of scope.
+//! Voice *input* (STT) is out of scope for this crate.
 
 #![forbid(unsafe_code)]
 
+// Native-only modules: reqwest + tokio do not compile for wasm32.
+#[cfg(not(target_arch = "wasm32"))]
 pub mod discord_shim;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod elevenlabs;
 
+// Browser-native module: only compiled when targeting wasm32.
+#[cfg(target_arch = "wasm32")]
+pub mod web;
+
+// ── Native-only: trait + error types ─────────────────────────────────────────
+//
+// All items below reference `reqwest` which is absent on wasm32 targets.
+// The browser path uses `JsValue` errors directly in `web::WebSpeechSynth`.
+
+#[cfg(not(target_arch = "wasm32"))]
 use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))]
 use bytes::Bytes;
+#[cfg(not(target_arch = "wasm32"))]
 use futures::Stream;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
 
-/// Error type for all voice provider operations.
+/// Error type for all native voice provider operations.
+///
+/// Not available on `wasm32` targets — the browser path uses [`wasm_bindgen::JsValue`]
+/// errors directly via [`web::WebSpeechSynth`].
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, thiserror::Error)]
 pub enum VoiceError {
     /// An HTTP-level transport error (connection reset, timeout, …).
@@ -51,6 +72,7 @@ pub enum VoiceError {
 ///
 /// Field names mirror the ElevenLabs `/v1/voices` JSON shape so that
 /// `serde_json::from_value` works directly on the raw API response.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoiceInfo {
     /// Provider-internal voice identifier (e.g. `"EXAVITQu4vr4xnSDxMaL"`).
@@ -71,6 +93,7 @@ pub struct VoiceInfo {
 ///
 /// All fields are optional at the call site; each provider falls back to its
 /// own defaults when `None`.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SynthOptions {
     /// Voice stability (0.0 – 1.0).  Higher = more consistent but less
@@ -93,6 +116,7 @@ pub struct SynthOptions {
     pub model_id: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Default for SynthOptions {
     fn default() -> Self {
         Self {
@@ -111,6 +135,9 @@ impl Default for SynthOptions {
 ///
 /// Implementations must be [`Send`] + [`Sync`] so they can be stored in
 /// `Arc<dyn VoiceProvider>` and shared across async tasks.
+///
+/// Not available on `wasm32` — use [`web::WebSpeechSynth`] there.
+#[cfg(not(target_arch = "wasm32"))]
 #[async_trait]
 pub trait VoiceProvider: Send + Sync {
     /// Enumerate voices available on this provider.
@@ -140,6 +167,7 @@ pub trait VoiceProvider: Send + Sync {
 // ── Unit tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
     use serde_json::json;
 

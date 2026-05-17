@@ -14,15 +14,33 @@ description            = "Voice synthesis (TTS) provider trait + ElevenLabs adap
 [lints]
 workspace = true
 
+# Dependencies available on all targets (wasm-compatible).
 [dependencies]
-tokio       = { workspace = true, features = ["rt", "macros", "io-util"] }
 async-trait = { workspace = true }
 futures     = { workspace = true }
-reqwest     = { workspace = true, features = ["json", "stream", "rustls-no-provider"] }
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
 bytes       = { workspace = true }
 thiserror   = { workspace = true }
+
+# Native-only deps: tokio + reqwest pull mio which does not compile for wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio  = { workspace = true, features = ["rt", "macros", "io-util"] }
+reqwest = { workspace = true, features = ["json", "stream", "rustls-no-provider"] }
+
+# Browser-native deps: only compiled when targeting wasm32.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys       = { workspace = true }
+web-sys      = { workspace = true, features = [
+    "Window",
+    "SpeechSynthesis",
+    "SpeechSynthesisUtterance",
+    "SpeechSynthesisVoice",
+] }
+
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys"]
 
 [dev-dependencies]
 tokio       = { workspace = true, features = ["rt", "macros"] }

@@ -4,11 +4,12 @@
 //! # Overview
 //!
 //! This crate provides:
-//! - [`SttProvider`] — the core async trait for STT providers.
-//! - [`WhisperApiProvider`] — production adapter for the OpenAI Whisper v1 REST API.
-//! - [`ElevenLabsSttProvider`] — production adapter for the ElevenLabs STT v1 REST API.
-//! - [`LocalWhisperBackend`] — optional, fully offline backend via `whisper.cpp` bindings (feature
-//!   `local-whisper`, currently returns [`SttError::NotImplemented`]).
+//! - [`SttProvider`] — the core async trait for STT providers (native only).
+//! - [`WhisperApiProvider`] — production adapter for the OpenAI Whisper v1 REST API (native only).
+//! - [`ElevenLabsSttProvider`] — production adapter for the ElevenLabs STT v1 REST API (native only).
+//! - [`LocalWhisperBackend`] — optional, fully offline backend via `whisper.cpp` bindings
+//!   (feature `local-whisper`, native only).
+//! - [`web::WebSpeechRecognition`] — browser-native STT via `SpeechRecognition` (wasm32 only).
 //!
 //! # Feature flags
 //!
@@ -30,17 +31,37 @@
 
 #![forbid(unsafe_code)]
 
+// Native-only modules: reqwest + tokio do not compile for wasm32.
+#[cfg(not(target_arch = "wasm32"))]
 pub mod elevenlabs_stt;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod local_whisper;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod whisper_api;
 
+// Browser-native module: only compiled when targeting wasm32.
+#[cfg(target_arch = "wasm32")]
+pub mod web;
+
+// ── Native-only: trait + error types ─────────────────────────────────────────
+//
+// All items below reference `reqwest` which is absent on wasm32 targets.
+// The browser path uses `JsValue` errors directly in `web::WebSpeechRecognition`.
+
+#[cfg(not(target_arch = "wasm32"))]
 use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))]
 use futures::Stream;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
 
 // ── SttError ──────────────────────────────────────────────────────────────────
 
-/// Error type for all STT provider operations.
+/// Error type for all native STT provider operations.
+///
+/// Not available on `wasm32` targets — the browser path uses [`wasm_bindgen::JsValue`]
+/// errors directly via [`web::WebSpeechRecognition`].
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, thiserror::Error)]
 pub enum SttError {
     /// An HTTP-level transport error (connection reset, timeout, etc.).
@@ -80,6 +101,7 @@ pub enum SttError {
 ///
 /// Maps directly to the `response_format` parameter accepted by both the
 /// OpenAI Whisper API and the ElevenLabs STT API.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TranscriptFormat {
@@ -93,6 +115,7 @@ pub enum TranscriptFormat {
     Vtt,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Default for TranscriptFormat {
     fn default() -> Self {
         Self::Text
@@ -104,6 +127,7 @@ impl Default for TranscriptFormat {
 /// Transcription tuning knobs forwarded verbatim to the provider.
 ///
 /// All optional fields fall back to the provider's default when `None`.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SttOptions {
     /// BCP-47 language tag for the source audio (e.g. `"en"`, `"fr"`).
@@ -134,6 +158,7 @@ pub struct SttOptions {
     pub response_format: TranscriptFormat,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Default for SttOptions {
     fn default() -> Self {
         Self {
@@ -152,6 +177,7 @@ impl Default for SttOptions {
 ///
 /// Populated only when the provider returns verbose/timestamped output
 /// (e.g. `response_format = VerboseJson`).
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranscriptSegment {
     /// Zero-based segment index as returned by the provider.
@@ -167,6 +193,7 @@ pub struct TranscriptSegment {
 // ── Transcript ────────────────────────────────────────────────────────────────
 
 /// Full transcript returned by a non-streaming [`SttProvider::transcribe`] call.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transcript {
     /// The full transcribed text (concatenation of all segments).
@@ -193,6 +220,7 @@ pub struct Transcript {
 // ── TranscriptDelta ───────────────────────────────────────────────────────────
 
 /// A partial transcript update emitted by a streaming transcription.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranscriptDelta {
     /// The partial text for this delta.
@@ -212,10 +240,12 @@ pub struct TranscriptDelta {
 
 // ── SttProvider ───────────────────────────────────────────────────────────────
 
-/// Async trait that every STT backend must implement.
+/// Async trait that every native STT backend must implement.
 ///
 /// Implementations must be [`Send`] + [`Sync`] so they can be stored behind
 /// `Arc<dyn SttProvider>` and shared across async tasks.
+///
+/// Not available on `wasm32` — use [`web::WebSpeechRecognition`] there.
 ///
 /// # Buffered vs streaming
 ///
@@ -225,6 +255,7 @@ pub struct TranscriptDelta {
 ///   microphone, chunked download, etc.) and returns a stream of partial results.  Not all
 ///   providers support true streaming; adapters that do not may accumulate the full input and emit
 ///   a single final delta.
+#[cfg(not(target_arch = "wasm32"))]
 #[async_trait]
 pub trait SttProvider: Send + Sync {
     /// Transcribe `audio` bytes and return the complete [`Transcript`].
@@ -259,6 +290,7 @@ pub trait SttProvider: Send + Sync {
 // ── Unit tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
     use serde_json::json;
 

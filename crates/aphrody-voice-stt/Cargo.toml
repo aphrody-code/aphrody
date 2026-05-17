@@ -18,19 +18,34 @@ workspace = true
 # Enable the local offline Whisper backend (requires C++ toolchain + libwhisper.cpp model weights).
 local-whisper = ["dep:whisper-rs"]
 
+# Dependencies available on all targets (wasm-compatible).
 [dependencies]
-tokio       = { workspace = true, features = ["rt", "macros", "io-util", "fs"] }
 async-trait = { workspace = true }
 futures     = { workspace = true }
-reqwest     = { workspace = true, features = ["json", "stream", "multipart", "rustls-no-provider"] }
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
 bytes       = { workspace = true }
 thiserror   = { workspace = true }
 
+# Native-only deps: tokio + reqwest pull mio which does not compile for wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio  = { workspace = true, features = ["rt", "macros", "io-util", "fs"] }
+reqwest = { workspace = true, features = ["json", "stream", "multipart", "rustls-no-provider"] }
+
 [dependencies.whisper-rs]
 version  = "0.13"
 optional = true
+
+# Browser-native deps: only compiled when targeting wasm32.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys       = { workspace = true }
+web-sys      = { workspace = true, features = [
+    "Window",
+] }
+
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys"]
 
 [dev-dependencies]
 tokio      = { workspace = true, features = ["rt", "macros"] }

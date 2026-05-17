@@ -1408,6 +1408,374 @@ impl TerminalCommand for TokensCommand {
     }
 }
 
+// ── aphrody n2b ──────────────────────────────────────────────────────────────
+
+/// Locate the `packages/n2b/src/cli.ts` entry-point relative to the repository
+/// root.  Falls back to `APHRODY_N2B_CLI` env override for packaged installs.
+fn resolve_n2b_cli() -> anyhow::Result<std::path::PathBuf> {
+    // 1. Explicit override (packaged install or CI).
+    if let Ok(v) = std::env::var("APHRODY_N2B_CLI") {
+        let p = std::path::PathBuf::from(v);
+        if p.exists() {
+            return Ok(p);
+        }
+    }
+
+    // 2. Walk up from cwd to find the workspace root, then resolve the
+    //    well-known path.
+    if let Some(root) = repo_root() {
+        let candidate = root.join("packages").join("n2b").join("src").join("cli.ts");
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+        return Err(anyhow::anyhow!(
+            "n2b CLI not found at {}. Run `bun install` inside packages/n2b/ first.",
+            candidate.display()
+        ));
+    }
+
+    Err(anyhow::anyhow!(
+        "Cannot locate repository root. Set APHRODY_N2B_CLI to the absolute path of \
+         packages/n2b/src/cli.ts."
+    ))
+}
+
+/// Spawn `bun run <n2b-cli> -- <args>` and stream its stdout/stderr to the
+/// terminal.  The caller's exit code is propagated via `std::process::exit`.
+async fn spawn_n2b(cli_path: &std::path::Path, args: &[String]) -> anyhow::Result<()> {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    use tokio::process::Command;
+
+    let mut cmd = Command::new("bun");
+    cmd.arg("run").arg(cli_path).arg("--").args(args);
+    cmd.stdout(std::process::Stdio::piped());
+    cmd.stderr(std::process::Stdio::piped());
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| anyhow::anyhow!("Failed to spawn `bun`: {e}. Is bun installed and on PATH?"))?;
+
+    // Stream stdout.
+    let stdout = child.stdout.take().expect("stdout piped");
+    let stderr = child.stderr.take().expect("stderr piped");
+
+    let stdout_task = tokio::spawn(async move {
+        let mut reader = BufReader::new(stdout).lines();
+        while let Ok(Some(line)) = reader.next_line().await {
+            println!("{line}");
+        }
+    });
+    let stderr_task = tokio::spawn(async move {
+        let mut reader = BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = reader.next_line().await {
+            eprintln!("{line}");
+        }
+    });
+
+    let status = child.wait().await.map_err(|e| anyhow::anyhow!("n2b process wait failed: {e}"))?;
+    let _ = tokio::join!(stdout_task, stderr_task);
+
+    if !status.success() {
+        let code = status.code().unwrap_or(1);
+        anyhow::bail!("n2b exited with code {code}");
+    }
+    Ok(())
+}
+
+pub(crate) struct N2bCommand {
+    pub args: Vec<String>,
+}
+
+#[async_trait]
+impl TerminalCommand for N2bCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        // Intercept `watch` as a Rust-side loop so the "kernel" owns the
+        // supervision loop rather than delegating it to the TS process.
+        // Syntax: aphrody n2b watch [--interval <secs>] [--path <glob>] [-- <extra-n2b-args>]
+        if self.args.first().map(|s| s.as_str()) == Some("watch") {
+            return self.execute_watch().await;
+        }
+
+        let cli_path =
+            resolve_n2b_cli().map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
+        spawn_n2b(&cli_path, &self.args).await.map_err(|e| miette::miette!("{e}"))
+    }
+}
+
+impl N2bCommand {
+    /// `aphrody n2b watch [--interval <secs>] [--path <glob>] [-- <extra>]`
+    ///
+    /// Runs `n2b scan [--path] [extra]` in a Rust `loop`, sleeping `interval_s`
+    /// seconds between iterations.  Exits cleanly on Ctrl-C (SIGINT) via
+    /// `tokio::signal::ctrl_c()`.
+    async fn execute_watch(&self) -> miette::Result<()> {
+        // Parse the watch-specific flags from self.args (skip "watch" itself).
+        let tail = &self.args[1..];
+        let mut interval_s: u64 = 60;
+        let mut scan_path: Option<String> = None;
+        let mut passthrough: Vec<String> = Vec::new();
+        let mut iter = tail.iter().peekable();
+        while let Some(arg) = iter.next() {
+            if arg == "--" {
+                passthrough.extend(iter.cloned());
+                break;
+            } else if arg == "--interval" {
+                if let Some(v) = iter.next() {
+                    interval_s = v.parse::<u64>().map_err(|_| {
+                        miette::miette!("--interval must be a positive integer (got '{v}')")
+                    })?;
+                }
+            } else if let Some(v) = arg.strip_prefix("--interval=") {
+                interval_s = v.parse::<u64>().map_err(|_| {
+                    miette::miette!("--interval must be a positive integer (got '{v}')")
+                })?;
+            } else if arg == "--path" {
+                scan_path = iter.next().cloned();
+            } else if let Some(v) = arg.strip_prefix("--path=") {
+                scan_path = Some(v.to_owned());
+            } else {
+                passthrough.push(arg.clone());
+            }
+        }
+
+        let cli_path = resolve_n2b_cli()
+            .map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
+
+        eprintln!(
+            "[n2b watch] interval={}s path={} — press Ctrl-C to stop",
+            interval_s,
+            scan_path.as_deref().unwrap_or(".")
+        );
+
+        loop {
+            let mut scan_args = Vec::new();
+            if let Some(ref p) = scan_path {
+                scan_args.push(p.clone());
+            }
+            scan_args.extend(passthrough.clone());
+
+            tokio::select! {
+                biased;
+                _ = tokio::signal::ctrl_c() => {
+                    eprintln!("[n2b watch] Ctrl-C received — exiting");
+                    break;
+                }
+                result = spawn_n2b(&cli_path, &scan_args) => {
+                    if let Err(e) = result {
+                        eprintln!("[n2b watch] scan error: {e}");
+                    }
+                }
+            }
+
+            tokio::select! {
+                biased;
+                _ = tokio::signal::ctrl_c() => {
+                    eprintln!("[n2b watch] Ctrl-C received — exiting");
+                    break;
+                }
+                _ = tokio::time::sleep(std::time::Duration::from_secs(interval_s)) => {}
+            }
+        }
+
+        Ok(())
+    }
+}
+
+// ── aphrody bxc ──────────────────────────────────────────────────────────────
+
+pub(crate) struct BxcCommand {
+    pub action: crate::BxcAction,
+}
+
+#[async_trait]
+impl TerminalCommand for BxcCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        use crate::BxcAction;
+        match &self.action {
+            BxcAction::Daemon { port } => bxc_daemon(*port).await,
+            BxcAction::Recon { url } => bxc_recon(url).await,
+            BxcAction::Scrape { url, selector } => bxc_scrape(url, selector.as_deref()).await,
+            BxcAction::Detect { url } => bxc_detect(url).await,
+            BxcAction::Tokens { url } => bxc_tokens(url).await,
+        }
+    }
+}
+
+/// Resolve `var/run/` directory under the repo root, creating it if needed.
+fn var_run_dir() -> anyhow::Result<std::path::PathBuf> {
+    let root = repo_root()
+        .ok_or_else(|| anyhow::anyhow!("Cannot locate repository root for var/run/bxc.pid"))?;
+    let dir = root.join("var").join("run");
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| anyhow::anyhow!("Cannot create {}: {e}", dir.display()))?;
+    Ok(dir)
+}
+
+/// Start the bxc-engine daemon as a detached background process.
+///
+/// The daemon PID is written to `var/run/bxc.pid` so subsequent commands
+/// (and the user) can check whether the engine is alive.
+///
+/// If `bxc-engine` is not on PATH, falls back to `bun run` against the
+/// worktree location `/c/worktree/bxc/` (Windows) or `/worktree/bxc/`
+/// (Linux).
+async fn bxc_daemon(port: u16) -> miette::Result<()> {
+    let pid_dir = var_run_dir().map_err(|e| miette::miette!("{e}"))?;
+    let pid_file = pid_dir.join("bxc.pid");
+
+    // Check if a daemon is already running at the stored PID.
+    if let Ok(text) = std::fs::read_to_string(&pid_file) {
+        if let Ok(existing_pid) = text.trim().parse::<u32>() {
+            // Portable liveness check: on Unix use `kill -0 <pid>` via a shell
+            // command; on Windows probe via `tasklist /FI "PID eq <pid>"`.
+            let alive = is_pid_alive(existing_pid);
+            if alive {
+                eprintln!(
+                    "[bxc daemon] already running (pid={existing_pid}). \
+                     Stop it first or remove {}.",
+                    pid_file.display()
+                );
+                return Ok(());
+            }
+        }
+    }
+
+    // Resolve the bxc-engine executable.
+    let (program, args): (&str, Vec<String>) =
+        if which_in_path("bxc-engine") {
+            ("bxc-engine", vec!["serve".into(), format!("--port={port}")])
+        } else {
+            // Fallback: run via bun inside the worktree.
+            let bxc_worktree = if cfg!(target_os = "windows") {
+                "/c/worktree/bxc"
+            } else {
+                "/worktree/bxc"
+            };
+            let entry = format!("{bxc_worktree}/src/serve.ts");
+            ("bun", vec!["run".into(), entry, format!("--port={port}")])
+        };
+
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(&args);
+
+    // Detach from the terminal on Unix; on Windows use DETACHED_PROCESS.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const DETACHED_PROCESS: u32 = 0x00000008;
+        cmd.creation_flags(DETACHED_PROCESS);
+    }
+
+    let child = cmd
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| {
+            miette::miette!(
+                "Failed to spawn bxc-engine: {e}. \
+                 Ensure `bxc-engine` is on PATH or /c/worktree/bxc/ is checked out."
+            )
+        })?;
+
+    let pid = child.id();
+    std::fs::write(&pid_file, pid.to_string()).map_err(|e| {
+        miette::miette!("Cannot write PID file {}: {e}", pid_file.display())
+    })?;
+
+    println!("[bxc daemon] started pid={pid} port={port}. PID file: {}", pid_file.display());
+    Ok(())
+}
+
+/// Check whether a process identified by `pid` is currently alive.
+///
+/// Uses platform-native probes without requiring the `libc` crate:
+/// - Unix: `kill -0 <pid>` (signal 0 = existence check, no signal delivered).
+/// - Windows: `tasklist /FI "PID eq <pid>"` and grep the output.
+fn is_pid_alive(pid: u32) -> bool {
+    #[cfg(unix)]
+    {
+        let out = std::process::Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .output();
+        matches!(out, Ok(o) if o.status.success())
+    }
+    #[cfg(windows)]
+    {
+        let out = std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {pid}"), "/NH"])
+            .output();
+        out.map(|o| String::from_utf8_lossy(&o.stdout).contains(&pid.to_string()))
+            .unwrap_or(false)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        // On other targets (e.g. wasm32 — unreachable at runtime) assume dead.
+        let _ = pid;
+        false
+    }
+}
+
+/// Returns true if `name` resolves to an executable on PATH.
+fn which_in_path(name: &str) -> bool {
+    std::env::var_os("PATH")
+        .map(|path_var| {
+            std::env::split_paths(&path_var).any(|dir| {
+                let candidate = dir.join(name);
+                candidate.exists()
+                    || dir
+                        .join(format!("{name}.exe"))
+                        .exists()
+            })
+        })
+        .unwrap_or(false)
+}
+
+async fn bxc_recon(url: &str) -> miette::Result<()> {
+    let client =
+        ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
+    let result = client.recon(url).await.map_err(|e| miette::miette!("{e}"))?;
+    let text = serde_json::to_string_pretty(&result)
+        .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
+    println!("{text}");
+    Ok(())
+}
+
+async fn bxc_scrape(url: &str, selector: Option<&str>) -> miette::Result<()> {
+    let client =
+        ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
+    let sel = selector.unwrap_or("body");
+    let result = client.scrape(url, sel).await.map_err(|e| miette::miette!("{e}"))?;
+    let text = serde_json::to_string_pretty(&result)
+        .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
+    println!("{text}");
+    Ok(())
+}
+
+async fn bxc_detect(url: &str) -> miette::Result<()> {
+    let client =
+        ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
+    let result = client.detect(url).await.map_err(|e| miette::miette!("{e}"))?;
+    let text = serde_json::to_string_pretty(&result)
+        .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
+    println!("{text}");
+    Ok(())
+}
+
+async fn bxc_tokens(url: &str) -> miette::Result<()> {
+    let client =
+        ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
+    let result = client.extract_m3_tokens(url).await.map_err(|e| miette::miette!("{e}"))?;
+    let text = serde_json::to_string_pretty(&result)
+        .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
+    println!("{text}");
+    Ok(())
+}
+
 // ── aphrody term ─────────────────────────────────────────────────────────────
 
 /// Arguments for the `term` subcommand, mirroring the clap variant fields.

@@ -474,11 +474,14 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures",
+ "js-sys",
  "reqwest 0.13.3",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -488,11 +491,14 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures",
+ "js-sys",
  "reqwest 0.13.3",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "wasm-bindgen",
+ "web-sys",
  "whisper-rs",
 ]
 

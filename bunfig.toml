@@ -26,6 +26,8 @@ saveTextLockfile = true
 [install.cache]
 # Disable global tarball reuse cache invalidation surprises.
 disableManifest = false
+# Explicit cache dir -- ensures consistent location across user profiles.
+dir = "~/.bun/install/cache"
 
 [install.scopes]
 # Pin private/internal scopes here when applicable.
