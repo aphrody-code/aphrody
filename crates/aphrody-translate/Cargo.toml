@@ -14,20 +14,40 @@ path = "src/main.rs"
 [lib]
 path = "src/lib.rs"
 
+[lints]
+workspace = true
+
+# --- Unconditional deps (pure Rust, no OS primitives required) ---------------
 [dependencies]
-clap                 = { workspace = true }
-regex                = { workspace = true }
-reqwest              = { workspace = true }
-tokio                = { workspace = true }
-serde                = { workspace = true }
-serde_json           = { workspace = true }
-anyhow               = { workspace = true }
-thiserror            = { workspace = true }
-tracing              = { workspace = true }
-tracing-subscriber   = { workspace = true }
-ignore               = { workspace = true }
-rayon                = { workspace = true }
-dashmap              = { workspace = true }
-sha2                 = { workspace = true }
-hex                  = { workspace = true }
-urlencoding          = "2"
+regex        = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+anyhow       = { workspace = true }
+thiserror    = { workspace = true }
+tracing      = { workspace = true }
+sha2         = { workspace = true }
+hex          = { workspace = true }
+dashmap      = { workspace = true }
+urlencoding  = "2"
+
+# --- Native targets (Linux / Windows / macOS) --------------------------------
+# Everything that requires mio-backed tokio, native TLS, threads, or std::fs
+# file-system walker.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+clap               = { workspace = true }
+tokio              = { workspace = true }
+reqwest            = { workspace = true }
+tracing-subscriber = { workspace = true }
+ignore             = { workspace = true }
+rayon              = { workspace = true }
+
+# --- WebAssembly targets (wasm32-unknown-unknown + wasm32-wasip1) -------------
+# Minimal tokio: only the futures-based features that compile without mio.
+# reqwest on wasm32-wasip1 falls back to graceful no-op (see translate.rs).
+# On wasm32-unknown-unknown reqwest uses the browser Fetch API.
+# clap / ignore / rayon are not available on wasm (OS threads + std::fs walker).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio              = { version = "1.52", default-features = false, features = ["sync", "macros", "io-util", "rt", "time"] }
+reqwest            = { version = "0.12", default-features = false, features = ["json"] }
+wasm-bindgen       = { workspace = true }
+wasm-bindgen-futures = { workspace = true }

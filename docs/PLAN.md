@@ -71,7 +71,7 @@ Matrice validée 2026-05-17 (host : Windows 11) :
 |-----------------|:------------------------:|:---------------:|
 | `base`          | ✅ (getrandom "js" gated)| ✅              |
 | `mrx-core`      | n/a (chrono)             | ✅              |
-| `aphrody-translate` | ❌ (tokio "full")    | ❌              |
+| `aphrody-translate` | ✅ (wasm stub)       | ✅              |
 | `cli` (binary)  | ✅ (stub minimal)        | ✅ (stub minimal)|
 | `backend`/`a2a*`| ❌                       | ❌              |
 
@@ -82,7 +82,7 @@ Sous-tâches :
 | `base` : feature `js` getrandom gated wasm32-unknown-unknown | ✅ |
 | `base` : compile `wasm32-unknown-unknown` + `wasm32-wasip1` | ✅ |
 | `mrx-core` : compile `wasm32-wasip1` | ✅ |
-| `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ⏳ |
+| `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ✅ |
 | `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ⏳ (P-Wasm-CLI) |
 | `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ✅ |
 | `wasm-pack publish` sur npm `@aphrody-code/aphrody-wasm` | ⏳ |
@@ -98,7 +98,7 @@ backend/a2a-client. Refactor requis :
 | `cli/Cargo.toml` : `[target.'cfg(target_arch = "wasm32")'.dependencies]` avec tokio minimal (sync,macros,io-util,rt,time) | ✅ |
 | `cli/src/main.rs` : `#[cfg(not(target_arch = "wasm32"))]` sur les commandes OS-bound | ✅ |
 | `cli/src/main.rs` : stub wasm minimal (Version + help) | ✅ |
-| `aphrody-translate/Cargo.toml` : tokio minimal pour wasm (translate API HTTP via reqwest wasm) | ⏳ |
+| `aphrody-translate/Cargo.toml` : tokio minimal pour wasm (translate API HTTP via reqwest wasm) | ✅ |
 
 ### Phase P-Distribution
 
