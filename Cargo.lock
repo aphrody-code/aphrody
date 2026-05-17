@@ -716,6 +716,7 @@ dependencies = [
  "miette",
  "mimalloc",
  "reqwest",
+ "rustls",
  "scraper",
  "serde",
  "serde_json",

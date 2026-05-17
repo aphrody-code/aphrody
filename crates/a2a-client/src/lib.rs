@@ -1,5 +1,18 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+
+// Platform note: `a2a-client` uses `reqwest` with `http2` (pulls h2 + hyper +
+// tokio::net) and `tokio` with `full` features. These are incompatible with
+// `wasm32-unknown-unknown` in their current configuration. A future
+// `wasm` feature flag could replace these with `reqwest` WASM transport +
+// `tokio` with `rt + macros` only, but that requires upstream reqwest API
+// alignment. Native targets (Linux, Windows, macOS) are fully supported.
+#[cfg(target_family = "wasm")]
+compile_error!(
+    "a2a-client does not currently support wasm32 targets: reqwest/http2/tokio::net require \
+     OS networking. Track the `wasm` feature flag for future WASM support."
+);
+
 pub mod agent_card;
 pub mod auth;
 pub mod client;

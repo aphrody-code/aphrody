@@ -9,6 +9,16 @@
             "type": "command",
             "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/oxclint.ts\"",
             "timeout": 30000
+          },
+          {
+            "type": "command",
+            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/cargo-check.ts\"",
+            "timeout": 60000
+          },
+          {
+            "type": "command",
+            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/cargo-toml-validate.ts\"",
+            "timeout": 30000
           }
         ]
       }
