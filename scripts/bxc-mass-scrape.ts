@@ -42,7 +42,7 @@ const DEFAULT_URLS = join(REPO_ROOT, "scripts", "bxc-mass-scrape.urls.json");
 const DEFAULT_CACHE = join(REPO_ROOT, "var", "data", "bxc-cache");
 const FAIL_THRESHOLD = 0.5; // abort run if > 50 % of URLs fail
 
-type Profile = "static" | "fast" | "stealth" | "max";
+type Profile = "static" | "http" | "fast" | "stealth" | "max";
 type Mode = "static" | "full";
 
 interface Args {
@@ -63,7 +63,10 @@ function parseArgs(argv: readonly string[]): Args {
 		urlsFile: DEFAULT_URLS,
 		cacheDir: DEFAULT_CACHE,
 		concurrency: 6,
-		profile: "fast",
+		// Default profile = "static" — in-process StaticDomTransport, no binary
+		// dependency.  Use --profile=http for curl-impersonate (fastest, no DOM)
+		// or --profile=fast/stealth/max for full Chrome/bxc-engine.
+		profile: "static",
 		mode: "static",
 		timeoutMs: 60_000,
 		retry: 2,
@@ -81,8 +84,14 @@ function parseArgs(argv: readonly string[]): Args {
 			out.concurrency = n;
 		} else if (raw.startsWith("--profile=")) {
 			const v = raw.slice("--profile=".length);
-			if (v !== "static" && v !== "fast" && v !== "stealth" && v !== "max") {
-				throw new Error(`invalid --profile=${v}`);
+			if (
+				v !== "static" &&
+				v !== "http" &&
+				v !== "fast" &&
+				v !== "stealth" &&
+				v !== "max"
+			) {
+				throw new Error(`invalid --profile=${v} (static|http|fast|stealth|max)`);
 			}
 			out.profile = v;
 		} else if (raw.startsWith("--mode=")) {
