@@ -46,3 +46,9 @@ rustls = ["dep:rustls", "rustls-tls"]
 
 [dev-dependencies]
 http-body-util = "0.1"
+
+# hyper, tower-http, tokio-stream: explicit version pins for axum's transitive
+# deps. None are directly imported via `use` — they are resolved through axum's
+# re-exports. machete cannot detect transitive pin usage; suppress false positives.
+[package.metadata.cargo-machete]
+ignored = ["hyper", "tower-http", "tokio-stream"]

@@ -96,6 +96,10 @@ jobs:
         run: cargo build --release -p cli --target x86_64-unknown-linux-gnu --locked
       - name: cargo nextest run -p cli
         run: cargo nextest run -p cli --target x86_64-unknown-linux-gnu --locked
+      - name: smoke test — binary boots
+        run: |
+          ./target/x86_64-unknown-linux-gnu/release/aphrody --version
+          ./target/x86_64-unknown-linux-gnu/release/aphrody --help
 
   # --------------------------------------------------------------------------
   # 3. PRIORITÉ #2 — Windows 11 (BLOQUANT)
@@ -125,6 +129,10 @@ jobs:
         run: cargo build --release -p cli --target x86_64-pc-windows-msvc --locked
       - name: cargo nextest run -p cli
         run: cargo nextest run -p cli --target x86_64-pc-windows-msvc --locked
+      - name: smoke test — binary boots
+        run: |
+          .\target\x86_64-pc-windows-msvc\release\aphrody.exe --version
+          .\target\x86_64-pc-windows-msvc\release\aphrody.exe --help
 
   # --------------------------------------------------------------------------
   # 4. PRIORITÉ #3 — WebAssembly (BLOQUANT)
@@ -242,14 +250,16 @@ jobs:
         with:
           tool: cargo-vet,cargo-machete
       - name: cargo-vet
+        # Fail-fast: local supply-chain/audits.toml now has real entries (5
+        # safe-to-run audits added 2026-05-17). Any unvetted dep is a hard
+        # block. If a new dep lands without an audit, add it to
+        # supply-chain/audits.toml or supply-chain/config.toml (exemption).
         run: cargo vet --locked
-        continue-on-error: true
       - name: cargo-machete
-        # Informational: report unused workspace deps without blocking the job.
-        # Cleanup tracked under PLAN.md ("cleanup unused deps reported by
-        # cargo-machete"). Flipped to bloquant once the workspace is clean.
+        # Fail-fast: workspace was cleaned on 2026-05-17 (11 dead deps removed,
+        # cfg-gated false positives annotated with [package.metadata.cargo-machete]
+        # ignored = [...]). Any new unused dep added without annotation blocks CI.
         run: cargo machete --with-metadata
-        continue-on-error: true
 
   # --------------------------------------------------------------------------
   # 7. BEST-EFFORT — Android (non bloquant)

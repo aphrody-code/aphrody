@@ -38,3 +38,10 @@ tonic-prost = { workspace = true }
 pbjson-build = { workspace = true }
 protoc-bin-vendored = { workspace = true }
 tonic-prost-build = { workspace = true }
+
+# pbjson: used in OUT_DIR generated code (proc-macro derive), not via explicit
+# `use pbjson::` in hand-written source — machete cannot see generated code.
+# pbjson-build, protoc-bin-vendored, tonic-prost-build: build-script deps; machete
+# does not fully parse build.rs invocations.
+[package.metadata.cargo-machete]
+ignored = ["pbjson", "pbjson-build", "protoc-bin-vendored", "tonic-prost-build"]
