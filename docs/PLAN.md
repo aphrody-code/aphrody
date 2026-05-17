@@ -59,7 +59,8 @@ cible #1**.
 |---|---|
 | `cargo build --release -p cli` sur Win11 Insider Canary | ⏳ |
 | `cargo nextest run -p cli` vert sur Windows | ⏳ |
-| Package `scoop` + `winget` manifest | ⏳ |
+| Package `scoop` manifest | ✅ (`packaging/scoop/aphrody.json`) |
+| Package `winget` manifest | ✅ (`packaging/winget/manifests/a/aphrody-code/aphrody/__VERSION__/`) |
 | Profil Windows Terminal pour `aphrody` | ⏳ |
 
 ### Phase P-Wasm — WebAssembly lib (PRIORITÉ #3)
@@ -83,7 +84,7 @@ Sous-tâches :
 | `mrx-core` : compile `wasm32-wasip1` | ✅ |
 | `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ⏳ |
 | `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ⏳ (P-Wasm-CLI) |
-| `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ⏳ |
+| `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ✅ |
 | `wasm-pack publish` sur npm `@aphrody-code/aphrody-wasm` | ⏳ |
 
 ### Phase P-Wasm-CLI — Port cli binaire vers wasm32
@@ -104,9 +105,12 @@ backend/a2a-client. Refactor requis :
 | Tâche | Statut |
 |---|---|
 | crates.io publication (`aphrody`) | ⏳ |
-| Homebrew tap `aphrody-code/tap` | ⏳ |
-| GitHub Releases avec binaires Linux + Windows + wasm | ⏳ |
-| `cargo install aphrody` documenté | ⏳ |
+| Homebrew formula template (`packaging/homebrew/aphrody.rb`) | ✅ |
+| Homebrew tap `aphrody-code/tap` publié | ⏳ |
+| GitHub Releases workflow (`.github/workflows/release.yml`, 8 targets, SHA-256, SBOM) | ✅ |
+| Premier tag `v*` poussé qui produit un release | ⏳ |
+| `cargo install aphrody` documenté | ⏳ (besoin du rename workspace `cli` → `aphrody` pour crates.io) |
+| One-line install (`install.sh` / `install.ps1`) avec vérif SHA-256 | ✅ |
 
 ## 2. Tâches de fond (continues)
 
