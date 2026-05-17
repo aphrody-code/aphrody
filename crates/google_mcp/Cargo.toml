@@ -27,5 +27,13 @@ axum               = { workspace = true }
 sysinfo            = { workspace = true }
 backend            = { path = "../backend" }
 
+# rustls is required on all non-wasm targets to install the ring CryptoProvider
+# before the first reqwest::Client is built (reqwest uses rustls-no-provider).
+# The `ring` crate needs a C compiler when cross-compiling; on native Linux/macOS
+# the system cc is available, so the dep is unconditional. The wasm32 arch never
+# builds this binary.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustls             = { workspace = true }
+
 [target.'cfg(target_os = "windows")'.dependencies]
 windows            = { workspace = true }

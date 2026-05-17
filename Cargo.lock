@@ -1837,6 +1837,7 @@ dependencies = [
  "backend",
  "reqwest 0.13.3",
  "rmcp",
+ "rustls",
  "schemars 0.8.22",
  "serde",
  "serde_json",
