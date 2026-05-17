@@ -241,6 +241,30 @@ Toute la surface skills est centralisée et documentée :
   Playwright/chromedp CDP-driven ; `bxc` (peer côté winclean) est `gpu_capable=false`
   (HTML/DOM only via Lightpanda).
 
+## 7.5. aphrody-terminal — LLM-first terminal (pivot 2026-05-18)
+
+`aphrody-terminal` n'est **pas** un wterm clone ni un Windows Terminal clone.
+C'est un terminal **LLM-first** conçu pour sub-agents, skills, hooks, MCP,
+Ink/React TUIs (Claude Code, Gemini CLI), avec **JSON output partout**,
+**markdown rendu inline**, **config JSON full**, **bridge LLM↔DOM** natif via
+bxc + agent-browser + edge headless fallback.
+
+- **Spec normative** : [`docs/design/aphrody-terminal-spec.md`](docs/design/aphrody-terminal-spec.md)
+- **Stack** : `crates/aphrody-terminal-{vt, wasm, backend, llm, browser, markdown, json-out, config}` (8 crates ciblés, 5 shippées au 2026-05-18).
+- **Worktrees référence** : `C:/worktree/wterm` (vercel-labs, API surface),
+  `C:/worktree/terminal` (microsoft, Buffer/Renderer/AtlasEngine/ConPTY/profiles.schema.json
+  algorithmes — référence only, jamais lié sur Linux/WASM per
+  memory `project_terminal_integration_policy`).
+- **MCP bxc** wired dans `.mcp.json` (stdio, 7 tools : `tune_memory_sqlite`,
+  `vision_analyze`, `start_scraping_subagent`, `auto_detect_skills`,
+  `bxc_cdp_{snapshot,evaluate,logs}`). SQLite memory à `var/data/bxc-memory.sqlite`
+  (gitignored).
+- **OSC namespace** `aphrody-*` réservé pour extensions LLM (14 sequences :
+  7 LLM event bus + 7 browser automation).
+- **Ink/React TUI compat** : 22 séquences VT essentielles documentées (alt
+  screen 1049h, mouse SGR 1006, true color 24-bit, cursor save/restore,
+  bracketed paste, DECSTBM, OSC 0 title, OSC 52 clipboard, etc.).
+
 ## 8. Source of Truth
 
 Pour la vue d'ensemble consolidée (architecture, plateformes, livrables,

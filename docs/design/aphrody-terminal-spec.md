@@ -183,6 +183,12 @@ non-aphrody terminals.
 | `\e]aphrody-browser-intercept;<base64-rule>\a`       | Install request interception rule |
 | `\e]aphrody-browser-extract;<base64-schema>\a`       | Structured extraction (schema-driven, returns JSON) |
 | `\e]aphrody-browser-record;<id>;<state>\a`           | Start/stop session recording for replay |
+| `\e]aphrody-jsx-mount;<id>;<base64-tree>\a`          | Layer B: initial React VDOM mount (Yoga-laid-out JSON tree) |
+| `\e]aphrody-jsx-update;<id>;<base64-patch>\a`        | Layer B: VDOM diff patch (Yoga deltas + style changes) |
+| `\e]aphrody-jsx-unmount;<id>\a`                      | Layer B: VDOM teardown |
+| `\e]aphrody-jsx-input;<id>;<base64-event>\a`         | Layer B: useInput keyboard event injection |
+| `\e]aphrody-jsx-window-size;<cols>;<rows>\a`         | Layer B: useWindowSize push |
+| `\e]aphrody-jsx-focus;<id>;<true|false>\a`           | Layer B: useFocus state push |
 
 ## Architectural invariants
 
@@ -231,6 +237,92 @@ LLM sub-agent          aphrody-terminal-llm        aphrody-terminal-browser
      │       JSON envelope      │                              │
      │◄─────────────────────────│                              │
 ```
+
+## Ink / React-TUI fusion strategy (3-layer)
+
+`vadimdemedes/ink` est l'écosystème React TUI dominant : react-reconciler +
+Yoga flexbox + ANSI stdout. **gemini-cli + Claude Code l'utilisent
+massivement** (App.tsx, AppContainer, render.tsx, examples). Officiellement
+Node only, mais sans bindings natifs critiques — il marche dans Bun.
+
+Trois angles complémentaires :
+
+### Layer A — Compat (must-have, tick T-2)
+
+aphrody-terminal-vt parse l'ANSI émis par Ink. Tant que le VT couvre les 22
+séquences Ink-essentials (table ci-dessus), **toute app Ink run inside
+aphrody-terminal sans modification**. C'est la garantie de compatibilité —
+gemini-cli, Claude Code, n'importe quel `useInput()` Ink fonctionne.
+
+**Status** : T-2 tick — extension VT à shipper en priorité.
+
+### Layer B — Bun-JSX → aphrody-OSC bridge (différenciateur, new tick T-9)
+
+`packages/aphrody-jsx` — un **custom react-reconciler** alternatif à Ink,
+écrit en TS Bun-natif (pas de babel, JSX direct), qui émet des séquences
+**`aphrody-jsx-*` OSC** au lieu d'ANSI brut. aphrody-terminal reçoit l'OSC
+et rend natively via `taffy` (Yoga-équivalent Rust) + M3 tokens.
+
+Avantages :
+- **Bun JSX natif** : pas de babel/swc step, démarrage 10x plus rapide
+  qu'Ink+Node.
+- **React DX préservée** : `<Box flexDirection="column"><Text bold>Hi</Text></Box>`
+  identique à Ink — courbe d'apprentissage zéro pour les devs Ink.
+- **Skip Ink's node-binding**: pas de `react-reconciler` npm transitif,
+  pas de Yoga WASM côté JS, pas de native modules — portable n'importe où
+  Bun tourne.
+- **M3 styling natif** : `<Text color="primary">` mappe vers
+  `m3_tokens::dynamic::primary()` directement dans le renderer Rust, pas
+  de translation ANSI lossy.
+- **WASM rendering possible** : le même fichier `.tsx` rend dans
+  aphrody-terminal-wasm (browser) ET dans aphrody-terminal-vt (native pty).
+  Un seul source-of-truth, deux render targets.
+
+API surface cible (mimics Ink) :
+
+```tsx
+import { render, Box, Text, useInput, useApp } from "@aphrody/jsx";
+
+function App() {
+  const { exit } = useApp();
+  useInput((input) => { if (input === "q") exit(); });
+  return (
+    <Box flexDirection="column">
+      <Text bold color="primary">Hello from aphrody-jsx</Text>
+      <Text dimColor>Press q to exit</Text>
+    </Box>
+  );
+}
+render(<App />, { target: "aphrody-terminal" });
+```
+
+Le reconciler :
+1. Reçoit le VDOM React via `react-reconciler` (peer dep, partagé avec Ink).
+2. Computes layout via `taffy` côté Rust (FFI Bun→aphrody-terminal-llm).
+3. Émet `\e]aphrody-jsx-mount;<id>;<base64-json-tree>\a` à chaque commit React.
+4. aphrody-terminal-{vt,wasm} reçoivent l'OSC, hydrate le DOM virtuel,
+   render via M3 + dirty-region updates.
+
+**Status** : tick T-9 (new, à scaffolder).
+
+### Layer C — Pure Rust DSL (canonical long-term, new tick T-10)
+
+`crates/aphrody-tui` — un crate Rust ratatui-style avec Builder DSL ou
+proc-macro JSX-like syntax. Pas de JS. Canonical aphrody path per
+CLAUDE.md §2 ("WASM Rust natif pour TOUT nouveau projet web").
+
+Use cases : TUIs aphrody-internes performance-critiques (le browser pane
+60fps, le sub-agent task tree avec 1000+ rows live).
+
+**Status** : tick T-10 (long-term, optional initially).
+
+### Decision matrix
+
+| Goal | Path |
+|---|---|
+| "Mon app Ink doit tourner inside aphrody-terminal" | A (T-2) |
+| "Je veux écrire une nouvelle TUI en TS Bun + JSX sans Ink" | B (T-9) |
+| "Je veux le max de perf + zéro JS, en Rust pur" | C (T-10) |
 
 ## Reference upstreams (read-only)
 
