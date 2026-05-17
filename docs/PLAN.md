@@ -51,7 +51,8 @@ cible #1**.
 | Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ✅ (cli chromium gated, voir fix d222d0061) |
 | Adapter `crates/google_mcp` pour Linux | ⏳ |
 | CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ⏳ |
-| Package `apt`/`deb` PPA pour distribution Ubuntu | ⏳ |
+| Package `.deb` template (`packaging/deb/` — control + postinst + prerm + cargo-deb snippet + README) | ✅ |
+| Publication PPA `aphrody-code/aphrody` sur Launchpad | ⏳ |
 
 ### Phase P-Win11 — Validation Windows 11 Insider Canary (PRIORITÉ #2)
 
@@ -61,7 +62,7 @@ cible #1**.
 | `cargo nextest run` workspace vert sur Windows | ✅ (**387/387** en 2,914 s — 2026-05-17) |
 | Package `scoop` manifest | ✅ (`packaging/scoop/aphrody.json`) |
 | Package `winget` manifest | ✅ (`packaging/winget/manifests/a/aphrody-code/aphrody/__VERSION__/`) |
-| Profil Windows Terminal pour `aphrody` | ⏳ |
+| Profil Windows Terminal pour `aphrody` | ✅ (`packaging/windows-terminal/aphrody.profile.json`) |
 
 ### Phase P-Wasm — WebAssembly lib (PRIORITÉ #3)
 
@@ -73,7 +74,13 @@ Matrice validée 2026-05-17 (host : Windows 11) :
 | `mrx-core`      | n/a (chrono)             | ✅              |
 | `aphrody-translate` | ✅ (wasm stub)       | ✅              |
 | `cli` (binary)  | ✅ (stub minimal)        | ✅ (stub minimal)|
-| `backend`/`a2a*`| ❌                       | ❌              |
+| `a2a-client`    | ✅ (JSON-RPC+REST+SSE via browser fetch; async-trait ?Send) | ✅ (traits + types only; reqwest/HTTP modules cfg-stripped — WASI p1 has no sockets) |
+| `backend`       | ❌                       | ❌              |
+
+`a2a-client` notes :
+- `wasm32-unknown-unknown` : `JsonRpcTransport`, `RestTransport`, `AgentCardResolver` compilent. `reqwest` utilise browser `fetch`. Streaming SSE via `bytes_stream()`. `BoxStream` = `LocalBoxStream` (futures !Send sur wasm). `async-trait` avec `?Send`.
+- `wasm32-wasip1` : reqwest 0.13 utilise le stack natif (hyper/mio/socket2) sur `target_os = "wasi"` — les syscalls socket ne sont pas exposés par WASI p1. Modules `jsonrpc`, `rest`, `agent_card`, `factory` cfg-strippés. Traits (`Transport`, `TransportFactory`), types de données, `auth`, `middleware` compilent. Déblocage possible avec WASI p2 + `wasi-http` crate.
+- `backend` reste ❌ sur les deux cibles : `tokio::fs`, `fs_extra`, `tracing-subscriber`, `base::Vfs`, et DNS OSINT sont tous des OS-primitives sans équivalent WASM. Port non tractable sans réécriture complète.
 
 Sous-tâches :
 
@@ -85,7 +92,11 @@ Sous-tâches :
 | `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ✅ |
 | `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ⏳ (P-Wasm-CLI) |
 | `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ✅ |
-| `wasm-pack publish` sur npm `@aphrody-code/aphrody-wasm` | ⏳ |
+| `wasm-pack publish` sur npm `@aphrody-code/aphrody-wasm` (89 KB wasm + 12 KB JS, metadata.wasm-pack profile.release SIMD+bulk-memory, README + publish doc) | ✅ scaffolded — `wasm-pack publish --access public` awaits `npm login` |
+| `a2a-client` : port wasm32-unknown-unknown (browser fetch transport) | ✅ |
+| `a2a-client` : port wasm32-wasip1 (traits/types ; HTTP cfg-strippé) | ✅ |
+| `a2a-pb` : gate tonic/proto/pbconv non-wasm ; protojson_conv disponible sur wasm | ✅ |
+| `backend` : port wasm (tokio::fs + VFS + DNS = OS-only, pas tractable) | ❌ bloqué |
 
 ### Phase P-Wasm-CLI — Port cli binaire vers wasm32
 
@@ -124,6 +135,8 @@ backend/a2a-client. Refactor requis :
 | Package workspace `cli` → `aphrody` | ✅ (commit 2026-05-17, dir conservé `crates/cli/`) |
 | `cargo install aphrody` documenté | ⏳ (besoin de publier `base`/`backend`/`a2a-*` à crates.io d'abord) |
 | One-line install (`install.sh` / `install.ps1`) avec vérif SHA-256 | ✅ |
+| Cleanup `cargo machete` — 11 dead deps retirées (cli/google_mcp/gui/mrx-{audit,core,detect}) | ✅ |
+| `aphrody --version` runtime bug — rustls 0.23 CryptoProvider install au boot | ✅ (commit pending) |
 
 ## 2. Tâches de fond (continues)
 
