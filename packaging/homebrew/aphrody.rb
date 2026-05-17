@@ -11,8 +11,20 @@
 class Aphrody < Formula
   desc "Cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly)"
   homepage "https://github.com/aphrody-code/aphrody"
-  version "__VERSION__"
+  version "1.0.0-canary"
   license "Apache-2.0"
+
+  # No prebuilt bottles published yet for the canary channel.
+  # Once the release pipeline starts shipping bottled builds, regenerate
+  # this block via `brew bottle aphrody` and commit the resulting
+  #   bottle do
+  #     sha256 cellar: :any_skip_relocation, arm64_sequoia: "..."
+  #     sha256 cellar: :any_skip_relocation, arm64_sonoma:  "..."
+  #     sha256 cellar: :any_skip_relocation, sonoma:        "..."
+  #     sha256 cellar: :any_skip_relocation, arm64_linux:   "..."
+  #     sha256 cellar: :any_skip_relocation, x86_64_linux:  "..."
+  #   end
+  # block here. Until then, brew falls through to the tarball URLs below.
 
   on_macos do
     on_arm do

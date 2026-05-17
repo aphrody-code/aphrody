@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 PackageIdentifier: aphrody-code.aphrody
-PackageVersion: __VERSION__
+PackageVersion: 1.0.0-canary
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.6.0
