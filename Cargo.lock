@@ -231,8 +231,6 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 name = "aphrody"
 version = "1.0.0-canary"
 dependencies = [
- "a2a-client-lf",
- "a2a-lf",
  "anyhow",
  "async-trait",
  "backend",
@@ -248,7 +246,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "uuid",
 ]
 
 [[package]]
@@ -1852,7 +1849,6 @@ dependencies = [
  "anyhow",
  "axum",
  "backend",
- "base",
  "reqwest 0.13.3",
  "rmcp",
  "schemars 0.8.22",
@@ -1923,7 +1919,6 @@ version = "1.0.0-canary"
 dependencies = [
  "anyhow",
  "backend",
- "base",
  "mimalloc",
  "serde",
  "serde_json",
@@ -2759,7 +2754,6 @@ dependencies = [
  "mrx-core",
  "mrx-detect",
  "parking_lot",
- "rayon",
  "serde",
  "serde_json",
  "tracing",
@@ -2782,7 +2776,6 @@ dependencies = [
 name = "mrx-core"
 version = "1.0.0-canary"
 dependencies = [
- "chrono",
  "serde",
 ]
 
@@ -2790,11 +2783,8 @@ dependencies = [
 name = "mrx-detect"
 version = "1.0.0-canary"
 dependencies = [
- "anyhow",
  "mrx-core",
- "serde",
  "serde_json",
- "toml",
 ]
 
 [[package]]
