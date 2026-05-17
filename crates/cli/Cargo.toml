@@ -1,0 +1,34 @@
+[package]
+name                  = "cli"
+publish               = false
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace = true
+authors.workspace     = true
+license.workspace     = true
+homepage.workspace    = true
+repository.workspace  = true
+description           = "Aphrody — Rust binary (canonical CLI in transition; legacy CLI is src/index.ts)."
+
+[lints]
+workspace = true
+
+[dependencies]
+clap          = { workspace = true }
+miette        = { workspace = true }
+async-trait   = { workspace = true }
+tokio         = { workspace = true }
+reqwest       = { workspace = true }
+uuid          = { workspace = true }
+indicatif     = { workspace = true }
+colored       = { workspace = true }
+mimalloc      = { workspace = true }
+scraper       = { workspace = true }
+backend       = { path = "../backend" }
+base          = { path = "../base" }
+a2a-client    = { workspace = true }
+a2a           = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+anyhow        = { workspace = true }
+rustls        = { workspace = true }

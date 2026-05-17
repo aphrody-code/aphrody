@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Collaboration Hub - Aphrody Project",
+  "description": "Central configuration enforcing Production-Ready code standards across all AI agents",
+  "version": "3.0.0",
+
+  "project": {
+    "name": "aphrody",
+    "type": "Production-Grade Hybrid OS Emulator & Toolkit",
+    "language": "Rust/C",
+    "license": "Apache-2.0",
+    "version": "1.0.0-canary",
+    "core_directive": "NO_STUBS_ONLY_COMPLETE_IMPLEMENTATIONS"
+  },
+
+  "environment": {
+    "_comment": "Source-of-truth for toolchain: rust-toolchain.toml. Mirrored here for AI agent context.",
+    "os": "Windows 11 Insider (10.0.28020)",
+    "toolchain": {
+      "rust": {
+        "channel": "nightly",
+        "targets": [
+          "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc",
+          "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu",
+          "x86_64-apple-darwin", "aarch64-apple-darwin",
+          "wasm32-unknown-unknown", "wasm32-wasip1",
+          "aarch64-linux-android", "armv7-linux-androideabi",
+          "x86_64-linux-android", "i686-linux-android"
+        ],
+        "components": ["rust-src", "rustfmt", "clippy", "miri",
+                       "llvm-tools-preview", "rust-analyzer",
+                       "rustc-codegen-cranelift-preview"]
+      },
+      "supply_chain": ["cargo-vet", "cargo-deny", "cargo-machete", "cargo-udeps"]
+    }
+  },
+
+  "ai_systems": {
+    "antigravity": {
+      "enabled": true,
+      "role": "Infrastructure & Architect",
+      "instruction": "Enforce strict architecture validation. Do not accept incomplete pull requests or partial modules."
+    },
+    "claude_code": {
+      "enabled": true,
+      "role": "Hardcore Low-level Engineer",
+      "instruction": "Write only real, functional, memory-safe system code connected to native NT APIs. Never write stubs.",
+      "docs": {
+        "readme": "CLAUDE.md"
+      }
+    },
+    "gemini_cli": {
+      "enabled": true,
+      "role": "Strategic Lead & Uncompromising Engineer",
+      "instruction": "Demand exhaustive testing, full deep-dive implementations, and reject temporary placeholders.",
+      "docs": { "config": "GEMINI.md" }
+    }
+  },
+
+  "shared_state": {
+    "current_phase": "P10 — Cross-platform binary (Win/Linux/macOS/wasm/Android)",
+    "completed_phases": [
+      "P0 — Workspace bring-up (resolver=3, edition=2024, 80 deps centralisées)",
+      "P1 — Suppression vendor/crates.io (1.2 Go libérés)",
+      "P2 — Supply-chain audits (cargo-vet 7 feeds + cargo-deny)",
+      "P3 — path-bases tentative (reportée, feature instable Cargo 1.97)",
+      "P4 — Validation hermétique (--locked --offline -D warnings)",
+      "P5 — Refresh docs + cleanup root (~30 fichiers throwaway supprimés)",
+      "P10 — Cross-platform `cli` binary + patterns Chromium/Android adoptés",
+      "P11 — Synchronisation google.json + Android targets + CI matrix"
+    ],
+    "active_mandate": "Le binaire `cli` doit fonctionner sur Windows/Linux/macOS/wasm/Android via crates/cli/src/platform.rs. Toute API ajoutée doit respecter cette portabilité.",
+    "next_priorities": [
+      "Wire CI .github/workflows/cross-platform.yml (matrix Win/Linux/macOS)",
+      "Premier `cxx::bridge` réel quand binding C++ non trivial intégré",
+      "cargo-fuzz config pour bun_ffi + google_os::libc",
+      "cargo-auditable embed SBOM dans binaires dist"
+    ]
+  }
+}

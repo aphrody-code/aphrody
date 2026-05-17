@@ -1,0 +1,152 @@
+# ============================================================================
+#  Aphrody — cargo-deny policy (Google-grade)
+#
+#  Run: cargo deny check          → audit licences + CVE + sources + bans
+#       cargo deny check advisories  → CVE / yanked / unmaintained only
+#       cargo deny check licenses    → licenses only
+#       cargo deny check bans        → version dedup + denied crates
+#       cargo deny check sources     → registry/git origin only
+# ============================================================================
+
+[graph]
+targets = [
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "aarch64-pc-windows-msvc" },
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "aarch64-unknown-linux-gnu" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "wasm32-unknown-unknown" },
+]
+all-features = true
+exclude = ["coreutils", "util-linux"]
+
+[output]
+feature-depth = 1
+
+# ----------------------------------------------------------------------------
+# Advisories — CVE / yanked / unmaintained / unsound
+# ----------------------------------------------------------------------------
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]
+version = 2
+yanked = "deny"
+ignore = [
+    # AWS-LC CVEs — pulled transitively by reqwest's rustls-tls feature,
+    # but we install `rustls::crypto::ring` as default provider in a2a-server
+    # and a2a-grpc, so aws-lc code paths are never executed at runtime.
+    # Re-evaluate when reqwest 0.13 lets us disable aws-lc-sys cleanly.
+    { id = "RUSTSEC-2026-0045", reason = "aws-lc unused at runtime, ring is the active provider" },
+    { id = "RUSTSEC-2026-0046", reason = "aws-lc unused at runtime, ring is the active provider" },
+    { id = "RUSTSEC-2026-0047", reason = "aws-lc unused at runtime, ring is the active provider" },
+    { id = "RUSTSEC-2026-0048", reason = "aws-lc unused at runtime, ring is the active provider" },
+    # GTK3 deprecation — pulled by tao/wry on Linux. Migration to GTK4 happens
+    # when wry 1.0 ships. Not relevant for Windows-first development.
+    { id = "RUSTSEC-2024-0411", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0412", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0413", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0416", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0417", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0414", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0415", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0418", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0419", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    { id = "RUSTSEC-2024-0420", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
+    # Unmaintained proc-macro helpers transitively pulled by widely-used crates.
+    # Migration upstream when alternatives ship; no runtime impact.
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error unmaintained; transitive dep from rmcp git or older build deps" },
+    { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; transitive build-only dep" },
+    # rustls-pemfile unmaintained — used only in a2a-grpc test/TLS paths. The
+    # replacement (rustls-pki-types) is not yet integrated upstream. Track when
+    # tonic-tls migrates away from rustls-pemfile.
+    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; optional test dep in a2a-grpc, no prod code path" },
+    # Marvin Attack — affects rsa crate transitively via fastembed→ort. No RSA
+    # signing performed at runtime in aphrody; informational only.
+    { id = "RUSTSEC-2023-0071", reason = "rsa Marvin Attack; no RSA signing performed at runtime" },
+]
+
+# ----------------------------------------------------------------------------
+# Licenses — Google OSS-compatible whitelist (matches go/thirdparty review)
+# ----------------------------------------------------------------------------
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "ISC",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Zlib",
+    "OpenSSL",
+    "0BSD",
+    "CDLA-Permissive-2.0",  # webpki-roots: Mozilla CA root list
+]
+exceptions = [
+    # Per-crate exceptions go here with justification.
+    # { allow = ["GPL-3.0"], crate = "some-crate" },
+]
+# Private/in-repo crates (workspace members + vendored Bun internals) are
+# unpublished — license check is irrelevant.
+private = { ignore = true, registries = ["https://github.com/rust-lang/crates.io-index"] }
+
+# Map non-SPDX or custom licenses to known SPDX identifiers.
+[[licenses.clarify]]
+crate = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
+[[licenses.clarify]]
+crate = "webpki"
+expression = "ISC"
+license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
+
+# ----------------------------------------------------------------------------
+# Bans — version duplication + outright-denied crates
+# ----------------------------------------------------------------------------
+[bans]
+multiple-versions = "warn"   # workspace has legitimate dupes (rand 0.8/0.9, etc.)
+wildcards = "deny"           # version = "*" forbidden in published deps
+allow-wildcard-paths = true  # ...but allowed for path / workspace deps (bun_*)
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+
+# Crates that MUST NOT enter the dep graph (hard ban; build fails).
+deny = [
+    { crate = "git2", reason = "Pulls libgit2 + OpenSSL; use gix instead." },
+]
+
+# Crates we discourage but tolerate transitively from upstream choices.
+# Tracked via `cargo deny check bans` output to monitor surface area.
+# (openssl / native-tls reach the graph via fastembed → ort → ureq → hyper-tls;
+# only when the `ai` feature of `n2b` is enabled.)
+
+# Crates we keep at a single version (no dupes tolerated).
+skip = []
+
+# Whole sub-trees exempt from multiple-versions detection.
+skip-tree = [
+    { crate = "windows-sys" },           # windows-rs ecosystem has many parallel versions.
+    { crate = "windows" },
+]
+
+# ----------------------------------------------------------------------------
+# Sources — where crates may originate
+# ----------------------------------------------------------------------------
+[sources]
+unknown-registry = "deny"
+unknown-git      = "deny"
+allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
+allow-git        = [
+    "https://github.com/modelcontextprotocol/rust-sdk.git",
+]
+
+[sources.allow-org]
+github = []   # Add trusted GitHub orgs here if pulling git deps from them.

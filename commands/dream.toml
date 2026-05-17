@@ -1,0 +1,13 @@
+description = "Run memory consolidation (dream) — organize learnings from recent sessions"
+prompt = """
+Launch the `bun-agent:bun-dreamer` agent to consolidate memories from recent sessions.
+
+## Directories
+- Memory: `${extensionPath}/.gemini-data/memory/`
+- Sessions: `${extensionPath}/.gemini-data/sessions/`
+
+## Instructions
+1. Ensure the memory directory exists: `mkdir -p ${extensionPath}/.gemini-data/memory/`
+2. Delegate to the `bun-agent:bun-dreamer` agent with the paths above
+3. If this is the first dream (no MEMORY.md), create the initial index
+"""

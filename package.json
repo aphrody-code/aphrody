@@ -1,0 +1,39 @@
+{
+  "name": "aphrody",
+  "version": "1.0.0-canary",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "packages/*",
+    "packages/gemini-cli/packages/*"
+  ],
+  "scripts": {
+    "start": "cargo run -p cli --locked --",
+    "start:terminal": "cargo run -p backend --release --locked & cargo run -p gui --release --locked",
+    "build:all": "turbo run build",
+    "build:rust": "cargo build --workspace --locked",
+    "build:rust:release": "cargo build --workspace --locked --profile dist",
+    "lint:all": "turbo run lint --filter=!@electron-ci/dev-root",
+    "lint:rust": "cargo ci-offline",
+    "check:rust": "cargo check --workspace --locked",
+    "audit:supply-chain": "cargo deny check && cargo vet",
+    "audit:unused": "cargo audit-machete && cargo audit-udeps",
+    "docs:summary": "bun run scripts/gen_summary.ts",
+    "docs:summary:check": "bun run scripts/gen_summary.ts --check",
+    "skills:list": "agent-skills list ./.claude/skills",
+    "skills:validate": "agent-skills list ./.claude/skills",
+    "skills:to-prompt": "agent-skills to-prompt ./.claude/skills/start",
+    "skills:sync:vercel": "bun run scripts/skills-sync.ts vercel-labs/agent-skills",
+    "skills:sync:claude-official": "bun run scripts/skills-sync.ts anthropics/skills",
+    "optimize:assets": "bun run scripts/optimize-assets.ts",
+    "optimize:full": "bun run optimize:assets && turbo run build"
+  },
+  "catalog": {
+    "zod": "^3.23.8",
+    "@modelcontextprotocol/sdk": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^6.0.3"
+  }
+}

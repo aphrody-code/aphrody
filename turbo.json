@@ -1,0 +1,38 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalEnv": ["NODE_ENV", "CI", "BUN_INSTALL"],
+  "globalPassThroughEnv": ["PATH", "HOME", "USERPROFILE", "RUSTC_WRAPPER", "SCCACHE_DIR"],
+  "globalDependencies": ["bun.lock", "bunfig.toml", "tsconfig.json", "package.json"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "package.json", "tsconfig.json", "!**/*.test.{ts,tsx,js,jsx}"],
+      "outputs": ["dist/**", "build/**", "bundle/**", ".next/**", "!.next/cache/**"]
+    },
+    "lint": {
+      "dependsOn": [],
+      "inputs": ["src/**", ".oxlintrc.json", "package.json"],
+      "outputs": [".oxlintcache"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "inputs": ["src/**", "test/**", "tests/**", "vitest.config.{ts,js}", "package.json"],
+      "outputs": ["coverage/**"]
+    },
+    "test:unit": {
+      "dependsOn": [],
+      "inputs": ["src/**", "test/**", "package.json"],
+      "outputs": ["coverage/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

@@ -1,0 +1,208 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://raw.githubusercontent.com/aphrody-code/n2b/main/schema/v2.json",
+	"title": "N2bReport",
+	"description": "Payload schema for n2b scan results (JSON reports). Mirrors the JSON produced by `n2b --report=json`. JSONL mode wraps each object with a `type` discriminator (\"meta\" for the header, \"finding\" for subsequent lines).",
+	"type": "object",
+	"required": [
+		"schema_version",
+		"tool",
+		"version",
+		"mode",
+		"root",
+		"files_scanned",
+		"findings_total",
+		"files"
+	],
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string",
+			"format": "uri",
+			"description": "URL to this schema."
+		},
+		"schema_version": {
+			"type": "integer",
+			"enum": [2],
+			"description": "Schema version, bumped on breaking changes."
+		},
+		"tool": {
+			"type": "string",
+			"description": "Tool name (historically \"node2bun\")."
+		},
+		"version": {
+			"type": "string",
+			"description": "n2b binary semver."
+		},
+		"mode": {
+			"$ref": "#/definitions/Mode"
+		},
+		"root": {
+			"type": "string",
+			"description": "Absolute path of the scanned root."
+		},
+		"files_scanned": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"findings_total": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"files": {
+			"type": "array",
+			"items": { "$ref": "#/definitions/FileFix" }
+		}
+	},
+	"definitions": {
+		"Mode": {
+			"type": "string",
+			"enum": ["check", "fix", "aggressive"]
+		},
+		"Severity": {
+			"type": "string",
+			"enum": ["error", "warn", "info"]
+		},
+		"Compat": {
+			"type": "object",
+			"description": "Bun↔Node compatibility metadata of the host module — Phase 3+. Optional (rétro-compat). Le champ status pilote la sévérité dérivée.",
+			"required": ["status", "module"],
+			"additionalProperties": false,
+			"properties": {
+				"status": {
+					"type": "string",
+					"enum": ["full", "partial", "missing"],
+					"description": "Statut de couverture Bun du module Node host. full = tout passe, partial = bug-free sur les chemins courants, missing = pas d'équivalent natif."
+				},
+				"module": {
+					"type": "string",
+					"description": "Nom du module Node concerné (sans le préfixe node:)."
+				},
+				"missing_apis": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "Sous-APIs documentées comme non implémentées par Bun. Vide quand status=full."
+				},
+				"equivalent": {
+					"type": "string",
+					"description": "Équivalent Bun natif suggéré (ex: 'bun:sqlite', 'Bun.serve')."
+				},
+				"bunpp": {
+					"type": "string",
+					"description": "Polyfill @bun++/node-* recommandé quand status=missing. Optionnel."
+				}
+			}
+		},
+		"FileFix": {
+			"type": "object",
+			"required": ["path", "changed", "findings"],
+			"additionalProperties": false,
+			"properties": {
+				"path": {
+					"type": "string",
+					"description": "Relative path to the scanned root."
+				},
+				"changed": {
+					"type": "boolean",
+					"description": "True if the file content differs from its pre-scan state (only in --fix / --aggressive / --migrate modes)."
+				},
+				"findings": {
+					"type": "array",
+					"items": { "$ref": "#/definitions/Finding" }
+				}
+			}
+		},
+		"Finding": {
+			"type": "object",
+			"required": [
+				"rule_id",
+				"category",
+				"severity",
+				"confidence",
+				"message",
+				"line",
+				"col",
+				"start_byte",
+				"end_byte",
+				"original",
+				"autofix",
+				"docs_url",
+				"context"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"rule_id": {
+					"type": "string",
+					"description": "Rule identifier — slash-separated category/name (e.g. 'api/fs-readFileSync'). Immutable: consumers parse this."
+				},
+				"category": {
+					"type": "string",
+					"description": "Top-level category derived from rule_id prefix."
+				},
+				"severity": { "$ref": "#/definitions/Severity" },
+				"confidence": {
+					"type": "number",
+					"minimum": 0,
+					"maximum": 1,
+					"description": "Heuristic confidence 0..1."
+				},
+				"message": { "type": "string" },
+				"line": { "type": "integer", "minimum": 1 },
+				"col": { "type": "integer", "minimum": 1 },
+				"start_byte": {
+					"type": "integer",
+					"minimum": 0,
+					"description": "Byte offset into the scanned file of the finding start (UTF-8)."
+				},
+				"end_byte": {
+					"type": "integer",
+					"minimum": 0,
+					"description": "Byte offset into the scanned file of the finding end (UTF-8)."
+				},
+				"original": {
+					"type": "string",
+					"description": "Exact text that matched (from source)."
+				},
+				"replacement": {
+					"type": "string",
+					"description": "Suggested replacement. Omitted entirely when no replacement is known."
+				},
+				"autofix": {
+					"type": "boolean",
+					"description": "True when the rule can be auto-applied by --fix."
+				},
+				"aggressive": {
+					"type": "boolean",
+					"description": "True when the rule is only applied by --aggressive. Omitted when false/unset."
+				},
+				"docs_url": {
+					"type": "string",
+					"format": "uri",
+					"description": "Stable Bun (or external) docs URL for this rule."
+				},
+				"context": { "$ref": "#/definitions/Context" },
+				"compat": {
+					"$ref": "#/definitions/Compat",
+					"description": "Phase 3+ : statut de compat Bun du module hôte. Présent uniquement sur les findings imports/node-* et api/node-*. Optionnel (rétro-compat schema_version=2)."
+				}
+			}
+		},
+		"Context": {
+			"type": "object",
+			"required": ["before", "line", "after"],
+			"additionalProperties": false,
+			"description": "Source context around a finding: up to 3 lines before, the finding's line, up to 3 lines after. Consumed by LLM/IDE integrations.",
+			"properties": {
+				"before": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"line": { "type": "string" },
+				"after": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			}
+		}
+	}
+}

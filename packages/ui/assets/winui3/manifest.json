@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/windows/apps/design",
+  "Package": {
+    "Identity": {
+      "Name": "WinClean.App",
+      "Publisher": "CN=aphrody-code"
+    },
+    "Properties": {
+      "DisplayName": "WinClean",
+      "PublisherDisplayName": "Aphrody",
+      "Logo": "Assets\\StoreLogo.png"
+    },
+    "Assets": {
+      "BaseSource": "aphrody_clean_1.png",
+      "Required": [
+        {
+          "Name": "Square44x44Logo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "Square150x150Logo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "StoreLogo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "SplashScreen",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "BadgeLogo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        }
+      ],
+      "Optional": [
+        {
+          "Name": "Square310x310Logo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "Wide310x150Logo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        },
+        {
+          "Name": "Square71x71Logo",
+          "Sizes": ["scale-100", "scale-125", "scale-150", "scale-200", "scale-400"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,219 @@
+# ============================================================================
+#  Google CLI — Cargo configuration (Nightly, Production Google-grade)
+#  Aligned with VS 2026 Insiders (MSVC 14.51) + Windows SDK 26100.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Path bases (RFC 3529) — kept for when the feature stabilizes (Cargo 1.98+).
+# Today nightly 1.97 still gates it behind `cargo-features = ["path-bases"]`
+# per-crate, which is more friction than the `../` it replaces. Re-enable
+# workspace-wide once stable; member crates already prefixed with `base = "..."`.
+# ----------------------------------------------------------------------------
+# [path-bases]
+# monorepo  = ""
+# bun-src   = "vendor/bun/src"
+
+[build]
+# Shared compilation cache — local cargo home or sccache server.
+rustc-wrapper   = "sccache"
+# Default host target. Override with `--target <triple>` for cross-builds
+# (see aliases `build-linux-x64`, `build-darwin-arm64`, `build-wasm`, …).
+# Cross-compile pre-reqs:
+#   - Linux from Win    → `cargo install cargo-zigbuild && rustup target add ...`
+#   - Darwin from Win   → `cargo install cargo-zigbuild --features macos`
+#   - wasm32-wasip1     → rustup target add wasm32-wasip1
+target          = "x86_64-pc-windows-msvc"
+# Nightly-only: parallel rustc frontend (massive speedup on cargo check).
+# Reproducibility flags remap build-host paths so the binary is byte-identical
+# regardless of where it was compiled (Chromium-grade hermeticity).
+rustflags = [
+    "-Z", "threads=8",
+    "-Z", "share-generics=y",
+    "-C", "symbol-mangling-version=v0",
+    "--remap-path-prefix=/home/runner=.",
+    "--remap-path-prefix=/Users/runner=.",
+    "--remap-path-prefix=C:\\Users\\runner=.",
+]
+
+# ----------------------------------------------------------------------------
+# Per-target tuning
+# ----------------------------------------------------------------------------
+
+[target.x86_64-pc-windows-msvc]
+# Absolute path: WinGet's coreutils symlink shadows the real MSVC link.exe.
+linker = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\link.exe"
+rustflags = [
+    # Google-grade modern CPU baseline (x86-64-v3 = Haswell+, AVX2, BMI2, FMA).
+    "-C", "target-cpu=x86-64-v3",
+    "-C", "target-feature=+crt-static",
+    "-C", "force-frame-pointers=yes",
+    "-C", "link-arg=/CETCOMPAT",
+    "-C", "link-arg=/GUARD:CF",
+    "-C", "link-arg=/HIGHENTROPYVA",
+    "-C", "link-arg=/DYNAMICBASE",
+    "-C", "link-arg=/NXCOMPAT",
+    "-C", "link-arg=/DEBUG:NONE",
+]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = [
+    "-C", "target-feature=+crt-static",
+    "-C", "link-arg=/CETCOMPAT",
+    "-C", "link-arg=/GUARD:CF",
+]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=x86-64-v3",
+    "-C", "link-arg=-fuse-ld=lld",
+    "-C", "link-arg=-Wl,--gc-sections",
+    "-C", "link-arg=-Wl,--icf=all",
+    "-C", "relocation-model=pic",
+    "-Z", "stack-protector=strong",
+]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = [
+    "-C", "link-arg=-fuse-ld=lld",
+    "-C", "link-arg=-Wl,--gc-sections",
+    "-Z", "stack-protector=strong",
+]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+    "-C", "target-cpu=x86-64-v3",
+    "-C", "link-arg=-Wl,-dead_strip",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+    "-C", "link-arg=-Wl,-dead_strip",
+]
+
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "target-feature=+bulk-memory,+mutable-globals,+nontrapping-fptoint,+sign-ext,+simd128",
+]
+
+# ----------------------------------------------------------------------------
+# VS 2026 Insiders environment (used by cc/cmake build scripts)
+# `force = true` overrides any pre-existing shell env (CI / WSL inherits).
+# ----------------------------------------------------------------------------
+[env]
+VS_INSTALL_DIR      = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders", force = true }
+MSVC_VERSION        = { value = "14.51.36231", force = true }
+VCINSTALLDIR        = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC", force = true }
+WINDOWS_SDK_DIR     = { value = "C:\\Program Files (x86)\\Windows Kits\\10", force = true }
+WINDOWS_SDK_VERSION = { value = "10.0.26100.0", force = true }
+INCLUDE = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\include;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\um;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\shared", force = true }
+LIB     = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\x64", force = true }
+RUST_MIN_STACK      = { value = "16777216", force = true }
+# Override stale VS 2022 generator inherited from the system env.
+CMAKE_GENERATOR     = { value = "Ninja", force = true }
+# aws-lc-sys: use prebuilt NASM + skip the VS 17 hardcoded generator path.
+AWS_LC_SYS_PREBUILT_NASM = { value = "1", force = true }
+AWS_LC_SYS_CMAKE_BUILDER = { value = "1", force = true }
+# MSVC 14.51 emits new C4xxx warnings the aws-lc-sys -WX promotes to errors.
+# Disable warnings-as-errors for vendored C/C++ build scripts.
+AWS_LC_SYS_CFLAGS   = { value = "-W0", force = true }
+CFLAGS              = { value = "-W0", force = true }
+CXXFLAGS            = { value = "-W0", force = true }
+
+# ----------------------------------------------------------------------------
+# Registry / network
+# ----------------------------------------------------------------------------
+[registries.crates-io]
+protocol = "sparse"
+
+[net]
+retry         = 5
+git-fetch-with-cli = true
+
+[http]
+multiplexing  = true
+timeout       = 60
+
+# ----------------------------------------------------------------------------
+# Cargo CLI ergonomics
+# ----------------------------------------------------------------------------
+[term]
+verbose = false
+color   = "auto"
+quiet   = false
+
+# ----------------------------------------------------------------------------
+# Supply-chain hardening — modern (2026) replaces source-replacement vendoring.
+#   * Cargo.lock pins SHA-256 of every crate    → reproducibility
+#   * sparse registry + sccache + cross-cache   → speed
+#   * cargo-vet + cargo-deny                    → audit / CVE / license guards
+#   * --locked --offline in CI                  → hermetic enforcement
+# Legacy `[source.crates-io] replace-with = "vendored-sources"` removed.
+# Only true sub-projects (vendor/bun/, vendor/electron/) remain as path deps.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# Aliases — Google CLI shortcuts. CI variants enforce hermetic builds.
+# ----------------------------------------------------------------------------
+[alias]
+# Hermetic CI: lockfile must match Cargo.toml, no network access permitted.
+ci             = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--", "-D", "warnings"]
+ci-offline     = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--offline", "--", "-D", "warnings"]
+ci-frozen      = ["clippy", "--workspace", "--all-targets", "--all-features", "--frozen",  "--", "-D", "warnings"]
+xt             = ["nextest", "run", "--workspace", "--all-features", "--locked"]
+xt-offline     = ["nextest", "run", "--workspace", "--all-features", "--locked", "--offline"]
+# `build-dist` (was `dist`) renamed to free the `dist` name for cargo-dist
+# binary (`cargo install cargo-dist` provides `cargo dist init/build/...`).
+build-dist     = ["build", "--profile", "dist", "--workspace", "--locked"]
+release-fast   = ["build", "--profile", "release-fast", "--workspace", "--locked"]
+
+# --- Multi-target cross-compilation (cli binary only) ---------------------
+build-win-x64       = ["build", "-p", "cli", "--locked", "--profile", "dist", "--target", "x86_64-pc-windows-msvc"]
+build-win-arm64     = ["build", "-p", "cli", "--locked", "--profile", "dist", "--target", "aarch64-pc-windows-msvc"]
+build-linux-x64     = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "x86_64-unknown-linux-gnu"]
+build-linux-arm64   = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "aarch64-unknown-linux-gnu"]
+build-darwin-x64    = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "x86_64-apple-darwin"]
+build-darwin-arm64  = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "aarch64-apple-darwin"]
+build-wasm          = ["build", "-p", "cli", "--locked", "--profile", "dist", "--target", "wasm32-wasip1"]
+# `cargo check-all-targets` validates type-correctness on every target.
+check-all-targets   = ["xtask", "check-all-targets"]
+
+# --- Supply-chain guards (run before any release / merge) -----------------
+audit-vet      = ["vet"]
+audit-deny     = ["deny", "check"]
+audit-machete  = ["machete", "--with-metadata"]
+audit-udeps    = ["+nightly", "udeps", "--workspace", "--all-targets"]
+audit-all      = ["xtask", "audit"]
+
+# --- Fuzz (cargo-fuzz; libfuzzer-sys) -------------------------------------
+fuzz-bun-ffi   = ["fuzz", "run", "wc_alloc_roundtrip", "-p", "bun_ffi-fuzz"]
+
+# --- Auditable dist build (embeds SBOM in binary via cargo-auditable) -----
+# `cargo install cargo-auditable` once. Then `cargo dist-auditable` ships a
+# binary with embedded dep tree, scannable by `cargo audit bin <path>` or
+# `osv-scanner` for post-deployment CVE checks.
+dist-auditable = ["auditable", "build", "--profile", "dist", "-p", "cli", "--locked"]
+
+# --- Security / sanitizers / UB detection ---------------------------------
+asan           = ["build", "--profile", "asan", "-Z", "sanitizer=address", "-p", "cli", "--target", "x86_64-unknown-linux-gnu"]
+msan           = ["build", "--profile", "asan", "-Z", "sanitizer=memory",  "-p", "cli", "--target", "x86_64-unknown-linux-gnu"]
+tsan           = ["build", "--profile", "asan", "-Z", "sanitizer=thread",  "-p", "cli", "--target", "x86_64-unknown-linux-gnu"]
+careful        = ["+nightly", "careful", "test", "--workspace", "--locked"]
+miri-test      = ["+nightly", "miri", "test", "--workspace", "--locked"]
+
+# --- Performance / size analysis ------------------------------------------
+bloat          = ["bloat", "--release", "-p", "cli", "--crates"]
+bloat-fn       = ["bloat", "--release", "-p", "cli", "-n", "20"]
+benches        = ["criterion", "--workspace"]
+
+# --- Coverage (cargo-llvm-cov) --------------------------------------------
+cov            = ["llvm-cov", "--workspace", "--locked", "--lcov", "--output-path", "target/lcov.info"]
+cov-html       = ["llvm-cov", "--workspace", "--locked", "--html"]
+
+# --- Mutation testing (cargo-mutants) -------------------------------------
+mutants        = ["mutants", "--workspace"]
+
+# --- Release distribution -------------------------------------------------
+# `cargo-dist` rebranded to a standalone `dist.exe` binary (no longer a cargo
+# subcommand). Invoke directly: `dist init`, `dist build`, `dist plan`.
+# Aliases below remain valid because they target the Rust toolchain itself.
+# Use `cargo build-dist` for the in-tree release-profile workspace build.

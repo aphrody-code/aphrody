@@ -1,0 +1,27 @@
+# Clippy thresholds — relaxed for kernel/FFI/bridge code reality.
+# Lint *levels* live in [workspace.lints] in Cargo.toml; this file only
+# tunes the heuristics behind individual lints.
+
+# Allow public API churn during the canary cycle.
+avoid-breaking-exported-api = false
+
+# Complexity / size thresholds — relaxed for OS bridge surface.
+cognitive-complexity-threshold = 40
+too-many-arguments-threshold   = 10
+too-many-lines-threshold       = 200
+type-complexity-threshold      = 350
+
+# Naming heuristics.
+enum-variant-name-threshold    = 4
+struct-field-name-threshold    = 4
+
+# Tests can use unwrap/expect/panic — production code can't.
+allow-unwrap-in-tests          = true
+allow-expect-in-tests          = true
+allow-panic-in-tests           = true
+
+# Wildcard imports are noisy in glob-heavy generated code; warn instead of deny.
+warn-on-all-wildcard-imports   = true
+
+# MSRV mirror so MSRV-aware lints fire correctly.
+msrv = "1.97"

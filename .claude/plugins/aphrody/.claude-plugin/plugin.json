@@ -1,0 +1,47 @@
+{
+  "$schema": "https://code.claude.com/schema/plugin.json",
+  "name": "aphrody",
+  "version": "0.1.0",
+  "description": "aphrody plugin: pixel-perfect M3 validation skill, n2b-ultra Node->Bun migrator agent, /scrape and /tokens slash commands powered by the bxc-scrapper MCP server, and an oxlint PostToolUse hook. Cross-platform (Linux #1, Windows #2, WASM #3), Bun-only, zero stubs.",
+  "author": {
+    "name": "aphrody-code",
+    "email": "yohanpierre15@gmail.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "homepage": "https://github.com/aphrody-code/aphrody",
+  "repository": "https://github.com/aphrody-code/aphrody",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aphrody",
+    "material-design-3",
+    "shadcn",
+    "bxc",
+    "scraping",
+    "n2b",
+    "bun",
+    "oxlint",
+    "claude-code"
+  ],
+  "category": "productivity",
+  "skills": "./skills/",
+  "commands": [
+    "./commands/scrape.md",
+    "./commands/tokens.md"
+  ],
+  "agents": [
+    "./agents/n2b-ultra.md"
+  ],
+  "hooks": "./hooks/oxclint.json",
+  "mcpServers": {
+    "bxc-scrapper": {
+      "command": "bun",
+      "args": [
+        "run",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/bxc-scrapper/server.ts"
+      ],
+      "env": {
+        "BXC_DAEMON_URL": "http://127.0.0.1:8765"
+      }
+    }
+  }
+}

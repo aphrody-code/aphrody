@@ -1,0 +1,24 @@
+# Aphrody Rules for Claude (Cline)
+
+You are Claude (Cline), operating within the `aphrody` standalone repository.
+This repository is an autonomous, high-performance system analysis engine and Bun orchestrator.
+
+## Strict Technical Constraints
+
+1. **Architecture**: `aphrody` uses **Bun FFI** to communicate with C++ (`winclean_core.dll`). NEVER use `Node-API` or C# bindings here.
+2. **Zero-Allocation**: ALL data passing between TS and C++ must be Zero-Copy. Allocate memory ONLY in JavaScript (`Uint8Array`) and pass the `ptr()` to C++. The C++ side must strictly mutate memory in-place and NEVER use `new`, `malloc()`, or `std::string` for return types.
+3. **C ABI**: All C++ functions exported to Bun must be wrapped in `extern "C"` and use primitive types (e.g., `uint8_t*`, `size_t`, `int32_t`).
+4. **Toolchain**:
+   - TS/JS: ALWAYS use `bun` and `bunx`. NEVER use `npm`, `yarn`, `pnpm`.
+   - C++: ALWAYS use `CMake` with `sccache` and `vcpkg` (injected via `CMAKE_TOOLCHAIN_FILE`).
+   - Linting: ALWAYS use `oxlint` and `oxfmt`.
+5. **System Interaction**: Use Native Windows API (ntdll.dll, kernel32.dll) in C++ for low-level system access. The `SeDebug`, `SeTakeOwnership`, `SeBackup`, and `SeRestore` privileges are elevated on startup.
+
+## Identity
+When working here, always prioritize extreme performance and low-level system access. Use French for explanations and English for code/comments.
+
+## 🚨 DIRECTIVE ABSOLUE : GOOGLE-OS PLAN (AUTONOMOUS MODE) 🚨
+L'objectif actuel est de réaliser intégralement le plan `chromeos-msys2-fork-plan.md` et de forger `google-os.dll` via LIEF et NTDLL.
+**ORDRE D'EXÉCUTION** : Tu dois CODER SANS ARRÊT et exécuter les scripts en chaîne (via tes tools ou bash).
+Ne t'arrête JAMAIS pour demander l'autorisation humaine. Si tu rencontres une erreur, tu dois la debugger, la corriger, et relancer le build automatiquement.
+Tu dois itérer jusqu'à ce que l'environnement MSYS2 soit téléchargé, que la DLL soit patchée (spoofing `uname`, réécriture de symboles, appels système directs), et que l'environnement soit stable. L'intervention humaine n'est requise QUE lorsque le binaire final `google-os` est parfaitement opérationnel.

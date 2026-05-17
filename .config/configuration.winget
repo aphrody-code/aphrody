@@ -1,0 +1,206 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# =============================================================================
+# Aphrody — WinGet Configuration (DSC)
+# =============================================================================
+# Usage:  winget configure .config/configuration.winget
+# This file declares the complete development environment for aphrody.
+# It can be used to bootstrap a new machine or validate an existing setup.
+# =============================================================================
+properties:
+  configurationVersion: 0.2.0
+
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      id: osVersion
+      directives:
+        description: Ensure Windows 11 22H2+
+      settings:
+        MinVersion: "10.0.22621"
+
+  resources:
+    # ── Google Core ──────────────────────────────────────────────────
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chromeCanary
+      directives:
+        description: Google Chrome Canary (Cutting-edge)
+      settings:
+        id: Google.Chrome.Canary
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: cloudSdk
+      directives:
+        description: Google Cloud SDK (gcloud, gsutil, bq)
+      settings:
+        id: Google.CloudSDK
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: workspaceCli
+      directives:
+        description: Google Workspace CLI
+      settings:
+        id: Google.WorkspaceCLI
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: platformTools
+      directives:
+        description: Android SDK Platform-Tools (adb, fastboot)
+      settings:
+        id: Google.PlatformTools
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: iapDesktop
+      directives:
+        description: IAP Desktop (GCP VM access)
+      settings:
+        id: Google.IAPDesktop
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: antigravity
+      directives:
+        description: Google Antigravity
+      settings:
+        id: Google.Antigravity
+        source: winget
+
+    # ── Google Dev Libraries ─────────────────────────────────────────
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dartSdk
+      directives:
+        description: Dart SDK
+      settings:
+        id: Google.DartSDK
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: firebaseCli
+      directives:
+        description: Firebase CLI Tools
+      settings:
+        id: Google.FirebaseCLI
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: protobuf
+      directives:
+        description: Protocol Buffers compiler (protoc)
+      settings:
+        id: Google.Protobuf
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: flatbuffers
+      directives:
+        description: FlatBuffers compiler (flatc)
+      settings:
+        id: Google.flatbuffers
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: libwebp
+      directives:
+        description: WebP tools (cwebp, dwebp)
+      settings:
+        id: Google.Libwebp
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: brotli
+      directives:
+        description: Brotli compression
+      settings:
+        id: Google.Brotli
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: osvScanner
+      directives:
+        description: OSV vulnerability scanner
+      settings:
+        id: Google.OSVScanner
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: perfetto
+      directives:
+        description: Perfetto tracing toolkit
+      settings:
+        id: Google.Perfetto
+        source: winget
+
+    # ── Core Toolchain (non-Google) ──────────────────────────────────
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: rustup
+      directives:
+        description: Rust toolchain (rustup)
+      settings:
+        id: Rustlang.Rustup
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: bun
+      directives:
+        description: Bun runtime
+      settings:
+        id: Oven-sh.Bun
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: cmake
+      directives:
+        description: CMake build system
+      settings:
+        id: Kitware.CMake
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: llvm
+      directives:
+        description: LLVM/Clang toolchain
+      settings:
+        id: LLVM.LLVM
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zig
+      directives:
+        description: Zig compiler (cross-compilation C/C++)
+      settings:
+        id: zig.zig
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: uv
+      directives:
+        description: uv Python package manager
+      settings:
+        id: astral-sh.uv
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives:
+        description: Git
+      settings:
+        id: Microsoft.Git
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: sccache
+      directives:
+        description: sccache (shared compilation cache)
+      settings:
+        id: Mozilla.sccache
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ninja
+      directives:
+        description: Ninja build system
+      settings:
+        id: Ninja-build.Ninja
+        source: winget

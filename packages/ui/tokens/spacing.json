@@ -1,0 +1,18 @@
+{
+  "spacing": {
+    "1": { "value": "0.25rem", "description": "4px" },
+    "2": { "value": "0.5rem", "description": "8px" },
+    "3": { "value": "0.75rem", "description": "12px" },
+    "4": { "value": "1rem", "description": "16px" },
+    "6": { "value": "1.5rem", "description": "24px" },
+    "8": { "value": "2rem", "description": "32px" },
+    "12": { "value": "3rem", "description": "48px" },
+    "16": { "value": "4rem", "description": "64px" }
+  },
+  "radii": {
+    "sm": { "value": "0.25rem", "description": "4px" },
+    "md": { "value": "0.5rem", "description": "8px" },
+    "lg": { "value": "1rem", "description": "16px" },
+    "full": { "value": "9999px", "description": "Circle / Pill" }
+  }
+}
