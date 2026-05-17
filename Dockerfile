@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.cargo/registry,sharing=locked \
         *) echo "unsupported TARGETARCH=$TARGETARCH" && exit 1 ;; \
     esac && \
     rustup target add "$TRIPLE" && \
-    cargo build --locked --profile dist --target "$TRIPLE" -p cli && \
+    cargo build --locked --profile dist --target "$TRIPLE" -p aphrody && \
     cp "target/$TRIPLE/dist/aphrody" /tmp/aphrody
 
 # --- Stage 2: Distroless runtime --------------------------------------------

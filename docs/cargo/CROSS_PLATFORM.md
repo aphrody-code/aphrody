@@ -119,7 +119,7 @@ Tous les aliases utilisent le profil `dist` (LTO fat + strip + panic=abort).
 - **`ring` / `aws-lc-sys`** : nécessitent un compilateur C cible (gcc pour Linux, cl/clang pour Windows). `zigbuild` fournit `zig cc` qui couvre tous les cas.
 - **`gtk3-sys`** (tiré par `tao`/`wry` sur Linux/macOS) : pkg-config sysroot requis. Pour un CLI-only build, exclure `gui` :
   ```bash
-  cargo build -p cli --target x86_64-unknown-linux-gnu  # skip workspace gui
+  cargo build -p aphrody --target x86_64-unknown-linux-gnu  # skip workspace gui
   ```
 
 ## CI cross-platform (.github/workflows recommandé)
@@ -139,8 +139,8 @@ steps:
   - uses: actions/checkout@v4
   - uses: dtolnay/rust-toolchain@nightly
   - uses: mozilla-actions/sccache-action@v0.0.4
-  - run: cargo check -p cli --target ${{ matrix.target }} --locked
-  - run: cargo nextest run -p cli --target ${{ matrix.target }} --locked
+  - run: cargo check -p aphrody --target ${{ matrix.target }} --locked
+  - run: cargo nextest run -p aphrody --target ${{ matrix.target }} --locked
 ```
 
 Le `rust-toolchain.toml` garantit que **chaque runner installe exactement la même nightly + composants**.

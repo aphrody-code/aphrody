@@ -1,6 +1,6 @@
 [package]
-name                  = "cli"
-publish               = false
+name                  = "aphrody"
+publish               = false  # flip to true once base/backend/a2a-* are on crates.io
 version.workspace     = true
 edition.workspace     = true
 rust-version.workspace = true
@@ -8,14 +8,11 @@ authors.workspace     = true
 license.workspace     = true
 homepage.workspace    = true
 repository.workspace  = true
-description           = "Aphrody — Rust binary (canonical CLI in transition; legacy CLI is src/index.ts)."
+description           = "Aphrody — cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly)."
 
-# End-users invoke `aphrody`, not `cli`. The crate keeps its short internal
-# name to avoid touching every workspace dep that references it, but the
-# produced binary is renamed via this override.
-[[bin]]
-name = "aphrody"
-path = "src/main.rs"
+# NOTE: directory is still crates/cli/ — historical naming, kept to avoid a
+# `git mv` churn affecting tooling that hard-codes the path. The package and
+# binary on disk are both `aphrody`.
 
 [lints]
 workspace = true

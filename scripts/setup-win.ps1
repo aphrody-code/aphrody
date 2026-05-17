@@ -211,4 +211,4 @@ switch ($Mode) {
     }
 }
 
-Write-Info 'Done. Build with: cargo build --release -p cli --target x86_64-pc-windows-msvc'
+Write-Info 'Done. Build with: cargo build --release -p aphrody --target x86_64-pc-windows-msvc'

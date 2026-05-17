@@ -31,4 +31,4 @@ For production builds, we consume:
 - **a2a-rs** : our own forks `crates/a2a*` are derived from this reference
 - **depot_tools** : only on Chromium contributor machines
 
-No vendored sources are required for `cargo build -p cli`.
+No vendored sources are required for `cargo build -p aphrody`.

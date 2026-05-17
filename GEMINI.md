@@ -59,14 +59,14 @@ Voir [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md) pour la vue d'ensemble
 
 ```bash
 # Linux d'abord (cible #1)
-cargo check -p cli --target x86_64-unknown-linux-gnu --locked
-cargo nextest run -p cli --target x86_64-unknown-linux-gnu --locked
+cargo check -p aphrody --target x86_64-unknown-linux-gnu --locked
+cargo nextest run -p aphrody --target x86_64-unknown-linux-gnu --locked
 
 # Puis Windows (cible #2)
-cargo check -p cli --target x86_64-pc-windows-msvc --locked
+cargo check -p aphrody --target x86_64-pc-windows-msvc --locked
 
 # Puis wasm (cible #3)
-cargo check -p cli --target wasm32-unknown-unknown --locked
+cargo check -p aphrody --target wasm32-unknown-unknown --locked
 
 # Workspace-wide
 cargo ci-offline      # clippy --workspace --all-targets --locked --offline -- -D warnings
