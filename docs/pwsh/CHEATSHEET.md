@@ -95,7 +95,7 @@ $response = Invoke-RestMethod https://api.example.com/data
 
 ```powershell
 # GET simple
-Invoke-RestMethod https://api.github.com/repos/nicmusic/aphrody
+Invoke-RestMethod https://api.github.com/repos/aphrody-code/aphrody
 
 # POST avec body
 $body = @{ name = "test" } | ConvertTo-Json

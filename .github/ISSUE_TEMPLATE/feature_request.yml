@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose new capability or enhancement
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow / outcome is currently impossible or painful?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: API sketch, command syntax, config schema, or behavior change.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you evaluate? Why is this better?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Single crate / module
+        - Cross-cutting (workspace)
+        - Breaking change (SemVer major)
+        - New dependency required
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platforms required
+      multiple: true
+      options:
+        - Linux
+        - Windows
+        - WASM
+        - macOS (best effort)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: This aligns with project scope (CLI / cross-platform / production-grade)
+          required: true
+        - label: I am willing to implement (or sponsor implementation)
+          required: false

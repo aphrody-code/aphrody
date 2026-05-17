@@ -5,7 +5,7 @@
   "type": "module",
   "description": "MCP stdio server that exposes the bxc (Bun+Lightpanda) scraping engine as 7 tools for Claude Code. Backed by the bxc daemon over HTTP or by spawning bxc-engine directly when the daemon is unavailable.",
   "license": "Apache-2.0",
-  "author": "aphrody-code <contact@aphrody-code.dev>",
+  "author": "aphrody-code <37252373+aphrody-code@users.noreply.github.com>",
   "homepage": "https://github.com/aphrody-code/aphrody",
   "main": "./server.ts",
   "bin": {
