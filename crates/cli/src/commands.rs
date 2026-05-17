@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use async_trait::async_trait;
@@ -1402,6 +1403,48 @@ impl TerminalCommand for TokensCommand {
             self.output.display(),
             token_map.tokens.len()
         );
+
+        Ok(())
+    }
+}
+
+// ── aphrody term ─────────────────────────────────────────────────────────────
+
+/// Arguments for the `term` subcommand, mirroring the clap variant fields.
+pub(crate) struct TermCommand {
+    /// WebSocket bind address as a raw string (parsed at runtime).
+    pub addr: String,
+    /// Optional shell override forwarded to the backend.
+    pub shell: Option<String>,
+    /// Optional working directory forwarded to the backend.
+    pub cwd: Option<PathBuf>,
+}
+
+#[async_trait]
+impl TerminalCommand for TermCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        let addr: SocketAddr = self
+            .addr
+            .parse()
+            .map_err(|e| miette::miette!("invalid --addr '{}': {e}", self.addr))?;
+
+        let cfg = aphrody_terminal_backend::PtyConfig {
+            cols: 80,
+            rows: 24,
+            shell: self.shell.clone(),
+            cwd: self.cwd.clone(),
+        };
+
+        eprintln!("aphrody term: ws://{addr} (open the WASM UI to connect)");
+
+        tokio::select! {
+            res = aphrody_terminal_backend::serve(addr, cfg) => {
+                res.map_err(|e| miette::miette!("terminal server error: {e:#}"))?;
+            }
+            _ = tokio::signal::ctrl_c() => {
+                eprintln!("\naphrody term: received Ctrl-C, shutting down");
+            }
+        }
 
         Ok(())
     }

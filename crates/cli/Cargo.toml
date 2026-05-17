@@ -39,14 +39,16 @@ anyhow        = { workspace = true }
 
 # --- Native targets (Linux/Windows/macOS) ----------------------------------
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio         = { workspace = true }
-reqwest       = { workspace = true }
-indicatif     = { workspace = true }
-colored       = { workspace = true }
-mimalloc      = { workspace = true }
-scraper       = { workspace = true }
-backend       = { path = "../backend" }
-rustls        = { workspace = true }
+tokio                     = { workspace = true }
+reqwest                   = { workspace = true }
+indicatif                 = { workspace = true }
+colored                   = { workspace = true }
+mimalloc                  = { workspace = true }
+scraper                   = { workspace = true }
+backend                   = { path = "../backend" }
+rustls                    = { workspace = true }
+tracing                   = { workspace = true }
+aphrody-terminal-backend  = { path = "../aphrody-terminal-backend" }
 
 # --- WebAssembly targets ---------------------------------------------------
 # Minimal tokio surface (the only features supported on wasm).

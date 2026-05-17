@@ -20,7 +20,7 @@
 use aphrody_terminal_vt::{Color, TerminalState};
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Element, HtmlElement, KeyboardEvent, Node};
+use web_sys::{Document, HtmlElement, KeyboardEvent, Node};
 
 // ── Panic hook (installed once at module initialisation) ─────────────────────
 
@@ -66,9 +66,7 @@ pub struct TerminalHandle {
     state: TerminalState,
     /// Root container element (the div passed by `target_id`).
     root: HtmlElement,
-    /// Approximate character width in pixels (used for sizing).
-    cell_w_px: f64,
-    /// Approximate character height in pixels.
+    /// Approximate character height in pixels (used for row sizing).
     cell_h_px: f64,
     /// Optional JS callback invoked with a `Uint8Array` on user input.
     on_data: Option<Function>,
@@ -114,7 +112,6 @@ impl TerminalHandle {
         let mut handle = TerminalHandle {
             state,
             root,
-            cell_w_px: 8.4,
             cell_h_px: 16.8,
             on_data: None,
         };
@@ -151,9 +148,12 @@ impl TerminalHandle {
             .ok_or_else(|| JsValue::from_str("no window"))?;
         let document = window.document()
             .ok_or_else(|| JsValue::from_str("no document"))?;
-        // Clear existing children.
-        while let Some(child) = self.root.first_child() {
-            self.root.remove_child(&child)?;
+        // Clear existing children. first_child/remove_child are on Node.
+        {
+            let root_node: &Node = self.root.as_ref();
+            while let Some(child) = root_node.first_child() {
+                root_node.remove_child(&child)?;
+            }
         }
         self.build_dom_grid(&document, cols, rows)?;
         Ok(())
@@ -232,15 +232,17 @@ impl TerminalHandle {
     /// Repaint a single row by updating the text content and styles of its spans.
     fn repaint_row(&self, document: &Document, row: u16) -> Result<(), JsValue> {
         let _ = document; // document not needed; we traverse the existing DOM.
-        let row_node: Node = self
-            .root
+        // child_nodes() is defined on Node, not HtmlElement.
+        let root_as_node: &Node = self.root.as_ref();
+        let row_node: Node = root_as_node
             .child_nodes()
             .item(u32::from(row))
             .ok_or_else(|| JsValue::from_str("row out of range"))?;
         let row_el: HtmlElement = row_node
             .dyn_into::<HtmlElement>()
             .map_err(|_| JsValue::from_str("row is not HtmlElement"))?;
-        let spans = row_el.child_nodes();
+        let row_as_node: &Node = row_el.as_ref();
+        let spans = row_as_node.child_nodes();
 
         for c in 0..self.state.cols() {
             let span_node = spans

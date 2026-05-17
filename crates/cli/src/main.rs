@@ -136,6 +136,18 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+    /// Pont WebSocket-PTY pour le frontend WASM (localhost uniquement)
+    Term {
+        /// Adresse d'écoute du serveur WebSocket (host:port)
+        #[arg(long, default_value = "127.0.0.1:8788")]
+        addr: String,
+        /// Shell à lancer (défaut : autodetect selon la plateforme)
+        #[arg(long)]
+        shell: Option<String>,
+        /// Répertoire de travail initial du shell
+        #[arg(long)]
+        cwd: Option<std::path::PathBuf>,
+    },
     /// Génère des completions shell pour bash / zsh / fish / pwsh / elvish
     Completions {
         #[arg(value_enum)]
@@ -223,6 +235,9 @@ async fn main() -> miette::Result<()> {
         Some(Commands::Tokens { url, output, force }) => {
             commands::TokensCommand { url, output, force }.execute(&ctx).await?;
         },
+        Some(Commands::Term { addr, shell, cwd }) => {
+            commands::TermCommand { addr, shell, cwd }.execute(&ctx).await?;
+        },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
@@ -268,6 +283,7 @@ fn main() {
                 Commands::Scrape { .. } => "scrape",
                 Commands::Tokens { .. } => "tokens",
                 Commands::Doctor { .. } => "doctor",
+                Commands::Term { .. } => "term",
                 Commands::Completions { .. } => "completions",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),

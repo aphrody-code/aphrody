@@ -295,6 +295,8 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ⏳ |
 | T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ⏳ |
 | T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ⏳ |
+| T-9 | `packages/aphrody-jsx` — Bun-native react-reconciler → `aphrody-jsx-*` OSC bridge (Ink-compatible API, M3 native, dual target vt/wasm) | ⏳ |
+| T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ⏳ |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 

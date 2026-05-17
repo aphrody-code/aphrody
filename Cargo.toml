@@ -51,10 +51,13 @@ members = [
     "crates/agui-bridge",
     # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
     "crates/aphrody-channels",
-    # aphrody-terminal — VT parser + WASM renderer + pty backend (wterm-class, pure Rust)
+    # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
+    # + LLM event bus + browser bridge). Spec: docs/design/aphrody-terminal-spec.md.
     "crates/aphrody-terminal-vt",
     "crates/aphrody-terminal-wasm",
     "crates/aphrody-terminal-backend",
+    "crates/aphrody-terminal-llm",
+    "crates/aphrody-terminal-browser",
 ]
 exclude = [
     "crates/coreutils",
