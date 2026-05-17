@@ -17,6 +17,7 @@
 mod code;
 mod heading;
 
+use aphrody_terminal_vt::strip_osc_envelope_str;
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{Arena, Options, parse_document};
@@ -248,28 +249,16 @@ impl OscMdDetector {
 
     /// Try to decode an `aphrody-md` OSC payload. Returns `Some(markdown)`
     /// on success, `None` if the prefix is wrong or the base64 / UTF-8 fails.
+    ///
+    /// Envelope framing is stripped via the canonical helper in
+    /// `aphrody-terminal-vt` (T6 dedup lane).
     #[must_use]
     pub fn feed(&mut self, osc_payload: &str) -> Option<String> {
-        let body = strip_osc_framing(osc_payload);
+        let body = strip_osc_envelope_str(osc_payload);
         let after = body.strip_prefix("aphrody-md;")?;
         let bytes = B64.decode(after.as_bytes()).ok()?;
         String::from_utf8(bytes).ok()
     }
-}
-
-/// Strip an optional `ESC ]` prefix and `BEL` / `ESC \` suffix so the caller
-/// can pass either the framed sequence or just the payload body.
-fn strip_osc_framing(s: &str) -> &str {
-    let mut out = s;
-    if let Some(rest) = out.strip_prefix("\x1b]") {
-        out = rest;
-    }
-    if let Some(rest) = out.strip_suffix("\x07") {
-        out = rest;
-    } else if let Some(rest) = out.strip_suffix("\x1b\\") {
-        out = rest;
-    }
-    out
 }
 
 #[cfg(test)]

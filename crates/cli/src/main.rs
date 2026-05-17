@@ -23,7 +23,10 @@ use clap::{Parser, Subcommand};
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
-    commands::{ChromiumSyncCommand, DoctorCommand, MirrorCommand, ScrapeProfile, VersionCommand},
+    commands::{
+        ChromiumSyncCommand, DoctorCommand, MirrorCommand, ScrapeProfile, SubprocessExit,
+        VersionCommand,
+    },
     context::{GoogleContext, TerminalCommand},
 };
 
@@ -266,71 +269,68 @@ use crate::nl_tokens::is_natural_language_prompt;
 // ===========================================================================
 // Native entry point — full command dispatch.
 // ===========================================================================
+
+/// Run the full command dispatch and return a `miette::Result<()>`.
+///
+/// Extracted from `main` so the tokio entry-point can intercept
+/// `SubprocessExit` errors and issue the single authoritative
+/// `process::exit` call there, keeping all library code free of direct
+/// exit calls.
 #[cfg(not(target_arch = "wasm32"))]
-#[tokio::main]
-async fn main() -> miette::Result<()> {
-    // rustls 0.23 requires an explicit CryptoProvider install before any
-    // reqwest::Client::new() call (otherwise reqwest panics at runtime in
-    // async_impl/client.rs:2461). `GoogleContext::new()` builds a reqwest
-    // client immediately, so this must come first.
-    let _ = rustls::crypto::ring::default_provider().install_default();
-
-    let ctx = GoogleContext::new().map_err(|e| miette::miette!(e.to_string()))?;
-    let cli = Cli::parse();
-
+async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
     match cli.command {
         Some(Commands::Auth { force }) => {
-            commands::AuthCommand { force }.execute(&ctx).await?;
+            commands::AuthCommand { force }.execute(ctx).await?;
         },
         Some(Commands::Version) => {
-            VersionCommand.execute(&ctx).await?;
+            VersionCommand.execute(ctx).await?;
         },
         Some(Commands::Doctor { json }) => {
-            DoctorCommand { json_output: json }.execute(&ctx).await?;
+            DoctorCommand { json_output: json }.execute(ctx).await?;
         },
         Some(Commands::Mirror { action }) => {
-            MirrorCommand { action }.execute(&ctx).await?;
+            MirrorCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Dns { domain }) => {
-            commands::DnsCommand { domain }.execute(&ctx).await?;
+            commands::DnsCommand { domain }.execute(ctx).await?;
         },
         Some(Commands::Chromium { action }) => match action {
             ChromiumActions::Sync => {
-                ChromiumSyncCommand.execute(&ctx).await?;
+                ChromiumSyncCommand.execute(ctx).await?;
             },
         },
         Some(Commands::A2a { prompt }) => {
-            commands::A2aCommand { prompt }.execute(&ctx).await?;
+            commands::A2aCommand { prompt }.execute(ctx).await?;
         },
         Some(Commands::Cros { action }) => {
-            commands::CrosCommand { action }.execute(&ctx).await?;
+            commands::CrosCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Coreutils { action }) => {
-            commands::CoreutilsCommand { action }.execute(&ctx).await?;
+            commands::CoreutilsCommand { action }.execute(ctx).await?;
         },
         Some(Commands::UtilLinux { action }) => {
-            commands::UtilLinuxCommand { action }.execute(&ctx).await?;
+            commands::UtilLinuxCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Search { query }) => {
-            commands::SearchCommand { query }.execute(&ctx).await?;
+            commands::SearchCommand { query }.execute(ctx).await?;
         },
         Some(Commands::Gemini { args }) => {
-            commands::GeminiCommand { args }.execute(&ctx).await?;
+            commands::GeminiCommand { args }.execute(ctx).await?;
         },
         Some(Commands::Scrape { url, selector, profile, output }) => {
-            commands::ScrapeCommand { url, selector, profile, output }.execute(&ctx).await?;
+            commands::ScrapeCommand { url, selector, profile, output }.execute(ctx).await?;
         },
         Some(Commands::Tokens { url, output, force }) => {
-            commands::TokensCommand { url, output, force }.execute(&ctx).await?;
+            commands::TokensCommand { url, output, force }.execute(ctx).await?;
         },
         Some(Commands::Term { addr, shell, cwd }) => {
-            commands::TermCommand { addr, shell, cwd }.execute(&ctx).await?;
+            commands::TermCommand { addr, shell, cwd }.execute(ctx).await?;
         },
         Some(Commands::N2b { args }) => {
-            commands::N2bCommand { args }.execute(&ctx).await?;
+            commands::N2bCommand { args }.execute(ctx).await?;
         },
         Some(Commands::Bxc { action }) => {
-            commands::BxcCommand { action }.execute(&ctx).await?;
+            commands::BxcCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
@@ -354,15 +354,51 @@ async fn main() -> miette::Result<()> {
                     },
                 }
             } else {
-                commands::AutoCommand { args }.execute(&ctx).await?;
+                commands::AutoCommand { args }.execute(ctx).await?;
             }
         },
         None => {
-            commands::AutoCommand { args: vec![] }.execute(&ctx).await?;
+            commands::AutoCommand { args: vec![] }.execute(ctx).await?;
         },
     }
 
     Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[tokio::main]
+async fn main() {
+    // rustls 0.23 requires an explicit CryptoProvider install before any
+    // reqwest::Client::new() call (otherwise reqwest panics at runtime in
+    // async_impl/client.rs:2461). `GoogleContext::new()` builds a reqwest
+    // client immediately, so this must come first.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
+    let ctx = match GoogleContext::new() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("aphrody: {e}");
+            std::process::exit(1);
+        },
+    };
+    let cli = Cli::parse();
+
+    match dispatch(&ctx, cli).await {
+        Ok(()) => {},
+        Err(report) => {
+            // `SubprocessExit` is produced by commands that forward a child
+            // process and want to propagate its exit code verbatim.  Extract
+            // the code and exit here — this is the single authorised call to
+            // `process::exit` in the entire binary.
+            if let Some(se) = report.downcast_ref::<SubprocessExit>() {
+                let code = se.0;
+                std::process::exit(code);
+            }
+            // All other errors: pretty-print via miette and exit 1.
+            eprintln!("{report:?}");
+            std::process::exit(1);
+        },
+    }
 }
 
 // ===========================================================================
