@@ -109,7 +109,8 @@ backend/a2a-client. Refactor requis :
 | Homebrew tap `aphrody-code/tap` publié | ⏳ |
 | GitHub Releases workflow (`.github/workflows/release.yml`, 8 targets, SHA-256, SBOM) | ✅ |
 | Premier tag `v*` poussé qui produit un release | ⏳ |
-| `cargo install aphrody` documenté | ⏳ (besoin du rename workspace `cli` → `aphrody` pour crates.io) |
+| Package workspace `cli` → `aphrody` | ✅ (commit 2026-05-17, dir conservé `crates/cli/`) |
+| `cargo install aphrody` documenté | ⏳ (besoin de publier `base`/`backend`/`a2a-*` à crates.io d'abord) |
 | One-line install (`install.sh` / `install.ps1`) avec vérif SHA-256 | ✅ |
 
 ## 2. Tâches de fond (continues)
