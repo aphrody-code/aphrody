@@ -52,18 +52,17 @@ cargo build --release -p cli
 |-----------------|:----------------------------------:|:----------------------:|
 | `base`          | ✅                                 | ✅                     |
 | `mrx-core`      | n/a                                | ✅                     |
-| `cli` (binary)  | ❌ (tokio "full" + mio)            | ❌                     |
+| `cli` (binary)  | ✅ (wasm stub via cfg-gated deps)  | ⏳ (in progress)       |
 | `backend`/`a2a*`| ❌                                 | ❌                     |
 
 ```bash
 rustup target add wasm32-unknown-unknown wasm32-wasip1
 
-# Browser-ready (libraries only) :
+# Browser-ready (libraries + CLI stub) :
 cargo check -p base --target wasm32-unknown-unknown      # ✅
 cargo check -p base --target wasm32-wasip1               # ✅
 cargo check -p mrx-core --target wasm32-wasip1           # ✅
-
-# CLI binary wasm port : work-in-progress (see docs/PLAN.md §P-Wasm-CLI).
+cargo check -p cli  --target wasm32-unknown-unknown      # ✅ (wasm stub, native deps cfg-gated)
 ```
 
 ## Stack 2026
@@ -83,9 +82,11 @@ cargo check -p mrx-core --target wasm32-wasip1           # ✅
 Un workspace Rust nightly cross-platform centré sur **un binaire `aphrody`
 distribuable sur Linux/Windows/wasm** :
 
-1. **Workspace Rust nightly** (`crates/`) — 10 membres : `cli`, `gui`, `backend`,
-   `base`, `google_mcp`, `a2a*` (protocole agent-to-agent). Build hermétique
-   avec lockfile pin SHA-256.
+1. **Workspace Rust nightly** (`crates/`) — 16 membres : `cli`, `gui`, `backend`,
+   `base`, `google_mcp`, `a2a` × 5 (protocole agent-to-agent : `a2a`, `a2a-client`,
+   `a2a-server`, `a2a-grpc`, `a2a-pb`), `mrx-*` × 5 (Monorepo Real-time X-platform
+   mapper : `mrx-core`, `mrx-detect`, `mrx-audit`, `mrx-watch`, `mrx-cli`),
+   `aphrody-translate`. Build hermétique avec lockfile pin SHA-256.
 2. **Bun + TypeScript** (`packages/`, `bun.lock`) — scripting, FFI bridge,
    serveurs MCP. **node interdit** : tout passe par bun.
 3. **Bridges natifs vendored** (`vendor/bun/`, `vendor/electron-prebuilt/`,
@@ -134,7 +135,7 @@ Installation automatique : `winget configure .config/configuration.winget`.
 ### WebAssembly
 
 ```bash
-rustup target add wasm32-unknown-unknown wasm32-wasi
+rustup target add wasm32-unknown-unknown wasm32-wasip1
 cargo install wasm-bindgen-cli wasm-pack
 ```
 
