@@ -11,8 +11,10 @@
 //   4. sha256_hash_1mb      — SHA-256 digest of a 1 MiB buffer (throughput)
 //   5. serde_json_parse     — JSON parsing of a realistic crt.sh-shaped payload
 
+use std::hint::black_box;
+
 use base::{Crypto, Vfs};
-use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use sha2::Digest as _;
 
 // ---------------------------------------------------------------------------

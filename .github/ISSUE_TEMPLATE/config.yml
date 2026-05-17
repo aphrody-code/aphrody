@@ -1,8 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
 blank_issues_enabled: false
 contact_links:
-  - name: Security report (private channel)
-    url: https://github.com/aphrody-code/aphrody/security/advisories/new
-    about: For high-severity vulnerabilities, please use private vulnerability reporting.
-  - name: Discussion / question
+  - name: Discussions
     url: https://github.com/aphrody-code/aphrody/discussions
-    about: For open-ended questions and design discussions.
+    about: Open-ended questions, design debates, and "how do I" threads go here.
+  - name: Security
+    url: https://github.com/aphrody-code/aphrody/security/advisories/new
+    about: Report a vulnerability privately via GitHub Security Advisories.

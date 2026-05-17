@@ -1,47 +1,89 @@
-﻿<!--
-  Pull Request template â€” Aphrody
-  Conventional Commits required: <type>(<scope>): <subject>
+<!--
+  SPDX-License-Identifier: Apache-2.0
+  Pull Request template — aphrody
+  PR title MUST follow Conventional Commits: <type>(<scope>): <subject>
+  Breaking change? Use `!` notation: <type>(<scope>)!: <subject>
 -->
 
 ## Summary
 
-<!-- A clear, concise description of WHAT changed and WHY. Reference the PLAN.md phase if applicable. -->
+<!--
+  1-3 bullets: what changed and WHY. Reference `docs/PLAN.md` phase
+  if applicable. Avoid restating the diff — explain intent.
+-->
 
-## Type
+-
+-
 
-- [ ] `feat` â€” new feature
-- [ ] `fix` â€” bug fix
-- [ ] `refactor` â€” code change, no feature/bug
-- [ ] `perf` â€” performance
-- [ ] `docs` â€” documentation only
-- [ ] `test` â€” tests added/fixed
-- [ ] `build` â€” build system, deps, Cargo.toml
-- [ ] `chore` â€” auxiliary tools
+## Type of change
 
-Breaking change? â†’ tick `!` notation: `<type>(<scope>)!: <subject>`
+- [ ] `fix` — bug fix (non-breaking)
+- [ ] `feat` — new feature (non-breaking)
+- [ ] `feat!` / `fix!` — breaking change (SemVer major)
+- [ ] `docs` — documentation only
+- [ ] `refactor` — code change, no feature/bug
+- [ ] `test` — tests added or fixed
+- [ ] `chore` / `build` / `ci` — tooling, deps, infra
 
-## Issue / Phase reference
+## Honest-delivery classification
 
-<!-- Closes #N, related to docs/PLAN.md Â§P10 / P11 / P12 -->
+<!--
+  Per docs/extensions/honest-delivery-v1.md, classify EACH deliverable
+  in this PR as FAIT (done + verifiable artifact), INCOMPLET (partial
+  + named missing piece), or NON_FAIT (blocked + named blocker).
+
+  Mark INCOMPLET / NON_FAIT items explicitly — do not silently elide them.
+-->
+
+- [ ] All deliverables are `FAIT` (no partial work in this PR)
+- [ ] This PR contains `INCOMPLET` items (listed below with the named missing piece)
+- [ ] This PR contains `NON_FAIT` items (listed below with the named blocker)
+
+**Per-deliverable status** (one bullet per claim):
+
+- `FAIT` — <claim> — artifact: <commit SHA / file path / passing test name / 200 URL>
+- `INCOMPLET` — <claim> — missing: <named piece, e.g. `parse_header` still returns `unimplemented!()` at `crates/foo/src/parser.rs:42`>
+- `NON_FAIT` — <claim> — blocker: <named blocker, e.g. waiting on upstream PR agntcy/slim#123>
 
 ## Cross-platform impact
 
-- [ ] Compiles on `x86_64-pc-windows-msvc`
-- [ ] Compiles on `x86_64-unknown-linux-gnu`
-- [ ] Compiles on `aarch64-apple-darwin`
-- [ ] Uses `crates/cli/src/platform.rs` abstractions (no direct `LOCALAPPDATA`, `HOME` etc.)
-- [ ] N/A â€” Windows-only crate (`google_os`, `base` DPAPI)
+- [ ] Compiles on `x86_64-unknown-linux-gnu` (cible #1, mandatory)
+- [ ] Compiles on `x86_64-pc-windows-msvc` (cible #2)
+- [ ] Compiles on `wasm32-unknown-unknown` (cible #3)
+- [ ] Uses `crates/base` / platform abstractions (no raw `LOCALAPPDATA` / `HOME` reads in cross-platform code)
+- [ ] Windows-specific code is gated behind `#[cfg(target_os = "windows")]`
+- [ ] N/A — touches platform-specific crate only (`gui`, etc.)
 
-## Checklist (mandatory)
+## Test plan
 
-- [ ] `cargo ci-offline` passes locally (zero warnings, `--locked --offline`)
-- [ ] `cargo deny check` passes (CVE + licences + bans + sources)
-- [ ] `cargo nextest run -p <crate>` passes if I touched the crate
-- [ ] New deps reviewed: `cargo vet suggest` + justified in `supply-chain/audits.toml` or `deny.toml` ignore
-- [ ] `docs/SUMMARY.md` regenerated if I added doc files (`bun run docs:summary`)
-- [ ] Conventional Commit message in PR title
-- [ ] FFI surface (if touched): `# Safety` doc + tested with `cargo miri test` or `cargo asan`
+<!--
+  Checklist a reviewer can follow locally to verify the change.
+  Shell commands preferred.
+-->
 
-## Screenshots / output (if UX-relevant)
+- [ ] `cargo ci-offline` (clippy --workspace --all-targets --locked --offline -- -D warnings)
+- [ ] `cargo xt-offline` (nextest run --workspace --locked --offline)
+- [ ] `cargo deny check` (CVE + licences + bans + sources)
+- [ ] Manual reproduction of the user-visible behavior:
+  ```bash
+  # commands here
+  ```
 
-<!-- Paste terminal output, screenshots, performance numbers, etc. -->
+## Checklist
+
+- [ ] PR title follows Conventional Commits
+- [ ] `cargo ci-offline` passes locally (zero warnings)
+- [ ] `cargo deny check` passes (no new CVEs, license rejects, banned crates)
+- [ ] `cargo nextest run -p <crate>` passes for every crate I touched
+- [ ] New deps reviewed: `cargo vet suggest` or justified in `supply-chain/audits.toml` / `deny.toml`
+- [ ] New source files carry `// SPDX-License-Identifier: Apache-2.0`
+- [ ] `CHANGELOG.md` updated if the change is user-visible
+- [ ] `docs/SUMMARY.md` regenerated if I added doc files (`bun run scripts/gen_summary.ts`)
+- [ ] FFI surface (if touched): `# Safety` doc + tested with `cargo miri test` or sanitizer
+- [ ] **No AI co-author trailers** (no `Co-Authored-By: Claude / Copilot / GPT-*` lines)
+
+## Related issues
+
+<!-- `Closes #N`, `Refs #N`, links to upstream issues, design docs, etc. -->
+
+-

@@ -1,26 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=https://json.schemastore.org/github-issue-forms.json
 name: Bug report
-description: Reproducible defect in production behavior
+description: Report a reproducible defect in production behavior
 title: "[bug] "
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. Fill **all** required fields — incomplete reports get closed.
+        Thanks for taking the time to file a bug report. Please fill **all**
+        required fields. Incomplete reports get closed without follow-up.
+
+        Before opening: check [`docs/FAQ.md`](https://github.com/aphrody-code/aphrody/blob/main/docs/FAQ.md)
+        and search existing issues — duplicates waste maintainer time.
 
   - type: input
     id: version
     attributes:
-      label: Version
-      description: Output of `<tool> --version` or commit SHA
-      placeholder: "1.0.0-canary or bf01d95d"
+      label: aphrody --version
+      description: Paste the full output of `aphrody --version` (or commit SHA if built from source).
+      placeholder: "aphrody 0.x.y (bf01d95d)"
     validations:
       required: true
 
   - type: dropdown
     id: platform
     attributes:
-      label: Platform
+      label: Affected platform
+      description: Tick every platform where you can reproduce the bug.
       multiple: true
       options:
         - Linux (Ubuntu 26.04)
@@ -33,14 +40,42 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: crate
+    attributes:
+      label: Affected crate
+      description: Best guess at which workspace member is implicated.
+      multiple: true
+      options:
+        - aphrody (CLI binary)
+        - base
+        - backend
+        - a2a
+        - a2a-client
+        - a2a-server
+        - a2a-pb
+        - a2a-grpc
+        - google_mcp
+        - mrx-core
+        - mrx-detect
+        - mrx-audit
+        - mrx-watch
+        - mrx-cli
+        - aphrody-translate
+        - aphrody-wasm
+        - gui (desktop only)
+        - unsure
+    validations:
+      required: true
+
   - type: textarea
     id: reproduction
     attributes:
-      label: Reproduction steps
-      description: Minimal, deterministic. Shell commands preferred.
+      label: Steps to reproduce
+      description: Minimal, deterministic. Shell commands preferred over prose.
       placeholder: |
-        1. `git clone …`
-        2. `cargo run -p X -- --flag=Y`
+        1. `git clone https://github.com/aphrody-code/aphrody`
+        2. `cargo run -p aphrody -- <subcommand> --flag=value`
         3. Observe …
       render: shell
     validations:
@@ -50,6 +85,7 @@ body:
     id: expected
     attributes:
       label: Expected behavior
+      description: What you thought would happen.
     validations:
       required: true
 
@@ -57,16 +93,25 @@ body:
     id: actual
     attributes:
       label: Actual behavior
-      description: Include stack trace / panic / error output if any.
+      description: What actually happened. Include stack trace, panic, or full stderr.
       render: shell
     validations:
       required: true
 
   - type: textarea
+    id: doctor
+    attributes:
+      label: aphrody doctor --json
+      description: Output of `aphrody doctor --json` (optional but speeds up triage massively).
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
     id: env
     attributes:
       label: Environment
-      description: Rust toolchain, Bun version, kernel, Windows build, etc.
+      description: Rust toolchain, Bun version, kernel build, Windows insider build, etc.
       render: text
     validations:
       required: false
@@ -74,11 +119,11 @@ body:
   - type: checkboxes
     id: checks
     attributes:
-      label: Pre-submission checks
+      label: Pre-submission checklist
       options:
         - label: I searched existing issues — no duplicate
           required: true
         - label: I reproduced on the latest `main` commit
           required: true
-        - label: I redacted any secrets / tokens from the output
+        - label: I redacted any secrets or tokens from the pasted output
           required: true
