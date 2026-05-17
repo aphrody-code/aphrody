@@ -14,7 +14,7 @@ dependencies = [
  "futures",
  "pin-project-lite",
  "rcgen",
- "reqwest",
+ "reqwest 0.13.3",
  "rustls",
  "semver",
  "serde",
@@ -91,7 +91,7 @@ dependencies = [
  "futures",
  "http-body-util",
  "hyper",
- "reqwest",
+ "reqwest 0.13.3",
  "rustls",
  "serde",
  "serde_json",
@@ -238,7 +238,8 @@ dependencies = [
  "ignore",
  "rayon",
  "regex",
- "reqwest",
+ "reqwest 0.12.28",
+ "reqwest 0.13.3",
  "serde",
  "serde_json",
  "sha2",
@@ -247,6 +248,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "urlencoding",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -504,7 +507,7 @@ dependencies = [
  "base64",
  "fs_extra",
  "futures-util",
- "reqwest",
+ "reqwest 0.13.3",
  "rusqlite",
  "serde",
  "serde_json",
@@ -788,7 +791,7 @@ dependencies = [
  "indicatif",
  "miette",
  "mimalloc",
- "reqwest",
+ "reqwest 0.13.3",
  "rustls",
  "scraper",
  "serde",
@@ -1850,7 +1853,7 @@ dependencies = [
  "axum",
  "backend",
  "base",
- "reqwest",
+ "reqwest 0.13.3",
  "rmcp",
  "schemars 0.8.22",
  "serde",
@@ -3877,6 +3880,38 @@ name = "regex-syntax"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
+
+[[package]]
+name = "reqwest"
+version = "0.12.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
+dependencies = [
+ "base64",
+ "bytes",
+ "futures-core",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "js-sys",
+ "log",
+ "percent-encoding",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sync_wrapper",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "reqwest"
