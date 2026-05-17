@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+PackageIdentifier: aphrody-code.aphrody
+PackageVersion: __VERSION__
+PackageLocale: en-US
+Publisher: aphrody-code
+PublisherUrl: https://github.com/aphrody-code
+PublisherSupportUrl: https://github.com/aphrody-code/aphrody/issues
+PackageName: aphrody
+PackageUrl: https://github.com/aphrody-code/aphrody
+License: Apache-2.0
+LicenseUrl: https://github.com/aphrody-code/aphrody/blob/main/LICENSE
+Copyright: Copyright (c) 2026 aphrody-code
+ShortDescription: Cross-platform Rust CLI (Linux / Windows / macOS / WebAssembly).
+Description: |
+  Aphrody is a cross-platform Rust CLI that ships the same command surface
+  to Linux, Windows, and the browser (wasm32-unknown-unknown). Built on a
+  hermetic supply chain (cargo-vet feeds from Google, Mozilla, Fuchsia,
+  ChromeOS, Bytecode Alliance, Embark, Zcash) with byte-reproducible builds.
+Moniker: aphrody
+Tags:
+  - cli
+  - cross-platform
+  - rust
+  - wasm
+  - webassembly
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
