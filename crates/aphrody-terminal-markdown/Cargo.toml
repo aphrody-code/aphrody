@@ -31,5 +31,9 @@ base64    = { workspace = true }
 thiserror = { workspace = true }
 once_cell = { workspace = true }
 
+# OSC envelope strip is canonical in aphrody-terminal-vt (T6 dedup lane).
+# Avoids inlining the ESC ] / BEL / ST framing logic here.
+aphrody-terminal-vt = { path = "../aphrody-terminal-vt" }
+
 [dev-dependencies]
 # kept empty: integration tests under tests/integration.rs use std only.

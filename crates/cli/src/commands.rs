@@ -19,6 +19,23 @@ use crate::{
     scrape::ScrapeClient,
 };
 
+/// A subprocess forwarded by aphrody exited with a non-zero status code.
+///
+/// This error is produced instead of calling `std::process::exit` directly in
+/// library code.  The single authoritative `process::exit` call lives in
+/// `main.rs` which downcasts `miette::Report` to this type and propagates the
+/// exit code.
+#[derive(Debug, miette::Diagnostic)]
+pub(crate) struct SubprocessExit(pub(crate) i32);
+
+impl std::fmt::Display for SubprocessExit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "subprocess exited with code {}", self.0)
+    }
+}
+
+impl std::error::Error for SubprocessExit {}
+
 pub(crate) struct VersionCommand;
 
 #[async_trait]
@@ -601,7 +618,7 @@ impl AutoCommand {
             .map_err(|e| miette::miette!("Erreur lors de l'appel au moteur {}: {}", cmd, e))?;
 
         if !status.success() {
-            std::process::exit(status.code().unwrap_or(1));
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
         }
         Ok(())
     }
@@ -632,7 +649,7 @@ impl TerminalCommand for GeminiCommand {
             .map_err(|e| miette::miette!("Erreur d'exécution de {}: {}", bin.display(), e))?;
 
         if !status.success() {
-            std::process::exit(status.code().unwrap_or(1));
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
         }
         Ok(())
     }
@@ -882,7 +899,7 @@ impl TerminalCommand for DoctorCommand {
         }
 
         if report.verdict() == "UNHEALTHY" {
-            std::process::exit(1);
+            return Err(miette::Report::new(SubprocessExit(1)));
         }
         Ok(())
     }
@@ -1422,7 +1439,8 @@ fn resolve_n2b_cli() -> anyhow::Result<std::path::PathBuf> {
 }
 
 /// Spawn `bun run <n2b-cli> -- <args>` and stream its stdout/stderr to the
-/// terminal.  The caller's exit code is propagated via `std::process::exit`.
+/// terminal.  A non-zero exit code is returned as an `anyhow::Error` so the
+/// caller can propagate it as a `SubprocessExit` through `miette`.
 async fn spawn_n2b(cli_path: &std::path::Path, args: &[String]) -> anyhow::Result<()> {
     use tokio::io::{AsyncBufReadExt, BufReader};
     use tokio::process::Command;

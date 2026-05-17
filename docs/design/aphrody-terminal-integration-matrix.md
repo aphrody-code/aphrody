@@ -31,7 +31,7 @@ de `⏳` vers `✅`.
 | `aphrody-translate`    | i18n labels FR/EN switchables dans command palette (`aphrody-translate::convert`)         | ⏳ T-INT-i18n    |
 | `aphrody-wasm`         | `aphrody-terminal-wasm` réexporte les helpers crypto/encoding (aes_gcm, base64)           | ⏳ T-INT-wasm    |
 | `ievr-tools`           | Pane optionnelle IEVR (game RE workflow, gated `--feature ievr`)                          | ⏳ T-INT-ievr (low prio) |
-| `aphrody-summary`      | Pane "docs preview" — `cargo run -p aphrody-summary` output rendu inline en markdown      | ⏳ T-INT-summary |
+| `aphrody-summary`      | Pane "docs preview" — `aphrody_summary::generate()` rendu inline via `DocsPreviewPane` (publish `LlmEvent::Markdown` sur l'event bus) | ✅ T-INT-summary |
 | `m3-tokens`            | Tokens couleur/typo consommés par `aphrody-terminal-wasm` (déjà câblé)                    | ✅                                                |
 | `shadcn-bridge`        | Chrome terminal : header bar, tab strip, command palette, dialogs (M3 segmented buttons, list, fab) | ⏳ T-INT-chrome  |
 | `a2a-ui`               | **Embedded as the "A2A coord channel" pane** — mailbox viewer JSONL en live              | ⏳ T-INT-a2a-ui  |
