@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! mrx-watch — long-running watcher that re-runs the native audit on FS events.
 //!
 //! Backends per OS (via notify v8):

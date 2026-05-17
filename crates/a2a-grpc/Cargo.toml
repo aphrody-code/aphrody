@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "a2a-grpc"
 version = "0.2.2"
 description = "A2A v1 gRPC protocol binding for client and server"
@@ -6,7 +6,11 @@ readme = "README.md"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-rust-version.workspace = true
+rust-version.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+keywords.workspace      = true
+categories.workspace    = true
 
 [lib]
 name = "a2a_grpc"

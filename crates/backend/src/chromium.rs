@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 #![cfg(target_os = "windows")]
 
 use std::{fs, path::PathBuf};

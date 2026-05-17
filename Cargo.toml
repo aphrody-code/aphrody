@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 #  Aphrody — Workspace Manifest (Cargo 1.93+, Rust 2024, Nightly)
 #  Production-grade, Google Style — Fuchsia/Chromium aligned.
 # ============================================================================
@@ -72,7 +72,7 @@ repository   = "https://github.com/aphrody-code/aphrody"
 license      = "Apache-2.0"
 description  = "aphrody — the ultimate cross-platform CLI (Linux/Windows/WASM)."
 keywords     = ["cli", "cross-platform", "rust", "linux", "wasm"]
-categories   = ["command-line-utilities", "development-tools"]
+categories   = ["command-line-utilities", "development-tools", "web-programming"]
 
 # ----------------------------------------------------------------------------
 # Centralized dependencies — every crate uses `{ workspace = true }`.

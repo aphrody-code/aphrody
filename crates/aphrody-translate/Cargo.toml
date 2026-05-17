@@ -1,10 +1,15 @@
-[package]
+﻿[package]
 name = "aphrody-translate"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-repository.workspace = true
+repository.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+keywords.workspace      = true
+categories.workspace    = true
+readme                  = "README.md"
 description = "aphrody — translate code comments to French, scrub AI-isms and emoji, apply Aphrody prose style"
 
 [[bin]]

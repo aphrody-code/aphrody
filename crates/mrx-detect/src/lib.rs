@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! mrx-detect — recognise the shape of a JS/Rust monorepo root and its
 //! sub-workspaces.
 //!

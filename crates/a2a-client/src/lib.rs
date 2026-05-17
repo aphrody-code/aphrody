@@ -22,8 +22,16 @@ pub mod transport;
 
 pub use client::A2AClient;
 pub use factory::A2AClientFactory;
-pub use futures::stream::BoxStream;
 pub use transport::{ServiceParams, Transport, TransportFactory};
+
+// On native targets, `BoxStream` is `Pin<Box<dyn Stream + Send + 'static>>`.
+// On wasm32, reqwest futures are `!Send` (JS single-thread model), so we use
+// `LocalBoxStream` (`Pin<Box<dyn Stream + 'static>>`, no Send bound) instead.
+// Both types have identical usage ergonomics for consumers that don't spawn.
+#[cfg(not(target_family = "wasm"))]
+pub use futures::stream::BoxStream;
+#[cfg(target_family = "wasm")]
+pub use futures::stream::LocalBoxStream as BoxStream;
 
 pub(crate) fn a2a_error_from_details(
     code: i32,

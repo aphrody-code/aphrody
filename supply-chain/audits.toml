@@ -67,3 +67,105 @@ audit when the crate name suggests crypto but it's actually a wrapper).
 # Reviewed by <reviewer> on <date>. Top 10 crate, no unsafe at the deserialize
 # entry points used by our `*-pb` codegen. Macro hygiene clean.
 # """
+
+# ============================================================================
+#  Audits performed 2026-05-17 by aphrody-code
+#  Source: cargo vet suggest (top-5 crypto/network/FFI/parser risk)
+#  Criteria applied: safe-to-run (CLI sandboxed artifact builder)
+# ============================================================================
+
+# --- 1. subtle 2.6.1 ---------------------------------------------------------
+# Category: crypto (constant-time primitives used by rustls, aes-gcm, universal-hash)
+# Unsafe blocks: 1 — `core::ptr::read_volatile` in the `black_box` optimization
+#   barrier (cfg-gated, only active when `core_hint_black_box` feature is OFF).
+#   Preconditions: pointer is from a live stack local (`&input`), Copy-bound,
+#   properly aligned. Verified sound. No panics on attacker-controlled input:
+#   all public APIs accept only integers or slices; `CtOption::unwrap` panics
+#   only on programmer error (None variant), not on external data.
+#   No process spawning, no I/O, no network. `#[no_std]`.
+[[audits.subtle]]
+version  = "2.6.1"
+criteria = "safe-to-run"
+who      = "aphrody-code"
+notes    = """
+One unsafe block: `core::ptr::read_volatile(&input)` in the `black_box`
+optimization-barrier helper (active only without `core_hint_black_box` feature).
+Pointer is a non-null, aligned, Copy stack local — sound. No I/O, no process
+spawning, no panics on external input. `#[no_std]`. Dalek cryptography project,
+widely used by the RustCrypto ecosystem.
+"""
+
+# --- 2. block-buffer 0.9.0 ---------------------------------------------------
+# Category: crypto (internal digest buffer, used by `digest` trait consumers)
+# Unsafe blocks: 2
+#   (a) `slice::from_raw_parts` in `input_blocks`: pointer derived from a
+#       slice whose length was just computed as `n_blocks * BlockSize`; within
+#       the same allocation. Sound.
+#   (b) `core::ptr::write_bytes` in `set_zero`: valid mutable slice, zeroing
+#       exactly `dst.len()` bytes. Sound.
+# No panics on attacker-controlled length: lengths are derived from slice
+# metadata, not user-provided values. No I/O or process spawning. `#[no_std]`.
+[[audits.block-buffer]]
+version  = "0.9.0"
+criteria = "safe-to-run"
+who      = "aphrody-code"
+notes    = """
+Two unsafe blocks: `slice::from_raw_parts` over a sub-slice of known length
+(sound, pointer stays within same allocation) and `ptr::write_bytes` zeroing a
+mutable slice (sound). No I/O, no process spawning, no panics on external input.
+`#[no_std]`. RustCrypto project.
+"""
+
+# --- 3. opaque-debug 0.3.0 ---------------------------------------------------
+# Category: crypto-adjacent (macro helper to prevent key material leaking via Debug)
+# Unsafe blocks: 0 — purely declarative macros, `#[no_std]`.
+# No I/O, no network, no process spawning.
+[[audits.opaque-debug]]
+version  = "0.3.0"
+criteria = "safe-to-run"
+who      = "aphrody-code"
+notes    = """
+Zero unsafe blocks. Single-file `#[no_std]` declarative-macro crate that emits
+an opaque `Debug` impl (`StructName { ... }`). No I/O, no process spawning.
+RustCrypto project.
+"""
+
+# --- 4. wasm-bindgen-macro 0.2.121 -------------------------------------------
+# Category: FFI/macro (proc-macro entry point for Wasm↔JS FFI boundary)
+# The `lib.rs` entry point is a zero-unsafe thin shim; all code generation
+# lives in `wasm-bindgen-macro-support`. That support crate contains ~50 unsafe
+# lines, all in `codegen.rs`: they are code-generation tokens emitted into the
+# user's crate (e.g. `unsafe extern "C-unwind"` ABI wrappers, `transmute_copy`
+# on `#[repr(transparent)]` types). These unsafe blocks run in the *generated*
+# user code, not inside the proc-macro process itself. The macro itself runs
+# exclusively at compile time and performs no file writes outside temp dirs
+# managed by the build system, no network access, and no process spawning.
+# `unwrap()` calls are on compiler-internal state (parsed syn types), not on
+# user-supplied runtime data.
+[[audits.wasm-bindgen-macro]]
+version  = "0.2.121"
+criteria = "safe-to-run"
+who      = "aphrody-code"
+notes    = """
+Zero unsafe in the entry-point lib.rs; ~50 unsafe lines in macro-support are
+code-generation tokens emitted into user crates (ABI shims, repr-transparent
+transmutes), not executed in the proc-macro process. No file writes outside
+build system temp dirs, no network, no process spawning at macro-expansion time.
+Compile-time only. Official wasm-bindgen project (rustwasm WG).
+"""
+
+# --- 5. wasm-bindgen-futures 0.4.71 ------------------------------------------
+# Category: FFI/async (bridges Rust Futures to JS Promises)
+# As of 0.4.71 this crate is a one-file re-export shim delegating entirely to
+# `js_sys::futures`. Zero unsafe blocks in this crate's own code. All unsafe
+# surface lives in `js-sys` / `wasm-bindgen` core, which are separately vetted.
+# No I/O, no process spawning, no network outside the JS host environment.
+[[audits.wasm-bindgen-futures]]
+version  = "0.4.71"
+criteria = "safe-to-run"
+who      = "aphrody-code"
+notes    = """
+Pure re-export shim (`pub use js_sys::futures::*`). Zero unsafe blocks in this
+crate's own source. No I/O, no process spawning. Unsafe surface delegated to
+`js-sys` core. Official wasm-bindgen project (rustwasm WG).
+"""
