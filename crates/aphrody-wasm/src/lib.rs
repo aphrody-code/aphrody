@@ -79,8 +79,6 @@ pub fn decrypt_aes_gcm(ciphertext: &[u8], key: &[u8]) -> Result<Vec<u8>, JsValue
 // ---------------------------------------------------------------------------
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    use super::*;
-
     /// Verifies the version string is non-empty and matches the expected
     /// semver-ish prefix that every aphrody workspace package carries.
     #[test]
