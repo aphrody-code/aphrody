@@ -167,6 +167,14 @@ Avant un push qui touche du code partagé : vérifier `inbox-from-winclean.jsonl
 + bumper `heartbeat-aphrody.txt`. Toute écriture cross-repo doit être précédée
 d'un `fact` via `/msg` (cf. apx-fact-move-script comme template).
 
+- **`/a2a-duel-loop`** : 1 tick A2A par invocation, paire avec `/loop 60s /a2a-duel-loop`.
+  Script `.claude/skills/a2a-duel-loop/scripts/duel-cycle.ts` (flags `--iteration --side --type --re --dry-run`).
+- **Ievr ops aphrody-side** : `scripts/ievr-serve.ps1` (bootstrap bun :8787),
+  `scripts/ievr-verify.ps1` (gates 1+2/5 — HTTP 200 + Edge screenshot).
+- **Concurrent peer Claude** dans le même repo : `git status` avant chaque edit ;
+  ne jamais modifier les fichiers en cours d'édition uncommitted du peer
+  (catastrophe garantie sur `Cargo.lock` et workspace `Cargo.toml`).
+
 ## 6.5. Skills & agents (`.claude/`)
 
 Toute la surface skills est centralisée et documentée :
@@ -197,9 +205,30 @@ Toute la surface skills est centralisée et documentée :
   seul `crates/gui` l'est, et `gui` n'est pas dans le pipeline `cli`.
 - **wasm** : `tokio` ne compile pas tel quel — utiliser features sélectives
   (`tokio-stream` + `js-sys` + `wasm-bindgen-futures` pour le runtime web).
+- **Steam download monitor** : `du steamapps/downloading/<id>/` ment — Steam pré-alloue
+  les fichiers en sparse zeros dès l'event `preallocated N files (Y MB)` du
+  `Steam/logs/content_log.txt`. Source vérité : parser `update started: download A/B,
+  stage C/D` + `Current download rate: X Mbps`. Manifest `.acf BytesDownloaded` est
+  stale (refresh rare).
+- **mrx scan cwd** : écrit `path.json` + `monorepo-map.json` dans le cwd par défaut
+  — gitignored au root (cf. `.gitignore` §20, commit `d89bcb8f3`).
+- **Edge headless WebGPU** : `msedge --headless=new --enable-features=Vulkan,WebGPU
+  --enable-unsafe-webgpu --virtual-time-budget=10000` insuffisant — `requestAdapter`
+  reste pending au moment du screenshot. Gates 3-5 du 5-point UI gate exigent
+  Playwright/chromedp CDP-driven ; `bxc` (peer côté winclean) est `gpu_capable=false`
+  (HTML/DOM only via Lightpanda).
 
 ## 8. Source of Truth
 
 Pour la vue d'ensemble consolidée (architecture, plateformes, livrables,
 ressources), lire **[`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md)** —
 fusion des anciens `CLAUDE.md` / `GEMINI.md` / `docs/PLAN.md` / `docs/DESIGN.md`.
+
+Compléments connexes :
+
+- [`docs/iecode-public-endpoints.md`](docs/iecode-public-endpoints.md) — catalog
+  APIs publiques iecode/IEVR (azalee GraphQL, Steam Store/SteamSpy, inagle source).
+- [`docs/WINCLEAN-AUDIT.md`](docs/WINCLEAN-AUDIT.md) — audit cross-repo C:/winclean
+  (réutilisation, skills à importer, licences).
+- [`docs/posts/2026-05-ai-json.md`](docs/posts/2026-05-ai-json.md) — dev journal du
+  protocole A2A file-based (channels, envelope, 3-deep handshake).
