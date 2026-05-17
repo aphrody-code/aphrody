@@ -180,6 +180,7 @@ impl A2AClientFactoryBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::install_rustls_provider;
 
     #[test]
     fn test_transport_key_from_interface() {
@@ -205,6 +206,7 @@ mod tests {
 
     #[test]
     fn test_builder_defaults() {
+        install_rustls_provider();
         let factory = A2AClientFactory::builder().build();
         assert_eq!(factory.factories.len(), 2); // jsonrpc + rest
         assert_eq!(factory.preferred_bindings.len(), 2);
@@ -218,6 +220,7 @@ mod tests {
 
     #[test]
     fn test_builder_preferred_bindings() {
+        install_rustls_provider();
         let factory =
             A2AClientFactory::builder().preferred_bindings(vec!["grpc".to_string()]).build();
         assert_eq!(factory.preferred_bindings, vec!["grpc"]);
@@ -225,6 +228,7 @@ mod tests {
 
     #[test]
     fn test_builder_with_interceptor() {
+        install_rustls_provider();
         use crate::middleware::LoggingInterceptor;
         let factory =
             A2AClientFactory::builder().with_interceptor(Arc::new(LoggingInterceptor)).build();

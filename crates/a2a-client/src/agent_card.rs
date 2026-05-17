@@ -47,6 +47,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::test_utils::install_rustls_provider;
 
     async fn spawn_agent_card_server(body: &'static str) -> String {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -71,6 +72,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_accepts_null_skills() {
+        install_rustls_provider();
         let server = spawn_agent_card_server(
             r#"{
                 "name": "Test Agent",
