@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aphrody-code.github.io/aphrody/schemas/ai.json/v1.json",
+  "title": "ai.json — universal A2A coordination manifest, v1",
+  "description": "Cross-project / cross-directory / cross-environment / cross-platform manifest that two or more AI agents publish so they can discover each other and coordinate work. Aligned with the AGNTCY A2A AgentCard pattern (`/.well-known/agent-card.json`) and extends it with local-coord channels (filesystem, heartbeat, git tag) for agents that share a machine without going over the network.\n\nDiscovery rules:\n- A self-declaring agent publishes its manifest at `<workspace_root>/.well-known/ai.json`.\n- A coordination space (shared mailbox) publishes an aggregate manifest at `<coord_dir>/ai.json` with `kind=\"coord\"` and a `participants` array referencing each agent's `.well-known/ai.json`.\n\nThe manifest is plain JSON (no comments) so every language can parse it. Paths use forward slashes; environment variables expand with `${VAR}`.",
+  "type": "object",
+  "required": ["schema_version", "kind", "id"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "description": "Semver of the ai.json schema. Major bumps are breaking; minor adds optional fields.",
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "schema_url": {
+      "description": "Resolvable URL to this exact schema, for validators.",
+      "type": "string",
+      "format": "uri"
+    },
+    "kind": {
+      "description": "`agent` — self-declaration of one AI agent's identity, workspace, capabilities, and channels it exposes. `coord` — aggregate manifest at a shared mailbox referencing N agents.",
+      "enum": ["agent", "coord"]
+    },
+    "id": {
+      "description": "Stable identifier for this agent (kind=agent) or this coord space (kind=coord). Convention: `<short-name>@<vcs-org>/<repo>` for agents, `<short-name>@<host>:<coord-path>` for coord spaces.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "generated_at": {
+      "description": "ISO-8601 timestamp (UTC) when the manifest was last rewritten.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "license": {
+      "description": "SPDX license identifier of the manifest contents.",
+      "type": "string"
+    },
+
+    "agent": {
+      "description": "(kind=agent only) Identity of the underlying AI runtime.",
+      "type": "object",
+      "required": ["name", "model", "provider"],
+      "properties": {
+        "name":       { "type": "string", "description": "Short human-readable name." },
+        "model":      { "type": "string", "description": "Model identifier as advertised by the provider (e.g. claude-opus-4-7, gpt-5-pro, gemini-2.5-flash)." },
+        "provider":   { "type": "string", "format": "hostname", "description": "DNS-style provider tag (anthropic.com, openai.com, google.com, ollama.local)." },
+        "role":       { "type": "string", "description": "Free-form role label (rust-engineering, web-frontend, devops, etc.)." },
+        "session_id": { "type": "string", "description": "Optional opaque session identifier so a peer can correlate replies." },
+        "started_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "workspace": {
+      "description": "(kind=agent only) Filesystem area this agent owns and operates on.",
+      "type": "object",
+      "required": ["primary_root"],
+      "properties": {
+        "primary_root":     { "type": "string", "description": "Absolute path, forward slashes, no trailing slash." },
+        "additional_roots": { "type": "array", "items": { "type": "string" }, "description": "Auxiliary roots the agent reads/writes (caches, toolchains)." },
+        "denied_paths":     { "type": "array", "items": { "type": "string" }, "description": "Glob patterns the agent will not touch (peer workspaces, secrets, etc.)." },
+        "vcs": {
+          "type": "object",
+          "properties": {
+            "kind":           { "enum": ["git", "hg", "svn", "fossil", "none"] },
+            "remote":         { "type": "string", "format": "uri" },
+            "default_branch": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "platforms": {
+      "description": "(kind=agent only) Cross-platform support matrix. Values: `tier-1` (build + test must be green), `tier-2` (build green), `best-effort` (non-blocking), `unsupported`.",
+      "type": "object",
+      "additionalProperties": {
+        "enum": ["tier-1", "tier-2", "best-effort", "unsupported"]
+      }
+    },
+
+    "capabilities": {
+      "description": "(kind=agent only) Free-form tags advertising what this agent can be asked to do. Convention: `<namespace>:<feature>` to avoid collision (e.g. `rust-engineering:nightly-1.97`, `web-frontend:wgpu`).",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "exposed_channels": {
+      "description": "(kind=agent only) Channels a peer can use to reach this agent.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/channel" }
+    },
+
+    "peers": {
+      "description": "Known peer agents (by id) and where to fetch their ai.json.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id":              { "type": "string" },
+          "discovery_hint":  { "type": "string", "description": "Filesystem path or URL to the peer's ai.json." },
+          "trust":           { "enum": ["full", "scoped", "untrusted"], "default": "scoped" }
+        }
+      }
+    },
+
+    "etiquette": {
+      "description": "Protocol rules every channel obeys.",
+      "type": "object",
+      "properties": {
+        "envelope_schema":     { "type": "string", "format": "uri", "description": "JSON Schema that every JSONL line / HTTP /msg body must validate against." },
+        "ack_required_for":    { "type": "array", "items": { "enum": ["ping", "ask", "fact", "ack"] } },
+        "max_message_kb":      { "type": "integer", "minimum": 1, "maximum": 4096, "default": 64 },
+        "rate_limit_per_minute": { "type": "integer", "minimum": 1 },
+        "preferred_language":  { "type": "string", "description": "BCP-47 language tag for free-text bodies." }
+      }
+    },
+
+    "participants": {
+      "description": "(kind=coord only) List of agents joining this coordination space.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "manifest"],
+        "properties": {
+          "id":        { "type": "string" },
+          "manifest":  { "type": "string", "description": "Filesystem path or URL to the participant's `.well-known/ai.json`." },
+          "joined_at": { "type": "string", "format": "date-time" },
+          "owner":     { "type": "string", "description": "Free-text description of which parts of the joint work this participant owns." }
+        }
+      }
+    },
+
+    "open_asks": {
+      "description": "In-band asks awaiting a response. Each carries the same envelope as a JSONL message.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/envelope" }
+    },
+
+    "facts": {
+      "description": "Shared state both agents agree on. Append-only.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/envelope" }
+    }
+  },
+
+  "$defs": {
+    "channel": {
+      "type": "object",
+      "required": ["type", "direction"],
+      "properties": {
+        "type":      { "enum": ["file_jsonl", "http_jsonrpc", "heartbeat_file", "git_tag", "named_pipe", "process_inspect", "markdown_doc", "custom"] },
+        "direction": { "enum": ["inbound", "outbound", "bidirectional"] },
+        "purpose":   { "type": "string" },
+        "path":      { "type": "string" },
+        "endpoint":  { "type": "string", "format": "uri" },
+        "ttl_seconds": { "type": "integer", "minimum": 1 },
+        "inbox":     { "type": "string" },
+        "outbox":    { "type": "string" },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["method", "path"],
+            "properties": {
+              "method":  { "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"] },
+              "path":    { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "repo":        { "type": "string", "description": "(git_tag) Filesystem path of the git repo where tags appear." },
+        "tag_pattern": { "type": "string", "description": "(git_tag) Glob the peer should watch." }
+      }
+    },
+    "envelope": {
+      "description": "Wire envelope shared by JSONL and HTTP /msg bodies.",
+      "type": "object",
+      "required": ["id", "ts", "from", "type", "subject", "body"],
+      "properties": {
+        "id":      { "type": "string", "pattern": "^[a-z0-9-]{3,64}$" },
+        "ts":      { "type": "string", "format": "date-time" },
+        "from":    { "type": "string", "description": "Sender's `id`." },
+        "to":      { "type": "string", "description": "Optional recipient id; omit for broadcast." },
+        "type":    { "enum": ["ping", "ask", "fact", "ack"] },
+        "re":      { "type": ["string", "null"], "description": "id of the message being answered (required for ack)." },
+        "subject": { "type": "string" },
+        "body":    { "type": "string", "description": "Free text (markdown OK)." },
+        "channel_hint": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preferred channel types for the reply."
+        }
+      }
+    }
+  }
+}

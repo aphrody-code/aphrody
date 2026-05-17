@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0.0",
+  "schema_url": "https://aphrody-code.github.io/aphrody/schemas/ai.json/v1.json",
+  "kind": "agent",
+  "id": "aphrody@aphrody-code/aphrody",
+  "generated_at": "2026-05-17T13:52:00Z",
+  "license": "Apache-2.0",
+
+  "agent": {
+    "name": "aphrody",
+    "model": "claude-opus-4-7",
+    "provider": "anthropic.com",
+    "role": "rust-engineering"
+  },
+
+  "workspace": {
+    "primary_root": "C:/src/aphrody",
+    "additional_roots": [
+      "C:/Users/yohan/.cargo",
+      "C:/Users/yohan/.bun",
+      "C:/Users/yohan/.dotnet",
+      "C:/Users/yohan/.nuget"
+    ],
+    "denied_paths": [
+      "**/.ssh/**",
+      "**/.aws/**",
+      "**/.gnupg/**",
+      "**/credentials.json",
+      "**/*.pem",
+      "**/*.key"
+    ],
+    "vcs": {
+      "kind": "git",
+      "remote": "https://github.com/aphrody-code/aphrody",
+      "default_branch": "main"
+    }
+  },
+
+  "platforms": {
+    "x86_64-unknown-linux-gnu":   "tier-1",
+    "x86_64-pc-windows-msvc":     "tier-1",
+    "wasm32-unknown-unknown":     "tier-1",
+    "wasm32-wasip1":              "tier-1",
+    "aarch64-unknown-linux-gnu":  "tier-2",
+    "aarch64-pc-windows-msvc":    "tier-2",
+    "x86_64-apple-darwin":        "best-effort",
+    "aarch64-apple-darwin":       "best-effort",
+    "aarch64-linux-android":      "best-effort"
+  },
+
+  "capabilities": [
+    "rust-engineering:nightly-1.97",
+    "rust-engineering:edition-2024",
+    "rust-engineering:resolver-3",
+    "wasm-port:wasm32-unknown-unknown",
+    "wasm-port:wasm32-wasip1",
+    "cargo-supply-chain:deny+vet+auditable",
+    "github-releases:multi-target",
+    "cross-platform-cli:linux+win+wasm",
+    "packaging:scoop+winget+homebrew+install-sh+install-ps1",
+    "ffi:bun-bridge",
+    "ffi:cxx-bridge",
+    "benchmarks:mrx-cli"
+  ],
+
+  "exposed_channels": [
+    {
+      "type": "file_jsonl",
+      "direction": "bidirectional",
+      "purpose": "asynchronous A2A mailbox (durable, git-friendly)",
+      "path": "C:/winclean/.coord/",
+      "inbox": "inbox-from-aphrody.jsonl",
+      "outbox": "inbox-from-winclean.jsonl"
+    },
+    {
+      "type": "http_jsonrpc",
+      "direction": "inbound",
+      "endpoint": "http://localhost:8788",
+      "routes": [
+        { "method": "GET",  "path": "/ping",  "purpose": "liveness + handshake payload" },
+        { "method": "POST", "path": "/msg",   "purpose": "append JSON envelope to inbox-from-winclean.jsonl" },
+        { "method": "GET",  "path": "/inbox", "purpose": "tail last 50 lines of inbox-from-winclean.jsonl" }
+      ]
+    },
+    {
+      "type": "heartbeat_file",
+      "direction": "outbound",
+      "path": "C:/winclean/.coord/heartbeat-aphrody.txt",
+      "ttl_seconds": 600,
+      "purpose": "proof-of-life timestamp (ISO-8601 UTC)"
+    },
+    {
+      "type": "git_tag",
+      "direction": "outbound",
+      "repo": "C:/winclean",
+      "tag_pattern": "aphrody-*",
+      "purpose": "out-of-band signal visible to anyone running `git tag -l aphrody-*`"
+    },
+    {
+      "type": "markdown_doc",
+      "direction": "outbound",
+      "path": "C:/winclean/.coord/COLLABORATION-APHRODY.md",
+      "purpose": "human-readable counterpart to peer's COLLABORATION-IEVR.md"
+    },
+    {
+      "type": "process_inspect",
+      "direction": "inbound",
+      "purpose": "observability: `ps -ef` lets aphrody detect when peer is actively running shells"
+    }
+  ],
+
+  "peers": [
+    {
+      "id": "winclean@aphrody-code/winclean",
+      "discovery_hint": "C:/winclean/.well-known/ai.json",
+      "trust": "scoped"
+    }
+  ],
+
+  "etiquette": {
+    "envelope_schema": "https://aphrody-code.github.io/aphrody/schemas/ai.json/v1.json#/$defs/envelope",
+    "ack_required_for": ["ask"],
+    "max_message_kb": 64,
+    "rate_limit_per_minute": 60,
+    "preferred_language": "fr"
+  }
+}
