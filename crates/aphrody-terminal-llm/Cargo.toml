@@ -33,6 +33,11 @@ thiserror     = { workspace = true }
 # reqwest: HTTP probe for McpTransport::Http servers.
 reqwest       = { workspace = true }
 
+# Config shim source-of-truth: import_mcp_json + McpShim live in terminal-config.
+# This crate adapts McpShim into the McpServerSpec / McpTransport surface used by
+# the probe loop (avoids duplicating the .mcp.json parser, T6 dedup lane).
+aphrody-terminal-config = { path = "../aphrody-terminal-config" }
+
 # Optional — pulled in by feature `mcp-default-servers`.
 which         = { workspace = true, optional = true }
 aphrody-mcp   = { path = "../aphrody-mcp", optional = true }

@@ -372,6 +372,10 @@ fn parse_sse_rest_event(event_text: &str) -> Option<Result<StreamResponse, A2AEr
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl Transport for JsonRpcTransport {
+    fn protocol_name(&self) -> &'static str {
+        "jsonrpc"
+    }
+
     async fn send_message(
         &self,
         params: &ServiceParams,

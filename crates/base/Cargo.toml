@@ -40,3 +40,10 @@ windows = { workspace = true, features = [
     "Win32_System_LibraryLoader",
     "Win32_System_Threading",
 ] }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name    = "base_bench"
+harness = false

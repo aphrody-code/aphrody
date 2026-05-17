@@ -14,6 +14,14 @@
 #[cfg(target_arch = "wasm32")] use console_error_panic_hook;
 #[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
 
+// WebGPU animated gradient hero renderer.
+// The module is gated wasm32 because wgpu surface acquisition is intrinsically
+// a browser-runtime operation; the gate lives inside gradient_hero.rs itself
+// (`#![cfg(target_arch = "wasm32")]` at the top of the file).
+pub mod gradient_hero;
+#[cfg(target_arch = "wasm32")]
+pub use gradient_hero::GradientHero;
+
 /// Installs the browser panic hook and wires `log` macros to `console.*`.
 ///
 /// Must be called once before any other aphrody-wasm function.  Subsequent

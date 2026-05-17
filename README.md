@@ -356,6 +356,23 @@ cargo audit-machete  # unused dependencies
 - [docs/winget/](./docs/winget/) — WinGet : catalogue 40+ packages, DSC
 - [docs/pwsh/](./docs/pwsh/) — PowerShell 7 : profils, modules
 
+### Crates ajoutés (2026-05-18)
+- [`crates/aphrody-terminal-markdown`](./crates/aphrody-terminal-markdown/) — CommonMark renderer (comrak + syntect).
+- [`crates/aphrody-terminal-json-out`](./crates/aphrody-terminal-json-out/) — JSONL framing stdout/stderr.
+- [`crates/aphrody-terminal-config`](./crates/aphrody-terminal-config/) — `~/.aphrody/terminal.json` strict schema + import shims.
+- [`crates/aphrody-tui`](./crates/aphrody-tui/) — pure Rust ratatui-style DSL, 60fps target.
+
+### Scripts haute-perf (2026-05-18)
+- [`scripts/n2b-batch.ps1`](./scripts/n2b-batch.ps1) + [`scripts/n2b-batch.sh`](./scripts/n2b-batch.sh) — migration parallèle `ForEach-Object -Parallel` / `xargs -P`.
+- [`scripts/bxc-crawl.ps1`](./scripts/bxc-crawl.ps1) + [`scripts/bxc-crawl.sh`](./scripts/bxc-crawl.sh) — crawl parallèle URLs × actions + loop + cache.
+- [`scripts/bxc-supervise.ps1`](./scripts/bxc-supervise.ps1) + [`scripts/bxc-supervise.sh`](./scripts/bxc-supervise.sh) — watchdog daemon bxc auto-restart.
+- [`scripts/Install-AphrodyToPath.ps1`](./scripts/Install-AphrodyToPath.ps1) + [`scripts/install-aphrody-path.sh`](./scripts/install-aphrody-path.sh) — install binaire dans PATH.
+
+### Kernel subcommands (depuis 2026-05-18)
+- `aphrody n2b [args]` — façade `packages/n2b/src/cli.ts` via bun.
+- `aphrody n2b watch --interval N --path P` — boucle tokio infinie.
+- `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine.
+
 ### Technical posts
 - [A2A cross-Claude coordination](./docs/posts/2026-05-ai-json.md)
 - [Parallel YOLO grind loop](./docs/posts/2026-05-yolo-grind-loop.md)
@@ -400,6 +417,10 @@ cargo audit-machete  # unused dependencies
 - [2026-05-17 mrx aggressive](./docs/audits/2026-05-17-mrx-aggressive.md)
 - [2026-05-17 n2b scan](./docs/audits/2026-05-17-n2b-scan.md)
 - [2026-05-17 bxc scrape request](./docs/audits/2026-05-17-bxc-scrape-request.md)
+- [2026-05-18 gemini app port audit](./docs/audits/2026-05-18-gemini-app-port-audit.md)
+- [2026-05-18 wterm vs microsoft-terminal vs aphrody-terminal](./docs/audits/2026-05-18-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md)
+- [docs/cargo/PIPELINE-OPTIMIZATION.md](./docs/cargo/PIPELINE-OPTIMIZATION.md) — cargo pipeline optimization notes
+- [docs/cargo/BUILD-SPEED.md](./docs/cargo/BUILD-SPEED.md) — workspace build-speed tactics
 
 ## Security
 

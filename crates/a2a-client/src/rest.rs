@@ -238,6 +238,10 @@ fn parse_rest_error(status: reqwest::StatusCode, body: &str) -> A2AError {
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl Transport for RestTransport {
+    fn protocol_name(&self) -> &'static str {
+        "http+json"
+    }
+
     async fn send_message(
         &self,
         params: &ServiceParams,

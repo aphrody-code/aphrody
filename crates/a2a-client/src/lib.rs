@@ -38,7 +38,9 @@ pub use client::A2AClient;
 #[cfg(not(target_family = "wasm"))] pub use futures::stream::BoxStream;
 #[cfg(target_family = "wasm")]
 pub use futures::stream::LocalBoxStream as BoxStream;
-pub use transport::{ServiceParams, Transport, TransportFactory};
+pub use transport::{
+    ServiceParams, Transport, TransportFactory, TransportKind, default_transport_kind,
+};
 
 // Used by jsonrpc, rest, push_config_compat — all excluded on wasm32-wasip1.
 #[cfg(not(target_os = "wasi"))]

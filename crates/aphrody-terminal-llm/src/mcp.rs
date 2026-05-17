@@ -29,9 +29,13 @@
 //!
 //! ## Loading from `.mcp.json`
 //!
-//! [`load_mcp_json`] parses a `.mcp.json` / `mcp.json` file in the format used
-//! by Claude Code (the `mcpServers` object with `type`, `command`, `args`,
-//! `env`, `url`, and optional `headers` fields).
+//! [`load_mcp_json`] is a thin adapter on top of
+//! [`aphrody_terminal_config::shims::import_mcp_json`]: the config crate owns
+//! the strict deserialiser ([`aphrody_terminal_config::shims::McpShim`] +
+//! [`aphrody_terminal_config::shims::McpServerEntry`]) and this module only
+//! converts the resulting shim into [`McpServerSpec`] values the probe loop
+//! understands.  The previous in-crate parser (private `McpJsonEntry` /
+//! `McpJsonFile` structs) was deleted as part of the T6 dedup lane.
 
 use std::{
     collections::HashMap,
@@ -505,51 +509,56 @@ pub async fn probe_loop(
 
 // ── .mcp.json loading ─────────────────────────────────────────────────────────
 
-/// Raw `mcpServers` entry from a `.mcp.json` / `mcp.json` file.
+/// Convert a single [`aphrody_terminal_config::shims::McpServerEntry`] into the
+/// [`McpServerSpec`] surface understood by [`probe_loop`].
 ///
-/// Matches the schema used by Claude Code:
-/// ```json
-/// {
-///   "type": "stdio",
-///   "command": "bun",
-///   "args": ["run", "/path/to/server.ts"],
-///   "env": { "FOO": "bar" }
-/// }
-/// ```
-/// or for HTTP/SSE:
-/// ```json
-/// {
-///   "type": "streamable-http",
-///   "url": "https://api.example.com/mcp/",
-///   "headers": { "Authorization": "Bearer ${TOKEN}" }
-/// }
-/// ```
-#[derive(Debug, serde::Deserialize)]
-struct McpJsonEntry {
-    #[serde(rename = "type", default)]
-    transport_type: String,
-    // Stdio fields.
-    command: Option<String>,
-    #[serde(default)]
-    args: Vec<String>,
-    #[serde(default)]
-    env: HashMap<String, String>,
-    // HTTP fields.
-    url: Option<String>,
-    // headers are accepted but not used for probing (they may contain secrets).
-    #[serde(default)]
-    headers: HashMap<String, String>,
-}
-
-/// Top-level structure of a `.mcp.json` file.
-#[derive(Debug, serde::Deserialize)]
-struct McpJsonFile {
-    #[serde(rename = "mcpServers")]
-    mcp_servers: HashMap<String, McpJsonEntry>,
+/// Mapping rules (kept identical to the legacy in-crate parser so existing
+/// callers, integration tests, and serialised state stay byte-compatible):
+///
+/// - `type` ∈ {`"streamable-http"`, `"http"`} → [`McpTransport::Http`].  An
+///   `Authorization: Bearer ${ENV}` header is rewritten to an [`OAuthConfig`]
+///   whose `token_env_var` carries the variable name, so the probe loop can
+///   pull the live bearer token from the process environment.
+/// - any other `type` (including `"stdio"` and the empty default) →
+///   [`McpTransport::Stdio`].  Other request headers are intentionally
+///   discarded because they may contain secrets that the probe loop must not
+///   echo into JSON-RPC stdin frames.
+fn spec_from_entry(
+    name: String,
+    entry: aphrody_terminal_config::shims::McpServerEntry,
+) -> McpServerSpec {
+    let transport = match entry.transport_type.as_str() {
+        "streamable-http" | "http" => {
+            let url = entry.url.unwrap_or_default();
+            let token_env_var = entry.headers.get("Authorization").and_then(|v| {
+                v.strip_prefix("Bearer ${")
+                    .and_then(|s| s.strip_suffix('}'))
+                    .map(str::to_owned)
+            });
+            let oauth_provider = token_env_var.map(|var| OAuthConfig {
+                server_url: url.clone(),
+                redirect_uri: String::new(),
+                scope: None,
+                token_env_var: Some(var),
+            });
+            McpTransport::Http { url, oauth_provider }
+        }
+        _ => {
+            let command = entry.command.unwrap_or_default();
+            McpTransport::Stdio { command, args: entry.args, env: entry.env }
+        }
+    };
+    McpServerSpec { name, transport }
 }
 
 /// Parse a `.mcp.json` / `mcp.json` file and convert its entries to
 /// [`McpServerSpec`]s.
+///
+/// This is a thin adapter on top of
+/// [`aphrody_terminal_config::shims::import_mcp_json`]: the strict shim parser
+/// lives in `aphrody-terminal-config` (single source of truth), this function
+/// only maps the resulting [`aphrody_terminal_config::shims::McpServerEntry`]
+/// values into [`McpServerSpec`] / [`McpTransport`].
 ///
 /// Entries with `type = "streamable-http"` or `type = "http"` are mapped to
 /// [`McpTransport::Http`].  All other types (including `"stdio"` and the empty
@@ -558,52 +567,15 @@ struct McpJsonFile {
 /// # Errors
 ///
 /// Returns `Err` if the file cannot be read or if the JSON structure is
-/// invalid.
+/// invalid (errors bubble up from the underlying shim loader).
 pub fn load_mcp_json(path: &std::path::Path) -> anyhow::Result<Vec<McpServerSpec>> {
-    let text = std::fs::read_to_string(path)
-        .map_err(|e| anyhow::anyhow!("cannot read {}: {e}", path.display()))?;
-    let file: McpJsonFile = serde_json::from_str(&text)
-        .map_err(|e| anyhow::anyhow!("invalid JSON in {}: {e}", path.display()))?;
-
-    let specs = file
-        .mcp_servers
+    let shim = aphrody_terminal_config::shims::import_mcp_json(Some(path))
+        .map_err(|e| anyhow::anyhow!("cannot import {}: {e}", path.display()))?;
+    let specs = shim
+        .servers
         .into_iter()
-        .map(|(name, entry)| {
-            let transport = match entry.transport_type.as_str() {
-                "streamable-http" | "http" => {
-                    let url = entry.url.unwrap_or_default();
-                    // If a header named "Authorization" is present and its value
-                    // starts with "Bearer ${", try to extract the env-var name
-                    // so probing can use a live token.
-                    let token_env_var = entry
-                        .headers
-                        .get("Authorization")
-                        .and_then(|v| {
-                            v.strip_prefix("Bearer ${")
-                                .and_then(|s| s.strip_suffix('}'))
-                                .map(str::to_owned)
-                        });
-                    let oauth_provider = if token_env_var.is_some() {
-                        Some(OAuthConfig {
-                            server_url: url.clone(),
-                            redirect_uri: String::new(),
-                            scope: None,
-                            token_env_var,
-                        })
-                    } else {
-                        None
-                    };
-                    McpTransport::Http { url, oauth_provider }
-                }
-                _ => {
-                    let command = entry.command.unwrap_or_default();
-                    McpTransport::Stdio { command, args: entry.args, env: entry.env }
-                }
-            };
-            McpServerSpec { name, transport }
-        })
+        .map(|(name, entry)| spec_from_entry(name, entry))
         .collect();
-
     Ok(specs)
 }
 
@@ -705,4 +677,100 @@ pub fn default_server_specs() -> Vec<McpServerSpec> {
             },
         },
     ]
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Verifies that [`load_mcp_json`] delegates to the strict shim parser in
+    /// `aphrody-terminal-config` rather than re-implementing a private
+    /// deserialiser.  We exercise the delegation indirectly by:
+    ///
+    /// 1. Writing a `.mcp.json` to a tempdir.
+    /// 2. Loading it through both the public adapter (`load_mcp_json`) and the
+    ///    upstream shim loader (`import_mcp_json`).
+    /// 3. Asserting that the adapter's [`McpServerSpec`] vector exactly mirrors
+    ///    the shim's `servers` map (same names, same transport fields).
+    ///
+    /// Any future drift between the two — e.g. someone re-introducing a private
+    /// parser — would break this invariant.
+    #[test]
+    fn mcp_loader_delegates_to_terminal_config() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("mcp.json");
+
+        std::fs::write(
+            &path,
+            r#"{
+  "mcpServers": {
+    "stdio-srv": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["run", "/tmp/server.ts"],
+      "env": { "K": "V" }
+    },
+    "http-srv": {
+      "type": "streamable-http",
+      "url": "https://example.invalid/mcp/",
+      "headers": { "Authorization": "Bearer ${TOK_VAR}" }
+    }
+  }
+}"#,
+        )
+        .expect("write test mcp.json");
+
+        // Path A — through the public adapter.
+        let via_adapter = load_mcp_json(&path).expect("adapter must succeed");
+
+        // Path B — directly through the upstream shim parser (proves we use
+        // the same source-of-truth).
+        let via_shim = aphrody_terminal_config::shims::import_mcp_json(Some(&path))
+            .expect("upstream shim must succeed");
+
+        assert_eq!(via_adapter.len(), via_shim.servers.len(), "delegation must preserve cardinality");
+        assert_eq!(via_adapter.len(), 2);
+
+        // Build a name→spec lookup for the adapter side.
+        let by_name: HashMap<&str, &McpServerSpec> =
+            via_adapter.iter().map(|s| (s.name.as_str(), s)).collect();
+
+        // Verify each shim entry has a matching adapter spec with consistent
+        // fields.  This is the actual delegation invariant.
+        for (name, entry) in &via_shim.servers {
+            let spec = by_name
+                .get(name.as_str())
+                .copied()
+                .unwrap_or_else(|| panic!("adapter missing server {name}"));
+            match (&spec.transport, entry.transport_type.as_str()) {
+                (McpTransport::Stdio { command, args, env }, "stdio" | "") => {
+                    assert_eq!(command, entry.command.as_deref().unwrap_or(""));
+                    assert_eq!(args, &entry.args);
+                    assert_eq!(env, &entry.env);
+                }
+                (
+                    McpTransport::Http { url, oauth_provider },
+                    "http" | "streamable-http",
+                ) => {
+                    assert_eq!(url, entry.url.as_deref().unwrap_or(""));
+                    // Authorization: Bearer ${TOK_VAR} → token_env_var = "TOK_VAR"
+                    if let Some(auth) = entry.headers.get("Authorization") {
+                        if let Some(var) =
+                            auth.strip_prefix("Bearer ${").and_then(|s| s.strip_suffix('}'))
+                        {
+                            let oauth = oauth_provider
+                                .as_ref()
+                                .unwrap_or_else(|| panic!("{name}: oauth_provider missing"));
+                            assert_eq!(oauth.token_env_var.as_deref(), Some(var));
+                        }
+                    }
+                }
+                (transport, ty) => panic!(
+                    "transport/type mismatch for {name}: type={ty}, transport={transport:?}"
+                ),
+            }
+        }
+    }
 }
