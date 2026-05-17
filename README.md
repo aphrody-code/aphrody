@@ -142,7 +142,9 @@ cargo xt-offline     # = nextest run --workspace --locked --offline
 # --- Cross-platform (les 3 cibles prioritaires) --------------------------
 cargo check -p cli --target x86_64-unknown-linux-gnu     # #1 Linux
 cargo check -p cli --target x86_64-pc-windows-msvc       # #2 Windows
-cargo check -p cli --target wasm32-unknown-unknown       # #3 wasm
+cargo check -p cli --target wasm32-unknown-unknown       # #3 wasm — sur ce repo, scope limité à `cli` ;
+                                                          #         périmètre étendu réservé aux 3 forks
+                                                          #         `aphrody-code/{next.js, ui, A2UI}` (cf. docs/WASM/).
 
 # --- Supply-chain audits -------------------------------------------------
 cargo deny check     # CVE + licences + bans + sources
@@ -160,6 +162,8 @@ cargo audit-machete  # unused dependencies
 | `crates/gui` | wry + tao desktop GUI (exclu de `cli`) |
 | `crates/a2a*` | Protocole agent-to-agent |
 | `crates/google_mcp` | Serveur MCP (en cours d'adaptation cross-platform) |
+| `crates/mrx-*` | Monorepo Real-time X-platform mapper (5 crates : core / detect / audit / watch / cli) |
+| `crates/aphrody-translate` | CLI traduction commentaires EN→FR + scrub AI/émoji + style Aphrody |
 | `packages/` | Bun TypeScript packages |
 | `docs/` | Documentation mdBook centralisée |
 | `scripts/` | Tooling Bun + PowerShell |
@@ -181,7 +185,19 @@ cargo audit-machete  # unused dependencies
 | [`docs/cargo/`](./docs/cargo/) | Workspace, FFI policy, cross-platform |
 | [`docs/winget/`](./docs/winget/) | WinGet : catalogue 40+ packages, DSC |
 | [`docs/pwsh/`](./docs/pwsh/) | PowerShell 7 : profils, modules |
-| [`CLAUDE.md`](./CLAUDE.md), [`GEMINI.md`](./GEMINI.md) | Conventions AI assistants |
+| [`docs/WASM/`](./docs/WASM/) | Référence WASM (Rust + wgpu + Next.js + Bun) — versions pinned, pièges, migration |
+| [`CLAUDE.md`](./CLAUDE.md), [`GEMINI.md`](./GEMINI.md) | Conventions pour agents CLI tiers (formats standards adoptés par les CLIs respectifs) |
+
+## Standards organisationnels
+
+Les défauts community-health (issue/PR templates, dependabot, workflows, CODEOWNERS) sont fournis org-wide par [`aphrody-code/.github`](https://github.com/aphrody-code/.github) et appliqués à tous les repos `aphrody-code/*` via le mécanisme de fallback GitHub.
+
+Bootstrap d'un nouveau repo :
+
+```bash
+cd <new-repo>
+curl -sSL https://raw.githubusercontent.com/aphrody-code/.github/main/scripts/bootstrap.sh | bash
+```
 
 ## Supply-chain (Google-grade 2026)
 
