@@ -121,8 +121,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          BIN_PATH="target/${{ matrix.target }}/reproducible/cli${{ matrix.ext }}"
-          STAGE="cli-${{ github.ref_name }}-${{ matrix.target }}"
+          BIN_PATH="target/${{ matrix.target }}/reproducible/aphrody${{ matrix.ext }}"
+          STAGE="aphrody-${{ github.ref_name }}-${{ matrix.target }}"
           mkdir -p "$STAGE"
           cp "$BIN_PATH" "$STAGE/"
           cp README.md LICENSE "$STAGE/"
@@ -145,7 +145,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cli-${{ matrix.target }}
+          name: aphrody-${{ matrix.target }}
           path: artifacts/
 
   publish:

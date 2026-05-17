@@ -69,7 +69,7 @@
       "P10 — Cross-platform `cli` binary + patterns Chromium/Android adoptés",
       "P11 — Synchronisation google.json + Android targets + CI matrix"
     ],
-    "active_mandate": "Le binaire `cli` doit fonctionner sur Windows/Linux/macOS/wasm/Android via crates/cli/src/platform.rs. Toute API ajoutée doit respecter cette portabilité.",
+    "active_mandate": "Le binaire `aphrody` (produit par crates/cli) doit fonctionner sur Windows/Linux/macOS/wasm/Android via crates/cli/src/platform.rs. Toute API ajoutée doit respecter cette portabilité.",
     "next_priorities": [
       "Wire CI .github/workflows/cross-platform.yml (matrix Win/Linux/macOS)",
       "Premier `cxx::bridge` réel quand binding C++ non trivial intégré",
