@@ -565,12 +565,13 @@ impl GoogleMcpServer {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // rustls 0.23 with `rustls-no-provider` requires an explicit CryptoProvider
-    // installation before any reqwest::Client is built. Without this, reqwest
-    // panics at runtime when it attempts to create the TLS connector. The `ring`
-    // provider is available because the workspace `rustls` dep enables the "ring"
-    // feature. The `let _ =` absorbs the `Err` returned when another thread has
-    // already installed a provider (idempotent across restarts / test harnesses).
+    // reqwest is built with `rustls-no-provider`; a CryptoProvider must be
+    // installed before the first TLS connection or reqwest panics at runtime
+    // with "No provider set" (async_impl/client.rs). The workspace `rustls`
+    // dep enables the `ring` feature, so `ring::default_provider()` is
+    // available. The `let _ =` absorbs `AlreadyInstalled` (idempotent).
+    // Cross-compiling Windows→Linux requires `cargo zigbuild` because `ring`
+    // needs a C compiler for its assembly; on native Linux `gcc` handles it.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     tracing_subscriber::fmt().with_writer(std::io::stderr).with_ansi(false).init();
