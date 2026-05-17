@@ -123,7 +123,10 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - wasm32-wasi
+          # wasm32-wasi was renamed to wasm32-wasip1 upstream; the rustup
+          # alias is going away. Pin the modern name so CI matches the local
+          # toolchain (`rustup target list --installed` shows wasm32-wasip1).
+          - wasm32-wasip1
           - wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v4
