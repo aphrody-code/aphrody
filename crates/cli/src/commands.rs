@@ -1816,3 +1816,78 @@ impl TerminalCommand for TermCommand {
         Ok(())
     }
 }
+
+// ── aphrody notify ───────────────────────────────────────────────────────────
+//
+// Thin facade over `aphrody-channels` (Slack / Telegram / Matrix). Reads
+// credentials + destination from environment variables; returns a clean
+// `miette::Report` (exit code 1) when any required variable is missing rather
+// than panicking.
+
+pub(crate) struct NotifyCommand {
+    pub channel: crate::NotifyChannel,
+    pub message: String,
+    pub room: Option<String>,
+}
+
+#[async_trait]
+impl TerminalCommand for NotifyCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        use aphrody_channels::{
+            MessagingChannel, matrix::MatrixChannel, slack::SlackChannel,
+            telegram::TelegramChannel,
+        };
+
+        use crate::NotifyChannel;
+
+        // Resolve destination room: explicit --room overrides the env-var
+        // fallback. The env-var name is channel-specific so error messages
+        // tell the operator exactly which variable to set.
+        let (room_env_var, ctor_label) = match self.channel {
+            NotifyChannel::Slack => ("SLACK_CHANNEL", "slack"),
+            NotifyChannel::Telegram => ("TELEGRAM_CHAT_ID", "telegram"),
+            NotifyChannel::Matrix => ("MATRIX_ROOM_ID", "matrix"),
+        };
+
+        let room = match self.room.clone() {
+            Some(r) if !r.is_empty() => r,
+            _ => std::env::var(room_env_var)
+                .ok()
+                .filter(|s| !s.is_empty())
+                .ok_or_else(|| {
+                    miette::miette!(
+                        "missing destination room: pass `--room <id>` or set `{room_env_var}` \
+                         environment variable for `aphrody notify --channel {ctor_label}`"
+                    )
+                })?,
+        };
+
+        // Dispatch to the matching adapter. Each `from_env()` returns
+        // `ChannelError::MissingEnvVar` on missing credentials — we surface
+        // that as a clean miette error rather than panicking.
+        let result = match self.channel {
+            NotifyChannel::Slack => {
+                let ch = SlackChannel::from_env()
+                    .map_err(|e| miette::miette!("slack credentials error: {e}"))?;
+                ch.send_text(&room, &self.message).await
+            },
+            NotifyChannel::Telegram => {
+                let ch = TelegramChannel::from_env()
+                    .map_err(|e| miette::miette!("telegram credentials error: {e}"))?;
+                ch.send_text(&room, &self.message).await
+            },
+            NotifyChannel::Matrix => {
+                let ch = MatrixChannel::from_env()
+                    .map_err(|e| miette::miette!("matrix credentials error: {e}"))?;
+                ch.send_text(&room, &self.message).await
+            },
+        };
+
+        let msg_ref = result.map_err(|e| miette::miette!("send failed: {e}"))?;
+
+        // Stable, machine-friendly success line — first column is the channel,
+        // second is the platform-native message ID, third is the room.
+        println!("{} {} {}", msg_ref.channel_id, msg_ref.id, msg_ref.room);
+        Ok(())
+    }
+}

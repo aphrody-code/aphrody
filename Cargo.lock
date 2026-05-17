@@ -285,6 +285,7 @@ dependencies = [
  "a2a-client-lf",
  "a2a-lf",
  "anyhow",
+ "aphrody-channels",
  "aphrody-terminal-backend",
  "assert_cmd",
  "async-trait",
@@ -444,6 +445,7 @@ version = "1.0.0-canary"
 dependencies = [
  "anyhow",
  "aphrody-mcp",
+ "aphrody-memory",
  "aphrody-summary",
  "aphrody-terminal-config",
  "aphrody-terminal-vt",

@@ -35,7 +35,7 @@ de `⏳` vers `✅`.
 | `m3-tokens`            | Tokens couleur/typo consommés par `aphrody-terminal-wasm` (déjà câblé)                    | ✅                                                |
 | `shadcn-bridge`        | Chrome terminal : header bar, tab strip, command palette, dialogs (M3 segmented buttons, list, fab) | ⏳ T-INT-chrome  |
 | `a2a-ui`               | **Embedded as the "A2A coord channel" pane** — mailbox viewer JSONL en live              | ⏳ T-INT-a2a-ui  |
-| `aphrody-memory`       | Session memory (JSONL + brute-force HNSW pour semantic recall des commandes passées)      | ⏳ T-INT-memory  |
+| `aphrody-memory`       | Session memory (JSONL + brute-force HNSW pour semantic recall des commandes passées)      | ✅ T-INT-memory (`SessionMemoryPane` in `aphrody-terminal-llm`, publishes `LlmEvent::SessionRecall`) |
 | `aphrody-gateway`      | Routes les LLM calls du browser pane + sub-agent dispatch vers Cloudflare/Vercel/OpenAI-BYOK | ⏳ T-INT-gateway |
 | `aphrody-mcp`          | OAuth 2.1 client pour MCP HTTP/SSE servers du pane MCP status                             | ⏳ T-INT-mcp     |
 | `aphrody-voice`        | TTS pour hook event audio notifications (configurable per-event)                          | ⏳ T-INT-voice   |

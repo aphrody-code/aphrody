@@ -40,6 +40,22 @@ pub(crate) enum ScrapeProfile {
     Stealth,
 }
 
+/// Messaging-channel selector for `aphrody notify`.
+///
+/// Mirrors the production adapters in `aphrody-channels` (Slack, Telegram,
+/// Matrix). Declared at the top level (not gated) so the clap surface is
+/// identical on native and wasm32 builds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum NotifyChannel {
+    /// Slack Bot API (chat.postMessage). Reads `SLACK_BOT_TOKEN` + `SLACK_CHANNEL`.
+    Slack,
+    /// Telegram Bot API (sendMessage). Reads `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`.
+    Telegram,
+    /// Matrix Client-Server API v3. Reads `MATRIX_HOMESERVER`, `MATRIX_ACCESS_TOKEN`,
+    /// `MATRIX_USER_ID` + `MATRIX_ROOM_ID`.
+    Matrix,
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -169,6 +185,23 @@ enum Commands {
     Bxc {
         #[command(subcommand)]
         action: BxcAction,
+    },
+    /// Envoie un message via Slack / Telegram / Matrix.
+    ///
+    /// Credentials lus depuis l'environnement (voir `aphrody notify --help`).
+    Notify {
+        /// Channel cible : slack, telegram ou matrix.
+        #[arg(long, value_enum)]
+        channel: NotifyChannel,
+        /// Texte du message (plain-text).
+        #[arg(long, short)]
+        message: String,
+        /// Destinataire (chat ID Telegram, channel ID Slack, room ID Matrix).
+        ///
+        /// Si absent, lu depuis `SLACK_CHANNEL`, `TELEGRAM_CHAT_ID`,
+        /// ou `MATRIX_ROOM_ID` selon le `--channel` choisi.
+        #[arg(long, short)]
+        room: Option<String>,
     },
     /// Génère des completions shell pour bash / zsh / fish / pwsh / elvish
     Completions {
@@ -332,6 +365,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Bxc { action }) => {
             commands::BxcCommand { action }.execute(ctx).await?;
         },
+        Some(Commands::Notify { channel, message, room }) => {
+            commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
+        },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
@@ -434,6 +470,7 @@ fn main() {
                 Commands::Term { .. } => "term",
                 Commands::N2b { .. } => "n2b",
                 Commands::Bxc { .. } => "bxc",
+                Commands::Notify { .. } => "notify",
                 Commands::Completions { .. } => "completions",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),

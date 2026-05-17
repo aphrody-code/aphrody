@@ -9,6 +9,7 @@ pub mod docs_preview;
 pub mod hook;
 pub mod mcp;
 pub mod osc;
+pub mod session_memory;
 pub mod skill;
 pub mod sub_agent;
 pub mod task;
@@ -22,6 +23,7 @@ pub use mcp::{
 #[cfg(feature = "mcp-default-servers")]
 pub use mcp::default_server_specs;
 pub use osc::parse_aphrody_llm_osc;
+pub use session_memory::{SessionMemoryEntry, SessionMemoryPane};
 pub use skill::{SkillSlot, SkillState};
 pub use sub_agent::{SubAgentInfo, SubAgentRegistry};
 pub use task::{TaskNode, TaskTree};
@@ -63,6 +65,16 @@ pub enum LlmEvent {
         id: String,
         status: String,
         subject: String,
+    },
+    /// Session-memory semantic recall result. Emitted by
+    /// [`session_memory::SessionMemoryPane`] after a `recall(query)` call so
+    /// any subscribed renderer (Ctrl+R style fuzzy finder, history pane,
+    /// command palette suggestions) can display the matches inline.
+    SessionRecall {
+        /// Verbatim query that produced these matches.
+        query: String,
+        /// Ordered match list (best first), one entry per recalled command.
+        entries: Vec<String>,
     },
 }
 
