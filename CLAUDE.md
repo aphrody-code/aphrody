@@ -98,7 +98,7 @@ cargo audit-udeps          # nightly unused deps
 
 Monorepo Rust + Bun.
 
-### Workspace (`Cargo.toml` root, 16 members)
+### Workspace (`Cargo.toml` root, 17 members)
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).

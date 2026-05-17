@@ -225,11 +225,11 @@ changent, le cache aval est bust.
 Un workspace Rust nightly cross-platform centré sur **un binaire `aphrody`
 distribuable sur Linux/Windows/wasm** :
 
-1. **Workspace Rust nightly** (`crates/`) — 16 membres : `cli`, `gui`, `backend`,
+1. **Workspace Rust nightly** (`crates/`) — 17 membres : `cli`, `gui`, `backend`,
    `base`, `google_mcp`, `a2a` × 5 (protocole agent-to-agent : `a2a`, `a2a-client`,
    `a2a-server`, `a2a-grpc`, `a2a-pb`), `mrx-*` × 5 (Monorepo Real-time X-platform
    mapper : `mrx-core`, `mrx-detect`, `mrx-audit`, `mrx-watch`, `mrx-cli`),
-   `aphrody-translate`. Build hermétique avec lockfile pin SHA-256.
+   `aphrody-translate`, `aphrody-wasm`. Build hermétique avec lockfile pin SHA-256.
 2. **Bun + TypeScript** (`packages/`, `bun.lock`) — scripting, FFI bridge,
    serveurs MCP. **node interdit** : tout passe par bun.
 3. **Bridges natifs vendored** (`vendor/bun/`, `vendor/electron-prebuilt/`,

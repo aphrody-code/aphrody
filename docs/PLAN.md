@@ -39,7 +39,7 @@ cible #1**.
 | `CLAUDE.md`, `README.md`, `docs/PLAN.md` réécrits en UTF-8 propre | ✅ |
 | Anonymisation : tracked files (1 leak path, déjà fix) | ✅ |
 | Premier commit + push vers `aphrody-code/aphrody` (privé) | 🔧 |
-| Rename dossier racine `C:\src\google-cli` → `C:\src\aphrody` | ⏳ |
+| Rename dossier racine `C:\src\google-cli` → `C:\src\aphrody` | ✅ |
 
 ### Phase P-Linux — Validation Linux Ubuntu 26.04 (PRIORITÉ #1)
 
@@ -49,7 +49,7 @@ cible #1**.
 | `cargo build --release -p aphrody` natif sur Ubuntu 26.04 | ⏳ (CI à confirmer ; cross-compile zigbuild Windows → Linux ✅) |
 | `cargo nextest run -p aphrody` vert sur Linux | ⏳ (CI ubuntu-latest dans cross-platform.yml ; pas validé local sans toolchain WSL) |
 | Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ✅ (cli chromium gated, voir fix d222d0061) |
-| Adapter `crates/google_mcp` pour Linux | ⏳ |
+| Adapter `crates/google_mcp` pour Linux | ✅ (YOLO #1 — cargo check native + zigbuild x86_64-unknown-linux-gnu exit 0) |
 | CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ⏳ |
 | Package `.deb` template (`packaging/deb/` — control + postinst + prerm + cargo-deb snippet + README) | ✅ |
 | Publication PPA `aphrody-code/aphrody` sur Launchpad | ⏳ |
@@ -90,7 +90,7 @@ Sous-tâches :
 | `base` : compile `wasm32-unknown-unknown` + `wasm32-wasip1` | ✅ |
 | `mrx-core` : compile `wasm32-wasip1` | ✅ |
 | `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ✅ |
-| `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ⏳ (P-Wasm-CLI) |
+| `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ✅ (cli/src/main.rs cfg-gates mimalloc + tokio + reqwest + backend + a2a) |
 | `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ✅ |
 | `wasm-pack publish` sur npm `@aphrody-code/aphrody-wasm` (89 KB wasm + 12 KB JS, metadata.wasm-pack profile.release SIMD+bulk-memory, README + publish doc) | ✅ scaffolded — `wasm-pack publish --access public` awaits `npm login` |
 | `a2a-client` : port wasm32-unknown-unknown (browser fetch transport) | ✅ |
@@ -186,9 +186,9 @@ Avant tout push : `cargo ci-offline && cargo deny check` doit être vert
 
 | Métrique | Valeur | Cible |
 |---|---|---|
-| Workspace members | 16 | 16 (post-pivot : 10 core + 5 mrx + aphrody-translate ; google_os exclu) |
-| `cargo check --locked` (Linux) | ⏳ à valider | < 1 min |
-| `cargo clippy -- -D warnings` | ⏳ à valider | 0 erreur |
+| Workspace members | 17 | 17 (post-pivot : 10 core + 5 mrx + aphrody-translate + aphrody-wasm ; google_os exclu) |
+| `cargo check --locked` (Linux) | ✅ (cross x86_64-unknown-linux-gnu, exit 0) | < 1 min |
+| `cargo clippy -- -D warnings` | ✅ (workspace --all-targets, 16,07 s, exit 0) | 0 erreur |
 | `cargo deny check` | ✅ ok×4 | ok×4 |
 | Repo size (sans target, sans mdi) | ~7 Go (vendor/bun dominant) | optimisé |
 | Disque libéré (P1+pivot) | 1.2 Go (vendor/crates.io) + 4.6 Go (material-design-icons) | n/a |
