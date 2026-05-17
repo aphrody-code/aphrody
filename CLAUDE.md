@@ -73,9 +73,9 @@ cargo ci-offline           # = clippy --workspace --all-targets --locked --offli
 cargo xt-offline           # = nextest run --workspace --locked --offline
 
 # Cross-platform (les 3 cibles prioritaires doivent passer)
-cargo check -p cli --target x86_64-unknown-linux-gnu --locked   # cible #1
-cargo check -p cli --target x86_64-pc-windows-msvc --locked     # cible #2
-cargo check -p cli --target wasm32-unknown-unknown --locked     # cible #3
+cargo check -p aphrody --target x86_64-unknown-linux-gnu --locked   # cible #1
+cargo check -p aphrody --target x86_64-pc-windows-msvc --locked     # cible #2
+cargo check -p aphrody --target wasm32-unknown-unknown --locked     # cible #3
 
 # Supply-chain (Google-grade)
 cargo deny check           # CVE + licences + bans + sources

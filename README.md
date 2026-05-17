@@ -51,7 +51,7 @@ rustup component add clippy rustfmt rust-src
 
 # Clone + build
 git clone https://github.com/aphrody-code/aphrody.git && cd aphrody
-cargo build --release -p cli
+cargo build --release -p aphrody
 ./target/release/aphrody --help
 ```
 
@@ -64,7 +64,7 @@ winget configure .config/configuration.winget
 # Clone + build
 git clone https://github.com/aphrody-code/aphrody.git
 cd aphrody
-cargo build --release -p cli
+cargo build --release -p aphrody
 .\target\release\aphrody.exe --help
 ```
 
@@ -84,12 +84,12 @@ rustup target add wasm32-unknown-unknown wasm32-wasip1
 
 # Browser-ready :
 cargo check -p base --target wasm32-unknown-unknown      # ✅
-cargo check -p cli  --target wasm32-unknown-unknown      # ✅ (stub binaire)
+cargo check -p aphrody  --target wasm32-unknown-unknown      # ✅ (stub binaire)
 
 # WASI :
 cargo check -p base     --target wasm32-wasip1           # ✅
 cargo check -p mrx-core --target wasm32-wasip1           # ✅
-cargo check -p cli      --target wasm32-wasip1           # ✅ (stub binaire)
+cargo check -p aphrody      --target wasm32-wasip1           # ✅ (stub binaire)
 ```
 
 Le binaire `cli` se compile sur `wasm32-*` mais en *stub minimal* : il
@@ -257,9 +257,9 @@ cargo ci-offline     # = clippy --workspace --all-targets --locked --offline -- 
 cargo xt-offline     # = nextest run --workspace --locked --offline
 
 # --- Cross-platform (les 3 cibles prioritaires) --------------------------
-cargo check -p cli --target x86_64-unknown-linux-gnu     # #1 Linux
-cargo check -p cli --target x86_64-pc-windows-msvc       # #2 Windows
-cargo check -p cli --target wasm32-unknown-unknown       # #3 wasm — sur ce repo, scope limité à `cli` ;
+cargo check -p aphrody --target x86_64-unknown-linux-gnu     # #1 Linux
+cargo check -p aphrody --target x86_64-pc-windows-msvc       # #2 Windows
+cargo check -p aphrody --target wasm32-unknown-unknown       # #3 wasm — sur ce repo, scope limité à `cli` ;
                                                           #         périmètre étendu réservé aux 3 forks
                                                           #         `aphrody-code/{next.js, ui, A2UI}` (cf. docs/WASM/).
 
