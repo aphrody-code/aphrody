@@ -109,13 +109,14 @@ pub fn aphrodify(text: &str) -> String {
     s = s.trim().to_string();
 
     // 5. Capitalisation + point final
-    if let Some(first) = s.chars().next() {
-        if first.is_alphabetic() && first.is_lowercase() {
-            let mut chars = s.chars();
-            let head = chars.next().unwrap();
-            let tail: String = chars.collect();
-            s = format!("{}{tail}", head.to_uppercase());
-        }
+    if let Some(first) = s.chars().next()
+        && first.is_alphabetic()
+        && first.is_lowercase()
+    {
+        let mut chars = s.chars();
+        let head = chars.next().unwrap();
+        let tail: String = chars.collect();
+        s = format!("{}{tail}", head.to_uppercase());
     }
     if !s.is_empty()
         && !s.ends_with('.')
