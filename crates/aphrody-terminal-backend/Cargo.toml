@@ -16,13 +16,15 @@ workspace = true
 
 [dependencies]
 portable-pty        = { workspace = true }
-tokio               = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "sync", "net"] }
+tokio               = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "sync", "net", "fs", "time"] }
 tokio-tungstenite   = { workspace = true }
 futures-util        = { workspace = true }
 anyhow              = { workspace = true }
+thiserror           = { workspace = true }
 tracing             = { workspace = true }
 serde               = { workspace = true }
 serde_json          = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "macros", "io-util", "sync", "net", "process"] }
+tokio    = { workspace = true, features = ["rt", "macros", "io-util", "sync", "net", "process", "fs", "time"] }
+tempfile = { workspace = true }

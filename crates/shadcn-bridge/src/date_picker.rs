@@ -158,6 +158,7 @@ pub fn create_date_picker(props: &DatePickerProps) -> Result<HtmlElement, JsValu
 
 /// Parses `YYYY-MM-DD` to `(year, month)`. Returns `None` on any malformed
 /// input — callers fall back to the explicit `display_*` props.
+#[allow(dead_code)] // host-build references only; wasm path uses it directly
 fn parse_ym(s: &str) -> Option<(i32, u8)> {
     if s.len() < 10 {
         return None;

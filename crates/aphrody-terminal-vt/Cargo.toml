@@ -17,3 +17,4 @@ workspace = true
 [dependencies]
 vte      = { workspace = true }
 bitflags = { workspace = true }
+base64   = { workspace = true }

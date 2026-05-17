@@ -221,6 +221,10 @@ mod tests {
     #[cfg_attr(not(target_family = "wasm"), async_trait)]
     #[cfg_attr(target_family = "wasm", async_trait(?Send))]
     impl Transport for MockTransport {
+        fn protocol_name(&self) -> &'static str {
+            "mock"
+        }
+
         async fn send_message(
             &self,
             params: &ServiceParams,
@@ -415,6 +419,12 @@ mod tests {
             self.events.lock().unwrap().push(format!("after:{}:{status}", self.name));
             Ok(())
         }
+    }
+
+    #[test]
+    fn mock_transport_protocol_name_is_mock() {
+        let (transport, _) = MockTransport::new();
+        assert_eq!(transport.protocol_name(), "mock");
     }
 
     #[test]

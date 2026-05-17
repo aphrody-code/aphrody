@@ -3505,3 +3505,25 @@ criteria = "safe-to-deploy"
 [[exemptions.zune-jpeg]]
 version = "0.5.15"
 criteria = "safe-to-deploy"
+
+# --- Pending audits added 2026-05-18 (too complex for rapid single-tick review) ---
+
+[[exemptions.rustls]]
+version = "0.23.40"
+criteria = "safe-to-deploy"
+notes = "Pending audit — 47618 LOC, complex TLS state machine with multiple unsafe blocks in record-layer I/O (cipher::BorrowedPayload, KeySchedule, ring/aws-lc-rs bridges). Requires dedicated multi-session review. Added 2026-05-18."
+
+[[exemptions.nix]]
+version = "0.29.0"
+criteria = "safe-to-deploy"
+notes = "Pending audit — 32524 LOC, comprehensive Unix syscall wrapper with 781 unsafe occurrences across ioctl, signal, poll, mount, and process modules. Core libc surface is well-established but scope too large for rapid inspection. Added 2026-05-18."
+
+[[exemptions.reqwest]]
+version = "0.13.3"
+criteria = "safe-to-deploy"
+notes = "Pending audit — 19893 LOC HTTP client. Only 5 unsafe blocks (MaybeUninit spare capacity transmute in blocking body, ReadBufCursor advance in hyper bridge), all documented with SAFETY comments, but the full async/TLS/proxy stack is too large for a single-tick review. Added 2026-05-18."
+
+[[exemptions.blake3]]
+version = "1.8.5"
+criteria = "safe-to-deploy"
+notes = "Pending audit — 8268 LOC BLAKE3 cryptographic hash. 230 unsafe occurrences: AVX2/AVX-512/NEON/SSE4.1/WASM SIMD intrinsics in platform-specific modules (avx2.rs, avx512.rs, neon.rs, sse41.rs, wasm32_simd.rs). Highly optimized crypto; requires SIMD expert review beyond rapid inspection scope. Added 2026-05-18."

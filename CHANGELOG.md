@@ -249,4 +249,189 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `crates/google_os/` archived to `C:\google-os-archive\` (pivot scope cut)
   (efa4477e7).
 
+## [Unreleased] - 2026-05-18
+
+Mega-day batch — 5 commits, 11+ delivery lanes, terminal LLM-first foundation,
+WASM/M3 stack, integration matrix, kernel subcommands, voice WASM, gemini-app
+port, pipeline optimization.
+
+### Added
+
+- `aphrody n2b [args]` kernel subcommand — façade over `packages/n2b/src/cli.ts`
+  via bun spawn, `aphrody n2b watch --interval N` tokio infinite loop
+  (commit 2c1602cb).
+- `aphrody bxc {daemon,recon,scrape,detect,tokens}` kernel subcommand —
+  passthrough to bxc-engine via `ScrapeClient`, daemon mode uses
+  `DETACHED_PROCESS` on Windows (commit 2c1602cb).
+- `aphrody term [--addr --shell --cwd]` subcommand — binds
+  `aphrody_terminal_backend::serve()` (default `127.0.0.1:8788`)
+  (commit 77ddbff8).
+- `crates/aphrody-terminal-vt` NEW (695+ lines) — vte parser, ScreenBuffer,
+  Cursor, Color (RGB + presets), Attr (bold/italic/underline/inverse/blink),
+  SGR 16-color, CSI CUU/CUD/CUF/CUB/CUP/ED/EL, LF/CR/BS/HT/BEL/scroll.
+  11/11 tests pass (commit 9355ddc5).
+- VT Ink/React essentials in `crates/aphrody-terminal-vt` — alt-screen DECSET
+  1049, mouse SGR 1006, true color 24-bit, OSC 52 clipboard, bracketed paste
+  2004, focus events 1004, DECSTBM, OSC 0 title; modules `alt_screen.rs`,
+  `mouse.rs`, `osc.rs` (uncommitted, staged in working tree).
+- `crates/aphrody-terminal-wasm` NEW (339+ lines) — wasm-bindgen DOM mount,
+  M3 colors via m3-tokens, keyboard ANSI mapping (arrows, Enter, BS, Tab),
+  one span per cell, dirty-row rerender (commit 9355ddc5).
+- `crates/aphrody-terminal-backend` NEW (287 lines) — portable-pty
+  (ConPTY/openpty) + tokio-tungstenite WS server + JSON resize protocol +
+  cross-platform shell autodetect (commit 9355ddc5).
+- `crates/aphrody-terminal-llm` NEW (1060 lines, 13 tests) — EventBus tokio
+  broadcast + SubAgent/McpStatus/Skill/TaskTree registries + HookEventLog
+  ring buffer 1000-cap + OSC parser for 7 `aphrody-*` LLM event sequences
+  (commit 77ddbff8); MCP probe loop rewrite (708 lines), `McpServerSpec`,
+  `McpTransport` (Stdio/Http), `OAuthConfig`, `probe_server()`,
+  `probe_loop()`, `load_mcp_json()` (compat `.mcp.json` schema),
+  `default_server_specs()` for bxc + google_mcp (commit 04a5f676).
+- `crates/aphrody-terminal-browser` NEW (1744 lines) — LLM↔DOM bridge with
+  3 pluggable backends (bxc spawn / agent-browser RPC stdio / edge headless
+  fallback) + OSC parser for 7 `aphrody-browser-*` sequences (commit 77ddbff8).
+- `crates/aphrody-terminal-wasm/src/coord_pane.rs` NEW (369 lines) — embeds
+  `a2a-ui::Envelope::parse_jsonl` + `render_envelope_list`, 2s polling
+  delta-append (commit 04a5f676).
+- `crates/aphrody-terminal-markdown` NEW (uncommitted) — comrak CommonMark
+  + syntect highlight + OSC `aphrody-md` detector.
+- `crates/aphrody-terminal-json-out` NEW (uncommitted) — JSONL framing
+  stdout/stderr + passthrough app-JSON + base64 binary.
+- `crates/aphrody-terminal-config` NEW (uncommitted) — schemars
+  `~/.aphrody/terminal.json` + claude.json/mcp.json/settings.json import
+  shims + merge precedence.
+- `crates/aphrody-tui` NEW (uncommitted) — pure Rust ratatui-style DSL,
+  60fps target.
+- `crates/a2a-ui/src/native/` + `examples/a2a-tui.rs` — ratatui TUI feature
+  `native` (default off, preserves WASM cdylib), header peer status +
+  envelope list + detail JSON + footer keymap; ratatui added to
+  `workspace.dependencies` (commit 04a5f676).
+- `packages/aphrody-jsx/` NEW (27 files, 2503 LOC) — Bun-native React
+  reconciler emitting `aphrody-jsx-*` OSC sequences, 12/12 tests, hello
+  example emits mount opcode (727 bytes) (commit d8863d5b).
+- `packages/gemini-app-aphrody/` NEW (27 files, 2591 LOC, 13/13 tests) —
+  port of Next.js gemini.google.com/app, link:next resolved to fork
+  next@16.3.0-canary.2, M3 tokens + WebGPU gradient + voice hooks
+  (commit 2c1602cb).
+- `crates/cli/src/auto_command.rs` NEW (uncommitted) — autonomous CLI agent
+  NL → A2A streaming via JsonRpcTransport.
+- `crates/base/benches/base_bench.rs` NEW (uncommitted) — criterion suite,
+  6 benches across vfs and aes-gcm.
+- `crates/a2a-client/src/transport.rs` — `TransportKind` enum cross-platform
+  observability (NativeHyper / BrowserFetch / Unsupported) (uncommitted).
+- `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` NEW (1361 lines,
+  uncommitted) — pixel-perfect M3 showcase 8 panes, HTTP 200 verified.
+- `scripts/Install-AphrodyToPath.ps1` + `scripts/install-aphrody-path.sh` —
+  auto-install binary into PATH (Windows HKCU / Linux `$HOME/.local/bin`),
+  `-BuildIfMissing` / `--build` flags (commit 2c1602cb).
+- `scripts/n2b-batch.{ps1,sh}` (168 + 157 LOC) — parallel migration
+  (`ForEach-Object -Parallel` / `xargs -P`), NDJSON streamable p50/p95
+  metrics (commit 2c1602cb).
+- `scripts/bxc-crawl.{ps1,sh}` (262 + 267 LOC) — parallel crawl URLs ×
+  actions + `--loop --interval` + body-hash cache (commit 2c1602cb).
+- `scripts/bxc-supervise.{ps1,sh}` (124 + 128 LOC) — watchdog daemon NDJSON
+  heartbeats + auto-restart, SIGINT trap, exit codes 0/1/2/130
+  (commit 2c1602cb).
+- `scripts/check-worktrees.ts` + `scripts/setup-worktrees.ts` — worktrees
+  catalogue 15-entry bootstrap, exit 0 / 15 (commit 9355ddc5).
+- `docs/PLAN-MOONSHOT.md` NEW (680 lines) — mining 13 worktrees + 30-day
+  star arc + top-50 punch list + risk register (commit 9355ddc5).
+- `docs/design/aphrody-terminal-spec.md` NEW — normative LLM-first spec:
+  5 pillars (JSON out / markdown inline / JSON config / sub-agent+MCP+
+  hooks+skills first-class / Ink-TUI compat), 9-crate stack, 22 Ink-
+  essential sequences, 14 `aphrody-*` OSC extensions (commit 9355ddc5);
+  extended with Ink/React-TUI 3-layer fusion strategy + 6 new
+  `aphrody-jsx-*` OSC sequences (commit 77ddbff8).
+- `docs/design/aphrody-terminal-integration-matrix.md` NEW (108 lines) —
+  28-crate workspace ↔ aphrody-terminal contract, 5 wired / 22 ⏳
+  T-INT-* tickets / 1 N/A (commit 77ddbff8).
+- `docs/audits/2026-05-18-gemini-app-port-audit.md` NEW — surface map 14
+  entries + asset reuse audit (commit 2c1602cb).
+- `docs/audits/2026-05-18-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md`
+  NEW (uncommitted) — 3-way cross-reference audit.
+- `docs/audits/2026-05-18-plan-status-audit.md` NEW (101 lines) — PLAN.md
+  19 → 11 ⏳ flip evidence with file:line proofs (commit 04a5f676).
+- `docs/audits/2026-05-18-dedup-cohesion-sweep.md` NEW (uncommitted).
+- `docs/cargo/PIPELINE-OPTIMIZATION.md` NEW (236 lines) — pattern extraction
+  + baseline + applied + future opt-in (commit 2c1602cb).
+- `docs/cargo/BUILD-SPEED.md` NEW (126 lines) — build-speed audit
+  (commit 2c1602cb).
+- `.mcp.json` — bxc MCP server entry (stdio via bun, 7 tools:
+  `tune_memory_sqlite`, `vision_analyze`, `start_scraping_subagent`,
+  `auto_detect_skills`, `bxc_cdp_{snapshot,evaluate,logs}`);
+  `BXC_MEMORY_DB` → `var/data/` gitignored; smoke test green
+  (commit 9355ddc5).
+- Voice WASM real implementations: `crates/aphrody-voice/src/web.rs`
+  (125 lines, WebSpeechSynth via web-sys SpeechSynthesis) +
+  `crates/aphrody-voice-stt/src/web.rs` (162 lines, WebSpeechRecognition
+  via `js_sys::Reflect` with webkit prefix), 11 methods total
+  (commit 2c1602cb).
+- 5 new cargo aliases in `.cargo/config.toml`: `dev-fast`, `lint-fast`,
+  `bench-fast`, `build-fast`, `test-fast` (commit 2c1602cb).
+
+### Changed
+
+- `CLAUDE.md` mission-day rewrite (281 → 337 lines) — §0.5 PLAN ⏳ matrix
+  (14 items × crate × fusion sources × verify command), §1 scaffold
+  interdit (feature observable required), §4 kernel subcommands +
+  install scripts, §4.1 high-perf scripts + bunnize template + pwsh
+  gotchas, §7 verify=observable rule, §7.6 YOLO grind default workflow
+  (commit 2c1602cb); §7.5 new aphrody-terminal LLM-first section + spec
+  ref + worktrees ref + bxc MCP ref + 22 Ink essentials + 14 OSC
+  extensions (commit 9355ddc5).
+- `.github/workflows/cross-platform.yml` — sccache reactivated + v0.0.5
+  unified + lint split fmt/clippy parallel + graceful `--show-stats || true`
+  + bun cache lockb fallback (commit 2c1602cb).
+- `.github/workflows/build.yml` — sccache env + action wiring +
+  cargo-deny `RUSTC_WRAPPER` unset (commit 2c1602cb).
+- `.github/workflows/bench.yml` — sccache + `benchmark-action/github-action-benchmark@v1`
+  with 150% regression threshold (commit 2c1602cb).
+- Workspace dependencies extended for new terminal stack: vte,
+  portable-pty, tokio-tungstenite, ratatui, comrak, syntect, schemars,
+  wasm-bindgen-futures, web-sys SpeechSynthesis/SpeechRecognition
+  (commits 9355ddc5, 77ddbff8, 04a5f676).
+- `aphrody-code/next.js@aphrody` fork bunisé: 54 → 0 pnpm in root
+  scripts, `pnpm-lock.yaml` (38483 lines) → `bun.lock` (12762 lines),
+  workspaces hoisted (related to commit 2c1602cb gemini-app).
+- Worktrees catalogue 13 → 15 (`vercel-labs/wterm` 40MB API ref +
+  `microsoft/terminal` 114MB algo ref), budget ~1095 MB (commit 9355ddc5).
+- `docs/INDEX.md` (+12 entries, new §2.1 Terminal & design),
+  `README.md` Documentation refs PLAN-MOONSHOT + spec + matrix,
+  `docs/terminal/README.md` 3 forward-links design + matrix + moonshot
+  (commit 04a5f676).
+- `docs/SUMMARY.md` regenerated via `cargo run -p aphrody-summary`
+  (commits 04a5f676, 2c1602cb).
+- `docs/PLAN.md` audit: 19 → 11 ⏳ (8 flips ⏳→✅ with file:line proofs),
+  PLAN-MOONSHOT 5 ⏳ legit (external registries not-yet-published)
+  (commit 04a5f676).
+
+### Fixed
+
+- `crates/cli/Cargo.toml` — drop unused `tracing` dependency
+  (cargo machete cleanup) (commit d8863d5b).
+- `crates/a2a-slimrpc/Cargo.toml` — drop unused `prost-types` dependency
+  (commit d8863d5b).
+- `crates/aphrody-voice/Cargo.toml` + `crates/aphrody-voice-stt/Cargo.toml`
+  — native items gated `not(target_arch = "wasm32")`; wasm32 deps gated
+  in Cargo.toml; `cargo-machete ignored` for wasm-bindgen and friends
+  (commit 2c1602cb).
+
+### Performance
+
+- CI pipeline sccache cold-fill ~3m42s (was 8-12 min), warm 3.2s (-92%)
+  (commit 2c1602cb).
+- `base` benches p50: `vfs_resolve_hit_short` 233 ns,
+  `aes_gcm_decrypt_64b` 247 ns, `aes_gcm_decrypt_64kib` 43.4 µs
+  (uncommitted criterion suite).
+
+### Internal
+
+- Mega-commit 2c1602cba — 62 files changed, +5715 / -70 lines
+  (kernel n2b/bxc + scripts + pipeline + voice WASM + gemini-app +
+  CLAUDE.md mission-day rewrite).
+- 4-lane parallel YOLO grind delivery model formalised in
+  `CLAUDE.md` §7.6 (default workflow going forward).
+- Honest-delivery footers (FAIT / INCOMPLET / NON_FAIT) applied to
+  every commit body per ai.json `honest-delivery-v1` extension.
+
 [Unreleased]: https://github.com/aphrody-code/aphrody/compare/HEAD
