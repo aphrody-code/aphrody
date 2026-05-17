@@ -1,7 +1,12 @@
 # aphrody
 
-> **the ultimate cross-platform CLI** — Rust nightly, Edition 2024.
+> **Cross-platform Rust CLI that ships the same command surface to Linux,
+> Windows, and the browser (wasm32-unknown-unknown).** Built on a hermetic
+> Google-grade supply chain — `cargo-vet` feeds from Google, Mozilla, Fuchsia,
+> ChromeOS, Bytecode Alliance, Embark, Zcash — with byte-reproducible builds.
+>
 > Cibles prioritaires : **Linux Ubuntu 26.04** > **Windows 11 Insider Canary** > **WebAssembly**.
+> Rust nightly, Edition 2024.
 
 [![Build](https://github.com/aphrody-code/aphrody/actions/workflows/cross-platform.yml/badge.svg?branch=main)](https://github.com/aphrody-code/aphrody/actions/workflows/cross-platform.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)

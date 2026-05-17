@@ -1039,6 +1039,7 @@ mod tests {
 
     #[test]
     fn test_jsonrpc_transport_factory() {
+        install_rustls_provider();
         let f = JsonRpcTransportFactory::new(None);
         assert_eq!(f.protocol(), "JSONRPC");
     }
@@ -1071,6 +1072,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_push_config_sends_flat_request_shape() {
+        install_rustls_provider();
         let response = json!({
             "jsonrpc": "2.0",
             "id": "1",
@@ -1151,6 +1153,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_push_config_rejects_missing_result() {
+        install_rustls_provider();
         let response = json!({
             "jsonrpc": "2.0",
             "id": "1"
