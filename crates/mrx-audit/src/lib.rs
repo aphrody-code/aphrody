@@ -381,12 +381,12 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
     acc.total_files.fetch_add(1, Ordering::Relaxed);
     acc.total_bytes.fetch_add(size, Ordering::Relaxed);
 
-    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-        if let Some(lang) = lang_for(ext) {
-            let mut entry = acc.languages.entry(lang.to_string()).or_default();
-            entry.files += 1;
-            entry.bytes += size;
-        }
+    if let Some(ext) = path.extension().and_then(|e| e.to_str())
+        && let Some(lang) = lang_for(ext)
+    {
+        let mut entry = acc.languages.entry(lang.to_string()).or_default();
+        entry.files += 1;
+        entry.bytes += size;
     }
 
     let file_name = path.file_name().and_then(|n| n.to_str());
@@ -426,12 +426,12 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
         let mut e = acc.workspaces.entry(ws_key).or_default();
         e.file_count += 1;
         e.bytes += size;
-        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-            if let Some(lang) = lang_for(ext) {
-                let l = e.languages.entry(lang.to_string()).or_default();
-                l.files += 1;
-                l.bytes += size;
-            }
+        if let Some(ext) = path.extension().and_then(|e| e.to_str())
+            && let Some(lang) = lang_for(ext)
+        {
+            let l = e.languages.entry(lang.to_string()).or_default();
+            l.files += 1;
+            l.bytes += size;
         }
     }
 
@@ -521,14 +521,14 @@ fn parse_cargo_toml(path: &Path) -> Option<(Option<String>, Option<String>)> {
         if !in_package {
             continue;
         }
-        if let Some(rest) = t.strip_prefix("name") {
-            if let Some(v) = parse_string_assign(rest) {
-                name = Some(v);
-            }
-        } else if let Some(rest) = t.strip_prefix("version") {
-            if let Some(v) = parse_string_assign(rest) {
-                version = Some(v);
-            }
+        if let Some(rest) = t.strip_prefix("name")
+            && let Some(v) = parse_string_assign(rest)
+        {
+            name = Some(v);
+        } else if let Some(rest) = t.strip_prefix("version")
+            && let Some(v) = parse_string_assign(rest)
+        {
+            version = Some(v);
         }
     }
     Some((name, version))
@@ -575,14 +575,14 @@ fn parse_submodules(root: &Path) -> Result<Vec<Submodule>> {
         let t = line.trim();
         if t.starts_with("[submodule") {
             flush(&mut out, &mut current_path, &mut current_url);
-        } else if let Some(rest) = t.strip_prefix("path") {
-            if let Some(v) = parse_string_or_value(rest) {
-                current_path = Some(v);
-            }
-        } else if let Some(rest) = t.strip_prefix("url") {
-            if let Some(v) = parse_string_or_value(rest) {
-                current_url = Some(v);
-            }
+        } else if let Some(rest) = t.strip_prefix("path")
+            && let Some(v) = parse_string_or_value(rest)
+        {
+            current_path = Some(v);
+        } else if let Some(rest) = t.strip_prefix("url")
+            && let Some(v) = parse_string_or_value(rest)
+        {
+            current_url = Some(v);
         }
     }
     flush(&mut out, &mut current_path, &mut current_url);
@@ -592,29 +592,28 @@ fn parse_submodules(root: &Path) -> Result<Vec<Submodule>> {
         .arg("status")
         .current_dir(root)
         .output()
+        && output.status.success()
     {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let mut by_path: BTreeMap<String, (String, Option<String>)> = BTreeMap::new();
-            for line in stdout.lines() {
-                let trimmed = line.trim_start_matches([' ', '+', '-']);
-                let mut parts = trimmed.splitn(2, ' ');
-                let sha = parts.next().unwrap_or("").to_string();
-                let rest = parts.next().unwrap_or("");
-                let (path_part, pinned) = match rest.find(" (") {
-                    Some(i) => (
-                        rest[..i].to_string(),
-                        Some(rest[i + 2..].trim_end_matches(')').to_string()),
-                    ),
-                    None => (rest.to_string(), None),
-                };
-                by_path.insert(path_part, (sha, pinned));
-            }
-            for sm in out.iter_mut() {
-                if let Some((sha, pinned)) = by_path.get(&sm.path) {
-                    sm.sha = Some(sha.clone());
-                    sm.pinned = pinned.clone();
-                }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let mut by_path: BTreeMap<String, (String, Option<String>)> = BTreeMap::new();
+        for line in stdout.lines() {
+            let trimmed = line.trim_start_matches([' ', '+', '-']);
+            let mut parts = trimmed.splitn(2, ' ');
+            let sha = parts.next().unwrap_or("").to_string();
+            let rest = parts.next().unwrap_or("");
+            let (path_part, pinned) = match rest.find(" (") {
+                Some(i) => (
+                    rest[..i].to_string(),
+                    Some(rest[i + 2..].trim_end_matches(')').to_string()),
+                ),
+                None => (rest.to_string(), None),
+            };
+            by_path.insert(path_part, (sha, pinned));
+        }
+        for sm in out.iter_mut() {
+            if let Some((sha, pinned)) = by_path.get(&sm.path) {
+                sm.sha = Some(sha.clone());
+                sm.pinned = pinned.clone();
             }
         }
     }

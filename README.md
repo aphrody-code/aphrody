@@ -46,10 +46,24 @@ cargo build --release -p cli
 
 ### WebAssembly (cible #3)
 
+État réel (matrice 2026-05-17) :
+
+| Crate           | `wasm32-unknown-unknown` (browser) | `wasm32-wasip1` (WASI) |
+|-----------------|:----------------------------------:|:----------------------:|
+| `base`          | ✅                                 | ✅                     |
+| `mrx-core`      | n/a                                | ✅                     |
+| `cli` (binary)  | ❌ (tokio "full" + mio)            | ❌                     |
+| `backend`/`a2a*`| ❌                                 | ❌                     |
+
 ```bash
-rustup target add wasm32-unknown-unknown wasm32-wasi
-cargo build -p cli --target wasm32-wasi --release
-# → target/wasm32-wasi/release/aphrody.wasm
+rustup target add wasm32-unknown-unknown wasm32-wasip1
+
+# Browser-ready (libraries only) :
+cargo check -p base --target wasm32-unknown-unknown      # ✅
+cargo check -p base --target wasm32-wasip1               # ✅
+cargo check -p mrx-core --target wasm32-wasip1           # ✅
+
+# CLI binary wasm port : work-in-progress (see docs/PLAN.md §P-Wasm-CLI).
 ```
 
 ## Stack 2026

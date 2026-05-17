@@ -22,6 +22,12 @@ tracing     = { workspace = true }
 aes-gcm     = { workspace = true }
 zeroize     = { workspace = true }
 
+# Browser-WASM: getrandom must opt into the "js" backend so transitively
+# pulled randomness (via aes-gcm → aead → rand_core → getrandom) resolves
+# to the Web Crypto API instead of erroring out at compile-time.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = [
     "Win32_Foundation",
