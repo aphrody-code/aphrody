@@ -16,6 +16,17 @@ crate-type = ["cdylib", "rlib"]
 [lints]
 workspace = true
 
+# ---------------------------------------------------------------------------
+# wasm-pack metadata
+# ---------------------------------------------------------------------------
+# `npm-name` sets the npm package name in the generated package.json.
+# `wasm-opt` passes extra flags to wasm-opt so SIMD128 code (emitted by the
+# `aes` / `aes-gcm` crates via LLVM auto-vectorisation) is accepted by
+# Binaryen's validator.  Without `--enable-simd`, wasm-opt aborts on valid
+# SIMD128 instructions produced by the AES-NI backend.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-simd", "--enable-bulk-memory"]
+
 # Cross-platform dep: base primitives are available on all targets.
 [dependencies]
 base = { path = "../base" }
