@@ -150,6 +150,41 @@ jobs:
         run: ./target/release/aphrody doctor
 
   # --------------------------------------------------------------------------
+  # 2c. BEST-EFFORT — macOS (non bloquant, per CLAUDE.md)
+  # --------------------------------------------------------------------------
+  macos-native:
+    name: macOS (best-effort)
+    runs-on: macos-latest
+    needs: lint
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: macos-native
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: cargo build --release
+        run: cargo build --release -p aphrody --locked
+      - name: cargo nextest run --workspace
+        run: cargo nextest run --workspace --locked
+      - name: smoke aphrody --version
+        run: ./target/release/aphrody --version
+      - name: smoke aphrody --help
+        run: ./target/release/aphrody --help
+      - name: smoke aphrody doctor
+        run: ./target/release/aphrody doctor
+
+  # --------------------------------------------------------------------------
   # 3. PRIORITÉ #2 — Windows 11 (BLOQUANT)
   # --------------------------------------------------------------------------
   windows-priority:

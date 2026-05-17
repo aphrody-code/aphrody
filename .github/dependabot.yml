@@ -1,44 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+# Dependabot config — https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
-
 updates:
-  # GitHub Actions (every repo using workflows benefits)
-  - package-ecosystem: github-actions
-    directory: "/"
+  # Cargo dependencies (root workspace + all crates)
+  - package-ecosystem: cargo
+    directory: /
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - rust
+    open-pull-requests-limit: 10
+    versioning-strategy: lockfile-only  # respect Cargo.lock pins, don't bump Cargo.toml requirements aggressively
+    commit-message:
+      prefix: deps(cargo)
+      include: scope
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+    # Deny-list deps we MUST pin (see CLAUDE.md §7 piège list)
+    ignore:
+      - dependency-name: tracing-subscriber
+        versions: [">0.3.22"]  # 0.3.23+ has mod env packaging bug
+      - dependency-name: rand
+        versions: [">=0.9"]    # 0.9 incompatible with denokv_proto
+      - dependency-name: flume
+      - dependency-name: notify-debouncer-full
+      - dependency-name: rusqlite
+      - dependency-name: schemars
+      - dependency-name: toml
+      - dependency-name: foldhash
+      - dependency-name: zod
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - github-actions
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "ci"
-      include: "scope"
-    groups:
-      actions:
-        patterns: ["*"]
+      prefix: deps(ci)
+      include: scope
 
-  # Cargo (Rust)
-  - package-ecosystem: cargo
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "build"
-      include: "scope"
-    groups:
-      patch-and-minor:
-        update-types: ["minor", "patch"]
-
-  # npm / Bun
+  # Bun / npm package.json (root + packages/*)
   - package-ecosystem: npm
-    directory: "/"
+    directory: /
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
-    open-pull-requests-limit: 10
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - bun
+    open-pull-requests-limit: 5
     commit-message:
-      prefix: "build"
-      include: "scope"
-    groups:
-      patch-and-minor:
-        update-types: ["minor", "patch"]
+      prefix: deps(bun)
+      include: scope
