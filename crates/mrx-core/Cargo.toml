@@ -1,0 +1,12 @@
+[package]
+name = "mrx-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "mrx — shared model/types for audit reports and monorepo maps"
+
+[dependencies]
+serde = { workspace = true }
+chrono = { workspace = true }
