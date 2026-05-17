@@ -27,8 +27,10 @@ param(
 	[string]$Urls    = "scripts/bxc-mass-scrape.urls.json",
 	[string]$Cache   = "var/data/bxc-cache",
 	[int]$Concurrency = 6,
-	[ValidateSet("static", "fast", "stealth", "max")]
-	[string]$Profile  = "fast",
+	# Default = static (in-process StaticDomTransport, no binary needed).
+	# Use http for curl-impersonate, fast/stealth/max for full Chrome/bxc-engine.
+	[ValidateSet("static", "http", "fast", "stealth", "max")]
+	[string]$Profile  = "static",
 	[ValidateSet("static", "full")]
 	[string]$Mode     = "static",
 	[int]$TimeoutMs   = 60000,

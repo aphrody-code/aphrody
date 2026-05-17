@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  shadcn-bridge — Rust wasm-bindgen wrappers mapping shadcn React primitives
+#                  to Material Web Components 3 (`@material/web`) custom
+#                  elements.
+#
+#  Per `project_aphrody_ultimate_goals` memory (2026-05-17 soir) :
+#    « shadcn → M3 natif via bxc scraping, WASM/WebGPU first. »
+#
+#  This crate exposes a thin Rust API that, when compiled to wasm32, materialises
+#  Material Web Components custom elements (`<md-filled-button>`, `<md-dialog>`,
+#  ...) and configures them from `*Props` structs that mirror the shadcn React
+#  prop surface — so existing shadcn call-sites can be ported one-to-one without
+#  pulling in any TS/JS runtime.
+# ============================================================================
+[package]
+name                  = "shadcn-bridge"
+publish               = false
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace = true
+authors.workspace     = true
+license.workspace     = true
+homepage.workspace    = true
+repository.workspace  = true
+description           = "Rust wasm-bindgen wrappers mapping shadcn primitives to Material Web Components 3 (MWC3) custom elements."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+# `serde` is host-portable (no_std-friendly) and lets `*Props` structs be
+# serialised from / deserialised to JSON when ferried across the wasm boundary
+# from JS callers. `serde_json` is needed by the `#[wasm_bindgen]` thin
+# wrappers that accept JSON strings to avoid pulling `serde-wasm-bindgen` at
+# this layer.
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+
+# WASM-only deps: gated so native + Linux builds remain clean (the wrappers
+# only do meaningful work in a browser DOM context — native test builds just
+# exercise the props-struct logic).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen          = { workspace = true }
+js-sys                = { workspace = true }
+web-sys               = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlImageElement",
+    "Node",
+    "CustomEvent",
+    "CustomEventInit",
+    "Event",
+    "EventTarget",
+    "DomTokenList",
+    "console",
+] }
+
+# All wasm-bindgen-family deps are cfg-gated; cargo-machete cannot introspect
+# cfg-conditional dep sections and will incorrectly report them as unused on a
+# native host scan. Same pattern as `aphrody-wasm`.
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys"]
