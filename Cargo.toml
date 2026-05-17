@@ -27,6 +27,10 @@ members = [
     "crates/aphrody-wasm",
     # ievr-tools — IEVR binary inventory analysis (consumes peer-Claude scan JSON)
     "crates/ievr-tools", "crates/aphrody-summary",
+    # M3 + shadcn pixel-perfect coverage + A2A UI (tick 36 pivot, 2026-05-17)
+    "crates/m3-tokens",      # M3 baseline tokens (color/typography/elevation/motion)
+    "crates/shadcn-bridge",  # wasm-bindgen wrappers: shadcn primitives -> MWC3 custom elements
+    "crates/a2a-ui",         # WASM channel viewer for .coord JSONL mailbox
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM

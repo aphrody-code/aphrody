@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "a2a-ui"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "A2A protocol UI: WASM channel viewer for ai.json + .coord JSONL mailbox."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+# Cross-platform: a2a-pb is pure Rust (proto types), works on native + wasm32.
+[dependencies]
+a2a-pb     = { path = "../a2a-pb" }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# WASM-only: browser-side rendering surface. Gated so native builds stay clean.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen             = { workspace = true }
+js-sys                   = { workspace = true }
+console_error_panic_hook = { workspace = true }
+web-sys                  = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "Performance",
+    "console",
+    "Node",
+    "NodeList",
+] }
+
+# All wasm-bindgen-family deps are cfg-gated; cargo-machete cannot introspect
+# cfg-conditional dep sections and reports them as unused on a native host scan.
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook"]

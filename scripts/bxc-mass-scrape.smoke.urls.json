@@ -1,0 +1,10 @@
+{
+	"$schema": "https://aphrody-code.dev/schemas/bxc-mass-scrape-urls/v1",
+	"version": "1.0.0",
+	"description": "Smoke-test subset: 3 stable HTML pages to validate the orchestrator end-to-end.",
+	"urls": [
+		{ "url": "https://example.com/", "category": "smoke", "tags": ["static"] },
+		{ "url": "https://www.iana.org/help/example-domains", "category": "smoke", "tags": ["static"] },
+		{ "url": "https://httpbin.org/html", "category": "smoke", "tags": ["static"] }
+	]
+}
