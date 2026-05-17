@@ -29,7 +29,8 @@ wasm-opt = ["-O", "--enable-simd", "--enable-bulk-memory"]
 
 # Cross-platform dep: base primitives are available on all targets.
 [dependencies]
-base = { path = "../base" }
+base    = { path = "../base" }
+aes-gcm = { workspace = true }
 
 # WASM-only deps: gated so native + Linux builds remain clean.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -43,7 +44,7 @@ log                   = { workspace = true }
 # All deps in this crate are wasm32-gated; machete cannot introspect cfg-conditional
 # dep sections and will incorrectly report them as unused on a native host scan.
 [package.metadata.cargo-machete]
-ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "console_log", "log"]
+ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "console_log", "log", "aes-gcm"]
 
 # wasm-bindgen-test must be pinned EXACT to the same version as wasm-bindgen
 # (they are sub-crates of the same release and must match byte-for-byte).
