@@ -16,16 +16,20 @@ static PREFIX_TODO_VAGUE: OnceLock<Regex> = OnceLock::new();
 static FILLER_OPENERS: OnceLock<Vec<Regex>> = OnceLock::new();
 static FIRST_PERSON_FR: OnceLock<Vec<(Regex, &'static str)>> = OnceLock::new();
 static FIRST_PERSON_EN: OnceLock<Vec<(Regex, &'static str)>> = OnceLock::new();
+static RE_MULTI_SPACE: OnceLock<Regex> = OnceLock::new();
+static RE_ORPHAN_PUNCT: OnceLock<Regex> = OnceLock::new();
 
 fn prefix_note() -> &'static Regex {
     PREFIX_NOTE.get_or_init(|| {
-        Regex::new(r"(?i)^\s*(note|nota bene|nb|remarque|attention)\s*[:\-—]\s*").unwrap()
+        Regex::new(r"(?i)^\s*(note|nota bene|nb|remarque|attention)\s*[:\-—]\s*")
+            .expect("regex compiles")
     })
 }
 
 fn prefix_todo_vague() -> &'static Regex {
     PREFIX_TODO_VAGUE.get_or_init(|| {
-        Regex::new(r"(?i)^\s*todo\s*[:\-]?\s*(implement|finish|complete|do)\s*$").unwrap()
+        Regex::new(r"(?i)^\s*todo\s*[:\-]?\s*(implement|finish|complete|do)\s*$")
+            .expect("regex compiles")
     })
 }
 
@@ -37,7 +41,7 @@ fn filler_openers() -> &'static Vec<Regex> {
             r"(?i)^\s*(this function|this method|this code|cette fonction|cette méthode|ce code)\s+",
         ]
         .iter()
-        .map(|p| Regex::new(p).unwrap())
+        .map(|p| Regex::new(p).expect("regex compiles"))
         .collect()
     })
 }
@@ -57,8 +61,18 @@ fn first_person_fr() -> &'static Vec<(Regex, &'static str)> {
             (r"\bma\b", "la"),
             (r"\bmes\b", "les"),
         ];
-        raw.iter().map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r)).collect()
+        raw.iter()
+            .map(|(p, r)| (Regex::new(&format!("(?i){p}")).expect("regex compiles"), *r))
+            .collect()
     })
+}
+
+fn re_multi_space() -> &'static Regex {
+    RE_MULTI_SPACE.get_or_init(|| Regex::new(r"\s{2,}").expect("regex compiles"))
+}
+
+fn re_orphan_punct() -> &'static Regex {
+    RE_ORPHAN_PUNCT.get_or_init(|| Regex::new(r"\s+([,.;:!?])").expect("regex compiles"))
 }
 
 fn first_person_en() -> &'static Vec<(Regex, &'static str)> {
@@ -74,7 +88,9 @@ fn first_person_en() -> &'static Vec<(Regex, &'static str)> {
             (r"\bour\b", "the"),
             (r"\bmy\b", "the"),
         ];
-        raw.iter().map(|(p, r)| (Regex::new(&format!("(?i){p}")).unwrap(), *r)).collect()
+        raw.iter()
+            .map(|(p, r)| (Regex::new(&format!("(?i){p}")).expect("regex compiles"), *r))
+            .collect()
     })
 }
 
@@ -101,10 +117,8 @@ pub fn aphrodify(text: &str) -> String {
     }
 
     // 4. Espaces multiples + ponctuation orpheline
-    let re_multi_space = Regex::new(r"\s{2,}").unwrap();
-    s = re_multi_space.replace_all(&s, " ").to_string();
-    let re_orphan_punct = Regex::new(r"\s+([,.;:!?])").unwrap();
-    s = re_orphan_punct.replace_all(&s, "$1").to_string();
+    s = re_multi_space().replace_all(&s, " ").to_string();
+    s = re_orphan_punct().replace_all(&s, "$1").to_string();
     s = s.trim().to_string();
 
     // 5. Capitalisation + point final

@@ -54,6 +54,10 @@ a2a                       = { workspace = true }
 a2a-client                = { workspace = true }
 futures                   = { workspace = true }
 thiserror                 = { workspace = true }
+# Messaging-channel adapters (Slack / Telegram / Matrix) — native-only because
+# the underlying crate pulls reqwest + tokio rt-multi-thread which do not
+# compile on wasm32 (cf. crates/aphrody-channels/Cargo.toml).
+aphrody-channels          = { path = "../aphrody-channels" }
 
 # --- WebAssembly targets ---------------------------------------------------
 # Minimal tokio surface (the only features supported on wasm).
