@@ -46,8 +46,8 @@ cible #1**.
 | Tâche | Statut |
 |---|---|
 | `cargo check -p cli --target x86_64-unknown-linux-gnu` vert | ✅ (WSL local, 8.28 s, zéro warning) |
-| `cargo build --release -p cli` natif sur Ubuntu 26.04 | ⏳ (CI à confirmer) |
-| `cargo nextest run -p cli` vert sur Linux | ⏳ |
+| `cargo build --release -p aphrody` natif sur Ubuntu 26.04 | ⏳ (CI à confirmer ; cross-compile zigbuild Windows → Linux ✅) |
+| `cargo nextest run -p aphrody` vert sur Linux | ⏳ (CI ubuntu-latest dans cross-platform.yml ; pas validé local sans toolchain WSL) |
 | Adapter `crates/a2a*` pour Linux (retirer Windows-only) | ✅ (cli chromium gated, voir fix d222d0061) |
 | Adapter `crates/google_mcp` pour Linux | ⏳ |
 | CI runner `ubuntu-26.04` (ou `ubuntu-latest` en fallback) | ⏳ |
@@ -57,8 +57,8 @@ cible #1**.
 
 | Tâche | Statut |
 |---|---|
-| `cargo build --release -p cli` sur Win11 Insider Canary | ⏳ |
-| `cargo nextest run -p cli` vert sur Windows | ⏳ |
+| `cargo build --release -p aphrody` sur Win11 Insider Canary | ✅ (local Win11 28020) |
+| `cargo nextest run` workspace vert sur Windows | ✅ (**387/387** en 2,914 s — 2026-05-17) |
 | Package `scoop` manifest | ✅ (`packaging/scoop/aphrody.json`) |
 | Package `winget` manifest | ✅ (`packaging/winget/manifests/a/aphrody-code/aphrody/__VERSION__/`) |
 | Profil Windows Terminal pour `aphrody` | ⏳ |
