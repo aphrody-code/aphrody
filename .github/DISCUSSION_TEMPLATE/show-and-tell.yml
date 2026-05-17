@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+title: "[showcase] "
+labels: ["showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Built something with aphrody? Show it off!
+  - type: input
+    id: project_url
+    attributes:
+      label: Project URL
+      description: GitHub repo, blog post, video, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What did you build?
+      description: 1-3 paragraphs explaining the project and how aphrody is used.
+    validations:
+      required: true
+  - type: dropdown
+    id: aphrody_features
+    attributes:
+      label: Which aphrody features did you use?
+      multiple: true
+      options:
+        - CLI subcommands (auth/dns/scrape/etc.)
+        - A2A coord protocol
+        - WASM browser library
+        - mrx monorepo scanner
+        - parallel YOLO grind loop
+        - other (describe below)
