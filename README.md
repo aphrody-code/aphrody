@@ -361,11 +361,25 @@ cargo audit-machete  # unused dependencies
 - [ADR-0002 A2A file-based](./docs/adr/0002-a2a-file-based.md)
 - [ADR-0003 YOLO parallel grind](./docs/adr/0003-yolo-parallel-grind.md)
 
-### A2A extensions
+### A2A protocol extensions
 - [Extensions index](./docs/extensions/index.md)
 - [file-transport/v1](./docs/extensions/file-transport-v1.md)
 - [honest-delivery/v1](./docs/extensions/honest-delivery-v1.md)
 - [context7-version-pinning/v1](./docs/extensions/context7-version-pinning-v1.md)
+
+### IEVR reverse-engineering
+- [IEVR docs index](./docs/ievr/INDEX.md) — full doc map
+- [CHANGELOG](./docs/ievr/CHANGELOG.md) — reverse-engineering progress log
+- [Asset formats](./docs/ievr/asset-formats.md) — CPK / USM / ADX / HCA entry-point
+- [Asset classification pipeline](./docs/ievr/asset-classification-pipeline.md)
+- [Audio pipeline](./docs/ievr/audio-pipeline.md)
+- [Network protocol notes](./docs/ievr/network-protocol-notes.md)
+- [Scripting VM notes](./docs/ievr/scripting-vm-notes.md)
+- [Text extraction strategy](./docs/ievr/text-extraction-strategy.md)
+- [Binaries inventory](./docs/ievr/binaries-inventory.md)
+
+### Live demos
+- [WASM browser playground](./crates/aphrody-wasm/examples/browser-playground.html) — open in-browser, no install
 
 ### OSS hygiene
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
