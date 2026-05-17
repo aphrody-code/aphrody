@@ -190,7 +190,7 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | Tâche | Statut |
 |---|---|
 | Re-rendre asciinema cast `assets/aphrody-demo.cast` avec `aphrody doctor` (+ couleurs) | ✅ (`assets/aphrody-doctor-demo.cast` 111 l. — companion cast doctor-focused, demo cast préservé) |
-| Fresh clippy `-D warnings` audit + fix résidu Oracle gate 2 `double_ended_iterator_last` | ⏳ (oracle #20 rapport sale ; vérifier état réel) |
+| Fresh clippy `-D warnings` audit + fix résidu Oracle gate 2 `double_ended_iterator_last` | ✅ (`cargo clippy --workspace --all-targets --locked --offline -- -D warnings` exit 0, no warnings) |
 | Deuxième post technique `docs/posts/2026-05-yolo-grind-loop.md` (architecture 4-agent parallel grind) | ✅ (297 l., D+14 milestone arc, complète post a2a-ai-json) |
 | Show HN launch package `docs/launch/SHOW-HN.md` (title + body + comment templates draft) | ✅ (112 l. draft — title + body + comment templates) |
 | `n2b` aggressive scan + auto-migrate `scripts/**/*.{ts,mjs,js}` node→bun | ✅ (`docs/audits/2026-05-17-n2b-scan.md`, 6 findings, 2 auto-migrated) |
@@ -219,13 +219,13 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `.github/workflows/release-please.yml` — Google release automation via Conventional Commits | ✅ (28 l. — release-please workflow scaffolded) |
 | `crates/google_mcp/README.md` + `crates/a2a/README.md` + `crates/a2a-lf/README.md` | ✅ (85 + 80 + 90 l.) |
 | `crates/mrx-{core,detect,audit,watch}/README.md` — 4 mrx lib crate docs | ✅ (75 + 77 + 85 + 81 l.) |
-| Root `README.md` polish — sweep new docs into doc-tree TOC (COMPARISON/FAQ/ROADMAP/ADRs/extensions) | ⏳ (D+15 first-impression for HN landing — must reflect actual content) |
+| Root `README.md` polish — sweep new docs into doc-tree TOC (COMPARISON/FAQ/ROADMAP/ADRs/extensions) | ✅ (README §Documentation now references COMPARISON/FAQ/ROADMAP/ADRs/extensions/SHOW-HN/posts/IEVR docs/WASM playground) |
 | `.github/ISSUE_TEMPLATE/*` + `PULL_REQUEST_TEMPLATE.md` + `FUNDING.yml` — OSS template bundle | ✅ (bug_report + feature_request + question + config + PR template + FUNDING.yml) |
 | `CHANGELOG.md` sweep — log 2026-05-17 mega-batch (30+ commits today) | ✅ (251 l. — Keep-a-Changelog updated with 2026-05-17 batch) |
 | `packaging/nix/flake.nix` — Nix flake for Nix/NixOS users | ✅ (102 l. flake + README) |
 | `packaging/flatpak/com.aphrody.aphrody.json` — Flatpak manifest | ✅ (36 l. Flatpak manifest + README + LICENSE.SPDX) |
 | `.github/dependabot.yml` — monthly cargo + GH actions dep updates | ✅ (68 l. — cargo + actions update schedule) |
-| `packaging/{scoop,winget,homebrew,deb}/*` version+arch sweep | ⏳ (manifests must claim 1.0.0-canary + x86_64+arm64 coverage) |
+| `packaging/{scoop,winget,homebrew,deb}/*` version+arch sweep | ✅ (scoop 64bit+arm64, winget x64+arm64, homebrew on_macos+on_linux arm/intel, deb amd64+arm64 — all `1.0.0-canary` aligned to workspace.package.version, asset pattern `aphrody-v1.0.0-canary-<triple>.{zip,tar.gz}`) |
 | `docs/PROTOCOL.md` — definitive a2a/v0.4 protocol description for impl reference | ✅ (190 l. — normative a2a/v0.4 protocol doc) |
 | `docs/SECURITY-MODEL.md` — threat model + trust boundaries for the A2A protocol | ✅ (139 l. — threat model + trust boundaries) |
 | `assets/aphrody-logo.svg` — vector logo for README badges + favicons | ✅ (`assets/aphrody-logo.svg` + `aphrody-mark.svg` SVG vectors) |
