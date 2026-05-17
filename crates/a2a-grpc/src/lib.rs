@@ -8,8 +8,8 @@
 // `a2a-client` with `RestTransportFactory` for WASM consumers.
 #[cfg(target_family = "wasm")]
 compile_error!(
-    "a2a-grpc does not support wasm32 targets: tonic/mio require OS-level TCP networking. \
-     For WASM consumers use a2a-client with RestTransportFactory."
+    "a2a-grpc does not support wasm32 targets: tonic/mio require OS-level TCP networking. For \
+     WASM consumers use a2a-client with RestTransportFactory."
 );
 
 pub mod client;

@@ -13,8 +13,10 @@
 
 #![forbid(unsafe_code)]
 
-use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::{
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
@@ -60,16 +62,9 @@ fn init_tracing(json: bool) {
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("mrx_cli=info,mrx_audit=info,mrx_watch=info,warn"));
     if json {
-        tracing_subscriber::fmt()
-            .json()
-            .with_env_filter(filter)
-            .init();
+        tracing_subscriber::fmt().json().with_env_filter(filter).init();
     } else {
-        tracing_subscriber::fmt()
-            .with_env_filter(filter)
-            .with_target(false)
-            .compact()
-            .init();
+        tracing_subscriber::fmt().with_env_filter(filter).with_target(false).compact().init();
     }
 }
 
@@ -99,7 +94,7 @@ fn main() -> ExitCode {
         Err(e) => {
             tracing::error!("{e:#}");
             return ExitCode::from(2);
-        }
+        },
     };
     if !root.is_dir() {
         tracing::error!("root does not exist: {}", root.display());
@@ -119,11 +114,11 @@ fn main() -> ExitCode {
                     "scan complete"
                 );
                 ExitCode::SUCCESS
-            }
+            },
             Err(e) => {
                 tracing::error!("scan failed: {e:#}");
                 ExitCode::from(1)
-            }
+            },
         },
         Cmd::Check => match mrx_audit::run(&root, &out, &map) {
             Ok(r) if r.status == mrx_core::Status::ProductionReady => ExitCode::SUCCESS,
@@ -134,18 +129,18 @@ fn main() -> ExitCode {
                     r.total_findings
                 );
                 ExitCode::from(1)
-            }
+            },
             Err(e) => {
                 tracing::error!("check failed: {e:#}");
                 ExitCode::from(1)
-            }
+            },
         },
         Cmd::Watch { debounce_ms } => match mrx_watch::run(&root, &out, &map, debounce_ms) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 tracing::error!("watch failed: {e:#}");
                 ExitCode::from(1)
-            }
+            },
         },
     }
 }

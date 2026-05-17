@@ -734,20 +734,15 @@ impl TerminalCommand for ScrapeCommand {
 
         let json_value: serde_json::Value = match &self.selector {
             Some(sel) => {
-                let result = client
-                    .scrape(&self.url, sel)
-                    .await
-                    .map_err(|e| miette::miette!("{e}"))?;
+                let result =
+                    client.scrape(&self.url, sel).await.map_err(|e| miette::miette!("{e}"))?;
                 serde_json::to_value(&result)
                     .map_err(|e| miette::miette!("JSON serialization error: {e}"))?
             },
             None => {
                 // No selector → full recon. Annotate profile in the JSON output
                 // so callers know which rendering mode was active.
-                let result = client
-                    .recon(&self.url)
-                    .await
-                    .map_err(|e| miette::miette!("{e}"))?;
+                let result = client.recon(&self.url).await.map_err(|e| miette::miette!("{e}"))?;
                 let mut value = serde_json::to_value(&result)
                     .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
                 value["profile"] = serde_json::Value::String(self.profile.as_str().to_owned());
@@ -798,26 +793,20 @@ impl TerminalCommand for TokensCommand {
         let client =
             ScrapeClient::new().map_err(|e| miette::miette!("HTTP client init failed: {e}"))?;
 
-        let token_map = client
-            .extract_m3_tokens(&self.url)
-            .await
-            .map_err(|e| miette::miette!("{e}"))?;
+        let token_map =
+            client.extract_m3_tokens(&self.url).await.map_err(|e| miette::miette!("{e}"))?;
 
         let json_text = serde_json::to_string_pretty(&token_map)
             .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
 
         if let Some(parent) = self.output.parent() {
             std::fs::create_dir_all(parent).map_err(|e| {
-                miette::miette!(
-                    "Cannot create output directory {}: {e}",
-                    parent.display()
-                )
+                miette::miette!("Cannot create output directory {}: {e}", parent.display())
             })?;
         }
 
-        std::fs::write(&self.output, &json_text).map_err(|e| {
-            miette::miette!("Cannot write {}: {e}", self.output.display())
-        })?;
+        std::fs::write(&self.output, &json_text)
+            .map_err(|e| miette::miette!("Cannot write {}: {e}", self.output.display()))?;
 
         println!(
             "M3 tokens written to {} ({} entries)",

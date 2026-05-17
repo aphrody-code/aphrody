@@ -7,12 +7,10 @@ use std::{
 use aes_gcm::{Aes256Gcm, Key, KeyInit, Nonce, aead::Aead};
 use anyhow::{Result, anyhow};
 use tracing::{info, warn};
-
 #[cfg(target_os = "windows")]
 use windows::Win32::Security::Cryptography::{CRYPT_INTEGER_BLOB, CryptUnprotectData};
 
-#[cfg(target_os = "windows")]
-pub mod injector;
+#[cfg(target_os = "windows")] pub mod injector;
 
 // Déclaration manuelle de LocalFree car manquante dans les bindings windows-rs 0.61
 #[cfg(target_os = "windows")]

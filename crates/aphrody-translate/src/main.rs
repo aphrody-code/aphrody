@@ -7,18 +7,21 @@
 //!     aphrody-translate --root . --in-place --languages rust,ts
 //!     aphrody-translate --root . --no-translate     # juste scrub + aphrodify
 
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{Context, Result};
 use aphrody_translate::{
+    Lang,
     ai_patterns::{self, Action},
     aphrodify,
     extract::extract,
-    translate::{default_cache_path, Translator},
-    Lang,
+    translate::{Translator, default_cache_path},
 };
 use clap::Parser;
 use ignore::WalkBuilder;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
@@ -65,10 +68,8 @@ async fn main() -> Result<()> {
 
     let root = std::fs::canonicalize(&args.root).context("canonicalize root")?;
     let cache_path = args.cache.unwrap_or_else(|| default_cache_path(&root));
-    let translator = Arc::new(Mutex::new(Translator::new(
-        cache_path.clone(),
-        args.contact_email.clone(),
-    )?));
+    let translator =
+        Arc::new(Mutex::new(Translator::new(cache_path.clone(), args.contact_email.clone())?));
 
     let langs = parse_lang_filter(&args.languages);
     info!(?root, ?langs, in_place = args.in_place, "aphrody-translate start");
@@ -85,7 +86,7 @@ async fn main() -> Result<()> {
             Err(e) => {
                 warn!(?file, error = %e, "read failure, skipping");
                 continue;
-            }
+            },
         };
         let lang = Lang::from_path(&file);
         let comments = extract(&original, lang);
@@ -101,7 +102,7 @@ async fn main() -> Result<()> {
                 Action::Drop => {
                     new_source.replace_range(c.start..c.end, "");
                     continue;
-                }
+                },
                 Action::Scrub => ai_patterns::scrub(&c.body),
                 Action::Keep => c.body.clone(),
             };
@@ -110,11 +111,7 @@ async fn main() -> Result<()> {
                 body_clean.clone()
             } else {
                 let t = translator.lock().await.translate(&body_clean).await?;
-                if t.trim().is_empty() {
-                    body_clean.clone()
-                } else {
-                    t
-                }
+                if t.trim().is_empty() { body_clean.clone() } else { t }
             };
 
             let final_body = aphrodify::aphrodify(&translated);
@@ -200,7 +197,9 @@ fn is_french(text: &str) -> bool {
     // ou d'un mot court fréquent ("le ", "la ", "les ", "de ", "et ") suggère
     // que la phrase est déjà en français. Évite des allers-retours inutiles.
     let lower = text.to_lowercase();
-    let accents = lower.chars().any(|c| matches!(c, 'é'|'è'|'ê'|'à'|'â'|'ô'|'î'|'û'|'ç'|'ù'));
+    let accents = lower
+        .chars()
+        .any(|c| matches!(c, 'é' | 'è' | 'ê' | 'à' | 'â' | 'ô' | 'î' | 'û' | 'ç' | 'ù'));
     if accents {
         return true;
     }
@@ -212,7 +211,7 @@ fn is_french(text: &str) -> bool {
 }
 
 fn init_tracing(level: &str) -> Result<()> {
-    use tracing_subscriber::{fmt, EnvFilter};
+    use tracing_subscriber::{EnvFilter, fmt};
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new(format!("aphrody_translate={level}")));
     fmt().with_env_filter(filter).with_target(false).init();

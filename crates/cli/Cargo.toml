@@ -13,10 +13,24 @@ description           = "Aphrody — Rust binary (canonical CLI in transition; l
 [lints]
 workspace = true
 
+# Cross-platform note (Linux > Windows > wasm) :
+# - `cli` ships a full native binary on Linux/Windows/macOS.
+# - On wasm32-*, only a minimal stub (Version + help) is built, because
+#   backend/a2a* pull tokio "full" + mio + reqwest + rustls + ring which
+#   do not compile on wasm. The cfg-gated dep sets below keep both ends
+#   buildable from the same crate.
+
 [dependencies]
 clap          = { workspace = true }
 miette        = { workspace = true }
 async-trait   = { workspace = true }
+base          = { path = "../base" }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+anyhow        = { workspace = true }
+
+# --- Native targets (Linux/Windows/macOS) ----------------------------------
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio         = { workspace = true }
 reqwest       = { workspace = true }
 uuid          = { workspace = true }
@@ -25,10 +39,11 @@ colored       = { workspace = true }
 mimalloc      = { workspace = true }
 scraper       = { workspace = true }
 backend       = { path = "../backend" }
-base          = { path = "../base" }
 a2a-client    = { workspace = true }
 a2a           = { workspace = true }
-serde         = { workspace = true }
-serde_json    = { workspace = true }
-anyhow        = { workspace = true }
 rustls        = { workspace = true }
+
+# --- WebAssembly targets ---------------------------------------------------
+# Minimal tokio surface (the only features supported on wasm).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio         = { version = "1.52", default-features = false, features = ["sync", "macros", "io-util", "rt", "time"] }
