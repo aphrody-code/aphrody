@@ -11,14 +11,28 @@ This page lists all `docs/**/*.md` files grouped by purpose. Each entry is a one
 ## 2. Overview
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — 17-crate workspace map with ASCII diagrams
+- [`AWESOME.md`](AWESOME.md) — curated catalogue of aphrody ecosystem resources
 - [`COMPARISON.md`](COMPARISON.md) — aphrody vs just, taskfile, gh, devcontainer, asdf
+- [`DESIGN-GOOGLE.md`](DESIGN-GOOGLE.md) — Google design.google reference cache
 - [`EXAMPLES.md`](EXAMPLES.md) — 12 copy-paste recipes for common workflows
 - [`FAQ.md`](FAQ.md) — 12 anticipated questions and crisp answers
+- [`MCP_SETUP.md`](MCP_SETUP.md) — MCP server install/setup matrix
 - [`MIGRATION.md`](MIGRATION.md) — moving from competing tools to aphrody
 - [`PERFORMANCE.md`](PERFORMANCE.md) — bench claims with reproducible recipes
+- [`PERFORMANCE-HISTORY.md`](PERFORMANCE-HISTORY.md) — historical perf trend log
+- [`PLAN-MOONSHOT.md`](PLAN-MOONSHOT.md) — 30-day moonshot star-maximisation plan
 - [`PROTOCOL.md`](PROTOCOL.md) — normative A2A/v0.4 plus aphrody extensions
 - [`ROADMAP.md`](ROADMAP.md) — quarterly milestones Q2 2026 through Q1 2027
 - [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md) — consolidated executive summary
+- [`WINCLEAN-AUDIT.md`](WINCLEAN-AUDIT.md) — cross-repo C:/winclean audit (reuse, skills, licences)
+- [`WORKTREES.md`](WORKTREES.md) — 13 upstream worktrees mining reference
+- [`iecode-public-endpoints.md`](iecode-public-endpoints.md) — public API catalog (azalee, Steam, inagle)
+
+## 2.1 Terminal & design (aphrody-terminal moonshot)
+
+- [`design/aphrody-terminal-spec.md`](design/aphrody-terminal-spec.md) — LLM-first terminal specification (5 pillars)
+- [`design/aphrody-terminal-integration-matrix.md`](design/aphrody-terminal-integration-matrix.md) — per-crate contract-of-life matrix
+- [`cargo/BUILD-SPEED.md`](cargo/BUILD-SPEED.md) — workspace build-speed tactics and benchmarks
 
 ## 3. Architecture decisions (ADRs)
 

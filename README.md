@@ -345,9 +345,13 @@ cargo audit-machete  # unused dependencies
 - [ROADMAP.md](./docs/ROADMAP.md) — Q2 2026 → Q1 2027 targets
 - [BENCHMARKS.md](./BENCHMARKS.md) — mrx scan + criterion micro-benches
 - [PLAN.md](./docs/PLAN.md) — plan stratégique post-pivot
+- [PLAN-MOONSHOT.md](./docs/PLAN-MOONSHOT.md) — 30-day moonshot star-maximisation plan
 - [DESIGN.md](./docs/DESIGN.md) — décisions d'architecture
 - [SUMMARY.md](./docs/SUMMARY.md) — sommaire mdBook
 - [docs/cargo/](./docs/cargo/) — workspace, FFI policy, cross-platform
+- [docs/cargo/BUILD-SPEED.md](./docs/cargo/BUILD-SPEED.md) — workspace build-speed tactics and benchmarks
+- [docs/design/aphrody-terminal-spec.md](./docs/design/aphrody-terminal-spec.md) — LLM-first terminal spec (5 pillars)
+- [docs/design/aphrody-terminal-integration-matrix.md](./docs/design/aphrody-terminal-integration-matrix.md) — per-crate contract-of-life matrix
 - [docs/WASM/](./docs/WASM/) — référence WASM (Rust + wgpu + Next.js + Bun)
 - [docs/winget/](./docs/winget/) — WinGet : catalogue 40+ packages, DSC
 - [docs/pwsh/](./docs/pwsh/) — PowerShell 7 : profils, modules
