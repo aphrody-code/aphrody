@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+title: "[q] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before posting:
+        1. Check [docs/FAQ.md](https://github.com/aphrody-code/aphrody/blob/main/docs/FAQ.md)
+        2. Check [docs/TROUBLESHOOTING.md](https://github.com/aphrody-code/aphrody/blob/main/docs/TROUBLESHOOTING.md)
+        3. Search existing Discussions + Issues
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Be specific. Include reproduction steps if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: paste `aphrody doctor --json` output (auto-redacted)
+      render: json
