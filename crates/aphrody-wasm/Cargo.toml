@@ -1,0 +1,30 @@
+[package]
+name                  = "aphrody-wasm"
+publish               = false
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace = true
+authors.workspace     = true
+license.workspace     = true
+homepage.workspace    = true
+repository.workspace  = true
+description           = "Browser-facing WASM wrapper: exposes base primitives via wasm-bindgen."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+# Cross-platform dep: base primitives are available on all targets.
+[dependencies]
+base = { path = "../base" }
+
+# WASM-only deps: gated so native + Linux builds remain clean.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen          = { workspace = true }
+js-sys                = { workspace = true }
+web-sys               = { workspace = true, features = ["Window", "Performance", "console"] }
+console_error_panic_hook = { workspace = true }
+console_log           = { workspace = true }
+log                   = { workspace = true }
