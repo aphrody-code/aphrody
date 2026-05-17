@@ -362,6 +362,13 @@ wasm-bindgen       = { version = "=0.2.121" }
 wasm-bindgen-futures = { version = "0.4" }
 js-sys             = { version = "0.3" }
 web-sys            = { version = "0.3" }
+# Math + POD casting for wgpu pipelines. Aligned EXACTLY with
+# winclean/apps/iecode-web/crates/ievr-engine pins (handoff M1 in
+# C:/winclean/ai.json shared_resources.code_modules#ievr-engine.deps_pinned).
+# Latest crates.io as of 2026-05-17 : glam 0.32.1, bytemuck 1.25.0.
+# We hold glam at 0.30 because ievr-engine consumer pins 0.30.10 — bump together.
+glam               = { version = "0.30" }
+bytemuck           = { version = "1.25", features = ["derive"] }
 # Logging in browser WASM contexts.
 log                        = { version = "0.4" }
 console_log                = { version = "1.0" }
