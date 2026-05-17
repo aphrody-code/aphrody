@@ -105,9 +105,31 @@ pub fn tiles_from_js(input: JsValue) -> Result<JsValue, JsValue> {
 
 Roughly **3-5x faster** than `JsValue::from_serde / into_serde` (which use JSON internally).
 
-## Allocator choice
+## Allocator choice — `wee_alloc` is BANNED
 
-`wee_alloc` (the historical "tiny" allocator) is **archived since 2024** — do not use, it has known memory-corruption issues. Stick with the default Rust allocator. If bundle size is the priority, use `wasm-opt -Oz` instead.
+The historical "tiny" allocator `wee_alloc` is **officially archived** on the
+rustwasm GitHub organization (`archived: true`, last push 2023-02-28).
+Verified against the GitHub API on 2026-05-17.
+
+Why banned :
+
+- **Unbounded memory leak** : two large allocations dropped in allocation order
+  leak (rustwasm/wee_alloc#106 — never fixed).
+- **Pages never returned to host** : the allocator never gives freed pages back
+  to the WASM engine, so the linear memory footprint only grows during a
+  session. This kills long-running browser tabs.
+- **Repeated allocations grow heap infinitely** (issue #85).
+- **Unmaintained** — no commit in 3+ years.
+
+Replacement : **default Rust allocator** (`std::alloc::System` equivalent for
+wasm), plus `wasm-opt -Oz` on the post-bindgen artefact. The default allocator
+is ~2–3 KB larger than `wee_alloc` was claimed to be, but `wasm-opt -Oz`
+typically recovers more than that by stripping unused symbols and DCE'ing
+allocator paths that aren't taken.
+
+If you find a `wee_alloc` mention anywhere in the workspace, remove it. The
+`aphrody-translate` and the future `aphrody/crates/aphrody-wasm-*` crates do
+**not** declare it.
 
 ## `wasm-bindgen` build targets
 

@@ -2,16 +2,24 @@
 
 Source : `vercel/next.js` 16.2+ official docs, verified 2026-05-17.
 
-## Current state of WASM support in Next.js 16
+## Current state of WASM support in Next.js 16 (verified 2026-05-17)
 
-| Bundler | WASM status |
-|---------|-------------|
-| **Webpack 5** (Next 16 with `--webpack`) | Full `asyncWebAssembly` experiment, `import` of `.wasm` works |
-| **Turbopack** (Next 16 default) | WASM async imports **not yet supported** — use Webpack for WASM-heavy apps |
+| Bundler | WASM bundling | WASM in Web Workers | Edge runtime WASM |
+|---------|---------------|---------------------|-------------------|
+| **Webpack 5** (Next 16 with `--webpack`) | ✅ Full `asyncWebAssembly` experiment, `import './x.wasm'` works | ✅ | ✅ |
+| **Turbopack** (Next 16 default) | ❌ `.wasm` import not resolved ; `new URL("x.wasm", import.meta.url)` fails ; tracked in vercel/next.js#84972 + discussion#75430 | ✅ since 16.2 (Web Worker Origin relaxed) | ⚠️ partial |
 
-Until Turbopack ships WASM async import, the policy is :
-- Apps that depend on WASM modules → opt out of Turbopack until parity.
-- Apps without WASM (most) → keep Turbopack for the dev speed.
+What Next.js 16.2 (2026-03) did fix on the Turbopack side :
+- Web Worker Origin restriction relaxed → `crypto-wasm`, `@tensorflow/tfjs-backend-wasm`
+  and similar libs now run inside Web Workers without extra config.
+- This unblocks the *runtime* execution of WASM imported through other means
+  (CDN, `fetch` + `WebAssembly.instantiateStreaming`), but **not** the
+  bundler-resolved `import './x.wasm'` syntax.
+
+Until Turbopack ships full WASM resolution :
+- Apps with a `wasm-pack` output to bundle → opt out of Turbopack (`--webpack`).
+- Apps that just call `WebAssembly.instantiateStreaming(fetch('/static/x.wasm'))` at runtime → Turbopack is fine.
+- Apps with no WASM at all → keep Turbopack (the dev-startup gains are real, ~400 % faster on 16.2).
 
 ## Opt-out of Turbopack — `package.json`
 

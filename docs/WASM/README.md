@@ -39,22 +39,28 @@ Does the crate need a browser surface (DOM, WebGPU canvas, Web Workers, IndexedD
 | [`tooling.md`](tooling.md) | wasm-pack, wasm-opt, twiggy, snippets, profiling |
 | [`build-targets.md`](build-targets.md) | wasm32-unknown-unknown vs wasm32-wasi vs wasm32-wasip1 vs wasm32-unknown-emscripten |
 
-## Stack pinned versions (2026-05-17)
+## Stack pinned versions (2026-05-17, verified web + GitHub API)
 
 | Crate / tool | Version | Notes |
 |---|---|---|
-| `wasm-bindgen` | 0.2.99+ | `unstable_apis` cfg flag for not-yet-stable web APIs |
-| `wasm-bindgen-cli` | match crate | `cargo install wasm-bindgen-cli --version =X` to lock |
-| `web-sys` | 0.3.76+ | Feature-gated per browser API |
+| `wasm-bindgen` | **0.2.121** (2026-05-07) | Pin **exact** in Cargo.toml — schema must match CLI |
+| `wasm-bindgen-cli` | **=0.2.121** | `cargo install wasm-bindgen-cli --version =0.2.121` |
+| `web-sys` | 0.3.76+ | Feature-gated per browser API ; `web_sys_unstable_apis` cfg for WebGPU |
 | `js-sys` | 0.3.76+ | ES intrinsics (Array, Date, Function, Promise, …) |
-| `serde-wasm-bindgen` | 0.6+ | Native Rust ↔ JS object marshalling (faster than JSON) |
-| `wasm-bindgen-rayon` | 1.3+ | Rayon parallel iter via Web Workers + SharedArrayBuffer |
+| `serde-wasm-bindgen` | 0.6+ | Native Rust ↔ JS object marshalling (3-5x faster than JSON) |
+| `wasm-bindgen-rayon` | 1.3+ | Rayon parallel iter via Web Workers + SharedArrayBuffer (COOP/COEP required) |
 | `wasm-pack` | 0.13+ | Build + bundle (target web/bundler/nodejs/no-modules) |
-| `wgpu` | 26.0+ | Stable Rust API ; 29.0 is canary, has feature-flagged WebGPU surface |
-| `wasm-opt` (binaryen) | 121+ | `-O4` for release ; `-Oz` for smallest bundle |
-| `twiggy` | 0.7+ | Bundle size analyzer |
-| Next.js | 16.2+ | Turbopack default, `--webpack` opt-out (asyncWebAssembly still webpack-only) |
-| Bun | 1.3.14+ | Native `import` of `.wasm` (no loader), `WebAssembly.instantiate` |
+| `wgpu` | **26.0.x stable** | `29.0.3` released 2026-03-26 but has major breaking changes — see [`wgpu-webgpu.md`](wgpu-webgpu.md) |
+| `wasm-opt` (binaryen) | 121+ | `-O4` for release ; `-Oz` for smallest bundle (-30 to -50 %) |
+| `twiggy` | 0.7+ | Bundle size analyzer + CI diff gate |
+| Next.js | 16.2 | **Turbopack still does NOT support WASM bundling** — `next dev --webpack` required for now |
+| Bun | 1.3.14+ | Native `import` of `.wasm` (no loader), `WebAssembly.instantiateStreaming` |
+
+## ❌ Banned
+
+| Crate | Why |
+|-------|-----|
+| `wee_alloc` | **Repo archived** (GitHub `archived: true`, last push 2023-02-28). Unbounded memory leak (issue #106). Pages never returned to host. Replacement : default Rust allocator + `wasm-opt -Oz` for size. |
 
 ## Toolchain bootstrap
 

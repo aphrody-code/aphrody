@@ -170,6 +170,87 @@ A minimal wgpu app post `wasm-opt -Oz` lands around **350-450 KB** gzipped. That
 - Stripping debug info (`strip = true` in `[profile.release]`)
 - Avoiding `wgpu::util::DeviceExt` if you can write the buffer setup by hand
 
-## Version note
+## Version policy — pin 26.0.x in production
 
-The `29.x` line is canary (2026-05). Production code should pin to `26.0.x` until 29 hits stable. Breaking change between 26 → 29 : `Instance::new` signature, `Surface` ownership model.
+The `29.x` line shipped on 2026-03-18 (`29.0.0`) with bug-fix releases up to
+`29.0.3` (2026-03-26+). It is **stable in name but breaking in shape**.
+Production code in `aphrody-code/ui` and similar should **pin `wgpu = "26"`**
+until you have time to absorb the migration below.
+
+### Breaking changes 26 → 29 (verified from official CHANGELOG)
+
+1. **`Surface::get_current_texture` no longer returns a `Result`** — instead, a
+   `CurrentSurfaceTexture` enum with explicit variants. `SurfaceError` is gone ;
+   the `suboptimal: bool` field on `SurfaceTexture` is now a dedicated
+   `Suboptimal` variant.
+
+   ```rust
+   // v29
+   match surface.get_current_texture() {
+       wgpu::CurrentSurfaceTexture::Success(frame) => { /* render */ }
+       wgpu::CurrentSurfaceTexture::Timeout
+       | wgpu::CurrentSurfaceTexture::Occluded => { /* skip frame */ }
+       wgpu::CurrentSurfaceTexture::Outdated
+       | wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
+           surface.configure(&device, &config);
+       }
+       wgpu::CurrentSurfaceTexture::Lost => { /* recreate */ }
+       wgpu::CurrentSurfaceTexture::Validation => { /* error scope captured it */ }
+   }
+   ```
+
+   This is the API the snippet earlier in this page already shows — written for
+   v29. If you're still on v26, use the older `Result<SurfaceTexture, SurfaceError>`
+   pattern.
+
+2. **`InstanceDescriptor` constructors changed.** The `Default` impl and the
+   `from_env_or_default` static were removed. New static methods force you to
+   declare whether a display handle is used :
+
+   ```rust
+   // v29
+   let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+   // or
+   let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_with_display_handle(
+       Box::new(display_handle),
+   ));
+   ```
+
+3. **`SurfaceTexture::present()` removed**, replaced by `Queue::present(surface_texture)`.
+
+   ```diff
+   - surface_texture.present();
+   + queue.present(surface_texture);
+   ```
+
+4. **`PipelineLayoutDescriptor::bind_group_layouts`** is now
+   `&[Option<&BindGroupLayout>]` (allows gaps + unbind). Migration :
+
+   ```diff
+   - bind_group_layouts: &[&bgl],
+   + bind_group_layouts: &[Some(&bgl)],
+   ```
+
+5. **`VertexState::buffers`** is now `&[Option<VertexBufferLayout>]` for the
+   same reason. Wrap existing layouts in `Some`.
+
+6. `Features::CLIP_DISTANCE` renamed to `CLIP_DISTANCES` (plural), to match
+   the WebGPU spec. Naga and built-ins follow.
+
+7. `ComputePass`/`RenderPass` : `dispatch` / `dispatch_indirect` renamed to
+   `dispatch_workgroups` / `dispatch_workgroups_indirect` (spec alignment).
+
+8. **MSRV** : v29 lowered MSRV to 1.87 (v27 was 1.88, v28 was 1.92). Going
+   forward wgpu commits to never bumping above `stable - 3`.
+
+### When to migrate
+
+- Stay on 26.0.x if : your project is a forked browser-side renderer using
+  `Surface::get_current_texture().unwrap()` patterns extensively.
+- Move to 29 if : you start fresh, want WebGPU-spec-correct error handling,
+  or need the new `wgpu_int16`, mesh-shader DX12 support, AABB BLAS, or
+  per-vertex Metal/DX12 features.
+
+A migration commit looks like ~15 file changes for a small renderer
+(`bind_group_layouts`, `buffers`, `present` call sites, the surface-texture
+match). Plan one PR, run `cargo check` per platform.
