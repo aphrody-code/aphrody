@@ -932,6 +932,7 @@ mod tests {
     /// address that cannot accept a connection.
     #[tokio::test]
     async fn test_parse_sse_stream_surfaces_stream_errors() {
+        install_rustls_provider();
         // Produce a real reqwest::Error by hitting a listener we bound and
         // then dropped, so the connect fails immediately.
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -953,6 +954,7 @@ mod tests {
     /// REST variant of [`test_parse_sse_stream_surfaces_stream_errors`].
     #[tokio::test]
     async fn test_parse_sse_stream_rest_surfaces_stream_errors() {
+        install_rustls_provider();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         drop(listener);
@@ -1030,6 +1032,7 @@ mod tests {
 
     #[test]
     fn test_jsonrpc_transport_new() {
+        install_rustls_provider();
         let t = JsonRpcTransport::new(Client::new(), "http://localhost:8080".into());
         assert_eq!(t.endpoint, "http://localhost:8080");
     }
@@ -1042,6 +1045,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_jsonrpc_transport_factory_create() {
+        install_rustls_provider();
         let f = JsonRpcTransportFactory::new(None);
         let card = AgentCard {
             name: "Test".into(),
@@ -1122,6 +1126,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_push_config_surfaces_jsonrpc_error() {
+        install_rustls_provider();
         let response = json!({
             "jsonrpc": "2.0",
             "id": "1",
@@ -1165,6 +1170,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_push_config_uses_protojson_request_path() {
+        install_rustls_provider();
         let response = json!({
             "jsonrpc": "2.0",
             "id": "1",
@@ -1208,6 +1214,7 @@ mod tests {
 
     #[test]
     fn test_with_root_certificates_pem_valid() {
+        install_rustls_provider();
         let pem = rcgen_self_signed_ca_pem();
         let f = JsonRpcTransportFactory::with_root_certificates_pem(&pem).unwrap();
         assert_eq!(f.protocol(), TRANSPORT_PROTOCOL_JSONRPC);
@@ -1215,6 +1222,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_root_certificates_pem_factory_create() {
+        install_rustls_provider();
         let pem = rcgen_self_signed_ca_pem();
         let f = JsonRpcTransportFactory::with_root_certificates_pem(&pem).unwrap();
         let card = AgentCard {

@@ -423,28 +423,32 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::test_utils::rcgen_self_signed_ca_pem;
+    use crate::test_utils::{install_rustls_provider, rcgen_self_signed_ca_pem};
 
     #[test]
     fn test_rest_transport_new_strips_trailing_slash() {
+        install_rustls_provider();
         let t = RestTransport::new(Client::new(), "http://localhost:8080/".into());
         assert_eq!(t.base_url, "http://localhost:8080");
     }
 
     #[test]
     fn test_rest_transport_new_no_trailing_slash() {
+        install_rustls_provider();
         let t = RestTransport::new(Client::new(), "http://localhost:8080".into());
         assert_eq!(t.base_url, "http://localhost:8080");
     }
 
     #[test]
     fn test_rest_transport_factory_protocol() {
+        install_rustls_provider();
         let f = RestTransportFactory::new(None);
         assert_eq!(f.protocol(), "HTTP+JSON");
     }
 
     #[tokio::test]
     async fn test_rest_transport_factory_create() {
+        install_rustls_provider();
         let f = RestTransportFactory::new(None);
         let card = AgentCard {
             name: "Test".into(),
@@ -469,6 +473,7 @@ mod tests {
 
     #[test]
     fn test_build_request_adds_params() {
+        install_rustls_provider();
         let t = RestTransport::new(Client::new(), "http://localhost:8080".into());
         let mut params = ServiceParams::new();
         params.insert("X-Custom".into(), vec!["val1".into(), "val2".into()]);
@@ -603,6 +608,7 @@ mod tests {
 
     #[test]
     fn test_with_root_certificates_pem_valid() {
+        install_rustls_provider();
         let pem = rcgen_self_signed_ca_pem();
         let f = RestTransportFactory::with_root_certificates_pem(&pem).unwrap();
         assert_eq!(f.protocol(), TRANSPORT_PROTOCOL_HTTP_JSON);
@@ -610,6 +616,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_root_certificates_pem_factory_create() {
+        install_rustls_provider();
         let pem = rcgen_self_signed_ca_pem();
         let f = RestTransportFactory::with_root_certificates_pem(&pem).unwrap();
         let card = AgentCard {

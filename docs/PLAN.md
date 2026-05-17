@@ -71,7 +71,7 @@ Matrice validée 2026-05-17 (host : Windows 11) :
 | `base`          | ✅ (getrandom "js" gated)| ✅              |
 | `mrx-core`      | n/a (chrono)             | ✅              |
 | `aphrody-translate` | ❌ (tokio "full")    | ❌              |
-| `cli` (binary)  | ❌ (tokio "full" + mio)  | ❌              |
+| `cli` (binary)  | ✅ (wasm stub, native deps cfg-gated) | ⏳ |
 | `backend`/`a2a*`| ❌                       | ❌              |
 
 Sous-tâches :
@@ -93,10 +93,10 @@ backend/a2a-client. Refactor requis :
 
 | Tâche | Statut |
 |---|---|
-| `cli/Cargo.toml` : `[target.'cfg(not(target_arch = "wasm32"))'.dependencies]` pour mimalloc/backend/a2a-client/reqwest/rustls | ⏳ |
-| `cli/Cargo.toml` : `[target.'cfg(target_arch = "wasm32")'.dependencies]` avec tokio minimal (sync,macros,io-util,rt,time) | ⏳ |
-| `cli/src/main.rs` : `#[cfg(not(target_arch = "wasm32"))]` sur les commandes OS-bound | ⏳ |
-| `cli/src/main.rs` : stub wasm minimal (Version + help) | ⏳ |
+| `cli/Cargo.toml` : `[target.'cfg(not(target_arch = "wasm32"))'.dependencies]` pour mimalloc/backend/a2a-client/reqwest/rustls | ✅ |
+| `cli/Cargo.toml` : `[target.'cfg(target_arch = "wasm32")'.dependencies]` avec tokio minimal (sync,macros,io-util,rt,time) | ✅ |
+| `cli/src/main.rs` : `#[cfg(not(target_arch = "wasm32"))]` sur les commandes OS-bound | ✅ |
+| `cli/src/main.rs` : stub wasm minimal (Version + help) | ✅ |
 | `aphrody-translate/Cargo.toml` : tokio minimal pour wasm (translate API HTTP via reqwest wasm) | ⏳ |
 
 ### Phase P-Distribution
@@ -153,7 +153,7 @@ Avant tout push : `cargo ci-offline && cargo deny check` doit être vert
 
 | Métrique | Valeur | Cible |
 |---|---|---|
-| Workspace members | 14 | 14 (post-pivot, google_os retiré) |
+| Workspace members | 16 | 16 (post-pivot : 10 core + 5 mrx + aphrody-translate ; google_os exclu) |
 | `cargo check --locked` (Linux) | ⏳ à valider | < 1 min |
 | `cargo clippy -- -D warnings` | ⏳ à valider | 0 erreur |
 | `cargo deny check` | ✅ ok×4 | ok×4 |

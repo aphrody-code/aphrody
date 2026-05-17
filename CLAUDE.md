@@ -90,7 +90,7 @@ cargo audit-udeps          # nightly unused deps
 
 Monorepo Rust + Bun.
 
-### Workspace (`Cargo.toml` root, 10 members)
+### Workspace (`Cargo.toml` root, 16 members)
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).
@@ -99,6 +99,10 @@ Monorepo Rust + Bun.
 - **Agent / IA (A2A)** : `a2a`, `a2a-client`, `a2a-server`, `a2a-pb`, `a2a-grpc`.
   En cours d'adaptation cross-platform.
 - **Bridges** : `google_mcp` (MCP server, en cours d'adaptation cross-platform).
+- **Mapper (mrx)** : `mrx-core`, `mrx-detect`, `mrx-audit`, `mrx-watch`, `mrx-cli`
+  (Monorepo Real-time X-platform mapper — migré 2026-05-17 depuis vps/packages/mrx).
+- **Outils dev** : `aphrody-translate` (CLI traduction commentaires EN→FR + scrub AI
+  + style Aphrody).
 
 ### Hors workspace (`exclude` du root)
 
