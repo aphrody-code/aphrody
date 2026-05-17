@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Material Web Components (`@material/web`)
 
 L'implémentation de MD3 dans notre projet repose sur la bibliothèque officielle `@material/web` de Google. 

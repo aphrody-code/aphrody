@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Next.js + Vercel Rust crates — Cartographie pour intégration aphrody
 
 > Document de recherche pour OBJECTIF #1 + #4 — intégrer NATIVEMENT Turbopack

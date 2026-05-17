@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Cargo Workspaces (Rust Monorepo)
 
 Cargo (le package manager de Rust) dispose d'un support natif et robuste pour les monorepos via les **Cargo Workspaces**.

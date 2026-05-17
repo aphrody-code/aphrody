@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use std::path::PathBuf;
 
 use async_trait::async_trait;
@@ -1178,7 +1179,9 @@ fn check_peer_heartbeat() -> CheckResult {
     let path = match candidates.iter().find(|p| p.exists()) {
         Some(p) => p.clone(),
         None => {
-            return CheckResult::Warn(format!("absent at {WINCLEAN_HEARTBEAT_PATH} — peer offline"));
+            return CheckResult::Warn(format!(
+                "absent at {WINCLEAN_HEARTBEAT_PATH} — peer offline"
+            ));
         },
     };
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // `aphrody` — cross-platform CLI entry point.
 //
 // On native targets (Linux / Windows / macOS) this binary embeds the full

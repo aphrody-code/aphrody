@@ -1,4 +1,5 @@
-﻿# Google OS & CLI Documentation
+﻿<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Google OS & CLI Documentation
 
 Welcome to the unified documentation for Google OS and Aphrody.
 

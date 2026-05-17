@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Material Design 3 (MD3) - Overview
 
 Bienvenue dans la documentation officielle de l'implémentation de Material Design 3 (MD3) pour le projet **Aphrody / Google OS**.

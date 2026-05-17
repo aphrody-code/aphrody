@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cross-platform OS abstractions for the `cli` binary.
 //!
 //! Inspired by Chromium's `base/base_paths.h` and Android's `Environment`,

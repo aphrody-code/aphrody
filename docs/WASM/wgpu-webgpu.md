@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # wgpu / WebGPU — Browser Setup
 
 Source : `gfx-rs/wgpu` 26.0+ official docs (29.x is canary as of 2026-05-17).

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # PowerShell 7 — Cheatsheet
 
 > Aide-mémoire des commandes et patterns pwsh pour `aphrody`.

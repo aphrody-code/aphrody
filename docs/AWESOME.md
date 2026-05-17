@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # 🌟 Awesome Google OS Resources
 
 This document tracks official Awesome lists, references, and specifications required to build the modern 2026 Unix-like Google OS. It serves as our ultimate technical compass.

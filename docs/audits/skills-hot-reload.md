@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # `skills-hot-reload` — integration notes
 
 `scripts/skills-hot-reload.ts` watches `.claude/skills/` and

@@ -24,8 +24,8 @@ use async_trait::async_trait;
 use chrono::DateTime;
 use futures::Stream;
 use reqwest::{
-    multipart::{Form, Part},
     Client,
+    multipart::{Form, Part},
 };
 use serde::{Deserialize, Serialize};
 use tracing::warn;
@@ -368,7 +368,9 @@ mod tests {
 
     #[test]
     fn from_env_fails_when_variable_absent() {
-        unsafe { std::env::remove_var("TELEGRAM_BOT_TOKEN"); }
+        unsafe {
+            std::env::remove_var("TELEGRAM_BOT_TOKEN");
+        }
         let err = TelegramChannel::from_env().unwrap_err();
         assert!(
             matches!(err, ChannelError::MissingEnvVar("TELEGRAM_BOT_TOKEN")),
@@ -378,10 +380,14 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
-        unsafe { std::env::set_var("TELEGRAM_BOT_TOKEN", "1234567890:ABC-DEF"); }
+        unsafe {
+            std::env::set_var("TELEGRAM_BOT_TOKEN", "1234567890:ABC-DEF");
+        }
         let ch = TelegramChannel::from_env().expect("should succeed");
         assert_eq!(ch.bot_token, "1234567890:ABC-DEF");
-        unsafe { std::env::remove_var("TELEGRAM_BOT_TOKEN"); }
+        unsafe {
+            std::env::remove_var("TELEGRAM_BOT_TOKEN");
+        }
     }
 
     #[test]

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Bun Workspaces Documentation (Standard 2026)
 
 Bun Workspaces est le gestionnaire de paquets natif et ultra-rapide intégré à l'environnement Bun. Il remplace `npm workspaces`, `yarn` et `pnpm` en éliminant les overheads Node.js.

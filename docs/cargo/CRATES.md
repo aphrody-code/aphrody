@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Crates — 16 members du workspace
 
 > Réf. : `Cargo.toml` racine, `crates/*/Cargo.toml`.

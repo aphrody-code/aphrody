@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Supply-chain — Google-grade 2026
 
 > Réf. : `supply-chain/config.toml`, `supply-chain/audits.toml`, `deny.toml`, `Cargo.lock`.

@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize, de::Deserializer, ser::Serializer};

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WASM Build Targets
 
 Rust offers four wasm targets. Pick the right one — they are not interchangeable.

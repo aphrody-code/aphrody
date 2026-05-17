@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! # `HnswBackend`
 //!
 //! An in-process approximate nearest-neighbour memory backend.

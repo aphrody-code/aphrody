@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Theming & Design Tokens (Material You)
 
 L'un des plus grands apports de Material Design 3 est son système de Design Tokens basé sur le **Dynamic Color** et l'espace colorimétrique **HCT (Hue, Chroma, Tone)**.

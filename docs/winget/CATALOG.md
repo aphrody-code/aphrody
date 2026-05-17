@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Catalogue exhaustif Google × WinGet
 
 > Tous les packages publiés par Google dans le dépôt

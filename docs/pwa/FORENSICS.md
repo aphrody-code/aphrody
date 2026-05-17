@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # 🔍 PWA Forensics & Extraction
 
 > Guide technique d'extraction des données isolées des Progressive Web Apps Chromium via le backend `aphrody`.

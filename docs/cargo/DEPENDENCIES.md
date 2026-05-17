@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Dependencies — 80 centralisées dans `[workspace.dependencies]`
 
 > Réf. : `[workspace.dependencies]` dans `Cargo.toml` racine.

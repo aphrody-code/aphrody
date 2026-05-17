@@ -447,7 +447,9 @@ mod tests {
     #[test]
     fn from_env_fails_when_variable_absent() {
         // Make sure the variable is not set in the test process.
-        unsafe { std::env::remove_var("SLACK_BOT_TOKEN"); }
+        unsafe {
+            std::env::remove_var("SLACK_BOT_TOKEN");
+        }
         let err = SlackChannel::from_env().unwrap_err();
         assert!(
             matches!(err, ChannelError::MissingEnvVar("SLACK_BOT_TOKEN")),
@@ -457,10 +459,14 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
-        unsafe { std::env::set_var("SLACK_BOT_TOKEN", "xoxb-test-token"); }
+        unsafe {
+            std::env::set_var("SLACK_BOT_TOKEN", "xoxb-test-token");
+        }
         let ch = SlackChannel::from_env().expect("should succeed");
         assert_eq!(ch.bot_token, "xoxb-test-token");
-        unsafe { std::env::remove_var("SLACK_BOT_TOKEN"); }
+        unsafe {
+            std::env::remove_var("SLACK_BOT_TOKEN");
+        }
     }
 
     #[test]

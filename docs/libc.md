@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Architecture Libc : Rust, C et Windows MSVC
 
 Ce document détaille l'état de l'art de l'interopérabilité entre le langage C et Rust, les spécifications de la `libc`, et comment le noyau `google_os` utilise ces concepts pour compiler nativement du code source Linux historique (ex: 1998) directement sous Windows.

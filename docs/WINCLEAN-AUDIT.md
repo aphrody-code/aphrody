@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WinClean Audit — what's reusable for aphrody
 
 Read-only audit of `C:\winclean\` (2026-05-17). The project is **single-target Windows 11 / Surface Laptop Studio** (per its README). Most of it is not portable to aphrody's Linux/Windows/WASM cross-platform stack, but several components are first-class extractions.

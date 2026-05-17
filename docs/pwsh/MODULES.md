@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Modules PowerShell — Catalogue complet
 
 > Tous les modules installés dans l'environnement PowerShell 7

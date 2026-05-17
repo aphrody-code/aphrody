@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "a2a-server-lf"
 publish = true
 version = "0.3.0"

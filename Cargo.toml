@@ -417,10 +417,10 @@ nix                = { version = "0.31" }
 # Apache-2.0, 5 crates : core (types) → detect (manifests) → audit (parallel walker)
 # → watch (notify v8 debounced) → cli (clap binary `mrx`).
 # Internal crates exposed as workspace deps for downstream consumers.
-mrx-core            = { path = "crates/mrx-core",   version = "1.0.0-canary" }
-mrx-detect          = { path = "crates/mrx-detect", version = "1.0.0-canary" }
-mrx-audit           = { path = "crates/mrx-audit",  version = "1.0.0-canary" }
-mrx-watch           = { path = "crates/mrx-watch",  version = "1.0.0-canary" }
+mrx-core            = { path = "crates/mrx-core" }
+mrx-detect          = { path = "crates/mrx-detect" }
+mrx-audit           = { path = "crates/mrx-audit" }
+mrx-watch           = { path = "crates/mrx-watch" }
 # External deps required by mrx that aren't already in the workspace above.
 notify-debouncer-full = { version = "0.6" }
 dunce              = { version = "1.0" }

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Migration C++ → Rust
 
 > Réf. : `CLAUDE.md`, `GEMINI.md`, `docs/PLAN.md`.
