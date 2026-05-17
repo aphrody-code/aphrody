@@ -14,8 +14,14 @@
 # bun-src   = "vendor/bun/src"
 
 [build]
-# Shared compilation cache — local cargo home or sccache server.
-rustc-wrapper   = "sccache"
+# Shared compilation cache — opt-in via `RUSTC_WRAPPER=sccache` (env var
+# overrides this file). We do NOT hard-code `rustc-wrapper = "sccache"`
+# here because it makes every fresh machine — local dev box, WSL Ubuntu,
+# containerized CI step that lacks sccache — fail with
+#   `could not execute process \`sccache rustc -vV\`: No such file or directory`
+# CI workflows opt in explicitly (mozilla-actions/sccache-action + env var).
+# Developers who want it: `cargo install sccache && export RUSTC_WRAPPER=sccache`.
+# rustc-wrapper = "sccache"
 # Default host target. Override with `--target <triple>` for cross-builds
 # (see aliases `build-linux-x64`, `build-darwin-arm64`, `build-wasm`, …).
 # Cross-compile pre-reqs:
