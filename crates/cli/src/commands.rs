@@ -1183,7 +1183,7 @@ fn check_inbox() -> CheckResult {
     let last_id = text
         .lines()
         .filter(|l| !l.trim().is_empty())
-        .last()
+        .next_back()
         .and_then(|line| extract_json_str_field(line, "id"))
         .unwrap_or_else(|| "unknown".to_string());
     CheckResult::Ok(format!("{envelope_count} envelopes, last id={last_id}"))
