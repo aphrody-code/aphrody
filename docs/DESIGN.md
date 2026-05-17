@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Material Design 3 & Google OS Native Architecture
 
 Ce fichier sert de source de vérité absolue (Single Source of Truth) pour l'écosystème `aphrody` et la conception de l'OS. Il définit l'architecture hybride du God Mode, s'appuyant sur l'accélération matérielle et une implémentation **Material Design 3 (M3)** Desktop-First.

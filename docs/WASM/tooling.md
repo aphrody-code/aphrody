@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WASM Tooling Reference
 
 Pinned versions verified 2026-05-17. Every tool below is open-source and free.

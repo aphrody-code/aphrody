@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Bun — Native WASM Loading
 
 Source : Bun 1.3+ runtime docs, verified 2026-05-17.

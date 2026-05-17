@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody
 
 > **Cross-platform Rust CLI that ships the same command surface to Linux,

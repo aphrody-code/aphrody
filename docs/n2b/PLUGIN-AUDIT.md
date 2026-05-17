@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # n2b Plugin & Extension Audit Report
 
 > **Scope** — `vendor/n2b/` is a git submodule of [`aphrody-code/n2b`](https://github.com/aphrody-code/n2b).

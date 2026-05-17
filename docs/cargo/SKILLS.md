@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Agent Skills — Ecosystem & Centralization
 
 > Last updated: 2026-05-17.

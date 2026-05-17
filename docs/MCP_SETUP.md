@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # MCP servers — team setup
 
 aphrody ships **3 MCP servers** for the team. Two are project-scoped

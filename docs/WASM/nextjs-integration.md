@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Next.js 16 + WASM
 
 Source : `vercel/next.js` 16.2+ official docs, verified 2026-05-17.

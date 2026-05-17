@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Rust → WASM Fundamentals
 
 Source : wasm-bindgen 0.2+ official docs, verified 2026-05-17.

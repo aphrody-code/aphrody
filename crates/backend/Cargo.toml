@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name                  = "backend"
 publish               = false
 version.workspace     = true
@@ -24,7 +24,7 @@ reqwest            = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 base64             = { workspace = true }
-base               = { path = "../base", version = "1.0.0-canary" }
+base               = { path = "../base" }
 
 # rusqlite is only required by chromium.rs (Windows DPAPI credential extraction).
 # On Linux/WASM it must not be compiled because libsqlite3-sys requires a C

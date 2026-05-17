@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Google Mode — Full coverage matrix (2026-05-17)
 
 > État final de l'adoption des patterns Google Production-grade.

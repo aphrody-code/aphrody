@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # CLAUDE.md
 
 Guide opérationnel pour Claude Code (claude.ai/code) sur le dépôt **aphrody**.

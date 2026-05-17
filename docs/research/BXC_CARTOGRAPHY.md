@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # bxc (Bun+Lightpanda) — Cartographie pour intégration aphrody
 
 > Document de recherche pour OBJECTIF #2 + #3 — utiliser bxc@aphrody comme

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # FFI Policy — Rust ↔ C/C++ ↔ Bun
 
 > Réf. : `crates/bun_ffi/`, `crates/google_os/`, `crates/python_ffi/`.

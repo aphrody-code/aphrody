@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Turborepo Documentation (Standard 2026)
 
 Turborepo est le standard de l'industrie pour orchestrer des monorepos JavaScript/TypeScript massifs. Conçu en Rust, il excelle dans la parallélisation et la mise en cache.

@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 use a2a::*;
 use a2a_pb::protojson_conv::{self, ProtoJsonPayload};
 use async_trait::async_trait;

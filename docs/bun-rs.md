@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Bun-RS : Architecture Native & Développement de Librairies
 
 Ce document détaille l'écosystème Rust interne de **Bun**, tel qu'il a été extrait et compilé depuis les sources officielles (`oven-sh/bun`) et intégré nativement dans **Google OS**.

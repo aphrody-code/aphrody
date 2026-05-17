@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 
 // Platform note: `a2a-server` depends on `axum`, `tokio::net`, and `hyper`,
 // which require OS-level TCP sockets. These are incompatible with

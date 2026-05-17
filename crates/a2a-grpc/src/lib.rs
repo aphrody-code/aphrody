@@ -1,5 +1,5 @@
-// Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
 
 // Platform note: `a2a-grpc` depends on `tonic` (gRPC over HTTP/2) which
 // requires `tokio::net` / `mio` OS-level sockets. These are fundamentally

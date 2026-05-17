@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # AGENTS.md — Agent-facing onboarding for AI assistants
 
 Aphrody is built by agents, for agents. This is the agent-facing counterpart

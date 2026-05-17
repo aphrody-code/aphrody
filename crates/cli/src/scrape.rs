@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// scrape.rs — BXC daemon HTTP client for `aphrody scrape` and `aphrody tokens`.
 ///
 /// The BXC engine is a headless-browser daemon (Lightpanda / Bun-based) that

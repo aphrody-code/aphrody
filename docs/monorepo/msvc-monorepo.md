@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # MSVC / CMake Monorepo (C++)
 
 Dans l'écosystème C++ et Windows (MSVC), l'approche moderne (2026) pour un monorepo repose sur **CMake** agissant comme le chef d'orchestre global, générant les solutions Visual Studio (`.sln`) ou s'interfaçant avec `Ninja`.

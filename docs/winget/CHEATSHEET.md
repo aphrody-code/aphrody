@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WinGet — Cheatsheet
 
 > Aide-mémoire des commandes WinGet les plus utilisées pour `aphrody`.

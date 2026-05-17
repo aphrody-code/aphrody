@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 const TARGET_URL = Bun.argv[2] || "https://m3.material.io";
 
 async function mapAssets() {

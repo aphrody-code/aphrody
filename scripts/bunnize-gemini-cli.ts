@@ -1,4 +1,5 @@
-#!/usr/bin/env bun
+// SPDX-License-Identifier: Apache-2.0
+// #!/usr/bin/env bun
 /**
  * bunnize-gemini-cli.ts — JSON-aware Node → Bun migration of every
  * package.json under packages/gemini-cli/.

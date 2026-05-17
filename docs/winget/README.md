@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # WinGet — Package Management pour Aphrody
 
 > Documentation complète de l'intégration WinGet dans le projet `aphrody`.

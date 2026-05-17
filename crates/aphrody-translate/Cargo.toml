@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "aphrody-translate"
 publish = true
 version.workspace = true

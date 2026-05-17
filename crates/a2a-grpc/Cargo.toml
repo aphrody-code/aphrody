@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "a2a-grpc"
 publish = true
 version = "0.2.2"

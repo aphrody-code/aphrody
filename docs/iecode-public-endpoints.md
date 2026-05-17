@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # IEVR / iecode — endpoints publics catalog
 
 Probed 2026-05-17 — actionnable pour aphrody CLI + winclean iecode-web. Pair avec [`docs/WINCLEAN-AUDIT.md`](WINCLEAN-AUDIT.md) (audit sibling repo) et `C:\winclean\ai.json` (CollaborationManifest A2A v0.4).

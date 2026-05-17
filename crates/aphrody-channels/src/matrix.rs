@@ -505,9 +505,15 @@ mod tests {
 
     #[test]
     fn from_env_fails_on_missing_homeserver() {
-        unsafe { std::env::remove_var("MATRIX_HOMESERVER"); }
-        unsafe { std::env::remove_var("MATRIX_ACCESS_TOKEN"); }
-        unsafe { std::env::remove_var("MATRIX_USER_ID"); }
+        unsafe {
+            std::env::remove_var("MATRIX_HOMESERVER");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_ACCESS_TOKEN");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_USER_ID");
+        }
         let err = MatrixChannel::from_env().unwrap_err();
         assert!(
             matches!(err, ChannelError::MissingEnvVar("MATRIX_HOMESERVER")),
@@ -517,28 +523,48 @@ mod tests {
 
     #[test]
     fn from_env_fails_on_missing_token() {
-        unsafe { std::env::set_var("MATRIX_HOMESERVER", "https://matrix.org"); }
-        unsafe { std::env::remove_var("MATRIX_ACCESS_TOKEN"); }
-        unsafe { std::env::remove_var("MATRIX_USER_ID"); }
+        unsafe {
+            std::env::set_var("MATRIX_HOMESERVER", "https://matrix.org");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_ACCESS_TOKEN");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_USER_ID");
+        }
         let err = MatrixChannel::from_env().unwrap_err();
         assert!(
             matches!(err, ChannelError::MissingEnvVar("MATRIX_ACCESS_TOKEN")),
             "unexpected error: {err}"
         );
-        unsafe { std::env::remove_var("MATRIX_HOMESERVER"); }
+        unsafe {
+            std::env::remove_var("MATRIX_HOMESERVER");
+        }
     }
 
     #[test]
     fn from_env_reads_all_vars() {
-        unsafe { std::env::set_var("MATRIX_HOMESERVER", "https://matrix.example.org"); }
-        unsafe { std::env::set_var("MATRIX_ACCESS_TOKEN", "syt_token_abc"); }
-        unsafe { std::env::set_var("MATRIX_USER_ID", "@bot:matrix.example.org"); }
+        unsafe {
+            std::env::set_var("MATRIX_HOMESERVER", "https://matrix.example.org");
+        }
+        unsafe {
+            std::env::set_var("MATRIX_ACCESS_TOKEN", "syt_token_abc");
+        }
+        unsafe {
+            std::env::set_var("MATRIX_USER_ID", "@bot:matrix.example.org");
+        }
         let ch = MatrixChannel::from_env().expect("should succeed");
         assert_eq!(ch.access_token, "syt_token_abc");
         assert_eq!(ch.user_id, "@bot:matrix.example.org");
-        unsafe { std::env::remove_var("MATRIX_HOMESERVER"); }
-        unsafe { std::env::remove_var("MATRIX_ACCESS_TOKEN"); }
-        unsafe { std::env::remove_var("MATRIX_USER_ID"); }
+        unsafe {
+            std::env::remove_var("MATRIX_HOMESERVER");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_ACCESS_TOKEN");
+        }
+        unsafe {
+            std::env::remove_var("MATRIX_USER_ID");
+        }
     }
 
     #[test]

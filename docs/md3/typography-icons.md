@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Typographie et Iconographie (Material Symbols)
 
 Le package `ui` intègre `material-symbols`, le standard absolu de l'iconographie Google pour Material Design 3.
