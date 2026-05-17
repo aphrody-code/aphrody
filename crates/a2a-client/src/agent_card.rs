@@ -39,7 +39,9 @@ impl AgentCardResolver {
     }
 }
 
-#[cfg(test)]
+// Tests that spin up a local TcpListener require tokio::net, which is not
+// available on wasm32 targets. Gate the entire test module to native only.
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},

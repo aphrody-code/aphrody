@@ -1,17 +1,14 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-// Platform note: `a2a-client` uses `reqwest` with `http2` (pulls h2 + hyper +
-// tokio::net) and `tokio` with `full` features. These are incompatible with
-// `wasm32-unknown-unknown` in their current configuration. A future
-// `wasm` feature flag could replace these with `reqwest` WASM transport +
-// `tokio` with `rt + macros` only, but that requires upstream reqwest API
-// alignment. Native targets (Linux, Windows, macOS) are fully supported.
-#[cfg(target_family = "wasm")]
-compile_error!(
-    "a2a-client does not currently support wasm32 targets: reqwest/http2/tokio::net require OS \
-     networking. Track the `wasm` feature flag for future WASM support."
-);
+// Platform support:
+// - Native (Linux / Windows / macOS): full support. reqwest uses OS networking
+//   (mio / hyper / rustls). The `rustls-tls` and `native-tls` features are
+//   only meaningful on native targets.
+// - wasm32 (unknown-unknown / wasip1): the JSON-RPC and REST transports work
+//   via reqwest's browser `fetch` backend (no TLS crate needed). SSE streaming
+//   via `response.bytes_stream()` is supported. gRPC transport is server-side
+//   only and therefore excluded on wasm32.
 
 pub mod agent_card;
 pub mod auth;
@@ -81,7 +78,9 @@ pub(crate) fn a2a_error_from_details(
     a2a::A2AError { code, message, details: (!details.is_empty()).then_some(details) }
 }
 
-#[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
+// reqwest::Certificate and rustls are not available on wasm32.
+// The `rustls-tls` / `native-tls` features only activate on native targets.
+#[cfg(all(not(target_family = "wasm"), any(feature = "rustls-tls", feature = "native-tls")))]
 pub(crate) fn build_reqwest_client_with_root_pem(
     pem: &[u8],
 ) -> Result<reqwest::Client, a2a::A2AError> {
@@ -95,8 +94,8 @@ pub(crate) fn build_reqwest_client_with_root_pem(
 
 #[cfg(test)]
 pub(crate) mod test_utils {
-    use std::sync::Once;
-
+    // rcgen and rustls are native-only; this module is only reached on native.
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) fn rcgen_self_signed_ca_pem() -> Vec<u8> {
         let mut params = rcgen::CertificateParams::new(Vec::<String>::new()).unwrap();
         params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
@@ -112,7 +111,9 @@ pub(crate) mod test_utils {
     /// `ClientConfig`, and rustls 0.23+ refuses to pick a default provider
     /// implicitly. Without this every transport test panics with
     /// `No provider set` (origin: reqwest/async_impl/client.rs).
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) fn install_rustls_provider() {
+        use std::sync::Once;
         static ONCE: Once = Once::new();
         ONCE.call_once(|| {
             let _ = rustls::crypto::ring::default_provider().install_default();

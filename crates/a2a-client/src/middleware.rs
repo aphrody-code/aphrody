@@ -8,7 +8,8 @@ use crate::transport::ServiceParams;
 /// Interceptor for modifying requests and responses at the client level.
 ///
 /// Interceptors are called in order for `before`, and in reverse order for `after`.
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 pub trait CallInterceptor: Send + Sync {
     /// Called before sending a request. Can modify params (e.g., add auth headers).
     async fn before(&self, method: &str, params: &mut ServiceParams) -> Result<(), A2AError> {
@@ -26,7 +27,8 @@ pub trait CallInterceptor: Send + Sync {
 /// Logging interceptor using `tracing`.
 pub struct LoggingInterceptor;
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl CallInterceptor for LoggingInterceptor {
     async fn before(&self, method: &str, _params: &mut ServiceParams) -> Result<(), A2AError> {
         tracing::info!(method = method, "A2A client request");
@@ -48,7 +50,8 @@ mod tests {
 
     struct NoopInterceptor;
 
-    #[async_trait]
+    #[cfg_attr(not(target_family = "wasm"), async_trait)]
+    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
     impl CallInterceptor for NoopInterceptor {}
 
     #[tokio::test]

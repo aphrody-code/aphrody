@@ -16,7 +16,11 @@ pub type ServiceParams = HashMap<String, Vec<String>>;
 ///
 /// A blanket implementation for `Box<dyn Transport>` is automatically derived via
 /// [`auto_impl`], enabling `A2AClient<Box<dyn Transport>>` for runtime-selected transports.
-#[async_trait]
+///
+/// On wasm32 targets the trait uses `?Send` because reqwest futures are `!Send`
+/// (the JS runtime is single-threaded and does not support cross-thread futures).
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[auto_impl(Box)]
 pub trait Transport: Send + Sync {
     async fn send_message(
@@ -93,7 +97,8 @@ pub trait Transport: Send + Sync {
 /// Each protocol binding provides its own `TransportFactory` implementation.
 /// Register factories with [`A2AClientFactory`](crate::A2AClientFactory) to enable
 /// automatic protocol negotiation.
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 pub trait TransportFactory: Send + Sync {
     /// Returns the protocol identifier this factory handles (e.g., "JSONRPC", "GRPC").
     fn protocol(&self) -> &str;

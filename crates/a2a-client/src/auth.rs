@@ -8,7 +8,8 @@ use async_trait::async_trait;
 use crate::{middleware::CallInterceptor, transport::ServiceParams};
 
 /// Trait for providing credentials for authentication.
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 pub trait CredentialsStore: Send + Sync {
     /// Get credentials for the given scheme name.
     async fn get(&self, scheme: &str) -> Option<String>;
@@ -35,7 +36,8 @@ impl Default for InMemoryCredentialsStore {
     }
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
 impl CredentialsStore for InMemoryCredentialsStore {
     async fn get(&self, scheme: &str) -> Option<String> {
         self.credentials.read().unwrap().get(scheme).cloned()
