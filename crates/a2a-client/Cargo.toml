@@ -40,16 +40,21 @@ tokio = { workspace = true }
 reqwest = { workspace = true }
 rustls = { workspace = true, optional = true, features = ["ring"] }
 
-# wasm32 (unknown-unknown / wasip1): minimal tokio (no I/O reactor, no net) +
-# reqwest in wasm mode (browser fetch API; no TLS crate needed).
+# wasm32-unknown-unknown (browser): minimal tokio + reqwest in browser-fetch mode.
+# reqwest 0.13 uses the `fetch` API only when target_os = "unknown" (not WASI).
 # Cargo does not allow overriding workspace `default-features`, so we pin the
-# version directly here instead of inheriting from workspace.
-# reqwest with default-features=false on wasm32 uses `fetch` internally and
-# does not pull mio / tokio-net / hyper.
-[target.'cfg(target_family = "wasm")'.dependencies]
+# version directly here.  `stream` enables bytes_stream(); `query` enables
+# RequestBuilder::query().
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
-# `stream` enables bytes_stream() on Response; `query` enables RequestBuilder::query().
 reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "query"] }
+
+# wasm32-wasip1: minimal tokio only.  reqwest on WASI requires OS-level socket
+# syscalls (socket2/mio) that WASI p1 does not provide, so we exclude it here.
+# The HTTP transport modules (jsonrpc, rest, agent_card) are cfg-stripped on
+# WASI — only the trait definitions and data types compile.
+[target.'cfg(target_os = "wasi")'.dependencies]
+tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
 
 [dev-dependencies]
 rcgen = { workspace = true }
