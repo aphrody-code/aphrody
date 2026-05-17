@@ -2,28 +2,38 @@ $exe = 'C:\Program Files (x86)\Steam\steamapps\common\INAZUMA ELEVEN Victory Roa
 $bytes = [System.IO.File]::ReadAllBytes($exe)
 $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
 
-# Strings of length >=6 made of printable chars
-$re = [regex]'[\x20-\x7e]{6,}'
-$matches = $re.Matches($ascii)
-Write-Host "TOTAL_STRINGS=$($matches.Count)"
-
-# Look for engine / framework / DRM / Level-5 markers
 $patterns = @(
-    'UnrealEngine', 'UnrealEd', 'UE4', 'UE5',
+    'UnrealEngine', 'UnrealEd', 'UE4_', 'UE5_',
     'Unity', 'mono-', 'il2cpp',
-    'CRIWARE', 'CRI ', 'criware', 'CpkMaker', 'sof_dec', 'criatomex',
-    'Level5', 'Level-5', 'level5', 'level-5', 'phyre', 'YETI', 'Yeti',
+    'CRIWARE', 'CRI_', 'criware', 'CpkMaker', 'sof_dec', 'criatomex',
+    'criadx2', 'criha_', 'crimv',
+    'Level5', 'Level-5', 'phyre', 'Phyre', 'YETI', 'Yeti',
     'denuvo', 'Denuvo', 'EOSSDK', 'EpicOnline', 'EasyAntiCheat',
-    'inazuma', 'INAZUMA', 'Inazuma', 'NIE',
-    'D3D11', 'd3d12', 'Vulkan', 'OpenGL', 'wgpu',
+    'inazuma', 'INAZUMA', 'Inazuma', 'nie_', 'NIE_',
+    'D3D11', 'd3d12', 'Vulkan', 'OpenGL',
     'fmod', 'wwise', 'Wwise', 'WWISE',
-    'Steamworks', 'SteamAPI'
+    'Steamworks', 'SteamAPI',
+    'react', 'flutter', 'cocos',
+    'godot', 'cryengine'
 )
 
 foreach ($p in $patterns) {
-    $hits = $matches | Where-Object { $_.Value -match [regex]::Escape($p) } | Select-Object -First 3
-    if ($hits) {
-        Write-Host "--MATCH:$p--"
-        foreach ($h in $hits) { Write-Host "  $($h.Value)" }
+    $idx = $ascii.IndexOf($p)
+    $count = 0
+    $samples = @()
+    while ($idx -ge 0 -and $count -lt 5) {
+        # Extract surrounding printable run
+        $start = $idx
+        while ($start -gt 0 -and $ascii[$start - 1] -ge ' ' -and [byte][char]$ascii[$start - 1] -le 126) { $start-- }
+        $end = $idx + $p.Length
+        while ($end -lt $ascii.Length -and $ascii[$end] -ge ' ' -and [byte][char]$ascii[$end] -le 126) { $end++ }
+        $samples += $ascii.Substring($start, [Math]::Min(200, $end - $start))
+        $count++
+        $idx = $ascii.IndexOf($p, $idx + $p.Length)
+    }
+    if ($count -gt 0) {
+        $totalHits = if ($idx -ge 0) { "$count+" } else { "$count" }
+        Write-Output "--MATCH:$p ($totalHits hits)--"
+        foreach ($s in $samples) { Write-Output "  $s" }
     }
 }

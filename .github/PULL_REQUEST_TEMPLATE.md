@@ -78,7 +78,7 @@
 - [ ] New deps reviewed: `cargo vet suggest` or justified in `supply-chain/audits.toml` / `deny.toml`
 - [ ] New source files carry `// SPDX-License-Identifier: Apache-2.0`
 - [ ] `CHANGELOG.md` updated if the change is user-visible
-- [ ] `docs/SUMMARY.md` regenerated if I added doc files (`bun run scripts/gen_summary.ts`)
+- [ ] `docs/SUMMARY.md` regenerated if I added doc files (`cargo run -p aphrody-summary`)
 - [ ] FFI surface (if touched): `# Safety` doc + tested with `cargo miri test` or sanitizer
 - [ ] **No AI co-author trailers** (no `Co-Authored-By: Claude / Copilot / GPT-*` lines)
 

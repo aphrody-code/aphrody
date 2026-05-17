@@ -94,7 +94,7 @@ cargo audit-udeps          # nightly unused deps
 > `[package.metadata.cargo-machete] ignored = ["wasm-bindgen", ...]` dans le
 > `Cargo.toml` concerné. Exemples vivants : `aphrody-wasm`, `base`, `a2a-pb`.
 >
-> **`docs/SUMMARY.md`** est auto-généré par `bun run scripts/gen_summary.ts`.
+> **`docs/SUMMARY.md`** est auto-généré par `cargo run -p aphrody-summary`.
 > Ne PAS éditer à la main — re-run le script après tout ajout de doc.
 
 ## 4. Architecture (post-pivot)

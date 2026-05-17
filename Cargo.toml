@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 #  Aphrody — Workspace Manifest (Cargo 1.93+, Rust 2024, Nightly)
 #  Production-grade, Google Style — Fuchsia/Chromium aligned.
 # ============================================================================
@@ -25,6 +25,8 @@ members = [
     "crates/aphrody-translate",
     # aphrody-wasm — browser-facing wasm-bindgen wrapper for base primitives
     "crates/aphrody-wasm",
+    # ievr-tools — IEVR binary inventory analysis (consumes peer-Claude scan JSON)
+    "crates/ievr-tools", "crates/aphrody-summary",
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
@@ -257,6 +259,13 @@ winapi-util        = { version = "0.1" }
 cxx                = { version = "1.0" }
 cxx-build          = { version = "1.0" }
 bindgen            = { version = "0.72" }
+
+# --- Binary / archive parsers (game RE, IEVR) -----------------------------
+# `goblin` reads PE/ELF/Mach-O/COFF headers (used to inspect `nie.exe`,
+# `EOSSDK-Win64-Shipping.dll`, etc.).  `byteorder` provides LE/BE primitive
+# reads for the CRI @UTF tables that back CPK / USM / AWB containers.
+goblin             = { version = "0.10", default-features = false, features = ["std", "endian_fd", "pe32", "pe64", "elf32", "elf64"] }
+byteorder          = { version = "1.5" }
 
 # --- POSIX shim helpers (Linux/macOS bridges) -----------------------------
 nix-cross          = { package = "nix", version = "0.31", default-features = false }

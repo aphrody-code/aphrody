@@ -65,11 +65,11 @@ CPK contents ([`cpk-format.md`](cpk-format.md)) into
 
 ## 6. IEVR strategy
 
-- Expect AWBs for BGM, SE, and voice after CPK extraction.
+- Expect AWBs for BGM, SE, voice after CPK extraction.
 - Run `vgmstream-cli` per AWB first; many CRI titles decode clean.
 - On `unknown key`, scan `nie.exe` statically before Frida.
-- Runtime hooks only against offline launch — EAC interaction is
-  governed by `eac-considerations.md`.
+- Runtime hooks only against offline launch — EAC is governed by
+  `eac-considerations.md`.
 
 ## 7. Sample workflow
 
