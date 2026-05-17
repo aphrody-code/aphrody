@@ -47,7 +47,6 @@ mimalloc                  = { workspace = true }
 scraper                   = { workspace = true }
 backend                   = { path = "../backend" }
 rustls                    = { workspace = true }
-tracing                   = { workspace = true }
 aphrody-terminal-backend  = { path = "../aphrody-terminal-backend" }
 
 # --- WebAssembly targets ---------------------------------------------------
