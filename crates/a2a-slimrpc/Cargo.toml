@@ -1,18 +1,31 @@
+# Self-contained workspace declaration so tools that scan crate subdirectories
+# (cargo-machete, cargo-vet metadata walk, etc.) can parse this manifest
+# without finding a workspace root. The parent Cargo.toml EXCLUDES this crate
+# (see [workspace.exclude]) pending an upstream agntcy-slim-mls fix; with this
+# stub workspace, the crate behaves as its own root for ad-hoc builds.
+[workspace]
+
 [package]
 name = "a2a-slimrpc"
 version = "0.1.11"
 description = "A2A v1 SLIMRPC protocol binding for client and server"
 readme = "README.md"
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
-rust-version.workspace = true
+# Inlined (not `*.workspace = true`) because this crate is EXCLUDED from the
+# workspace (see ../../Cargo.toml `[workspace.exclude]`) pending upstream
+# agntcy-slim-mls lifetime / async-trait fix. Workspace inheritance would
+# require being a member, and tools like cargo-machete that walk crate dirs
+# would fail to parse this manifest standalone (cf. CI 25991561638).
+edition       = "2024"
+license       = "Apache-2.0"
+repository    = "https://github.com/aphrody-code/aphrody"
+rust-version  = "1.97"
 
 [lib]
 name = "a2a_slimrpc"
 
-[lints]
-workspace = true
+# Workspace lints are intentionally NOT inherited here (same reason as above).
+# This crate is built ad-hoc when re-included into the workspace; until then
+# it uses the default rustc/clippy lint set.
 
 [dependencies]
 a2a = { workspace = true }
