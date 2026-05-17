@@ -18,7 +18,26 @@
 
 ---
 
-## Quick start
+## Install (60 secondes)
+
+```bash
+# Linux + macOS
+curl -sSf https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.sh | sh
+
+# Windows (PowerShell 7+)
+irm https://raw.githubusercontent.com/aphrody-code/aphrody/main/packaging/install.ps1 | iex
+
+# Scoop (Windows)         scoop bucket add aphrody https://github.com/aphrody-code/scoop-bucket && scoop install aphrody
+# Homebrew (mac + Linux)  brew install aphrody-code/tap/aphrody
+```
+
+Les binaires GitHub Releases sont vérifiés SHA-256, statiquement liés
+(musl sur Linux, MSVC CRT-static sur Windows), embarquent un SBOM
+`cargo-auditable`, et couvrent Linux x64/ARM64, Windows x64/ARM64, macOS x64/ARM64.
+
+---
+
+## Quick start (build from source)
 
 ### Linux Ubuntu 26.04 (cible #1)
 
