@@ -33,7 +33,6 @@ a2a-client = { workspace = true }
 a2a-server = { workspace = true }
 a2a-pb = { workspace = true }
 prost = { workspace = true }
-prost-types = { workspace = true }
 futures = { workspace = true }
 async-trait = { workspace = true }
 slim_bindings = { workspace = true }
