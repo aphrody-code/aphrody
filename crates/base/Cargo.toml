@@ -1,6 +1,6 @@
 ﻿[package]
 name                  = "base"
-publish               = false
+publish               = true  # ladder leaf — first crate to ship
 version.workspace     = true
 edition.workspace     = true
 rust-version.workspace = true

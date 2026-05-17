@@ -85,7 +85,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
         with:
           toolchain: nightly
           targets: ${{ matrix.target }}
@@ -106,7 +108,7 @@ jobs:
         env:
           SOURCE_DATE_EPOCH: ${{ github.event.head_commit.timestamp && '1700000000' || '1700000000' }}
         run: |
-          ${{ matrix.cross == 'zigbuild' && 'cargo zigbuild' || 'cargo auditable build' }} \
+          ${{ matrix.cross == 'zigbuild' && 'cargo auditable zigbuild' || 'cargo auditable build' }} \
             --locked --profile reproducible \
             --target ${{ matrix.target }} \
             -p aphrody
