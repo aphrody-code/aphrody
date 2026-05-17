@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use async_trait::async_trait;
-use backend::chromium::ChromiumParser;
+// `backend::chromium` is `#[cfg(target_os = "windows")]` because the master-key
+// decryption path uses DPAPI / Win32 ACLs. On other OSes the Chromium-based
+// commands fall back to a "Windows-only" notice.
+#[cfg(target_os = "windows")] use backend::chromium::ChromiumParser;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -40,6 +43,7 @@ impl TerminalCommand for MirrorCommand {
 
 pub(crate) struct ChromiumSyncCommand;
 
+#[cfg(target_os = "windows")]
 #[async_trait]
 impl TerminalCommand for ChromiumSyncCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
@@ -59,6 +63,17 @@ impl TerminalCommand for ChromiumSyncCommand {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
+#[async_trait]
+impl TerminalCommand for ChromiumSyncCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        Err(miette::miette!(
+            "`chromium sync` is a Windows-only command (DPAPI-backed master-key path). Run on \
+             Windows or use the OAuth2 flow via `aphrody auth`."
+        ))
+    }
+}
+
 pub(crate) struct AuthCommand {
     pub force: bool,
 }
@@ -68,7 +83,10 @@ impl TerminalCommand for AuthCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         println!("🔐 Tentative d'authentification Google...");
 
-        // Logique God Mode : Extraction via Chromium SxS (Canary)
+        // Logique God Mode : Extraction via Chromium SxS (Canary) — Windows only
+        // because the master-key path relies on DPAPI. Non-Windows hosts skip
+        // straight to the OAuth2 PKCE delegation below.
+        #[cfg(target_os = "windows")]
         if !self.force {
             println!("🛡️ Mode God Mode activé. Recherche de credentials locaux...");
 
@@ -103,6 +121,14 @@ impl TerminalCommand for AuthCommand {
             }
         }
 
+        #[cfg(not(target_os = "windows"))]
+        if !self.force {
+            println!(
+                "ℹ️ God Mode (Chromium Canary master-key extraction) sauté — Windows-only. \
+                 Passage direct à OAuth2."
+            );
+        }
+
         // OAuth2 PKCE flow not yet ported to native Rust — delegate to the
         // bundled gemini-cli binary which already ships the flow via Bun.
         // Tracking: docs/PLAN.md §"Auth — native OAuth2 (PKCE + callback)".
@@ -115,6 +141,11 @@ impl AuthCommand {
     /// Persists a God Mode token to the per-user CLI credential store.
     /// File is created with `0600` on Unix; on Windows it inherits the user
     /// profile ACL (DPAPI-equivalent isolation since it sits under `%APPDATA%`).
+    ///
+    /// Only called from the Windows-gated God Mode branch in
+    /// `AuthCommand::execute`; on Linux/macOS the symbol is reachable but
+    /// the call site is `cfg`-stripped, so dead-code is allowed.
+    #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
     fn persist_god_mode_token(profile: &str, token: &str) -> miette::Result<()> {
         let home = platform::home_dir()
             .map_err(|_| miette::miette!("Impossible de localiser le répertoire utilisateur"))?;

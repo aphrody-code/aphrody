@@ -80,6 +80,27 @@ et redirigent vers le binaire natif. Cf. `crates/cli/src/main.rs`
 pour les `cfg(not(target_arch = "wasm32"))` qui isolent `mimalloc`,
 `tokio` *full*, `reqwest`, `rustls`, `backend` et `a2a-client`.
 
+Démo wasmtime (binaire 334 KiB, release LTO) :
+
+```bash
+$ wasmtime target/wasm32-wasip1/release/cli.wasm --version
+aphrody 1.0.0-canary
+
+$ wasmtime target/wasm32-wasip1/release/cli.wasm --help
+Aphrody — cross-platform Rust binary (Linux / Windows / macOS / wasm).
+
+Usage: cli.wasm [COMMAND]
+
+Commands:
+  auth        Authentification Google (God Mode / OAuth2)
+  mirror      Gère le mirroring des assets MD3
+  dns         Résolution DNS OSINT (reconnaissance agressive)
+  version     Affiche la version et l'état du système
+  chromium    Forensics Chromium
+  a2a         Client natif A2A
+  ...
+```
+
 ## Highlight — `mrx` Monorepo Real-time X-platform Mapper
 
 Un binaire Rust autonome (`mrx`) qui scanne **n'importe quel monorepo**

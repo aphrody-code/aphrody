@@ -15,6 +15,9 @@ use miette::{IntoDiagnostic, Result, miette};
 
 /// Operating system identifier — emitted in `version` output and in logs.
 #[must_use]
+// Only called from Chromium-forensics command (Windows-gated). Avoid dead-code
+// warnings on Linux/macOS/wasm where the call site is cfg-stripped.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) const fn os_short_name() -> &'static str {
     if cfg!(windows) {
         "windows"
@@ -36,6 +39,7 @@ pub(crate) const fn os_short_name() -> &'static str {
 /// - Windows : `%LOCALAPPDATA%`  (typically `C:\Users\<user>\AppData\Local`).
 /// - macOS   : `$HOME/Library/Application Support`.
 /// - Linux   : `$XDG_DATA_HOME` if set, else `$HOME/.local/share`.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) fn local_app_data() -> Result<PathBuf> {
     #[cfg(windows)]
     {
@@ -115,14 +119,16 @@ pub(crate) fn home_dir() -> Result<PathBuf> {
 /// Returns `None` on platforms / OSes where Chrome is not commonly installed
 /// at a well-known path (e.g. wasm, freebsd) — caller should treat as "no
 /// Chrome data available".
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) fn chrome_user_data() -> Option<PathBuf> {
-    let base = local_app_data().ok()?;
     #[cfg(windows)]
     {
+        let base = local_app_data().ok()?;
         return Some(base.join("Google").join("Chrome").join("User Data"));
     }
     #[cfg(target_os = "macos")]
     {
+        let base = local_app_data().ok()?;
         return Some(base.join("Google").join("Chrome"));
     }
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -137,14 +143,16 @@ pub(crate) fn chrome_user_data() -> Option<PathBuf> {
 }
 
 /// Google Chrome Canary (SxS) user-data directory, per OS.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) fn chrome_canary_user_data() -> Option<PathBuf> {
-    let base = local_app_data().ok()?;
     #[cfg(windows)]
     {
+        let base = local_app_data().ok()?;
         return Some(base.join("Google").join("Chrome SxS").join("User Data"));
     }
     #[cfg(target_os = "macos")]
     {
+        let base = local_app_data().ok()?;
         return Some(base.join("Google").join("Chrome Canary"));
     }
     #[cfg(all(unix, not(target_os = "macos")))]
