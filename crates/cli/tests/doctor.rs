@@ -10,13 +10,12 @@
 // `DoctorCommand` execution path.
 //
 // Design constraints:
-//  - The peer winclean may be offline (DEGRADED verdict is expected and
-//    treated as a passing condition by the binary itself — exit code 0).
-//  - Tests must not assume any specific file-system layout beyond what the
-//    doctor subcommand itself discovers at runtime.
-//  - No network calls are made by the test harness; HTTP reachability is
-//    exercised only by the binary under test (with a 2-second timeout built
-//    in to `check_http_listener`).
+//  - The peer winclean may be offline (DEGRADED verdict is expected and treated as a passing
+//    condition by the binary itself — exit code 0).
+//  - Tests must not assume any specific file-system layout beyond what the doctor subcommand itself
+//    discovers at runtime.
+//  - No network calls are made by the test harness; HTTP reachability is exercised only by the
+//    binary under test (with a 2-second timeout built in to `check_http_listener`).
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -73,20 +72,14 @@ fn doctor_text_supply_chain_section_present() {
 // ---------------------------------------------------------------------------
 #[test]
 fn doctor_text_verdict_present() {
-    let output = aphrody()
-        .arg("doctor")
-        .output()
-        .expect("aphrody doctor must produce output");
+    let output = aphrody().arg("doctor").output().expect("aphrody doctor must produce output");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let has_verdict = stdout.contains("Verdict: HEALTHY")
         || stdout.contains("Verdict: DEGRADED")
         || stdout.contains("Verdict: UNHEALTHY");
 
-    assert!(
-        has_verdict,
-        "stdout did not contain any recognised Verdict line.\nstdout:\n{stdout}"
-    );
+    assert!(has_verdict, "stdout did not contain any recognised Verdict line.\nstdout:\n{stdout}");
 }
 
 // ---------------------------------------------------------------------------
@@ -117,9 +110,7 @@ fn doctor_json_valid_serde() {
     }
 
     // `verdict` must be a string with a recognisable value.
-    let verdict = value["verdict"]
-        .as_str()
-        .expect("JSON `verdict` field must be a string");
+    let verdict = value["verdict"].as_str().expect("JSON `verdict` field must be a string");
     assert!(
         matches!(verdict, "HEALTHY" | "DEGRADED" | "UNHEALTHY"),
         "unexpected verdict value: {verdict:?}"
@@ -131,10 +122,7 @@ fn doctor_json_valid_serde() {
 // ---------------------------------------------------------------------------
 #[test]
 fn doctor_exit_code_is_zero() {
-    let output = aphrody()
-        .arg("doctor")
-        .output()
-        .expect("aphrody doctor must produce output");
+    let output = aphrody().arg("doctor").output().expect("aphrody doctor must produce output");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 

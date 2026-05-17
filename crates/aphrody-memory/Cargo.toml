@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-memory"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "aphrody memory SDK — async MemoryBackend trait with JSONL-file and HNSW in-process backends."
+
+[lints]
+workspace = true
+
+# ---------------------------------------------------------------------------
+# NOTE: instant-distance (HNSW pure Rust) is NOT in the offline registry
+# cache for this workspace.  The `hnsw` module ships a hand-rolled brute-force
+# cosine-similarity index instead.  When the registry is reachable, add:
+#   instant-distance = { version = "0.7", features = ["serde"] }
+# and swap `src/hnsw.rs` for the HNSW-backed implementation.
+# ---------------------------------------------------------------------------
+
+[dependencies]
+# --- async runtime ----------------------------------------------------------
+tokio        = { workspace = true, features = ["fs", "macros", "rt", "io-util", "sync"] }
+async-trait  = { workspace = true }
+
+# --- serde / formats --------------------------------------------------------
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+
+# --- errors -----------------------------------------------------------------
+thiserror    = { workspace = true }
+
+# --- time + identity --------------------------------------------------------
+chrono       = { workspace = true }
+# uuid workspace dep has v4+v7 features; we additionally need `serde` for
+# Serialize/Deserialize derives on MemoryRecord.
+uuid         = { workspace = true, features = ["serde"] }
+
+# --- tracing ----------------------------------------------------------------
+tracing      = { workspace = true }
+
+[dev-dependencies]
+tokio        = { workspace = true, features = ["full"] }
+tempfile     = { workspace = true }

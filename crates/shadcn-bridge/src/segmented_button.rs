@@ -9,14 +9,10 @@
 //! and optional leading icon glyph (Material Symbols ligature).
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{create_mwc_element, set_attr_bool};
+#[cfg(target_arch = "wasm32")] use crate::{create_mwc_element, set_attr_bool};
 
 /// One segment within a segmented-button set.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -58,9 +54,7 @@ impl SegmentedButtonProps {
 /// # Errors
 /// Returns [`JsValue`] when the DOM is unavailable.
 #[cfg(target_arch = "wasm32")]
-pub fn create_segmented_button(
-    props: &SegmentedButtonProps,
-) -> Result<HtmlElement, JsValue> {
+pub fn create_segmented_button(props: &SegmentedButtonProps) -> Result<HtmlElement, JsValue> {
     let set = create_mwc_element("md-outlined-segmented-button-set")?;
     set_attr_bool(&set, "multiselect", props.multiselect)?;
     set_attr_bool(&set, "disabled", props.disabled)?;
@@ -108,9 +102,7 @@ mod tests {
     fn segmented_button_props_default_field_count() {
         let p = SegmentedButtonProps::default();
         let v = serde_json::to_value(&p).expect("serde must serialise SegmentedButtonProps");
-        let map = v
-            .as_object()
-            .expect("SegmentedButtonProps must serialise as object");
+        let map = v.as_object().expect("SegmentedButtonProps must serialise as object");
         assert_eq!(map.len(), SegmentedButtonProps::FIELD_COUNT);
     }
 }

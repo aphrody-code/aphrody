@@ -17,11 +17,8 @@
 //! shape automatically when the `label` attribute is present.
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{create_mwc_element, set_attr_bool, set_attr_opt};
@@ -56,11 +53,7 @@ impl FabProps {
 /// Returns a [`JsValue`] if the DOM is unavailable.
 #[cfg(target_arch = "wasm32")]
 pub fn create_fab(props: &FabProps) -> Result<HtmlElement, JsValue> {
-    let tag = if props.variant == "branded" {
-        "md-branded-fab"
-    } else {
-        "md-fab"
-    };
+    let tag = if props.variant == "branded" { "md-branded-fab" } else { "md-fab" };
     let el = create_mwc_element(tag)?;
 
     let size = match props.size.as_str() {

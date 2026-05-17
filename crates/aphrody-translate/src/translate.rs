@@ -3,26 +3,26 @@
 //!
 //! Sur les cibles natives (Linux / Windows / macOS) :
 //! - Quota anonyme : 5000 mots/jour. Avec email noreply : 50000 mots/jour.
-//! - Tout résultat est mis en cache disque dans `.aphrody-translate-cache.json`.
-//!   Les ré-exécutions sont alors instantanées.
-//! - Si l'API renvoie une erreur ou est saturée, le texte source est retourné
-//!   tel quel et un avertissement est tracé.
+//! - Tout résultat est mis en cache disque dans `.aphrody-translate-cache.json`. Les ré-exécutions
+//!   sont alors instantanées.
+//! - Si l'API renvoie une erreur ou est saturée, le texte source est retourné tel quel et un
+//!   avertissement est tracé.
 //!
 //! Sur les cibles WebAssembly (`wasm32-unknown-unknown`, `wasm32-wasip1`) :
-//! - La traduction réseau n'est pas disponible : `translate()` retourne le
-//!   texte source inchangé. L'appelant doit passer `--no-translate` ou utiliser
-//!   la lib pour les étapes scrub/aphrodify uniquement.
+//! - La traduction réseau n'est pas disponible : `translate()` retourne le texte source inchangé.
+//!   L'appelant doit passer `--no-translate` ou utiliser la lib pour les étapes scrub/aphrodify
+//!   uniquement.
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
-
-#[cfg(not(target_arch = "wasm32"))]
-use tracing::warn;
+#[cfg(not(target_arch = "wasm32"))] use tracing::warn;
 
 #[cfg(not(target_arch = "wasm32"))]
 const ENDPOINT: &str = "https://api.mymemory.translated.net/get";
@@ -133,8 +133,7 @@ impl Translator {
         // Native: call MyMemory.
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut url =
-                format!("{ENDPOINT}?q={}&langpair=en|fr", urlencoding::encode(stripped));
+            let mut url = format!("{ENDPOINT}?q={}&langpair=en|fr", urlencoding::encode(stripped));
             if let Some(mail) = &self.contact_email {
                 url.push_str(&format!("&de={}", urlencoding::encode(mail)));
             }

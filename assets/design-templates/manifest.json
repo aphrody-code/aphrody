@@ -1,0 +1,173 @@
+{
+	"$schema": "https://aphrody-code.dev/schemas/design-templates/v1",
+	"generated_at": "2026-05-17T21:23:58.478Z",
+	"source": "open-design",
+	"count": 9,
+	"entries": {
+		"dashboard": {
+			"slug": "dashboard",
+			"name": "dashboard",
+			"description": "Admin / analytics dashboard in a single HTML file. Fixed left sidebar,",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "operations",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.440Z",
+			"size_bytes": 9423,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"blog-post": {
+			"slug": "blog-post",
+			"name": "blog-post",
+			"description": "A long-form article / blog post — masthead, hero image placeholder,",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "marketing",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.445Z",
+			"size_bytes": 9652,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"docs-page": {
+			"slug": "docs-page",
+			"name": "docs-page",
+			"description": "A documentation page — inline-start nav, scrollable article body,",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "engineering",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.446Z",
+			"size_bytes": 9876,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"email-marketing": {
+			"slug": "email-marketing",
+			"name": "email-marketing",
+			"description": "A brand product-launch email — masthead with wordmark, hero image block,",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "marketing",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.454Z",
+			"size_bytes": 13381,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"github-dashboard": {
+			"slug": "github-dashboard",
+			"name": "github-dashboard",
+			"description": "GitHub repository analytics dashboard — stars, forks, contributors,",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "operation",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.456Z",
+			"size_bytes": 69501,
+			"siblings": [
+				"SKILL.md",
+				"example.html",
+				"references/artifact-example.json",
+				"references/example-data.json",
+				"references/provenance-example.json",
+				"references/README.md",
+				"references/template.html"
+			],
+			"status": "imported"
+		},
+		"finance-report": {
+			"slug": "finance-report",
+			"name": "finance-report",
+			"description": "Quarterly / monthly financial report — masthead with KPIs, revenue and",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "finance",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.463Z",
+			"size_bytes": 15319,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"eng-runbook": {
+			"slug": "eng-runbook",
+			"name": "eng-runbook",
+			"description": "An engineering runbook — service overview, alerts table, dashboards",
+			"mode": "prototype",
+			"platform": "desktop",
+			"scenario": "engineering",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.465Z",
+			"size_bytes": 15392,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		},
+		"html-ppt": {
+			"slug": "html-ppt",
+			"name": "html-ppt",
+			"description": "HTML PPT Studio — author professional static HTML presentations in many styles, layouts, and animations, all driven by templates. Use when the user asks for a presentation, PPT, slides, keynote, deck, slideshow, \"幻灯片\", \"演讲稿\", \"做一份 PPT\", ...",
+			"mode": "deck",
+			"platform": "unknown",
+			"scenario": "marketing",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.466Z",
+			"size_bytes": 67449,
+			"siblings": [
+				"SKILL.md",
+				"README.md",
+				"LICENSE",
+				"references/animations.md",
+				"references/authoring-guide.md",
+				"references/full-decks.md",
+				"references/layouts.md",
+				"references/presenter-mode.md",
+				"references/themes.md"
+			],
+			"status": "imported"
+		},
+		"audio-jingle": {
+			"slug": "audio-jingle",
+			"name": "audio-jingle",
+			"description": "Audio generation skill — jingles, beds, voiceover, and sound effects.",
+			"mode": "audio",
+			"platform": "unknown",
+			"scenario": "marketing",
+			"surface": "skill+assets",
+			"source": "open-design",
+			"imported_at": "2026-05-17T21:23:58.476Z",
+			"size_bytes": 9215,
+			"siblings": [
+				"SKILL.md",
+				"example.html"
+			],
+			"status": "imported"
+		}
+	}
+}

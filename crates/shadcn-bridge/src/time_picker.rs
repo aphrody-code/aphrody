@@ -14,14 +14,10 @@
 //! `CustomEvent` channel — keeping the wasm bundle minimal.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{document, set_attr_opt};
+#[cfg(target_arch = "wasm32")] use crate::{document, set_attr_opt};
 
 /// Subset of shadcn `<TimePicker>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -90,17 +86,10 @@ pub fn create_time_picker(props: &TimePickerProps) -> Result<HtmlElement, JsValu
         let cell = doc.create_element("button")?.dyn_into::<HtmlElement>()?;
         cell.set_class_name("md-time-picker__tick");
         cell.set_attribute("type", "button")?;
-        let label_value = if props.twelve_hour {
-            if tick == 0 { 12 } else { tick }
-        } else {
-            tick
-        };
+        let label_value = if props.twelve_hour { if tick == 0 { 12 } else { tick } } else { tick };
         cell.set_text_content(Some(&format!("{label_value:02}")));
         cell.set_attribute("data-tick", &tick.to_string())?;
-        cell.set_attribute(
-            "style",
-            &format!("--md-time-picker-tick-index: {tick};"),
-        )?;
+        cell.set_attribute("style", &format!("--md-time-picker-tick-index: {tick};"))?;
         // Compare against the *normalised* selected tick so the dial-selected
         // state survives AM/PM round-trips.
         let selected_tick = if props.twelve_hour { hour % 12 } else { hour };
@@ -136,9 +125,7 @@ mod tests {
     fn time_picker_props_default_field_count() {
         let p = TimePickerProps::default();
         let v = serde_json::to_value(&p).expect("serde must serialise TimePickerProps");
-        let map = v
-            .as_object()
-            .expect("TimePickerProps must serialise as object");
+        let map = v.as_object().expect("TimePickerProps must serialise as object");
         assert_eq!(map.len(), TimePickerProps::FIELD_COUNT);
     }
 }

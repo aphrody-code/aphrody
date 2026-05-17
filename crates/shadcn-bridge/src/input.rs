@@ -6,11 +6,8 @@
 //! the shadcn default of an outlined input.
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{create_mwc_element, set_attr_bool, set_attr_opt};
@@ -43,11 +40,8 @@ impl InputProps {
 /// Returns [`JsValue`] when the DOM cannot be resolved.
 #[cfg(target_arch = "wasm32")]
 pub fn create_input(props: &InputProps) -> Result<HtmlElement, JsValue> {
-    let tag = if props.variant == "filled" {
-        "md-filled-text-field"
-    } else {
-        "md-outlined-text-field"
-    };
+    let tag =
+        if props.variant == "filled" { "md-filled-text-field" } else { "md-outlined-text-field" };
     let el = create_mwc_element(tag)?;
     el.set_attribute("label", &props.label)?;
     el.set_attribute("value", &props.value)?;

@@ -9,20 +9,15 @@
 //!
 //! Both elements accept the same core attributes:
 //! * `value` (0.0..=1.0) — fraction complete when `indeterminate=false`
-//! * `indeterminate` — when `true`, the indicator loops infinitely and
-//!   ignores `value`. M3 strongly prefers indeterminate when no progress
-//!   estimate is available.
+//! * `indeterminate` — when `true`, the indicator loops infinitely and ignores `value`. M3 strongly
+//!   prefers indeterminate when no progress estimate is available.
 //! * `four-color` — circular only; cycles through the four M3 accent colours.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{create_mwc_element, set_attr_bool};
+#[cfg(target_arch = "wasm32")] use crate::{create_mwc_element, set_attr_bool};
 
 /// Subset of shadcn `<Progress>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

@@ -9,20 +9,20 @@
 
 #![allow(clippy::module_name_repetitions)]
 
-use std::collections::BTreeMap;
-use std::io::Write;
-use std::path::Path;
+use std::{collections::BTreeMap, io::Write, path::Path};
 
-use goblin::pe::PE;
-use goblin::pe::header::{
-    COFF_MACHINE_ARM, COFF_MACHINE_ARM64, COFF_MACHINE_ARMNT, COFF_MACHINE_IA64,
-    COFF_MACHINE_X86, COFF_MACHINE_X86_64,
-};
-use goblin::pe::subsystem::{
-    IMAGE_SUBSYSTEM_EFI_APPLICATION, IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,
-    IMAGE_SUBSYSTEM_EFI_ROM, IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER, IMAGE_SUBSYSTEM_NATIVE,
-    IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION, IMAGE_SUBSYSTEM_WINDOWS_CUI,
-    IMAGE_SUBSYSTEM_WINDOWS_GUI, IMAGE_SUBSYSTEM_XBOX,
+use goblin::pe::{
+    PE,
+    header::{
+        COFF_MACHINE_ARM, COFF_MACHINE_ARM64, COFF_MACHINE_ARMNT, COFF_MACHINE_IA64,
+        COFF_MACHINE_X86, COFF_MACHINE_X86_64,
+    },
+    subsystem::{
+        IMAGE_SUBSYSTEM_EFI_APPLICATION, IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,
+        IMAGE_SUBSYSTEM_EFI_ROM, IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER, IMAGE_SUBSYSTEM_NATIVE,
+        IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION, IMAGE_SUBSYSTEM_WINDOWS_CUI,
+        IMAGE_SUBSYSTEM_WINDOWS_GUI, IMAGE_SUBSYSTEM_XBOX,
+    },
 };
 
 // ── public data types ──────────────────────────────────────────────────────
@@ -111,8 +111,7 @@ pub fn inspect(path: &Path) -> anyhow::Result<PeReport> {
 ///
 /// Returns an error if the slice is not a valid PE32 or PE32+ image.
 pub fn inspect_bytes(bytes: &[u8]) -> anyhow::Result<PeReport> {
-    let pe = PE::parse(bytes)
-        .map_err(|e| anyhow::anyhow!("goblin PE::parse failed: {e}"))?;
+    let pe = PE::parse(bytes).map_err(|e| anyhow::anyhow!("goblin PE::parse failed: {e}"))?;
 
     let coff = &pe.header.coff_header;
     let machine = machine_name(coff.machine);
@@ -123,7 +122,7 @@ pub fn inspect_bytes(bytes: &[u8]) -> anyhow::Result<PeReport> {
             // PE32+ magic = 0x20b; PE32 = 0x10b
             let is64 = opt.standard_fields.magic == 0x020b;
             (sub, is64)
-        }
+        },
         None => (String::from("(no optional header)"), pe.is_64),
     };
 
@@ -135,16 +134,10 @@ pub fn inspect_bytes(bytes: &[u8]) -> anyhow::Result<PeReport> {
         .iter()
         .map(|s| {
             // The COFF name field is exactly 8 bytes; strip trailing NULs/spaces.
-            let raw_name = std::str::from_utf8(&s.name)
-                .unwrap_or("")
-                .trim_end_matches('\0')
-                .trim_end();
+            let raw_name =
+                std::str::from_utf8(&s.name).unwrap_or("").trim_end_matches('\0').trim_end();
             // If goblin resolved a long name via the string table, prefer that.
-            let name = s
-                .real_name
-                .as_deref()
-                .unwrap_or(raw_name)
-                .to_owned();
+            let name = s.real_name.as_deref().unwrap_or(raw_name).to_owned();
             SectionInfo {
                 name,
                 virtual_size: s.virtual_size,
@@ -171,9 +164,7 @@ pub fn inspect_bytes(bytes: &[u8]) -> anyhow::Result<PeReport> {
         // Ordinal-only imports have a synthesised name like "#NNN" in goblin's
         // Cow<str> — we just store it verbatim; it clearly signals no symbol name.
         let func_name = imp.name.as_ref().to_owned();
-        let funcs = dll_funcs
-            .get_mut(&dll_key)
-            .expect("just inserted above; invariant holds");
+        let funcs = dll_funcs.get_mut(&dll_key).expect("just inserted above; invariant holds");
         if !funcs.contains(&func_name) {
             funcs.push(func_name);
         }
@@ -192,23 +183,12 @@ pub fn inspect_bytes(bytes: &[u8]) -> anyhow::Result<PeReport> {
     // ── exports ──────────────────────────────────────────────────────────────
     // Only include exports that have a real symbol name; skip forwarders that
     // happen to be unnamed.
-    let mut exports: Vec<String> = pe
-        .exports
-        .iter()
-        .filter_map(|e| e.name.map(str::to_owned))
-        .collect();
+    let mut exports: Vec<String> =
+        pe.exports.iter().filter_map(|e| e.name.map(str::to_owned)).collect();
     exports.sort_unstable();
     exports.dedup();
 
-    Ok(PeReport {
-        machine,
-        subsystem,
-        timestamp,
-        sections,
-        imports,
-        exports,
-        is_64bit,
-    })
+    Ok(PeReport { machine, subsystem, timestamp, sections, imports, exports, is_64bit })
 }
 
 // ── PeReport::print_summary ─────────────────────────────────────────────────
@@ -226,7 +206,11 @@ impl PeReport {
         writeln!(out, "=== PE Report ===")?;
         writeln!(out, "  Machine   : {}", self.machine)?;
         writeln!(out, "  Subsystem : {}", self.subsystem)?;
-        writeln!(out, "  Bitness   : {}", if self.is_64bit { "64-bit (PE32+)" } else { "32-bit (PE32)" })?;
+        writeln!(
+            out,
+            "  Bitness   : {}",
+            if self.is_64bit { "64-bit (PE32+)" } else { "32-bit (PE32)" }
+        )?;
         writeln!(out, "  Timestamp : {} (0x{:08x})", self.timestamp, self.timestamp)?;
 
         writeln!(out)?;
@@ -344,11 +328,13 @@ mod tests {
     /// - At least one section is present.
     /// - At least one import DLL is listed.
     /// - The binary is AMD64 PE32+.
-    #[cfg_attr(not(feature = "integration"), ignore = "requires IEVR_NIE_EXE or --features integration")]
+    #[cfg_attr(
+        not(feature = "integration"),
+        ignore = "requires IEVR_NIE_EXE or --features integration"
+    )]
     #[test]
     fn parses_nie_exe() {
-        let path_str = std::env::var("IEVR_NIE_EXE")
-            .unwrap_or_else(|_| DEFAULT_NIE_EXE.to_owned());
+        let path_str = std::env::var("IEVR_NIE_EXE").unwrap_or_else(|_| DEFAULT_NIE_EXE.to_owned());
         let path = std::path::Path::new(&path_str);
 
         if !path.exists() {
@@ -358,22 +344,14 @@ mod tests {
 
         let report = inspect(path).expect("inspect should succeed on nie.exe");
 
-        assert!(
-            !report.sections.is_empty(),
-            "expected at least one section, got 0"
-        );
-        assert!(
-            !report.imports.is_empty(),
-            "expected at least one import DLL, got 0"
-        );
+        assert!(!report.sections.is_empty(), "expected at least one section, got 0");
+        assert!(!report.imports.is_empty(), "expected at least one import DLL, got 0");
         assert_eq!(report.machine, "AMD64", "nie.exe should be AMD64");
         assert!(report.is_64bit, "nie.exe should be PE32+");
 
         // Print summary to stderr so it shows up with `cargo test -- --nocapture`.
         let mut buf = Vec::<u8>::new();
-        report
-            .print_summary(&mut buf)
-            .expect("print_summary should not fail");
+        report.print_summary(&mut buf).expect("print_summary should not fail");
         eprintln!("{}", String::from_utf8_lossy(&buf));
     }
 
@@ -383,11 +361,8 @@ mod tests {
     fn section_name_trim() {
         // Simulate a `.text\0\0\0` COFF section name.
         let raw: [u8; 8] = *b".text\x00\x00\x00";
-        let trimmed = std::str::from_utf8(&raw)
-            .unwrap_or("")
-            .trim_end_matches('\0')
-            .trim_end()
-            .to_owned();
+        let trimmed =
+            std::str::from_utf8(&raw).unwrap_or("").trim_end_matches('\0').trim_end().to_owned();
         assert_eq!(trimmed, ".text");
     }
 

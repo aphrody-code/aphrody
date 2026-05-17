@@ -8,16 +8,11 @@
 //! class for consumer styling.
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::document;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
 use crate::M3_ELEVATION_LEVEL_1_DP;
+#[cfg(target_arch = "wasm32")] use crate::document;
 
 /// Subset of shadcn `<Card>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,11 +27,7 @@ pub struct CardProps {
 
 impl Default for CardProps {
     fn default() -> Self {
-        Self {
-            title: String::new(),
-            body: String::new(),
-            elevation_dp: M3_ELEVATION_LEVEL_1_DP,
-        }
+        Self { title: String::new(), body: String::new(), elevation_dp: M3_ELEVATION_LEVEL_1_DP }
     }
 }
 

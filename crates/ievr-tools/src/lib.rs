@@ -11,9 +11,9 @@ pub mod cri;
 pub mod manifest;
 pub mod pe;
 
+use std::{collections::HashMap, path::Path};
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::Path;
 
 /// Full inventory document as emitted by the peer-Claude scan script.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,10 +52,7 @@ impl Inventory {
     /// fails (malformed schema, truncated file, etc.).
     pub fn load(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let bytes = std::fs::read(path.as_ref()).map_err(|e| {
-            anyhow::anyhow!(
-                "failed to read inventory file `{}`: {e}",
-                path.as_ref().display()
-            )
+            anyhow::anyhow!("failed to read inventory file `{}`: {e}", path.as_ref().display())
         })?;
         let inv: Self = serde_json::from_slice(&bytes).map_err(|e| {
             anyhow::anyhow!(
@@ -96,10 +93,8 @@ impl Inventory {
             entry.0 += 1;
             entry.1 += b.size_bytes;
         }
-        let mut v: Vec<_> = map
-            .into_iter()
-            .map(|(ext, (count, bytes))| (ext, count, bytes))
-            .collect();
+        let mut v: Vec<_> =
+            map.into_iter().map(|(ext, (count, bytes))| (ext, count, bytes)).collect();
         // Primary sort: largest total byte footprint first.
         v.sort_by(|a, b| b.2.cmp(&a.2));
         v

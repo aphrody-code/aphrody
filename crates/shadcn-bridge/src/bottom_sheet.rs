@@ -6,8 +6,7 @@
 //! `<div role="dialog">` with the canonical `md-bottom-sheet` class plus a
 //! variant modifier. Two M3 variants are supported:
 //!
-//! * **modal**    — full overlay, scrim-backed, focus trap expected
-//!   (`aria-modal="true"`). Default.
+//! * **modal**    — full overlay, scrim-backed, focus trap expected (`aria-modal="true"`). Default.
 //! * **standard** — inline / persistent, no scrim. `aria-modal="false"`.
 //!
 //! A drag-handle `<span>` and a content slot `<div>` are emitted as nested
@@ -15,14 +14,10 @@
 //! DOM tree.
 
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
-
-#[cfg(target_arch = "wasm32")]
-use crate::{document, set_attr_opt};
+#[cfg(target_arch = "wasm32")] use crate::{document, set_attr_opt};
 
 /// Subset of shadcn `<BottomSheet>` props supported by the MWC3 bridge.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -102,9 +97,7 @@ mod tests {
     fn bottom_sheet_props_default_field_count() {
         let p = BottomSheetProps::default();
         let v = serde_json::to_value(&p).expect("serde must serialise BottomSheetProps");
-        let map = v
-            .as_object()
-            .expect("BottomSheetProps must serialise as object");
+        let map = v.as_object().expect("BottomSheetProps must serialise as object");
         assert_eq!(map.len(), BottomSheetProps::FIELD_COUNT);
     }
 }

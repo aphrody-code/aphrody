@@ -27,8 +27,7 @@
 #[cfg(feature = "std")] extern crate std;
 
 pub mod color;
-#[cfg(test)]
-pub mod dynamic;
+#[cfg(test)] pub mod dynamic;
 pub mod elevation;
 pub mod gemini_brand;
 pub mod google_sans_flex;

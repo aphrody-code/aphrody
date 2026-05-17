@@ -234,10 +234,7 @@ impl_protojson_payload!(
     crate::pbconv::from_proto_get_extended_agent_card_request
 );
 #[cfg(target_family = "wasm")]
-impl_protojson_payload!(
-    GetExtendedAgentCardRequest,
-    crate::protojson::GetExtendedAgentCardRequest
-);
+impl_protojson_payload!(GetExtendedAgentCardRequest, crate::protojson::GetExtendedAgentCardRequest);
 
 #[cfg(not(target_family = "wasm"))]
 impl_protojson_payload!(

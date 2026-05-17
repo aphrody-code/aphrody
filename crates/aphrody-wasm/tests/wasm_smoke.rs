@@ -23,10 +23,7 @@ fn version_returns_canary() {
 #[wasm_bindgen_test]
 fn platform_short_name_is_wasm32_unknown_unknown() {
     let p = aphrody_wasm::platform_short_name();
-    assert_eq!(
-        p, "wasm32-unknown-unknown",
-        "expected wasm32-unknown-unknown, got {p}"
-    );
+    assert_eq!(p, "wasm32-unknown-unknown", "expected wasm32-unknown-unknown, got {p}");
 }
 
 /// `decrypt_aes_gcm` must return an error when the ciphertext is empty.

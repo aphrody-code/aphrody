@@ -7,18 +7,16 @@
 //! sibling modules ([`super::button`], [`super::card`], etc.) and
 //! contribute the Gemini-product-specific surfaces:
 //!
-//! - [`GeminiSparkleProps`] — the 4-color-dot lineage sparkle SVG used
-//!   on the empty-state greeting and the "Gemini is thinking" indicator.
-//! - [`GeminiPromptBarProps`] — the rounded-pill prompt input bar with
-//!   leading attach button, multiline textarea, mic, and a send button
-//!   wearing the spectrum-shift gradient.
-//! - [`GeminiMessageBubbleProps`] — the chat message container, with a
-//!   `from` discriminator (`user` | `assistant`) and an optional
-//!   shimmer state for streaming AI responses.
-//! - [`GeminiSuggestionChipProps`] — the empty-state suggestion chip
-//!   with a small leading icon and rounded-pill silhouette.
-//! - [`GeminiAvatarRingProps`] — the gradient ring wrapped around the
-//!   user avatar (matches the spectrum-shift gradient).
+//! - [`GeminiSparkleProps`] — the 4-color-dot lineage sparkle SVG used on the empty-state greeting
+//!   and the "Gemini is thinking" indicator.
+//! - [`GeminiPromptBarProps`] — the rounded-pill prompt input bar with leading attach button,
+//!   multiline textarea, mic, and a send button wearing the spectrum-shift gradient.
+//! - [`GeminiMessageBubbleProps`] — the chat message container, with a `from` discriminator (`user`
+//!   | `assistant`) and an optional shimmer state for streaming AI responses.
+//! - [`GeminiSuggestionChipProps`] — the empty-state suggestion chip with a small leading icon and
+//!   rounded-pill silhouette.
+//! - [`GeminiAvatarRingProps`] — the gradient ring wrapped around the user avatar (matches the
+//!   spectrum-shift gradient).
 //!
 //! All atoms render real DOM via `wasm_bindgen` on the `wasm32` target.
 //! On native targets the file compiles as an rlib so Props structs can
@@ -177,12 +175,13 @@ impl GeminiAvatarRingProps {
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use super::{
-        GeminiAvatarRingProps, GeminiMessageBubbleProps, GeminiPromptBarProps,
-        GeminiSparkleProps, GeminiSuggestionChipProps, MessageOrigin,
-    };
     use wasm_bindgen::prelude::*;
     use web_sys::{Document, HtmlElement};
+
+    use super::{
+        GeminiAvatarRingProps, GeminiMessageBubbleProps, GeminiPromptBarProps, GeminiSparkleProps,
+        GeminiSuggestionChipProps, MessageOrigin,
+    };
 
     fn document() -> Result<Document, JsValue> {
         web_sys::window()
@@ -239,9 +238,7 @@ mod wasm {
     }
 
     /// Render the Gemini chat prompt bar.
-    pub fn create_gemini_prompt_bar(
-        props: &GeminiPromptBarProps,
-    ) -> Result<HtmlElement, JsValue> {
+    pub fn create_gemini_prompt_bar(props: &GeminiPromptBarProps) -> Result<HtmlElement, JsValue> {
         let doc = document()?;
         let bar = element(&doc, "form", "gemini-prompt-bar")?;
         bar.set_attribute("role", "search")?;

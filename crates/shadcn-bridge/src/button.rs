@@ -11,11 +11,8 @@
 //! emphasis level).
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use web_sys::HtmlElement;
+#[cfg(target_arch = "wasm32")] use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")] use web_sys::HtmlElement;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{create_mwc_element, set_attr_bool, set_attr_opt};

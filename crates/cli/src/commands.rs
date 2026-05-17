@@ -911,8 +911,7 @@ async fn collect_diagnostics() -> DoctorReport {
     let built_unix: u64 = env!("APHRODY_BUILD_UNIX").parse().unwrap_or(0);
     let target = env!("APHRODY_TARGET");
     let built_date = if built_unix > 0 { epoch_to_date(built_unix) } else { "unknown".to_string() };
-    let binary_version =
-        format!("{version} (commit {sha}, built {built_date}, target {target})");
+    let binary_version = format!("{version} (commit {sha}, built {built_date}, target {target})");
 
     let rustls_label = match rustls::crypto::ring::default_provider().install_default() {
         Ok(()) => "installed (ring)".to_string(),
@@ -982,11 +981,8 @@ fn print_text(r: &DoctorReport) {
 fn print_json(r: &DoctorReport) -> miette::Result<()> {
     // Build structured JSON without deriving Serialize on internal types, to
     // keep the data model self-contained in this function.
-    let env_obj: serde_json::Map<String, serde_json::Value> = r
-        .env_vars
-        .iter()
-        .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
-        .collect();
+    let env_obj: serde_json::Map<String, serde_json::Value> =
+        r.env_vars.iter().map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone()))).collect();
 
     // Extract heartbeat age_s and is_stale from the peer_heartbeat check value.
     // The text carries "N s ago" — parse it back for the JSON field.
@@ -1174,21 +1170,15 @@ fn check_peer_heartbeat() -> CheckResult {
     } else {
         // WSL / Linux: translate C:/ prefix.
         vec![
-            std::path::PathBuf::from(
-                WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/c/"),
-            ),
-            std::path::PathBuf::from(
-                WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/mnt/c/"),
-            ),
+            std::path::PathBuf::from(WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/c/")),
+            std::path::PathBuf::from(WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/mnt/c/")),
         ]
     };
 
     let path = match candidates.iter().find(|p| p.exists()) {
         Some(p) => p.clone(),
         None => {
-            return CheckResult::Warn(format!(
-                "absent at {WINCLEAN_HEARTBEAT_PATH} — peer offline"
-            ))
+            return CheckResult::Warn(format!("absent at {WINCLEAN_HEARTBEAT_PATH} — peer offline"));
         },
     };
 
@@ -1216,11 +1206,7 @@ fn check_peer_heartbeat() -> CheckResult {
                 ("fresh".to_string(), false)
             };
             let result = format!("heartbeat {ts_str} ({age_secs} s ago — {freshness})");
-            if is_stale {
-                CheckResult::Warn(result)
-            } else {
-                CheckResult::Ok(result)
-            }
+            if is_stale { CheckResult::Warn(result) } else { CheckResult::Ok(result) }
         },
     }
 }
@@ -1235,11 +1221,7 @@ fn check_inbox() -> CheckResult {
         // WSL / Linux: try both mount prefixes.
         let p1 = std::path::PathBuf::from(WINCLEAN_INBOX_PATH.replace("C:/", "/c/"));
         let p2 = std::path::PathBuf::from(WINCLEAN_INBOX_PATH.replace("C:/", "/mnt/c/"));
-        if p1.exists() {
-            p1
-        } else {
-            p2
-        }
+        if p1.exists() { p1 } else { p2 }
     };
 
     if !path.exists() {
@@ -1266,9 +1248,7 @@ async fn check_http_listener() -> CheckResult {
     let url = "http://localhost:8788/ping";
     // Build a reqwest client with a short timeout so we don't block the
     // user for multi-second hangs when the peer listener is down.
-    let client = match reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(2))
-        .build()
+    let client = match reqwest::Client::builder().timeout(std::time::Duration::from_secs(2)).build()
     {
         Ok(c) => c,
         Err(e) => return CheckResult::Warn(format!("could not build HTTP client: {e}")),
@@ -1281,7 +1261,9 @@ async fn check_http_listener() -> CheckResult {
         Ok(resp) => {
             CheckResult::Warn(format!("localhost:8788 (non-200: {})", resp.status().as_u16()))
         },
-        Err(_) => CheckResult::Warn("localhost:8788 (no response — listener not running)".to_string()),
+        Err(_) => {
+            CheckResult::Warn("localhost:8788 (no response — listener not running)".to_string())
+        },
     }
 }
 

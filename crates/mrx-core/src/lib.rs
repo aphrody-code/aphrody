@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 //! mrx-core — shared types serialized to `path.json` and `monorepo-map.json`.
 //!
 //! Kept dependency-free (only serde + chrono) so every other mrx crate can
