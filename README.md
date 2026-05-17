@@ -57,6 +57,8 @@ That's the binary on its own repo. On a real monorepo (19,213 files / 482 MB)
 the same binary runs in **1.4 s warm** — full numbers + comparisons in
 [`BENCHMARKS.md`](BENCHMARKS.md).
 
+> Latest changes: [`CHANGELOG.md`](CHANGELOG.md) — Unreleased section tracks all of this session's shipped work.
+
 ---
 
 ## Install (60 secondes)
