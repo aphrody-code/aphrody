@@ -377,7 +377,7 @@ mrx-detect          = { path = "crates/mrx-detect", version = "1.0.0-canary" }
 mrx-audit           = { path = "crates/mrx-audit",  version = "1.0.0-canary" }
 mrx-watch           = { path = "crates/mrx-watch",  version = "1.0.0-canary" }
 # External deps required by mrx that aren't already in the workspace above.
-notify-debouncer-full = { version = "0.6" }
+notify-debouncer-full = { version = "0.7" }
 dunce              = { version = "1.0" }
 dashmap            = { version = "6" }
 parking_lot        = { version = "0.12" }
