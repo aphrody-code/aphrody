@@ -812,6 +812,16 @@ impl TerminalCommand for ScrapeCommand {
 
 // ── aphrody doctor ───────────────────────────────────────────────────────────
 
+/// Canonical TTL (seconds) for the peer heartbeat file, as declared in the
+/// `etiquette.ttl_seconds` block of `C:/winclean/.coord/ai.json`.
+const HEARTBEAT_TTL_SECS: u64 = 600;
+
+/// Absolute path to the winclean-side inbox watched by aphrody.
+const WINCLEAN_INBOX_PATH: &str = "C:/winclean/.coord/inbox-from-winclean.jsonl";
+
+/// Absolute path to the peer heartbeat file written by winclean.
+const WINCLEAN_HEARTBEAT_PATH: &str = "C:/winclean/.coord/heartbeat-winclean.txt";
+
 /// Outcome of a single diagnostic check.
 enum CheckResult {
     Ok(String),
@@ -831,166 +841,213 @@ impl CheckResult {
     fn is_critical_failure(&self) -> bool {
         matches!(self, CheckResult::Err(_))
     }
+
+    fn value(&self) -> &str {
+        match self {
+            CheckResult::Ok(v) | CheckResult::Warn(v) | CheckResult::Err(v) => v.as_str(),
+        }
+    }
 }
 
-pub(crate) struct DoctorCommand;
+/// Collected diagnostics passed to both text and JSON output paths.
+struct DoctorReport {
+    binary_version: String,
+    rustls_provider: String,
+    reqwest_tls: &'static str,
+    allocator: &'static str,
+    tokio_runtime: &'static str,
+    ai_json: CheckResult,
+    well_known_ai_json: CheckResult,
+    peer_heartbeat: CheckResult,
+    inbox: CheckResult,
+    http_listener: CheckResult,
+    cargo_vet: CheckResult,
+    env_vars: Vec<(String, String)>,
+}
 
-#[async_trait]
-impl TerminalCommand for DoctorCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        // Track severity for the final verdict.
-        let mut has_error = false;
-        let mut has_warn = false;
-
-        // ── [runtime] ────────────────────────────────────────────────────────
-        println!("aphrody doctor — environment + integration diagnostics");
-        println!();
-        println!("[runtime]");
-
-        // binary version — from compile-time env
-        {
-            let version = env!("CARGO_PKG_VERSION");
-            let sha = env!("APHRODY_GIT_SHA");
-            let built_unix: u64 = env!("APHRODY_BUILD_UNIX").parse().unwrap_or(0);
-            let target = env!("APHRODY_TARGET");
-            // Convert unix epoch to a human-readable date (YYYY-MM-DD).
-            let built_date = if built_unix > 0 {
-                // Simple epoch → date calculation, no external crate.
-                epoch_to_date(built_unix)
-            } else {
-                "unknown".to_string()
-            };
-            println!("  binary version: {version} (commit {sha}, built {built_date}, target {target})");
-        }
-
-        // rustls CryptoProvider
-        {
-            let r = rustls::crypto::ring::default_provider().install_default();
-            let label = match r {
-                Ok(()) => "installed (ring)",
-                Err(_) => "already installed (ring)",
-            };
-            println!("  rustls CryptoProvider: {label}");
-        }
-
-        // reqwest TLS backend
-        println!("  reqwest TLS backend: rustls");
-
-        // mimalloc allocator — active whenever the #[global_allocator] fires
-        println!("  mimalloc allocator: active (native)");
-
-        // tokio runtime
-        println!("  tokio runtime: multi-thread, full");
-
-        // ai.json
-        {
-            let r = check_ai_json();
-            if r.is_critical_failure() {
-                has_error = true;
-            }
-            println!("{}", r.line("ai.json"));
-        }
-
-        // .well-known/ai.json
-        {
-            let r = check_well_known_ai_json();
-            if r.is_critical_failure() {
-                has_error = true;
-            } else if matches!(r, CheckResult::Warn(_)) {
-                has_warn = true;
-            }
-            println!("{}", r.line(".well-known/ai.json"));
-        }
-
-        // ── [peer A2A coord] ─────────────────────────────────────────────────
-        println!();
-        println!("[peer A2A coord]");
-
-        // peer winclean heartbeat
-        {
-            let r = check_peer_heartbeat();
-            if r.is_critical_failure() {
-                has_error = true;
-            } else if matches!(r, CheckResult::Warn(_)) {
-                has_warn = true;
-            }
-            println!("{}", r.line("peer winclean"));
-        }
-
-        // inbox-from-winclean.jsonl
-        {
-            let r = check_inbox();
-            if r.is_critical_failure() {
-                has_error = true;
-            } else if matches!(r, CheckResult::Warn(_)) {
-                has_warn = true;
-            }
-            println!("{}", r.line("inbox-from-winclean.jsonl"));
-        }
-
-        // HTTP listener ping
-        {
-            let r = check_http_listener().await;
-            if r.is_critical_failure() {
-                has_error = true;
-            } else if matches!(r, CheckResult::Warn(_)) {
-                has_warn = true;
-            }
-            println!("{}", r.line("HTTP listener"));
-        }
-
-        // ── [supply chain] ───────────────────────────────────────────────────
-        println!();
-        println!("[supply chain]");
-
-        // cargo-deny not a runtime dep
-        println!("  cargo-deny: not present at runtime — use the dev tool for CI");
-
-        // cargo-vet audits
-        {
-            let r = check_vet_audits();
-            if r.is_critical_failure() {
-                has_error = true;
-            } else if matches!(r, CheckResult::Warn(_)) {
-                has_warn = true;
-            }
-            println!("{}", r.line("cargo-vet audits"));
-        }
-
-        // ── [environment] ────────────────────────────────────────────────────
-        println!();
-        println!("[environment]");
-
-        for var in &["RUST_BACKTRACE", "RUST_LOG", "TERM", "TZ"] {
-            let val = std::env::var(var).unwrap_or_else(|_| "not set".to_string());
-            println!("  {var}: {val}");
-        }
-
-        // ── verdict ──────────────────────────────────────────────────────────
-        println!();
-        let verdict = if has_error {
+impl DoctorReport {
+    fn verdict(&self) -> &'static str {
+        let has_error = self.ai_json.is_critical_failure() || self.cargo_vet.is_critical_failure();
+        let has_warn = matches!(self.well_known_ai_json, CheckResult::Warn(_))
+            || matches!(self.peer_heartbeat, CheckResult::Warn(_))
+            || matches!(self.inbox, CheckResult::Warn(_))
+            || matches!(self.http_listener, CheckResult::Warn(_))
+            || matches!(self.cargo_vet, CheckResult::Warn(_));
+        if has_error {
             "UNHEALTHY"
         } else if has_warn {
             "DEGRADED"
         } else {
             "HEALTHY"
-        };
+        }
+    }
+}
 
-        let detail = if has_error {
-            "(one or more critical checks failed)"
-        } else if has_warn {
-            "(peer offline or non-critical resource missing)"
+pub(crate) struct DoctorCommand {
+    pub json_output: bool,
+}
+
+#[async_trait]
+impl TerminalCommand for DoctorCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        let report = collect_diagnostics().await;
+
+        if self.json_output {
+            print_json(&report)?;
         } else {
-            "(all critical checks pass)"
-        };
+            print_text(&report);
+        }
 
-        println!("Verdict: {verdict} {detail}");
-
-        if has_error {
+        if report.verdict() == "UNHEALTHY" {
             std::process::exit(1);
         }
         Ok(())
     }
+}
+
+async fn collect_diagnostics() -> DoctorReport {
+    let version = env!("CARGO_PKG_VERSION");
+    let sha = env!("APHRODY_GIT_SHA");
+    let built_unix: u64 = env!("APHRODY_BUILD_UNIX").parse().unwrap_or(0);
+    let target = env!("APHRODY_TARGET");
+    let built_date = if built_unix > 0 { epoch_to_date(built_unix) } else { "unknown".to_string() };
+    let binary_version =
+        format!("{version} (commit {sha}, built {built_date}, target {target})");
+
+    let rustls_label = match rustls::crypto::ring::default_provider().install_default() {
+        Ok(()) => "installed (ring)".to_string(),
+        Err(_) => "already installed (ring)".to_string(),
+    };
+
+    let env_vars = ["RUST_BACKTRACE", "RUST_LOG", "TERM", "TZ"]
+        .iter()
+        .map(|v| (v.to_string(), std::env::var(v).unwrap_or_else(|_| "not set".to_string())))
+        .collect();
+
+    DoctorReport {
+        binary_version,
+        rustls_provider: rustls_label,
+        reqwest_tls: "rustls",
+        allocator: "active (native)",
+        tokio_runtime: "multi-thread, full",
+        ai_json: check_ai_json(),
+        well_known_ai_json: check_well_known_ai_json(),
+        peer_heartbeat: check_peer_heartbeat(),
+        inbox: check_inbox(),
+        http_listener: check_http_listener().await,
+        cargo_vet: check_vet_audits(),
+        env_vars,
+    }
+}
+
+fn print_text(r: &DoctorReport) {
+    println!("aphrody doctor — environment + integration diagnostics");
+    println!();
+    println!("[runtime]");
+    println!("  binary version: {}", r.binary_version);
+    println!("  rustls CryptoProvider: {}", r.rustls_provider);
+    println!("  reqwest TLS backend: {}", r.reqwest_tls);
+    println!("  mimalloc allocator: {}", r.allocator);
+    println!("  tokio runtime: {}", r.tokio_runtime);
+    println!("{}", r.ai_json.line("ai.json"));
+    println!("{}", r.well_known_ai_json.line(".well-known/ai.json"));
+
+    println!();
+    println!("[peer A2A coord]");
+    println!("{}", r.peer_heartbeat.line("peer winclean"));
+    println!("{}", r.inbox.line("inbox-from-winclean.jsonl"));
+    println!("{}", r.http_listener.line("HTTP listener"));
+
+    println!();
+    println!("[supply chain]");
+    println!("  cargo-deny: not present at runtime — use the dev tool for CI");
+    println!("{}", r.cargo_vet.line("cargo-vet audits"));
+
+    println!();
+    println!("[environment]");
+    for (var, val) in &r.env_vars {
+        println!("  {var}: {val}");
+    }
+
+    println!();
+    let verdict = r.verdict();
+    let detail = match verdict {
+        "UNHEALTHY" => "(one or more critical checks failed)",
+        "DEGRADED" => "(peer offline or non-critical resource missing)",
+        _ => "(all critical checks pass)",
+    };
+    println!("Verdict: {verdict} {detail}");
+}
+
+fn print_json(r: &DoctorReport) -> miette::Result<()> {
+    // Build structured JSON without deriving Serialize on internal types, to
+    // keep the data model self-contained in this function.
+    let env_obj: serde_json::Map<String, serde_json::Value> = r
+        .env_vars
+        .iter()
+        .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+        .collect();
+
+    // Extract heartbeat age_s and is_stale from the peer_heartbeat check value.
+    // The text carries "N s ago" — parse it back for the JSON field.
+    let (heartbeat_age_s, heartbeat_is_stale) = parse_age_from_result(&r.peer_heartbeat);
+
+    // Extract HTTP listener status code if present.
+    let http_status_code = r
+        .http_listener
+        .value()
+        .split("-> ")
+        .nth(1)
+        .and_then(|s| s.trim_end_matches(')').parse::<u16>().ok());
+
+    let doc = serde_json::json!({
+        "runtime": {
+            "binary_version": r.binary_version,
+            "rustls_provider": r.rustls_provider,
+            "reqwest_tls": r.reqwest_tls,
+            "allocator": r.allocator,
+            "tokio_runtime": r.tokio_runtime,
+            "ai_json": r.ai_json.value(),
+            "well_known_ai_json": r.well_known_ai_json.value(),
+        },
+        "peer_a2a": {
+            "heartbeat_age_s": heartbeat_age_s,
+            "is_stale": heartbeat_is_stale,
+            "heartbeat_detail": r.peer_heartbeat.value(),
+            "http_listener_status": http_status_code,
+            "http_listener_detail": r.http_listener.value(),
+            "inbox_detail": r.inbox.value(),
+        },
+        "supply_chain": {
+            "cargo_deny": "not present at runtime — use the dev tool for CI",
+            "cargo_vet_audits": r.cargo_vet.value(),
+        },
+        "environment": serde_json::Value::Object(env_obj),
+        "verdict": r.verdict(),
+    });
+
+    let text = serde_json::to_string_pretty(&doc)
+        .map_err(|e| miette::miette!("JSON serialization error: {e}"))?;
+    println!("{text}");
+    Ok(())
+}
+
+/// Extract age in seconds from a `CheckResult` value string of the form
+/// "... (N s ago — ...)". Returns `(None, false)` when the age cannot be
+/// parsed (e.g. peer offline).
+fn parse_age_from_result(r: &CheckResult) -> (Option<u64>, bool) {
+    let text = r.value();
+    // Look for pattern "(NNN s ago"
+    if let Some(start) = text.find('(') {
+        let inner = &text[start + 1..];
+        if let Some(end) = inner.find(" s ago") {
+            if let Ok(age) = inner[..end].trim().parse::<u64>() {
+                let is_stale = age > HEARTBEAT_TTL_SECS;
+                return (Some(age), is_stale);
+            }
+        }
+    }
+    (None, false)
 }
 
 // ── doctor helpers ────────────────────────────────────────────────────────────
@@ -1107,22 +1164,32 @@ fn check_well_known_ai_json() -> CheckResult {
 }
 
 fn check_peer_heartbeat() -> CheckResult {
-    // The peer ai.json lives at C:\winclean\ai.json (or /c/winclean/ai.json on
-    // WSL-style paths). We read `last_updated_at` to compute staleness.
+    // The peer heartbeat file is written by the winclean side.  The canonical
+    // path and TTL are declared in C:/winclean/.coord/ai.json under
+    // `channels[type=heartbeat_file]`.  We use the hard-coded constants so
+    // the check is self-contained and does not require parsing the coord ai.json
+    // at runtime.
     let candidates = if cfg!(target_os = "windows") {
-        vec![
-            std::path::PathBuf::from(r"C:\winclean\ai.json"),
-        ]
+        vec![std::path::PathBuf::from(WINCLEAN_HEARTBEAT_PATH)]
     } else {
+        // WSL / Linux: translate C:/ prefix.
         vec![
-            std::path::PathBuf::from("/c/winclean/ai.json"),
-            std::path::PathBuf::from("/mnt/c/winclean/ai.json"),
+            std::path::PathBuf::from(
+                WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/c/"),
+            ),
+            std::path::PathBuf::from(
+                WINCLEAN_HEARTBEAT_PATH.replace("C:/", "/mnt/c/"),
+            ),
         ]
     };
 
     let path = match candidates.iter().find(|p| p.exists()) {
         Some(p) => p.clone(),
-        None => return CheckResult::Warn("C:\\winclean\\ai.json not found — peer offline".to_string()),
+        None => {
+            return CheckResult::Warn(format!(
+                "absent at {WINCLEAN_HEARTBEAT_PATH} — peer offline"
+            ))
+        },
     };
 
     let text = match std::fs::read_to_string(&path) {
@@ -1130,61 +1197,67 @@ fn check_peer_heartbeat() -> CheckResult {
         Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
     };
 
-    // Extract last_updated_at from JSON text (simple string search, no full parse dep).
-    let ts = extract_json_str_field(&text, "last_updated_at")
-        .or_else(|| extract_json_str_field(&text, "last_updated"))
-        .or_else(|| extract_json_str_field(&text, "created_at"));
+    let ts_str = text.trim().to_string();
+    if ts_str.is_empty() {
+        return CheckResult::Warn("heartbeat file is empty — peer not yet active".to_string());
+    }
 
-    match ts {
-        None => CheckResult::Warn("present but no timestamp field found".to_string()),
-        Some(ts_str) => {
-            // Parse ISO-8601 to unix seconds (basic, no timezone handling beyond UTC/+HH:MM).
-            match parse_iso8601_approx(&ts_str) {
-                None => CheckResult::Ok(format!("heartbeat {ts_str} (age unknown)")),
-                Some(ts_unix) => {
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map_or(0, |d| d.as_secs());
-                    let age_secs = now.saturating_sub(ts_unix);
-                    let freshness = if age_secs < 3600 {
-                        "fresh"
-                    } else if age_secs < 86400 {
-                        "stale (>1h)"
-                    } else {
-                        "stale (>1d)"
-                    };
-                    let result = format!("heartbeat {ts_str} ({age_secs} s ago — {freshness})");
-                    if freshness == "fresh" {
-                        CheckResult::Ok(result)
-                    } else {
-                        CheckResult::Warn(result)
-                    }
-                },
+    match parse_iso8601_approx(&ts_str) {
+        None => CheckResult::Ok(format!("heartbeat {ts_str} (age unknown)")),
+        Some(ts_unix) => {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs());
+            let age_secs = now.saturating_sub(ts_unix);
+            // Bug fix: use the declared TTL (600 s) as the staleness boundary.
+            let (freshness, is_stale) = if age_secs > HEARTBEAT_TTL_SECS {
+                (format!("stale (over {HEARTBEAT_TTL_SECS}s TTL)"), true)
+            } else {
+                ("fresh".to_string(), false)
+            };
+            let result = format!("heartbeat {ts_str} ({age_secs} s ago — {freshness})");
+            if is_stale {
+                CheckResult::Warn(result)
+            } else {
+                CheckResult::Ok(result)
             }
         },
     }
 }
 
 fn check_inbox() -> CheckResult {
-    let root = match repo_root() {
-        Some(r) => r,
-        None => return CheckResult::Warn("repo root not found — skip".to_string()),
+    // The canonical inbox path is declared in the coord ai.json channels block
+    // (channels[type=file_jsonl].outbox).  We resolve the platform-specific
+    // equivalent of the C:/ path rather than looking in the aphrody repo root.
+    let path = if cfg!(target_os = "windows") {
+        std::path::PathBuf::from(WINCLEAN_INBOX_PATH)
+    } else {
+        // WSL / Linux: try both mount prefixes.
+        let p1 = std::path::PathBuf::from(WINCLEAN_INBOX_PATH.replace("C:/", "/c/"));
+        let p2 = std::path::PathBuf::from(WINCLEAN_INBOX_PATH.replace("C:/", "/mnt/c/"));
+        if p1.exists() {
+            p1
+        } else {
+            p2
+        }
     };
-    let path = root.join("inbox-from-winclean.jsonl");
+
     if !path.exists() {
-        return CheckResult::Warn("absent (no envelopes received yet)".to_string());
+        return CheckResult::Warn(format!("absent at {WINCLEAN_INBOX_PATH}"));
     }
     let text = match std::fs::read_to_string(&path) {
         Ok(t) => t,
         Err(e) => return CheckResult::Warn(format!("unreadable ({e})")),
     };
     let envelope_count = text.lines().filter(|l| !l.trim().is_empty()).count();
-    // Find the last id field in the last non-empty line.
+    // Extract the id field from the last non-empty line.
     let last_id = text
         .lines()
         .filter(|l| !l.trim().is_empty())
         .next_back()
-        .and_then(|line| extract_json_str_field(line, "id"))
+        .and_then(|line| {
+            extract_json_str_field(line, "id").or_else(|| extract_json_str_field(line, "from"))
+        })
         .unwrap_or_else(|| "unknown".to_string());
     CheckResult::Ok(format!("{envelope_count} envelopes, last id={last_id}"))
 }

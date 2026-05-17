@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "schema_url": "https://aphrody-code.github.io/aphrody/schemas/ai.json/v1.json",
-  "kind": "agent",
+  "kind": "a2a.AgentCard",
   "id": "aphrody@aphrody-code/aphrody",
   "generated_at": "2026-05-17T14:10:00Z",
   "license": "Apache-2.0",

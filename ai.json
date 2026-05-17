@@ -1,4 +1,7 @@
 {
+  "schema_version": "1.0.0",
+  "kind": "a2a.CollaborationManifest",
+
   "$comment": "ai.json — A2A v1 file-based persisted manifest. Universal handshake between AI agents across dirs, environments, and platforms when live RPC (gRPC / JSON-RPC / HTTP+JSON) is not available. Strictly aligned with lf.a2a.v1 (crates/a2a-pb/proto/a2a.proto). The 'file' protocol_binding is documented in docs/A2A-MANIFEST.md.",
 
   "spec": {
