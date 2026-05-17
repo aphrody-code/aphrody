@@ -1,0 +1,34 @@
+<!--
+SPDX-License-Identifier: Apache-2.0
+Minimal browser smoke-test for @aphrody-code/aphrody-wasm.
+Serve from workspace root: bun run crates/aphrody-wasm/serve-test.mjs
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>aphrody-wasm smoke test</title>
+</head>
+<body>
+<pre id="out">loading...</pre>
+<script type="module">
+  // The bun dev server maps /pkg/ -> target/aphrody-wasm-pkg/
+  import init, { version, platform_short_name } from '/pkg/aphrody_wasm.js';
+
+  const out = document.getElementById('out');
+  try {
+    await init();
+    const v   = version();
+    const plat = platform_short_name();
+    out.textContent =
+      'version():             ' + v   + '\n' +
+      'platform_short_name(): ' + plat + '\n' +
+      'PASS';
+    console.log('[aphrody-wasm smoke] version=' + v + ' platform=' + plat);
+  } catch (err) {
+    out.textContent = 'FAIL: ' + err;
+    console.error('[aphrody-wasm smoke] FAIL', err);
+  }
+</script>
+</body>
+</html>
