@@ -130,8 +130,10 @@ Un binaire Rust autonome (`mrx`) qui scanne **n'importe quel monorepo**
   lockfiles, workspaces, langages détectés, stats par workspace.
 
 Walker parallèle basé sur `ignore` (le moteur de ripgrep) + agrégation
-rayon — passage typique d'un monorepo de ~120 fichiers / 16 MB en ~50 ms,
-serverless-friendly (Lambda / Cloud Run), trois sous-commandes :
+rayon. **19 213 fichiers / 482 MB scannés en 1,4 s warm** sur un vrai
+monorepo polyglotte (mesures reproductibles dans
+[`BENCHMARKS.md`](BENCHMARKS.md)). Serverless-friendly (Lambda / Cloud
+Run). Trois sous-commandes :
 
 ```bash
 mrx scan  --root .   # one-shot audit + map, exits
