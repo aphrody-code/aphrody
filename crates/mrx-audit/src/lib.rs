@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! mrx-audit — native Rust monorepo audit.
 //!
 //! Single `run()` performs, in this order:

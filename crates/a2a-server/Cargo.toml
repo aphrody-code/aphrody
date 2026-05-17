@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "a2a-server-lf"
 version = "0.3.0"
 description = "A2A v1 async server framework"
@@ -6,7 +6,11 @@ readme = "README.md"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-rust-version.workspace = true
+rust-version.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+keywords.workspace      = true
+categories.workspace    = true
 
 [lib]
 name = "a2a_server"

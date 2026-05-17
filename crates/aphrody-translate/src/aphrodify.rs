@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! Réécriture stylistique « Aphrody » : sobre, impersonnel, centrée sur le code.
 //!
 //! Le style vise une prose courte, sans fioriture ni adresse au lecteur. Aucune

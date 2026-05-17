@@ -98,11 +98,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    tonic_prost_build::configure()
-        .build_server(true)
-        .build_client(true)
-        .out_dir("src/gen")
-        .compile_protos(PROTO_FILES, PROTO_INCLUDES)?;
+    // --- Mechanism A: crates.io-compliant codegen policy ---
+    // By default this block is skipped entirely. The pre-generated files under
+    // `src/gen/` are the authoritative artefacts and ship in the crate tarball.
+    // Set `A2A_PB_REGEN=1` (or any value) when regenerating from `.proto`
+    // sources after schema changes, then commit the updated `src/gen/` files.
+    // Consumer `cargo build` invocations MUST NOT write to the source tree.
+    if std::env::var("A2A_PB_REGEN").is_ok() {
+        tonic_prost_build::configure()
+            .build_server(true)
+            .build_client(true)
+            .out_dir("src/gen")
+            .compile_protos(PROTO_FILES, PROTO_INCLUDES)?;
+    }
 
     let out_dir = PathBuf::from(std::env::var("OUT_DIR")?);
     let descriptor_path = out_dir.join("a2a-descriptor.bin");

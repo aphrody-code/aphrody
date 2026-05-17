@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! Extraction des commentaires par langage via expressions régulières.
 //!
 //! Volontairement sans tree-sitter pour rester pur Rust cross-platform (Linux,

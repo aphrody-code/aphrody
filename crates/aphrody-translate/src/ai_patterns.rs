@@ -1,3 +1,4 @@
+﻿// SPDX-License-Identifier: Apache-2.0
 //! Détection et purge des marqueurs IA, signatures, et émoji.
 //!
 //! La règle est sèche : aucune mention d'outil IA ne survit à un passage de

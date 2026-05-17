@@ -5,11 +5,12 @@ use std::collections::VecDeque;
 use a2a::*;
 use a2a_pb::protojson_conv::{self, ProtoJsonPayload};
 use async_trait::async_trait;
-use futures::stream::{self, BoxStream, StreamExt};
+use futures::stream::{self, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
 
 use crate::{
+    BoxStream,
     push_config_compat::{
         deserialize_list_task_push_notification_configs_response,
         deserialize_task_push_notification_config,
@@ -170,6 +171,11 @@ fn find_event_boundary(buf: &[u8]) -> Option<(usize, usize)> {
 ///
 /// `parse_event` is invoked on each complete `\n\n`/`\r\r`/`\r\n\r\n`-delimited
 /// event; it should return `Some(result)` to emit the event or `None` to skip it.
+///
+/// On wasm32 the reqwest byte stream is `!Send`; the `+ Send` bounds are
+/// dropped and the return type is `LocalBoxStream` (re-exported as `BoxStream`
+/// from `crate::lib` on wasm32 targets).
+#[cfg(not(target_family = "wasm"))]
 fn parse_sse_bytes<F>(
     stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Send + 'static,
     parse_event: F,
@@ -181,15 +187,11 @@ where
         (Box::pin(stream), Vec::<u8>::new(), VecDeque::new(), parse_event),
         |(mut stream, mut buf, mut pending, parse_event)| async move {
             loop {
-                // Drain already-parsed events before reading more bytes.
-                // Ensures all events from a single chunk are delivered before
-                // polling the stream again.
                 if let Some(item) = pending.pop_front() {
                     return Some((item, (stream, buf, pending, parse_event)));
                 }
                 match stream.next().await {
                     Some(Ok(chunk)) => {
-                        // Keep the buffer as raw bytes; defer UTF-8 decoding to event boundaries.
                         buf.extend_from_slice(&chunk);
                         while let Some((start, end)) = find_event_boundary(&buf) {
                             let event_bytes: Vec<u8> = buf.drain(..end).collect();
@@ -202,7 +204,6 @@ where
                                     continue;
                                 },
                             };
-
                             if let Some(result) = parse_event(event_text) {
                                 pending.push_back(result);
                             }
@@ -217,90 +218,155 @@ where
             }
         },
     );
+    Box::pin(mapped)
+}
 
+#[cfg(target_family = "wasm")]
+fn parse_sse_bytes<F>(
+    stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + 'static,
+    parse_event: F,
+) -> BoxStream<'static, Result<StreamResponse, A2AError>>
+where
+    F: Fn(&str) -> Option<Result<StreamResponse, A2AError>> + Clone + 'static,
+{
+    let mapped = stream::unfold(
+        (Box::pin(stream), Vec::<u8>::new(), VecDeque::new(), parse_event),
+        |(mut stream, mut buf, mut pending, parse_event)| async move {
+            loop {
+                if let Some(item) = pending.pop_front() {
+                    return Some((item, (stream, buf, pending, parse_event)));
+                }
+                match stream.next().await {
+                    Some(Ok(chunk)) => {
+                        buf.extend_from_slice(&chunk);
+                        while let Some((start, end)) = find_event_boundary(&buf) {
+                            let event_bytes: Vec<u8> = buf.drain(..end).collect();
+                            let event_text = match std::str::from_utf8(&event_bytes[..start]) {
+                                Ok(s) => s,
+                                Err(e) => {
+                                    pending.push_back(Err(A2AError::internal(format!(
+                                        "SSE UTF-8 decode error: {e}"
+                                    ))));
+                                    continue;
+                                },
+                            };
+                            if let Some(result) = parse_event(event_text) {
+                                pending.push_back(result);
+                            }
+                        }
+                    },
+                    Some(Err(e)) => {
+                        pending
+                            .push_back(Err(A2AError::internal(format!("SSE stream error: {e}"))));
+                    },
+                    None => return None,
+                }
+            }
+        },
+    );
     Box::pin(mapped)
 }
 
 /// Parse an SSE byte stream into StreamResponse events (JSON-RPC envelope).
+#[cfg(not(target_family = "wasm"))]
 fn parse_sse_stream(
     stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Send + 'static,
 ) -> BoxStream<'static, Result<StreamResponse, A2AError>> {
-    parse_sse_bytes(stream, |event_text| {
-        // Extract `data:` lines from the SSE event
-        let mut data = String::new();
-        for line in event_text.lines() {
-            if let Some(d) = line.strip_prefix("data: ") {
-                if !data.is_empty() {
-                    data.push('\n');
-                }
-                data.push_str(d);
-            } else if let Some(d) = line.strip_prefix("data:") {
-                if !data.is_empty() {
-                    data.push('\n');
-                }
-                data.push_str(d);
-            }
-        }
-        if data.is_empty() {
-            return None;
-        }
+    parse_sse_bytes(stream, parse_sse_jsonrpc_event)
+}
 
-        // Try JSON-RPC envelope first
-        match serde_json::from_str::<JsonRpcResponse>(&data) {
-            Ok(rpc_resp) => {
-                if let Some(err) = rpc_resp.error {
-                    return Some(Err(parse_jsonrpc_error(err)));
-                }
-                if let Some(result) = rpc_resp.result {
-                    match protojson_conv::from_value::<StreamResponse>(result) {
-                        Ok(sr) => Some(Ok(sr)),
-                        Err(e) => Some(Err(A2AError::internal(format!("SSE parse error: {e}")))),
-                    }
-                } else {
-                    None
-                }
-            },
-            Err(_) => {
-                // Fallback: parse directly as StreamResponse
-                match protojson_conv::from_str::<StreamResponse>(&data) {
+#[cfg(target_family = "wasm")]
+fn parse_sse_stream(
+    stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + 'static,
+) -> BoxStream<'static, Result<StreamResponse, A2AError>> {
+    parse_sse_bytes(stream, parse_sse_jsonrpc_event)
+}
+
+fn parse_sse_jsonrpc_event(event_text: &str) -> Option<Result<StreamResponse, A2AError>> {
+    // Extract `data:` lines from the SSE event
+    let mut data = String::new();
+    for line in event_text.lines() {
+        if let Some(d) = line.strip_prefix("data: ") {
+            if !data.is_empty() {
+                data.push('\n');
+            }
+            data.push_str(d);
+        } else if let Some(d) = line.strip_prefix("data:") {
+            if !data.is_empty() {
+                data.push('\n');
+            }
+            data.push_str(d);
+        }
+    }
+    if data.is_empty() {
+        return None;
+    }
+
+    // Try JSON-RPC envelope first
+    match serde_json::from_str::<JsonRpcResponse>(&data) {
+        Ok(rpc_resp) => {
+            if let Some(err) = rpc_resp.error {
+                return Some(Err(parse_jsonrpc_error(err)));
+            }
+            if let Some(result) = rpc_resp.result {
+                match protojson_conv::from_value::<StreamResponse>(result) {
                     Ok(sr) => Some(Ok(sr)),
                     Err(e) => Some(Err(A2AError::internal(format!("SSE parse error: {e}")))),
                 }
-            },
-        }
-    })
+            } else {
+                None
+            }
+        },
+        Err(_) => {
+            // Fallback: parse directly as StreamResponse
+            match protojson_conv::from_str::<StreamResponse>(&data) {
+                Ok(sr) => Some(Ok(sr)),
+                Err(e) => Some(Err(A2AError::internal(format!("SSE parse error: {e}")))),
+            }
+        },
+    }
 }
 
 /// Parse an SSE byte stream into StreamResponse events (REST binding).
 /// Unlike the JSON-RPC variant, this expects data lines to contain
 /// raw StreamResponse JSON (not wrapped in a JSON-RPC envelope).
+#[cfg(not(target_family = "wasm"))]
 pub(crate) fn parse_sse_stream_rest(
     stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Send + 'static,
 ) -> BoxStream<'static, Result<StreamResponse, A2AError>> {
-    parse_sse_bytes(stream, |event_text| {
-        let mut data = String::new();
-        for line in event_text.lines() {
-            if let Some(d) = line.strip_prefix("data: ") {
-                if !data.is_empty() {
-                    data.push('\n');
-                }
-                data.push_str(d);
-            } else if let Some(d) = line.strip_prefix("data:") {
-                if !data.is_empty() {
-                    data.push('\n');
-                }
-                data.push_str(d);
-            }
-        }
-        if data.is_empty() {
-            return None;
-        }
+    parse_sse_bytes(stream, parse_sse_rest_event)
+}
 
-        match protojson_conv::from_str::<StreamResponse>(&data) {
-            Ok(sr) => Some(Ok(sr)),
-            Err(e) => Some(Err(A2AError::internal(format!("SSE parse error: {e}")))),
+#[cfg(target_family = "wasm")]
+pub(crate) fn parse_sse_stream_rest(
+    stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + 'static,
+) -> BoxStream<'static, Result<StreamResponse, A2AError>> {
+    parse_sse_bytes(stream, parse_sse_rest_event)
+}
+
+fn parse_sse_rest_event(event_text: &str) -> Option<Result<StreamResponse, A2AError>> {
+    let mut data = String::new();
+    for line in event_text.lines() {
+        if let Some(d) = line.strip_prefix("data: ") {
+            if !data.is_empty() {
+                data.push('\n');
+            }
+            data.push_str(d);
+        } else if let Some(d) = line.strip_prefix("data:") {
+            if !data.is_empty() {
+                data.push('\n');
+            }
+            data.push_str(d);
         }
-    })
+    }
+    if data.is_empty() {
+        return None;
+    }
+
+    match protojson_conv::from_str::<StreamResponse>(&data) {
+        Ok(sr) => Some(Ok(sr)),
+        Err(e) => Some(Err(A2AError::internal(format!("SSE parse error: {e}")))),
+    }
 }
 
 #[cfg_attr(not(target_family = "wasm"), async_trait)]

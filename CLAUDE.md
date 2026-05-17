@@ -147,6 +147,26 @@ Monorepo Rust + Bun.
 - `a2a-slimrpc` n'est pas dans `workspace.members` — ne pas l'y remettre tant
   qu'`agntcy-slim-mls` n'est pas fixé upstream.
 
+## 6.1. A2A coordination cross-Claude (`ai.json` v1)
+
+Ce repo expose un manifest A2A AGNTCY a2a/v0.4 (`ai.json` à la racine) et un
+schéma channel-extension (`schemas/ai.json/v1.json`). Discovery thin via
+`.well-known/ai.json` (HTTP-friendly).
+
+Une instance peer Claude opère dans `C:\winclean\` (publie son propre
+`C:\winclean\ai.json`). Coord centralisée dans `C:\winclean\.coord\` :
+
+- **`inbox-from-aphrody.jsonl`** / **`inbox-from-winclean.jsonl`** — mailbox JSONL durable.
+- **HTTP listener** sur `:8788` (`bun run C:/winclean/.coord/listener.ts`)
+  expose `/ping`, `/msg`, `/inbox`, `/ai.json`.
+- **`heartbeat-{aphrody,winclean}.txt`** — proof-of-life ISO-8601.
+- **Git tags** `aphrody-*` dans winclean repo pour signaux out-of-band.
+- **`process_inspect`** (`ps -ef`) pour détecter activité live de l'autre.
+
+Avant un push qui touche du code partagé : vérifier `inbox-from-winclean.jsonl`
++ bumper `heartbeat-aphrody.txt`. Toute écriture cross-repo doit être précédée
+d'un `fact` via `/msg` (cf. apx-fact-move-script comme template).
+
 ## 6.5. Skills & agents (`.claude/`)
 
 Toute la surface skills est centralisée et documentée :
