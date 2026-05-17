@@ -1,0 +1,33 @@
+version = 1
+revision = 3
+requires-python = ">=3.14"
+
+[[package]]
+name = "lief"
+version = "0.17.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/b9/6b27bff4676de0db4231ca585ed35bc6e13f5430c1bbf0ad0e9d2e9f552f/lief-0.17.6.tar.gz", hash = "sha256:c2164243f152e82c49b0ccd606155b758644f4b1ee221f0dbd4da055469a922f", size = 7171, upload-time = "2026-03-18T06:59:43.351Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/2f/1a0a116cdf4f0e9f1846e34676deed3b1275c432cde8b3aafd4ff9a77175/lief-0.17.6-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:af39643ab79ae644d2063a2ef93de908e61a8f40e37b155683c477c1928e6c64", size = 2990571, upload-time = "2026-03-18T06:58:35.046Z" },
+    { url = "https://files.pythonhosted.org/packages/76/bd/1bc1c1e364c06b74b9f16089f05622a29ed995fa8b5aba86e0a9fe5500a0/lief-0.17.6-cp314-cp314-macosx_11_0_x86_64.whl", hash = "sha256:c8129a70bc73e04fd9db4f49f386d4336a3a78ceef07c83ca74f9cf464c03c22", size = 3108044, upload-time = "2026-03-18T06:58:36.871Z" },
+    { url = "https://files.pythonhosted.org/packages/80/bd/9fab6a9388fec0eec6fc975a1f49e2ff12dd4d75bfebc05d824a612c732c/lief-0.17.6-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:b5885e8a422066f3691b9707045b85d9728eaba621991def0b4e0044b0b0b063", size = 3671717, upload-time = "2026-03-18T06:58:39.111Z" },
+    { url = "https://files.pythonhosted.org/packages/86/fe/470e32a95d0d95dccee560405cc217b9a739fa96a9536e08515ca3a8df44/lief-0.17.6-cp314-cp314-manylinux_2_28_i686.whl", hash = "sha256:6324add89c366607a6d652553e4cac6309e952ca638c24f38a8b00331f064a50", size = 3473999, upload-time = "2026-03-18T06:58:40.84Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/0f/1dcc499697f747a9b8f5274659774a1e6529aa180d59a297619842bf458f/lief-0.17.6-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:365bf48528339a0d9a5c993b0a54f5c3bb8fcd11ca85797c79f9ae6179777492", size = 3403400, upload-time = "2026-03-18T06:58:42.647Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/3a/7e39b5dc0c393142a72e4272c6c812d01eb9e45411f3a9afb88157389aa4/lief-0.17.6-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:3bd852c4d934d9c8357d6b9491db85e6722bc0076249f8b23a205a8912a85ed5", size = 3589670, upload-time = "2026-03-18T06:58:44.707Z" },
+    { url = "https://files.pythonhosted.org/packages/de/7b/b0ffc4a08860f3499d915c4efab20f5abde6722d659c5391332d06957679/lief-0.17.6-cp314-cp314-musllinux_1_2_i686.whl", hash = "sha256:8561a156ccea562e200e5bde0db8070785e3194fcd0ddf9109c8470970978076", size = 3931468, upload-time = "2026-03-18T06:58:46.894Z" },
+    { url = "https://files.pythonhosted.org/packages/33/25/0992398b5ce911e29bf7d6a3e1724259358aebe5da543044d3b9ad9b4ffa/lief-0.17.6-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:a74f792564a5e69915d08530618d79aa1fd8b5e7b72513fac765e1106c63f57a", size = 3705396, upload-time = "2026-03-18T06:58:48.665Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/51/f79886a906eee3a5abc58dc30da1e6c22c41c868e0df446fb280ff2344cb/lief-0.17.6-cp314-cp314-win32.whl", hash = "sha256:503fd8df6425a6c0386df9ca6e4f4ce29d07d268f0620ee1d4059eb4d48c2562", size = 3446331, upload-time = "2026-03-18T06:58:50.52Z" },
+    { url = "https://files.pythonhosted.org/packages/83/6f/d396dae3808a35699c4be74e356d3e05f58e150fc14b49c39f0bacb62e11/lief-0.17.6-cp314-cp314-win_amd64.whl", hash = "sha256:918ea953830ecf348e5a8d9cf0b1a178035d6d4032bf2a9aa1dc72483e06b3a1", size = 3638021, upload-time = "2026-03-18T06:58:52.275Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/4c/02df1befee243e4c14bf5740c391178ba4f7b4602ff08936da170341afe9/lief-0.17.6-cp314-cp314-win_arm64.whl", hash = "sha256:7dcefa6467f0f0d75413a10e7869e488344347f0c67eff5bc49ec216714f0674", size = 3462306, upload-time = "2026-03-18T06:58:54.937Z" },
+]
+
+[[package]]
+name = "scripts"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "lief" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lief", specifier = ">=0.17.6" }]

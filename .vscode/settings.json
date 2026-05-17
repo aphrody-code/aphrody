@@ -1,0 +1,68 @@
+{
+  // Workspace settings — Google CLI Rust nightly + Bun.
+  // Aligned with rust-toolchain.toml / .cargo/config.toml / .clippy.toml.
+  "rust-analyzer.cargo.allTargets": true,
+  "rust-analyzer.cargo.features": "all",
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.check.extraArgs": ["--locked", "--", "-D", "warnings"],
+  "rust-analyzer.check.workspace": true,
+  "rust-analyzer.cargo.targetDir": true,
+  "rust-analyzer.diagnostics.enable": true,
+  "rust-analyzer.diagnostics.experimental.enable": false,
+  "rust-analyzer.imports.granularity.group": "module",
+  "rust-analyzer.imports.granularity.enforce": true,
+  "rust-analyzer.lens.references.enumVariant.enable": true,
+  "rust-analyzer.lens.references.trait.enable": true,
+  "rust-analyzer.semanticHighlighting.operator.specialization.enable": true,
+  "rust-analyzer.inlayHints.bindingModeHints.enable": true,
+  "rust-analyzer.inlayHints.closingBraceHints.minLines": 25,
+  "rust-analyzer.inlayHints.lifetimeElisionHints.enable": "skip_trivial",
+  "rust-analyzer.inlayHints.parameterHints.enable": true,
+  "rust-analyzer.inlayHints.typeHints.enable": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.procMacro.attributes.enable": true,
+  "rust-analyzer.completion.callable.snippets": "fill_arguments",
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+  "rust-analyzer.runnables.askBeforeUpdateTest": false,
+
+  // Editor — match .editorconfig + rustfmt
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.rulers": [100]
+  },
+  "[toml]": { "editor.tabSize": 2, "editor.defaultFormatter": "tamasfe.even-better-toml" },
+  "[json]": { "editor.tabSize": 2 },
+  "[markdown]": { "editor.tabSize": 2 },
+  "[typescript]": { "editor.tabSize": 2, "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.tabSize": 2 },
+
+  "files.exclude": {
+    "**/target": true,
+    "**/.turbo": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.venv": true
+  },
+
+  "search.exclude": {
+    "**/target": true,
+    "**/node_modules": true,
+    "**/vendor/bun/src": true,
+    "**/vendor/electron-prebuilt": true,
+    "**/.turbo": true,
+    "Cargo.lock": true,
+    "bun.lock": true,
+    "supply-chain/imports.lock": true
+  },
+
+  // Per-file associations
+  "files.associations": {
+    "*.toml": "toml",
+    "Cargo.lock": "toml",
+    "rust-toolchain": "toml",
+    "deny.toml": "toml",
+    ".clippy.toml": "toml"
+  }
+}
