@@ -80,6 +80,51 @@ et redirigent vers le binaire natif. Cf. `crates/cli/src/main.rs`
 pour les `cfg(not(target_arch = "wasm32"))` qui isolent `mimalloc`,
 `tokio` *full*, `reqwest`, `rustls`, `backend` et `a2a-client`.
 
+## Highlight — `mrx` Monorepo Real-time X-platform Mapper
+
+Un binaire Rust autonome (`mrx`) qui scanne **n'importe quel monorepo**
+(Bun, pnpm, Turborepo, Cargo, Lerna, Nx, Deno, Yarn, npm) et émet :
+
+- `path.json` — audit de path hardening (chemins absolus, fragiles, system).
+- `monorepo-map.json` — carte content-addressed (blake3) avec runtimes,
+  lockfiles, workspaces, langages détectés, stats par workspace.
+
+Walker parallèle basé sur `ignore` (le moteur de ripgrep) + agrégation
+rayon — passage typique d'un monorepo de ~120 fichiers / 16 MB en ~50 ms,
+serverless-friendly (Lambda / Cloud Run), trois sous-commandes :
+
+```bash
+mrx scan  --root .   # one-shot audit + map, exits
+mrx watch --root .   # daemon notify, debounced (1500 ms par défaut)
+mrx check --root .   # comme scan, exit non-zéro si findings → gate CI
+```
+
+Output canonique (extrait, host scan du repo aphrody) :
+
+```json
+{
+  "stats": {
+    "total_files": 119,
+    "total_workspaces": 6,
+    "scan_duration_ms": 47,
+    "languages": { "TypeScript": { "files": 30, "bytes": 81554 }, ... }
+  },
+  "root_kind": {
+    "task_runners": ["turbo"],
+    "package_managers": ["bun"],
+    "lockfiles": ["bun.lock", "Cargo.lock"],
+    "has_cargo_workspace": true,
+    "has_bun_workspaces": true
+  },
+  "content_hash": "5d0c9ea6ef74263b924280eaffcdf8a7e00048ee8439a60279200e3056941839"
+}
+```
+
+Le hash `content_hash` (blake3) couvre les fichiers de configuration
+racine (`turbo.json`, `package.json`, lockfiles, `Cargo.toml`,
+`.gitmodules`, …) — même invariant que Turborepo : si ces fichiers
+changent, le cache aval est bust.
+
 ## Stack 2026
 
 | Couche | Tech |
