@@ -36,7 +36,7 @@ Liste prioritaire (ordonnée par leverage / verify-time court d'abord) :
 | 2 | T-4 terminal-markdown | NEW `crates/aphrody-terminal-markdown` | `comrak` + `syntect` + OSC dispatch déjà dans `aphrody-terminal-llm/src/osc.rs` | `cargo test -p aphrody-terminal-markdown render_commonmark code_block_highlight osc_aphrody_md_emit` |
 | 3 | T-5 terminal-json-out | NEW `crates/aphrody-terminal-json-out` | `serde_json` + framing pattern de `aphrody-terminal-backend/src/ws.rs` | `cargo test -p aphrody-terminal-json-out frame_stdout passthrough_app_json` |
 | 4 | T-6 terminal-config | NEW `crates/aphrody-terminal-config` | loader partiel `aphrody-terminal-llm/src/mcp.rs:506` + `schemars` + JSON schema | `cargo test -p aphrody-terminal-config schema_validate import_claude_json import_mcp_json` |
-| 5 | T-7 aphrody-terminal-demo.html | NEW `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` | `gemini-clone-pixel-perfect.html` (734l) + M3 tokens via `m3-tokens` | `bun run crates/aphrody-wasm/serve-test.mjs` + curl HTTP 200 + screenshot via bxc CDP |
+| 5 | T-7 aphrody-terminal-demo.html | NEW `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` | `gemini-clone-pixel-perfect.html` (734l) + M3 tokens via `m3-tokens` | `cargo run -p aphrody-wasm --example serve` + curl HTTP 200 + screenshot via bxc CDP |
 | 6 | T-8 audit wterm vs ms-terminal vs aphrody | NEW `docs/audits/2026-05-18-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | worktrees + `docs/research/BXC_CARTOGRAPHY.md` template | `wc -l` + `grep -c "^| "` rows ≥ 20 |
 | 7 | T-10 aphrody-tui pure Rust | NEW `crates/aphrody-tui` | `ratatui` ref + pattern `a2a-ui/src` native backend | `cargo test -p aphrody-tui dsl_render layout_engine input_event` |
 | 8 | A2A CLI agent autonome | `crates/cli/src/auto_command.rs` NEW | `AutoCommand` enum hook dans `Commands` + dispatch via `a2a-client::http_jsonrpc` | `aphrody "what is 2+2" → call A2A → reply` (smoke) |
@@ -67,18 +67,39 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 > Toolchain pinned via `rust-toolchain.toml` to `nightly-2026-05-17`.
 > Re-pin requires PR (audit trail).
 
-- **Tout nouveau code** : Rust nightly (Edition 2024).
+**Règle absolue (2026-05-18) : aphrody est 100% Rust dans tout le repo.**
+Le binaire, le workspace, les scripts, les skills, les MCP servers, le tooling
+et la doc-build sont Rust. Aucune exception. Cf. memory
+[[feedback_aphrody_rust_only]] (révoque la tolérance précédente accordée
+à Bun/TS/Python pour scripting/MCP/tooling périphérique).
+
+- **Tout code** : Rust nightly (Edition 2024). Sans exception.
 - **C/C++** : interdit dans le code distribué (`crates/cli`, `crates/base`, etc.).
   Tolerable uniquement pour des wrappers FFI inévitables (`cxx::bridge`).
 - **FFI / interop mémoire** : `mimalloc` allocator global, zero-copy via
   pointeurs bruts encapsulés (`crates/bun_ffi` a été archivé — cf. §4).
-- **Bun / TypeScript** : scripting, MCP, tooling périphérique uniquement.
-  **node interdit** (cf. memory `feedback_bun_only`).
-- **Python** : tooling de build interne, jamais pour générer du code distribué.
-- **Web / UI** (règle 2026-05-17) : **WASM Rust natif (`wasm32-unknown-unknown`
-  + `wasm-bindgen`) OU WebGPU (`wgpu` crate)** pour TOUT nouveau projet web.
-  Pas de fallback JS/TS pour les nouveaux modules. shadcn-ui legacy → réécrit
-  en wrappers Material Web Components 3 natifs via bxc scraping.
+- **Bun / Node / TypeScript / JavaScript** : **BANNIS**. Tout fichier `.ts`,
+  `.js`, `.mjs`, `.cjs`, `package.json`, `tsconfig.json`, `bun.lock`,
+  `bunfig.toml`, `turbo.json`, `node_modules/`, `packages/` doit être migré
+  vers Rust (`cargo xtask`, binaire dédié dans `crates/`, ou WASM) ou
+  supprimé. Toute déclaration MCP `stdio: bun ...` doit être remplacée par
+  un binaire Rust shippé. CI ne doit plus invoquer `bun`/`npm`/`node`/`tsc`/
+  `turbo`. La memory [[feedback_bun_only]] (Bun préféré à Node) est devenue
+  caduque côté repo aphrody : la directive est désormais "Rust préféré à
+  tout le reste".
+- **Python** : interdit. Les scripts `.py` existants à migrer vers Rust ou
+  supprimer.
+- **Shell (`.ps1`, `.sh`, `.cmd`, `.bat`)** : à éradiquer dès qu'un
+  équivalent Rust existe. Préférer `cargo xtask <op>` ou un binaire
+  dans `crates/aphrody-*-tools`. Les wrappers de bootstrap one-shot
+  (ex. `dev-setup.sh` pour installer rustup) restent tolérés tant qu'aucun
+  binaire Rust ne peut s'auto-installer.
+- **Web / UI** (règle 2026-05-17, renforcée) : **WASM Rust natif
+  (`wasm32-unknown-unknown` + `wasm-bindgen`) OU WebGPU (`wgpu` crate)** pour
+  TOUT projet web. Aucun fallback JS/TS, aucun framework Node-based
+  (Next.js inclus — la dep doit être en `[workspace.dependencies]` Rust-only
+  via `next-rs` / `turbopack-*`, jamais via `bun install`). shadcn-ui legacy
+  → réécrit en wrappers Material Web Components 3 natifs via bxc scraping.
 - **Turbopack** + tout l'écosystème Rust Vercel (`turbopack-*`, `swc-*`,
   `next-*`, `lightning-css`, `oxc`) doit être déclaré en
   `[workspace.dependencies]` de `Cargo.toml` racine. Pas de re-vendoring.
@@ -128,17 +149,21 @@ cargo audit-udeps          # nightly unused deps
 
 ## 4. Architecture (post-pivot)
 
-Monorepo Rust + Bun.
+Monorepo **100% Rust** (cf. §2 et memory [[feedback_aphrody_rust_only]]).
+Toute trace de Bun/Node/TS/Python/turbo dans `packages/`, `node_modules/`,
+`scripts/*.ts`, `bun.lock`, `package.json`, `tsconfig.json`, `turbo.json`
+est destinée à être éradiquée (plan : `docs/PLAN_RUST_ONLY.md`).
 
 ### Workspace (`Cargo.toml` root, 17 members)
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).
 - **Kernel subcommands** (depuis 2026-05-18) :
-  - `aphrody n2b [args]` — façade `packages/n2b/src/cli.ts` via bun.
+  - `aphrody n2b [args]` — sous-commande Rust native (refactor en cours, ex-façade
+    bun `packages/n2b/src/cli.ts` à supprimer). Cf. `docs/PLAN_RUST_ONLY.md`.
   - `aphrody n2b watch --interval N --path P` — boucle infinie tokio (Ctrl-C trap).
   - `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine `:8765` via `crates/cli/src/scrape.rs::ScrapeClient`.
-  - Install PATH : `scripts/Install-AphrodyToPath.ps1` (Windows HKCU) ou `scripts/install-aphrody-path.sh` (Linux `$HOME/.local/bin`).
+  - Install PATH : `aphrody self install-path` (binaire Rust natif, ex-`scripts/Install-AphrodyToPath.ps1` / `scripts/install-aphrody-path.sh`).
 - **UI desktop** : `gui` (wry + tao) — desktop seulement, exclu du binaire CLI
   distribuable.
 - **Agent / IA (A2A)** : `a2a`, `a2a-client`, `a2a-server`, `a2a-pb`, `a2a-grpc`.
@@ -176,7 +201,7 @@ Wrappers `aphrody n2b` / `aphrody bxc` parity bash↔pwsh (NDJSON streamable, p5
 - `n2b-batch.{ps1,sh}` — migration parallèle (`ForEach-Object -Parallel` / `xargs -P`), NDJSON par target.
 - `bxc-crawl.{ps1,sh}` — crawl parallèle URLs × actions (recon|detect|tokens), `--loop --interval N`, cache body-hash.
 - `bxc-supervise.{ps1,sh}` — watchdog daemon bxc, NDJSON heartbeats, auto-restart cooldown.
-- `bunnize-gemini-cli.ts` (template) — JSON-aware surgical pour migration node→bun (8 substitutions idempotentes : `cross-env→drop`, `tsx→bun`, `npm run→bun run`, `npm ci→bun install --frozen-lockfile`, `npm install→bun install`, `npx→bunx`, `node X→bun X`, `vitest→bunx vitest`). Réutiliser pour tout fork.
+- ~~`bunnize-gemini-cli.ts`~~ (déprécié) — l'outil de migration node→bun est sans objet depuis la politique [[feedback_aphrody_rust_only]] (2026-05-18). Tout fork JS/TS doit être migré vers Rust natif, pas vers Bun.
 - **Gotcha pwsh** : pour trap Ctrl-C, jamais `[Console]::CancelKeyPress.Add({...})` — utiliser `[System.ConsoleCancelEventHandler]` delegate + `add_CancelKeyPress`. Pour here-strings sans expansion : single-quoted `@'..'@` (sinon backticks consommés).
 
 ## 5. Supply-chain (lire avant tout PR qui touche `Cargo.toml`)
@@ -224,8 +249,9 @@ d'un `fact` via `/msg` (cf. apx-fact-move-script comme template).
 
 - **`/a2a-duel-loop`** : 1 tick A2A par invocation, paire avec `/loop 60s /a2a-duel-loop`.
   Script `.claude/skills/a2a-duel-loop/scripts/duel-cycle.ts` (flags `--iteration --side --type --re --dry-run`).
-- **Ievr ops aphrody-side** : `scripts/ievr-serve.ps1` (bootstrap bun :8787),
-  `scripts/ievr-verify.ps1` (gates 1+2/5 — HTTP 200 + Edge screenshot).
+- **Ievr ops aphrody-side** : ~~`scripts/ievr-serve.ps1`~~ / ~~`scripts/ievr-verify.ps1`~~
+  (ps1 + bun) → à porter vers `aphrody ievr {serve,verify}` (sous-commande
+  Rust native, voir `docs/PLAN_RUST_ONLY.md`).
 - **Concurrent peer Claude** dans le même repo : `git status` avant chaque edit ;
   ne jamais modifier les fichiers en cours d'édition uncommitted du peer
   (catastrophe garantie sur `Cargo.lock` et workspace `Cargo.toml`).
@@ -241,9 +267,10 @@ Toute la surface skills est centralisée et documentée :
   `rust-architect`, `rust-engineer`.
 - **Runtime** : `skill` crate (workspace dep, lib) + binaires `skill-cli` /
   `agent-skills-cli` (validateur).
-- **Sync catalogue externe** : `bun run skills:sync:vercel`,
-  `bun run skills:sync:claude-official`, ou `bun run scripts/skills-sync.ts
-  <org>/<repo>`.
+- **Sync catalogue externe** : `aphrody xtask skills-sync vercel-labs/agent-skills`
+  ou `aphrody xtask skills-sync anthropics/skills` (sous-commande Rust native ;
+  l'ancien `scripts/skills-sync.ts` est en cours de port — cf.
+  `docs/PLAN_RUST_ONLY.md`).
 
 ## 7. Pièges connus (mémoire institutionnelle)
 
