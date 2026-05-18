@@ -24,8 +24,9 @@ workspace = true
 
 [dependencies]
 # --- async runtime ----------------------------------------------------------
-tokio        = { workspace = true, features = ["fs", "macros", "rt", "io-util", "sync"] }
+tokio        = { workspace = true, features = ["fs", "macros", "rt", "rt-multi-thread", "io-util", "sync"] }
 async-trait  = { workspace = true }
+futures      = { workspace = true }
 
 # --- serde / formats --------------------------------------------------------
 serde        = { workspace = true }
@@ -43,6 +44,26 @@ uuid         = { workspace = true, features = ["serde"] }
 # --- tracing ----------------------------------------------------------------
 tracing      = { workspace = true }
 
+# --- SQLite backend ---------------------------------------------------------
+# `bundled` feature compiles a static libsqlite3, removing the system dep
+# (kept hermetic across Linux #1 / Win11 #2 per CLAUDE.md §0).
+rusqlite     = { workspace = true }
+
+# --- LanceDB backend (ported from openclaw/extensions/memory-lancedb) -------
+# `default-features = false` keeps cloud-backend transitives (aws/azure/gcs)
+# out of the dependency graph for the CLI binary.
+lancedb      = { workspace = true }
+arrow-array  = { workspace = true }
+arrow-schema = { workspace = true }
+
 [dev-dependencies]
 tokio        = { workspace = true, features = ["full"] }
 tempfile     = { workspace = true }
+
+# ---------------------------------------------------------------------------
+# cargo-machete: arrow-array + arrow-schema are consumed only inside async
+# functions that build LanceDB schemas — machete's cfg-blind scan flags them
+# as unused.  Keep the explicit ignore list in sync with `src/lancedb.rs`.
+# ---------------------------------------------------------------------------
+[package.metadata.cargo-machete]
+ignored = ["arrow-array", "arrow-schema"]

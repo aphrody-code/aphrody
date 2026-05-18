@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! # aphrody-memory
 //!
-//! Async [`MemoryBackend`] trait and two production-ready implementations:
+//! Async [`MemoryBackend`] trait and four production-ready implementations:
 //!
 //! - [`jsonl::JsonlBackend`] — durable JSONL file store whose envelope shape mirrors the
 //!   `.coord/inbox-from-aphrody.jsonl` A2A protocol so that a [`MemoryRecord`] **is** a
@@ -9,18 +9,27 @@
 //! - [`hnsw::HnswBackend`] — in-process approximate nearest-neighbour index backed by brute-force
 //!   cosine similarity (pure Rust, zero FFI).  Persists the index to `<root>/index.bin` via
 //!   `serde_json`.
+//! - [`sqlite::SqliteBackend`] — single-file SQLite store via `rusqlite` (bundled). Brute-force
+//!   cosine search over a `BLOB` embedding column; acceptable up to ~100k rows.
+//! - [`lancedb::LanceDbBackend`] — Arrow-native vector database via the `lancedb` crate, ported
+//!   from `openclaw/extensions/memory-lancedb` (TypeScript). Scales past 100k rows with ANN.
 //!
 //! ## Design invariants
 //!
 //! - Every public function is `async` and returns `Result<_, MemoryError>`.
 //! - No `unwrap` / `expect` in production paths.
 //! - The crate is `#![forbid(unsafe_code)]`.
-//! - Both backends implement [`MemoryBackend`] and can be used interchangeably.
+//! - All backends implement [`MemoryBackend`] and can be used interchangeably.
 
 #![forbid(unsafe_code)]
 
 pub mod hnsw;
 pub mod jsonl;
+pub mod lancedb;
+pub mod sqlite;
+
+pub use crate::lancedb::LanceDbBackend;
+pub use crate::sqlite::SqliteBackend;
 
 use std::collections::HashMap;
 
