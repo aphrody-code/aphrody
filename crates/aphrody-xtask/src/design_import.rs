@@ -5,7 +5,7 @@
 // open-design clones into `assets/design-systems/` and `assets/design-templates/`.
 //
 // TODO Phase 2 follow-up: the TS source pulls source data from
-// `C:/worktree/open-design` and emits per-system manifest + tokens.css
+// `C:/src/open-design` and emits per-system manifest + tokens.css
 // + DESIGN.md across ~10 systems. Full implementation requires walking
 // the open-design tree, parsing tokens definitions, and re-emitting
 // CSS. This stub validates the worktree presence and surfaces
@@ -19,7 +19,7 @@ use std::{
 use anyhow::Result;
 use clap::{Args as ClapArgs, Subcommand};
 
-const DEFAULT_OPEN_DESIGN: &str = "C:/worktree/open-design";
+const DEFAULT_OPEN_DESIGN: &str = "C:/src/open-design";
 
 #[derive(Debug, ClapArgs)]
 pub(crate) struct Args {
