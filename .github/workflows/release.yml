@@ -22,32 +22,15 @@ env:
   RUSTC_WRAPPER: "sccache"
 
 jobs:
-  build-gemini:
-    # Bun cross-compiles to windows-x64 + linux-x64 from any host (we use Linux).
-    # Produces single-file executables consumed by the Rust `build` job below.
-    name: build gemini-cli (bun --compile cross)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Build single-file binaries
-        working-directory: packages/gemini-cli
-        run: bun run build:binary
-      - name: Upload gemini binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: gemini-cli-binaries
-          path: |
-            target/native/gemini-cli-windows-x64.exe
-            target/native/gemini-cli-linux-x64
+  # build-gemini removed 2026-05-18 : packages/gemini-cli/ is intentionally
+  # gitignored (it's the upstream Google reference, not vendored). The aphrody
+  # binary delegates to the user-installed `gemini` on PATH, so no bundled
+  # binary is required for the release. If we ever decide to ship a bundled
+  # gemini, restore the job here AND clone upstream first OR use the local
+  # packages/gemini/ port (Next.js app).
 
   build:
     name: build (${{ matrix.target }})
-    needs: build-gemini
     strategy:
       fail-fast: false
       matrix:
@@ -113,12 +96,6 @@ jobs:
             --target ${{ matrix.target }} \
             -p aphrody
 
-      - name: Download gemini-cli binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: gemini-cli-binaries
-          path: gemini-bin
-
       - name: Package artifact
         shell: bash
         run: |
@@ -128,14 +105,8 @@ jobs:
           mkdir -p "$STAGE"
           cp "$BIN_PATH" "$STAGE/"
           cp README.md LICENSE "$STAGE/"
-          # Bundle the matching gemini-cli single-file binary if we have one for this target.
-          # Bun --compile only supports windows-x64 and linux-x64 today; other targets ship cli-only.
-          case "${{ matrix.target }}" in
-            x86_64-pc-windows-msvc)
-              cp "gemini-bin/gemini-cli-windows-x64.exe" "$STAGE/gemini-cli.exe" || true ;;
-            x86_64-unknown-linux-gnu|x86_64-unknown-linux-musl)
-              cp "gemini-bin/gemini-cli-linux-x64" "$STAGE/gemini-cli" && chmod +x "$STAGE/gemini-cli" || true ;;
-          esac
+          # gemini-cli bundling removed 2026-05-18 (see build-gemini comment above).
+          # User installs gemini via `bun install -g @google/gemini-cli`.
           if [[ "${{ matrix.archive }}" == "zip" ]]; then
             7z a "artifacts/$STAGE.zip" "$STAGE"
           else
