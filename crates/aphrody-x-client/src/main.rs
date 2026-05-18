@@ -1,8 +1,24 @@
 // aphrody-x — X (Twitter) client cookie-based (no API key required).
 //
-// Wraps `agent-twitter-client` (Rust port de ai16z/agent-twitter-client TS,
-// 11k★ upstream). Auth via cookies seulement — pas besoin de X dev portal,
-// pas de free-tier cap 50req/24h.
+// Wraps `agent-twitter-client = "0.1.2"` (Rust port de ai16z/agent-twitter-
+// client TS, 11k★ upstream). Auth via cookies seulement — pas besoin de
+// X dev portal, pas de free-tier cap 50req/24h.
+//
+// ⚠ BUG UPSTREAM CONNU (2026-05-18, validé par test live) :
+// `agent-twitter-client 0.1.2` (cornip/agent-twitter-client, dernier
+// release Dec 2024) hard-code `domain("twitter.com")` dans
+// `set_from_cookie_string` (src/auth/user_auth.rs:528). Les cookies
+// modernes émis sur `.x.com` (depuis le rebrand Twitter → X) ne sont
+// donc pas envoyés aux endpoints `api.x.com/*`, ce qui produit un
+// `401 Unauthorized` sur le premier appel auth-required (get_profile,
+// send_tweet, etc.). Workaround disponibles :
+//   1. Fork local de agent-twitter-client patchant la ligne 528 pour
+//      attacher domain="x.com" (ou mieux: domain dérivé de l'URL)
+//   2. Migrer vers `rig-twitter` (fork ai16z plus récent — à valider)
+//   3. Utiliser `bxc fetch --cookies-file` (commit 2481a5d9b) en
+//      attendant : bxc émet les cookies correctement sur .x.com et
+//      retourne du HTML SSR utilisable (user-id + handle + name visibles).
+// Issue upstream à ouvrir : github.com/cornip/agent-twitter-client.
 //
 // Auth lookup order :
 //   1. CLI flag `--cookie-string "auth_token=...; ct0=...; ..."`
@@ -107,15 +123,25 @@ async fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&resp)?);
         }
         Op::Latest { handle, count } => {
-            let tweets = scraper
-                .get_tweets(&handle, count as usize, None)
+            // get_user_tweets prend un user_id numérique, pas un handle —
+            // on résout le profil d'abord pour obtenir l'id.
+            let profile = scraper
+                .get_profile(&handle)
                 .await
-                .map_err(|e| anyhow!("get_tweets({handle}) failed: {e}"))?;
+                .map_err(|e| anyhow!("get_profile({handle}) failed: {e}"))?;
+            let user_id = profile.id.clone();
+            if user_id.is_empty() {
+                return Err(anyhow!("profile({handle}) returned empty user id"));
+            }
+            let tweets = scraper
+                .get_user_tweets(&user_id, count as i32, None)
+                .await
+                .map_err(|e| anyhow!("get_user_tweets({user_id}) failed: {e}"))?;
             println!("{}", serde_json::to_string_pretty(&tweets)?);
         }
         Op::Search { query, count } => {
             let results = scraper
-                .search_tweets(&query, count as usize, SearchMode::Latest, None)
+                .search_tweets(&query, count as i32, SearchMode::Latest, None)
                 .await
                 .map_err(|e| anyhow!("search_tweets failed: {e}"))?;
             println!("{}", serde_json::to_string_pretty(&results)?);
