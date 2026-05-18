@@ -255,7 +255,9 @@ async fn main() -> anyhow::Result<()> {
             reject_stealth_with_socks5(proxy.as_deref(), stealth)?;
             
             if let Some(ref path) = chrome_path {
-                std::env::set_var("BXC_CHROME_BIN", path);
+                // SAFETY: single-threaded context (before tokio runtime spawn). No other
+                // thread can observe or mutate the env table concurrently here.
+                unsafe { std::env::set_var("BXC_CHROME_BIN", path); }
             }
 
             // Print the WS URL to stdout for WebSocketTransport.ts to parse
