@@ -5,8 +5,10 @@
 //! drives the draw/event loop, and restores the terminal on exit (including
 //! on panic via the `restore_terminal` guard).
 
-use std::path::Path;
-use std::time::{Duration, SystemTime};
+use std::{
+    path::Path,
+    time::{Duration, SystemTime},
+};
 
 use anyhow::Result;
 use crossterm::{
@@ -18,12 +20,11 @@ use ratatui::{Terminal, backend::CrosstermBackend, widgets::ListState};
 use tokio::time::interval;
 
 use super::{
-    key::{self, Action},
-    mailbox::{mailbox_pair_envelopes, MailboxPair},
-    ui::{DrawState, Palette, draw},
     NativeTuiArgs,
+    key::{self, Action},
+    mailbox::{MailboxPair, mailbox_pair_envelopes},
+    ui::{DrawState, Palette, draw},
 };
-
 use crate::Envelope;
 
 // ---------------------------------------------------------------------------
@@ -115,29 +116,29 @@ impl App {
             Action::CursorUp => {
                 let c = self.cursor().saturating_sub(1);
                 self.list_state.select(Some(c));
-            }
+            },
             Action::CursorDown => {
                 let len = self.envelopes().len();
                 if len > 0 {
                     let c = (self.cursor() + 1).min(len - 1);
                     self.list_state.select(Some(c));
                 }
-            }
+            },
             Action::CursorFirst => {
                 if !self.envelopes().is_empty() {
                     self.list_state.select(Some(0));
                 }
-            }
+            },
             Action::CursorLast => {
                 let len = self.envelopes().len();
                 if len > 0 {
                     self.list_state.select(Some(len - 1));
                 }
-            }
+            },
 
             Action::DetailExpand => {
                 self.selected = self.list_state.selected();
-            }
+            },
 
             Action::SwitchSide => {
                 self.active_side = if self.active_side == "aphrody" {
@@ -151,7 +152,7 @@ impl App {
                 self.search_matches.clear();
                 self.search_match_cursor = 0;
                 self.search_active = false;
-            }
+            },
 
             Action::Refresh => {
                 let _ = self.mailboxes.refresh();
@@ -159,31 +160,31 @@ impl App {
                 self.winclean_hb = MailboxPair::heartbeat_mtime(&self.coord_dir, "winclean");
                 self.clamp_cursor();
                 self.rebuild_matches();
-            }
+            },
 
             Action::SearchOpen => {
                 self.search = Some(String::new());
                 self.search_active = true;
-            }
+            },
             Action::SearchConfirm => {
                 self.search_active = false;
                 if self.search.as_deref() == Some("") {
                     self.search = None;
                     self.search_matches.clear();
                 }
-            }
+            },
             Action::SearchBackspace => {
                 if let Some(ref mut q) = self.search {
                     q.pop();
                     self.rebuild_matches();
                 }
-            }
+            },
             Action::SearchAppend(c) => {
                 if let Some(ref mut q) = self.search {
                     q.push(c);
                     self.rebuild_matches();
                 }
-            }
+            },
             Action::SearchNext => {
                 if !self.search_matches.is_empty() {
                     self.search_match_cursor =
@@ -191,7 +192,7 @@ impl App {
                     let idx = self.search_matches[self.search_match_cursor];
                     self.list_state.select(Some(idx));
                 }
-            }
+            },
             Action::SearchPrev => {
                 if !self.search_matches.is_empty() {
                     self.search_match_cursor = self
@@ -201,9 +202,9 @@ impl App {
                     let idx = self.search_matches[self.search_match_cursor];
                     self.list_state.select(Some(idx));
                 }
-            }
+            },
 
-            Action::Noop => {}
+            Action::Noop => {},
         }
     }
 
@@ -249,8 +250,7 @@ pub async fn run(coord_dir: &Path, args: NativeTuiArgs) -> Result<()> {
         .map_err(|e| anyhow::anyhow!("EnterAlternateScreen: {e}"))?;
 
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal =
-        Terminal::new(backend).map_err(|e| anyhow::anyhow!("Terminal::new: {e}"))?;
+    let mut terminal = Terminal::new(backend).map_err(|e| anyhow::anyhow!("Terminal::new: {e}"))?;
 
     // Ensure we restore the terminal even on panic.
     let restore = TerminalGuard;

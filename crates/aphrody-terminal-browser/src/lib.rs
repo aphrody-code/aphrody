@@ -8,8 +8,8 @@
 //! - [`BrowserBackend`] — the trait every backend implements.
 //! - [`BrowserError`] — typed error enum covering all failure modes.
 //! - [`Active`] — enum over the three concrete backends with auto-probe.
-//! - [`osc::parse_aphrody_browser_osc`] — parse raw OSC byte slices into
-//!   [`proto::BrowserRequest`] values, ready to dispatch to the active backend.
+//! - [`osc::parse_aphrody_browser_osc`] — parse raw OSC byte slices into [`proto::BrowserRequest`]
+//!   values, ready to dispatch to the active backend.
 //!
 //! ## Backends
 //!
@@ -34,9 +34,8 @@ pub mod backend;
 pub mod osc;
 pub mod proto;
 
-pub use proto::{BrowserRequest, BrowserResponse, RecordState, ScreenshotArea};
-
 use backend::{agent_browser::AgentBrowserBackend, bxc::BxcBackend, edge::EdgeBackend};
+pub use proto::{BrowserRequest, BrowserResponse, RecordState, ScreenshotArea};
 use thiserror::Error;
 use tracing::{info, instrument};
 
@@ -57,10 +56,7 @@ pub enum BrowserError {
 
     /// The backend process exited unexpectedly.
     #[error("backend `{backend}` exited with code {code:?}")]
-    ProcessExit {
-        backend: String,
-        code: Option<i32>,
-    },
+    ProcessExit { backend: String, code: Option<i32> },
 
     /// The backend returned a malformed or unexpected response.
     #[error("backend `{backend}` protocol error: {message}")]
@@ -68,19 +64,11 @@ pub enum BrowserError {
 
     /// The requested operation is not supported by this backend.
     #[error("backend `{backend}` does not support `{method}`: {reason}")]
-    Unsupported {
-        method: String,
-        backend: String,
-        reason: String,
-    },
+    Unsupported { method: String, backend: String, reason: String },
 
     /// The operation timed out.
     #[error("backend `{backend}` timed out on `{method}` after {elapsed_ms} ms")]
-    Timeout {
-        method: String,
-        backend: String,
-        elapsed_ms: u64,
-    },
+    Timeout { method: String, backend: String, elapsed_ms: u64 },
 
     /// An I/O error occurred communicating with the backend process.
     #[error("I/O error: {0}")]
@@ -131,8 +119,11 @@ pub trait BrowserBackend: Send + Sync {
     ) -> Result<BrowserResponse, BrowserError>;
 
     /// Start or stop a session recording identified by `id`.
-    async fn record(&mut self, id: &str, state: RecordState)
-        -> Result<BrowserResponse, BrowserError>;
+    async fn record(
+        &mut self,
+        id: &str,
+        state: RecordState,
+    ) -> Result<BrowserResponse, BrowserError>;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,10 +157,10 @@ impl Active {
             Ok(b) => {
                 info!(backend = "bxc", "selected browser backend");
                 return Ok(Active::Bxc(Box::new(b)));
-            }
+            },
             Err(e) => {
                 tracing::debug!(error = %e, "bxc not available");
-            }
+            },
         }
 
         // 2. Try agent-browser
@@ -177,10 +168,10 @@ impl Active {
             Ok(b) => {
                 info!(backend = "agent-browser", "selected browser backend");
                 return Ok(Active::AgentBrowser(Box::new(b)));
-            }
+            },
             Err(e) => {
                 tracing::debug!(error = %e, "agent-browser not available");
-            }
+            },
         }
 
         // 3. Try msedge fallback
@@ -188,17 +179,17 @@ impl Active {
             Ok(b) => {
                 info!(backend = "edge", "selected browser backend (fallback)");
                 return Ok(Active::Edge(Box::new(b)));
-            }
+            },
             Err(e) => {
                 tracing::debug!(error = %e, "edge not available");
-            }
+            },
         }
 
         Err(BrowserError::Unsupported {
             method: "probe".into(),
             backend: "none".into(),
-            reason: "no browser backend available: install bxc, agent-browser, \
-                     or msedge (Windows) and ensure the binary is on PATH"
+            reason: "no browser backend available: install bxc, agent-browser, or msedge \
+                     (Windows) and ensure the binary is on PATH"
                 .into(),
         })
     }
@@ -213,10 +204,7 @@ impl Active {
     }
 
     /// Dispatch a parsed [`BrowserRequest`] to the active backend.
-    pub async fn dispatch(
-        &mut self,
-        req: BrowserRequest,
-    ) -> Result<BrowserResponse, BrowserError> {
+    pub async fn dispatch(&mut self, req: BrowserRequest) -> Result<BrowserResponse, BrowserError> {
         match req {
             BrowserRequest::Nav { url } => self.navigate(&url).await,
             BrowserRequest::Eval { src } => self.eval_js(&src).await,

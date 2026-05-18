@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Integration tests for `aphrody-terminal-json-out`.
 
-use aphrody_terminal_json_out::{
-    frame_binary, frame_line, spawn_framed_child, Envelope, Stream,
-};
+use aphrody_terminal_json_out::{Envelope, Stream, frame_binary, frame_line, spawn_framed_child};
 use regex::Regex;
 use serde_json::Value;
 use tokio::sync::mpsc;
@@ -16,11 +14,7 @@ fn frame_stdout_plain_text() {
     let json = serde_json::to_value(&env).unwrap();
     assert_eq!(json["stream"], "stdout");
     assert_eq!(json["line"], "hello");
-    assert!(
-        json["ts"].is_string(),
-        "ts must serialize as a JSON string, got {:?}",
-        json["ts"]
-    );
+    assert!(json["ts"].is_string(), "ts must serialize as a JSON string, got {:?}", json["ts"]);
 }
 
 #[test]
@@ -63,11 +57,7 @@ fn frame_stderr_distinct_stream() {
 fn ts_format_iso_8601_utc() {
     let env = frame_line(Stream::Stdout, "x");
     let re = Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$").unwrap();
-    assert!(
-        re.is_match(&env.ts),
-        "ts {:?} does not match ISO-8601 UTC pattern",
-        env.ts
-    );
+    assert!(re.is_match(&env.ts), "ts {:?} does not match ISO-8601 UTC pattern", env.ts);
 }
 
 #[test]
@@ -146,10 +136,7 @@ async fn spawn_framed_child_captures_both_streams() {
         .find(|e| e.stream == Stream::Stdout)
         .map(|e| e.line.as_str().unwrap_or_default().trim().to_string())
         .unwrap_or_default();
-    assert!(
-        stdout_line.starts_with("out"),
-        "stdout line {stdout_line:?} did not start with 'out'"
-    );
+    assert!(stdout_line.starts_with("out"), "stdout line {stdout_line:?} did not start with 'out'");
 }
 
 #[tokio::test]

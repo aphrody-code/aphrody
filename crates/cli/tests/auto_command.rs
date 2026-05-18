@@ -3,14 +3,12 @@
 // Smoke / integration tests for the `aphrody` natural-language fallback.
 //
 // These exercise the binary end-to-end via `assert_cmd` so we cover:
-//   1. clap's `--help` still works (sanity — the try_parse_from fallback
-//      MUST not swallow help requests).
-//   2. An unknown subcommand whose first token is not a flag triggers the
-//      auto_command path and fails gracefully (exit != 0, no panic) when
-//      no A2A listener is running on localhost:8788.
-//   3. `APHRODY_A2A_ENDPOINT` is honoured at runtime — pointing at an
-//      unroutable address still produces a clean error rather than a
-//      crash.
+//   1. clap's `--help` still works (sanity — the try_parse_from fallback MUST not swallow help
+//      requests).
+//   2. An unknown subcommand whose first token is not a flag triggers the auto_command path and
+//      fails gracefully (exit != 0, no panic) when no A2A listener is running on localhost:8788.
+//   3. `APHRODY_A2A_ENDPOINT` is honoured at runtime — pointing at an unroutable address still
+//      produces a clean error rather than a crash.
 //
 // No network listener is started; we only assert the binary does not
 // panic and surfaces a human-readable error.
@@ -64,8 +62,8 @@ fn nl_prompt_graceful_failure_when_no_listener() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Multi-word NL prompt is forwarded verbatim (joined with spaces) — the
-//    binary must not crash on quoted whitespace-bearing argv tail.
+// 3. Multi-word NL prompt is forwarded verbatim (joined with spaces) — the binary must not crash on
+//    quoted whitespace-bearing argv tail.
 // ---------------------------------------------------------------------------
 #[test]
 fn multi_word_prompt_does_not_crash() {

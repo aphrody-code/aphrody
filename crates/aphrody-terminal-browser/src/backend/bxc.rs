@@ -27,17 +27,23 @@
 //! The backend resolves `bxc` via `which` at spawn time.  The worktree at
 //! `C:/worktree/bxc/` (or any directory on `PATH`) is sufficient.
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
-use serde_json::{json, Value};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::{Child, ChildStdin, ChildStdout};
-use tokio::sync::Mutex;
+use serde_json::{Value, json};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    process::{Child, ChildStdin, ChildStdout},
+    sync::Mutex,
+};
 use tracing::{debug, instrument, warn};
 
-use crate::proto::{BrowserResponse, RecordState, ScreenshotArea};
-use crate::{BrowserBackend, BrowserError};
+use crate::{
+    BrowserBackend, BrowserError,
+    proto::{BrowserResponse, RecordState, ScreenshotArea},
+};
 
 // ---------------------------------------------------------------------------
 // State
@@ -79,10 +85,9 @@ impl BxcBackend {
             .stderr(std::process::Stdio::null())
             .kill_on_drop(true);
 
-        let mut child = cmd.spawn().map_err(|e| BrowserError::SpawnFailed {
-            backend: "bxc".into(),
-            source: e,
-        })?;
+        let mut child = cmd
+            .spawn()
+            .map_err(|e| BrowserError::SpawnFailed { backend: "bxc".into(), source: e })?;
 
         let stdin = child.stdin.take().ok_or_else(|| BrowserError::SpawnFailed {
             backend: "bxc".into(),
@@ -95,10 +100,7 @@ impl BxcBackend {
 
         Ok(Self {
             _child: child,
-            io: Mutex::new(Io {
-                stdin,
-                stdout: BufReader::new(stdout),
-            }),
+            io: Mutex::new(Io { stdin, stdout: BufReader::new(stdout) }),
             binary,
         })
     }
@@ -128,41 +130,27 @@ async fn rpc_call(
     line.push('\n');
 
     debug!(backend, method, id, "bxc rpc →");
-    io.stdin
-        .write_all(line.as_bytes())
-        .await
-        .map_err(BrowserError::Io)?;
+    io.stdin.write_all(line.as_bytes()).await.map_err(BrowserError::Io)?;
     io.stdin.flush().await.map_err(BrowserError::Io)?;
 
     let mut resp_line = String::new();
-    io.stdout
-        .read_line(&mut resp_line)
-        .await
-        .map_err(BrowserError::Io)?;
+    io.stdout.read_line(&mut resp_line).await.map_err(BrowserError::Io)?;
 
     debug!(backend, method, id, resp = %resp_line.trim(), "bxc rpc ←");
 
     let resp: Value = serde_json::from_str(resp_line.trim())?;
 
     if let Some(err) = resp.get("error") {
-        let msg = err
-            .get("message")
-            .and_then(|m| m.as_str())
-            .unwrap_or("unknown RPC error")
-            .to_owned();
+        let msg =
+            err.get("message").and_then(|m| m.as_str()).unwrap_or("unknown RPC error").to_owned();
         warn!(backend, method, id, error = %msg, "bxc rpc error");
-        return Err(BrowserError::ProtocolError {
-            backend: backend.into(),
-            message: msg,
-        });
+        return Err(BrowserError::ProtocolError { backend: backend.into(), message: msg });
     }
 
-    resp.get("result")
-        .cloned()
-        .ok_or_else(|| BrowserError::ProtocolError {
-            backend: backend.into(),
-            message: "JSON-RPC response missing `result` field".into(),
-        })
+    resp.get("result").cloned().ok_or_else(|| BrowserError::ProtocolError {
+        backend: backend.into(),
+        message: "JSON-RPC response missing `result` field".into(),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -184,24 +172,14 @@ impl BrowserBackend for BxcBackend {
             self.binary.to_str().unwrap_or("bxc"),
         )
         .await?;
-        let final_url = result
-            .get("url")
-            .and_then(|u| u.as_str())
-            .unwrap_or(url)
-            .to_owned();
+        let final_url = result.get("url").and_then(|u| u.as_str()).unwrap_or(url).to_owned();
         Ok(BrowserResponse::Navigated { url: final_url })
     }
 
     #[instrument(skip(self, src))]
     async fn eval_js(&mut self, src: &str) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "eval",
-            json!({ "src": src }),
-            "bxc",
-        )
-        .await?;
+        let result = rpc_call(&mut io, "eval", json!({ "src": src }), "bxc").await?;
         let value = result.get("value").cloned().unwrap_or(Value::Null);
         Ok(BrowserResponse::EvalResult { value })
     }
@@ -209,13 +187,7 @@ impl BrowserBackend for BxcBackend {
     #[instrument(skip(self))]
     async fn query_selector(&mut self, sel: &str) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "querySelector",
-            json!({ "selector": sel }),
-            "bxc",
-        )
-        .await?;
+        let result = rpc_call(&mut io, "querySelector", json!({ "selector": sel }), "bxc").await?;
         let nodes = result.get("nodes").cloned().unwrap_or(Value::Array(vec![]));
         Ok(BrowserResponse::DomResult { nodes })
     }
@@ -227,7 +199,7 @@ impl BrowserBackend for BxcBackend {
             ScreenshotArea::Fullpage => json!({ "area": "fullpage" }),
             ScreenshotArea::Element { selector } => {
                 json!({ "area": "element", "selector": selector })
-            }
+            },
         };
         let mut io = self.io.lock().await;
         let result = rpc_call(&mut io, "screenshot", params, "bxc").await?;
@@ -248,13 +220,7 @@ impl BrowserBackend for BxcBackend {
         schema: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "extract",
-            json!({ "schema": schema }),
-            "bxc",
-        )
-        .await?;
+        let result = rpc_call(&mut io, "extract", json!({ "schema": schema }), "bxc").await?;
         let data = result.get("data").cloned().unwrap_or(Value::Null);
         Ok(BrowserResponse::Extracted { data })
     }
@@ -265,18 +231,8 @@ impl BrowserBackend for BxcBackend {
         rule: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "intercept",
-            json!({ "rule": rule }),
-            "bxc",
-        )
-        .await?;
-        let rule_id = result
-            .get("rule_id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("0")
-            .to_owned();
+        let result = rpc_call(&mut io, "intercept", json!({ "rule": rule }), "bxc").await?;
+        let rule_id = result.get("rule_id").and_then(|v| v.as_str()).unwrap_or("0").to_owned();
         Ok(BrowserResponse::InterceptInstalled { rule_id })
     }
 
@@ -291,16 +247,7 @@ impl BrowserBackend for BxcBackend {
             RecordState::Stop => "stop",
         };
         let mut io = self.io.lock().await;
-        rpc_call(
-            &mut io,
-            "record",
-            json!({ "id": id, "state": state_str }),
-            "bxc",
-        )
-        .await?;
-        Ok(BrowserResponse::RecordAck {
-            id: id.to_owned(),
-            state,
-        })
+        rpc_call(&mut io, "record", json!({ "id": id, "state": state_str }), "bxc").await?;
+        Ok(BrowserResponse::RecordAck { id: id.to_owned(), state })
     }
 }

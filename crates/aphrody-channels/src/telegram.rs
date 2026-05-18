@@ -365,9 +365,11 @@ impl MessagingChannel for TelegramChannel {
 #[allow(unsafe_code)]
 mod tests {
     use super::*;
+    use crate::test_util::ENV_LOCK;
 
     #[test]
     fn from_env_fails_when_variable_absent() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::remove_var("TELEGRAM_BOT_TOKEN");
         }
@@ -380,6 +382,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("TELEGRAM_BOT_TOKEN", "1234567890:ABC-DEF");
         }

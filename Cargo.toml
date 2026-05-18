@@ -215,7 +215,7 @@ reqwest            = { version = "0.13", default-features = false, features = ["
 http               = { version = "1" }
 hyper              = { version = "1" }
 axum               = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
-axum-server        = { version = "0.8", default-features = false, features = ["tls-rustls"] }
+axum-server        = { version = "0.8", default-features = false, features = ["tls-rustls-no-provider"] }
 tower              = { version = "0.5", features = ["util"] }
 tower-http         = { version = "0.6", features = ["cors"] }
 dns-lookup         = { version = "2" }
@@ -405,7 +405,7 @@ next-custom-transforms         = { git = "https://github.com/aphrody-code/next.j
 
 # --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
 # Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
-wgpu               = { version = "26" }
+wgpu               = { version = "29" }
 # wasm-bindgen MUST be pinned EXACT — schema must match wasm-bindgen-cli byte-for-byte.
 # When bumping, run scripts/install-wasm-bindgen-cli.sh on every dev machine.
 wasm-bindgen       = { version = "=0.2.121" }

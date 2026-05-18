@@ -55,9 +55,7 @@ fn apply_settings(base: &mut TerminalConfig, shim: &crate::shims::SettingsShim) 
 fn apply_mcp(base: &mut TerminalConfig, shim: &crate::shims::McpShim) {
     // mcp_servers: union, base wins on key conflict.
     for (name, entry) in &shim.servers {
-        base.mcp_servers
-            .entry(name.clone())
-            .or_insert_with(|| entry.clone());
+        base.mcp_servers.entry(name.clone()).or_insert_with(|| entry.clone());
     }
 }
 

@@ -106,17 +106,17 @@ const UNIFORM_OFFSET_TIME: u64 = 0;
 /// drive the render loop without allocating additional WASM closures.
 #[wasm_bindgen]
 pub struct GradientHero {
-    device:         Rc<wgpu::Device>,
-    queue:          Rc<wgpu::Queue>,
-    surface:        wgpu::Surface<'static>,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
+    surface: wgpu::Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
-    pipeline:       wgpu::RenderPipeline,
-    uniform_buf:    wgpu::Buffer,
-    bind_group:     wgpu::BindGroup,
+    pipeline: wgpu::RenderPipeline,
+    uniform_buf: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
     /// Canvas width in physical pixels.
-    width:          u32,
+    width: u32,
     /// Canvas height in physical pixels.
-    height:         u32,
+    height: u32,
 }
 
 #[wasm_bindgen]
@@ -206,13 +206,10 @@ impl GradientHero {
         let height = canvas.height().max(1);
 
         // 2. Create a wgpu Instance configured for WebGPU.
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::BROWSER_WEBGPU,
-            ..Default::default()
-        });
+        let instance = wgpu::Instance::default();
 
-        // 3. Create a surface from the canvas element.
-        //    `create_surface_from_canvas` is synchronous and returns immediately.
+        // 3. Create a surface from the canvas element. `create_surface_from_canvas` is synchronous
+        //    and returns immediately.
         let surface = instance
             .create_surface(wgpu::SurfaceTarget::Canvas(canvas))
             .map_err(|e| GradientError::DeviceCreation(e.to_string()))?;
@@ -229,14 +226,15 @@ impl GradientHero {
 
         // 5. Request a device + queue (asynchronous).
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                label: Some("aphrody-gradient-device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-                memory_hints: wgpu::MemoryHints::Performance,
-                // wgpu 26: `trace` field controls API-call tracing; disabled here.
-                trace: Default::default(),
-            })
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("aphrody-gradient-device"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                    ..Default::default()
+                }
+            )
             .await
             .map_err(|e| GradientError::DeviceCreation(e.to_string()))?;
 
@@ -281,20 +279,19 @@ impl GradientHero {
         });
 
         // 9. Build bind group layout + bind group.
-        let bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("gradient_hero_bgl"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("gradient_hero_bgl"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("gradient_hero_bg"),
@@ -308,8 +305,8 @@ impl GradientHero {
         // 10. Build the render pipeline.
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("gradient_hero_pipeline_layout"),
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bind_group_layout)],
+            immediate_size: 0,
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -337,7 +334,7 @@ impl GradientHero {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -368,12 +365,10 @@ impl GradientHero {
         // Acquire the next swap-chain texture.  On failure (e.g. lost device,
         // canvas hidden) we skip this frame silently.
         let surface_texture = match self.surface.get_current_texture() {
-            Ok(t) => t,
-            Err(_) => return,
+            wgpu::CurrentSurfaceTexture::Success(t) | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
+            _ => return,
         };
-        let view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("gradient_hero_frame"),
@@ -388,18 +383,14 @@ impl GradientHero {
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 0.0 }),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
@@ -423,9 +414,8 @@ impl GradientHero {
 fn canvas_by_id(id: &str) -> Result<HtmlCanvasElement, GradientError> {
     let window =
         web_sys::window().ok_or_else(|| GradientError::JsError("no window object".to_owned()))?;
-    let document = window
-        .document()
-        .ok_or_else(|| GradientError::JsError("no document".to_owned()))?;
+    let document =
+        window.document().ok_or_else(|| GradientError::JsError("no document".to_owned()))?;
     let element = document
         .get_element_by_id(id)
         .ok_or_else(|| GradientError::CanvasNotFound(id.to_owned()))?;
@@ -446,8 +436,7 @@ async fn await_promise<T, F>(promise: js_sys::Promise, f: F) -> Result<T, Gradie
 where
     F: FnOnce(JsValue) -> Result<T, GradientError>,
 {
-    let value = JsFuture::from(promise)
-        .await
-        .map_err(|e| GradientError::JsError(format!("{e:?}")))?;
+    let value =
+        JsFuture::from(promise).await.map_err(|e| GradientError::JsError(format!("{e:?}")))?;
     f(value)
 }

@@ -12,12 +12,12 @@
 //! the aphrody design (cf. `docs/design/aphrody-terminal-spec.md`).  Building
 //! on top of it lets us focus on:
 //!
-//! - **DSL ergonomics** — concise layout helpers ([`layout`]) and a small
-//!   set of aphrody-specific widgets ([`widgets`]).
-//! - **Async event loop** — a 60 fps tokio loop ([`run`]) that interleaves
-//!   crossterm input with periodic ticks, restoring the terminal on panic.
-//! - **Composable state** — generic [`App`] driven by the [`Render`] +
-//!   [`Update`] traits, so callers ship a single type.
+//! - **DSL ergonomics** — concise layout helpers ([`layout`]) and a small set of aphrody-specific
+//!   widgets ([`widgets`]).
+//! - **Async event loop** — a 60 fps tokio loop ([`run`]) that interleaves crossterm input with
+//!   periodic ticks, restoring the terminal on panic.
+//! - **Composable state** — generic [`App`] driven by the [`Render`] + [`Update`] traits, so
+//!   callers ship a single type.
 //!
 //! # Quickstart
 //!
@@ -26,7 +26,9 @@
 //! use ratatui::Frame;
 //!
 //! #[derive(Default)]
-//! struct Counter { n: u32 }
+//! struct Counter {
+//!     n: u32,
+//! }
 //!
 //! impl Render for Counter {
 //!     fn render(&self, frame: &mut Frame<'_>) {
@@ -37,7 +39,9 @@
 //! impl Update for Counter {
 //!     type Event = TuiEvent;
 //!     fn update(&mut self, event: TuiEvent) {
-//!         if matches!(event, TuiEvent::Tick) { self.n += 1; }
+//!         if matches!(event, TuiEvent::Tick) {
+//!             self.n += 1;
+//!         }
 //!     }
 //! }
 //!
@@ -53,19 +57,17 @@ pub mod error;
 pub mod layout;
 pub mod widgets;
 
-use std::io::{Stdout, stdout};
-use std::time::Duration;
-
-use crossterm::event::{
-    Event as CtEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent,
+use std::{
+    io::{Stdout, stdout},
+    time::Duration,
 };
+
 use crossterm::{
+    event::{Event as CtEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::Frame;
-use ratatui::Terminal;
-use ratatui::backend::CrosstermBackend;
+use ratatui::{Frame, Terminal, backend::CrosstermBackend};
 use tokio::time::{Interval, MissedTickBehavior, interval};
 
 pub use crate::error::TuiError;
@@ -262,9 +264,7 @@ where
     loop {
         // ---- draw ----------------------------------------------------------
         let state_ref = &app.state;
-        terminal
-            .draw(|frame| state_ref.render(frame))
-            .map_err(TuiError::Io)?;
+        terminal.draw(|frame| state_ref.render(frame)).map_err(TuiError::Io)?;
 
         if app.quit {
             break;
@@ -310,12 +310,12 @@ where
                     return Ok(());
                 }
                 app.state.update(TuiEvent::Key(k));
-            }
+            },
             CtEvent::Mouse(m) => app.state.update(TuiEvent::Mouse(m)),
             CtEvent::Resize(w, h) => app.state.update(TuiEvent::Resize(w, h)),
             // FocusGained/Lost/Paste — ignored for now; widgets can opt in
             // via a future TuiEvent variant if needed.
-            _ => {}
+            _ => {},
         }
     }
     Ok(())

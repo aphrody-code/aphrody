@@ -41,10 +41,7 @@ async fn coord_proxy_serves_jsonl_snapshot() {
     let proxy = CoordProxy::new(path.clone());
 
     // handle_get_coord with no Accept header → NDJSON snapshot.
-    let resp = proxy
-        .handle_get_coord(None)
-        .await
-        .expect("handle_get_coord");
+    let resp = proxy.handle_get_coord(None).await.expect("handle_get_coord");
     assert_eq!(resp.status, 200);
     assert_eq!(resp.content_type, NDJSON_CONTENT_TYPE);
 
@@ -64,10 +61,7 @@ async fn coord_proxy_missing_file_returns_empty() {
     let proxy = CoordProxy::new(path);
 
     // Snapshot path.
-    let resp = proxy
-        .handle_get_coord(None)
-        .await
-        .expect("missing file must NOT error");
+    let resp = proxy.handle_get_coord(None).await.expect("missing file must NOT error");
     assert_eq!(resp.status, 200);
     let chunks = collect_ok(resp.body).await;
     assert!(chunks.is_empty(), "expected empty body, got {chunks:?}");
@@ -80,25 +74,18 @@ async fn coord_proxy_missing_file_returns_empty() {
     assert_eq!(resp.status, 200);
     assert_eq!(resp.content_type, SSE_CONTENT_TYPE);
     let chunks = collect_ok(resp.body).await;
-    assert!(
-        chunks.is_empty(),
-        "expected empty SSE body, got {chunks:?}"
-    );
+    assert!(chunks.is_empty(), "expected empty SSE body, got {chunks:?}");
 }
 
 #[tokio::test]
 async fn coord_proxy_sse_format() {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join("inbox-from-aphrody.jsonl");
-    tokio::fs::write(&path, "{\"a\":1}\n{\"b\":2}\n")
-        .await
-        .expect("write fixture");
+    tokio::fs::write(&path, "{\"a\":1}\n{\"b\":2}\n").await.expect("write fixture");
 
     let proxy = CoordProxy::new(path);
-    let resp = proxy
-        .handle_get_coord(Some("text/event-stream"))
-        .await
-        .expect("handle_get_coord SSE");
+    let resp =
+        proxy.handle_get_coord(Some("text/event-stream")).await.expect("handle_get_coord SSE");
     assert_eq!(resp.status, 200);
     assert_eq!(resp.content_type, SSE_CONTENT_TYPE);
 
@@ -109,21 +96,12 @@ async fn coord_proxy_sse_format() {
 
     // Each chunk must end with the SSE event terminator `\n\n`.
     for chunk in &chunks {
-        assert!(
-            chunk.ends_with("\n\n"),
-            "SSE chunk missing terminator: {chunk:?}"
-        );
-        assert!(
-            chunk.starts_with("data: "),
-            "SSE chunk missing `data: ` prefix: {chunk:?}"
-        );
+        assert!(chunk.ends_with("\n\n"), "SSE chunk missing terminator: {chunk:?}");
+        assert!(chunk.starts_with("data: "), "SSE chunk missing `data: ` prefix: {chunk:?}");
     }
 
     // Sanity-check the kind classifier independently.
-    assert_eq!(
-        CoordResponseKind::from_accept(Some("text/event-stream")),
-        CoordResponseKind::Sse,
-    );
+    assert_eq!(CoordResponseKind::from_accept(Some("text/event-stream")), CoordResponseKind::Sse,);
 }
 
 #[tokio::test]
@@ -133,9 +111,7 @@ async fn coord_proxy_tail_stream_emits_new_lines() {
 
     // Pre-seed the file with one line that should NOT be replayed by
     // tail (tail starts at current EOF, mirroring `tail -f`).
-    tokio::fs::write(&path, "{\"old\":true}\n")
-        .await
-        .expect("seed file");
+    tokio::fs::write(&path, "{\"old\":true}\n").await.expect("seed file");
 
     let proxy = CoordProxy::new(path.clone()).with_tail_interval(Duration::from_millis(25));
     let mut tail = proxy.tail_stream().await;
@@ -145,11 +121,8 @@ async fn coord_proxy_tail_stream_emits_new_lines() {
 
     // Append a fresh line.
     {
-        let mut f = tokio::fs::OpenOptions::new()
-            .append(true)
-            .open(&path)
-            .await
-            .expect("open append");
+        let mut f =
+            tokio::fs::OpenOptions::new().append(true).open(&path).await.expect("open append");
         f.write_all(b"{\"new\":1}\n").await.expect("append");
         f.flush().await.expect("flush");
     }
@@ -168,11 +141,8 @@ async fn coord_proxy_tail_stream_emits_new_lines() {
 
     // Append a second line and verify it is also picked up.
     {
-        let mut f = tokio::fs::OpenOptions::new()
-            .append(true)
-            .open(&path)
-            .await
-            .expect("open append #2");
+        let mut f =
+            tokio::fs::OpenOptions::new().append(true).open(&path).await.expect("open append #2");
         f.write_all(b"{\"new\":2}\n").await.expect("append #2");
         f.flush().await.expect("flush #2");
     }
@@ -199,11 +169,8 @@ async fn coord_proxy_tail_stream_waits_for_missing_file() {
     tokio::fs::write(&path, "").await.expect("create empty");
     tokio::time::sleep(Duration::from_millis(80)).await;
     {
-        let mut f = tokio::fs::OpenOptions::new()
-            .append(true)
-            .open(&path)
-            .await
-            .expect("open append");
+        let mut f =
+            tokio::fs::OpenOptions::new().append(true).open(&path).await.expect("open append");
         f.write_all(b"{\"late\":true}\n").await.expect("append");
         f.flush().await.expect("flush");
     }

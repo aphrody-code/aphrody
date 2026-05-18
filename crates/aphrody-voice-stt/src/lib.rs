@@ -6,9 +6,10 @@
 //! This crate provides:
 //! - [`SttProvider`] — the core async trait for STT providers (native only).
 //! - [`WhisperApiProvider`] — production adapter for the OpenAI Whisper v1 REST API (native only).
-//! - [`ElevenLabsSttProvider`] — production adapter for the ElevenLabs STT v1 REST API (native only).
-//! - [`LocalWhisperBackend`] — optional, fully offline backend via `whisper.cpp` bindings
-//!   (feature `local-whisper`, native only).
+//! - [`ElevenLabsSttProvider`] — production adapter for the ElevenLabs STT v1 REST API (native
+//!   only).
+//! - [`LocalWhisperBackend`] — optional, fully offline backend via `whisper.cpp` bindings (feature
+//!   `local-whisper`, native only).
 //! - [`web::WebSpeechRecognition`] — browser-native STT via `SpeechRecognition` (wasm32 only).
 //!
 //! # Feature flags
@@ -32,28 +33,21 @@
 #![forbid(unsafe_code)]
 
 // Native-only modules: reqwest + tokio do not compile for wasm32.
-#[cfg(not(target_arch = "wasm32"))]
-pub mod elevenlabs_stt;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod local_whisper;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod whisper_api;
+#[cfg(not(target_arch = "wasm32"))] pub mod elevenlabs_stt;
+#[cfg(not(target_arch = "wasm32"))] pub mod local_whisper;
+#[cfg(not(target_arch = "wasm32"))] pub mod whisper_api;
 
 // Browser-native module: only compiled when targeting wasm32.
-#[cfg(target_arch = "wasm32")]
-pub mod web;
+#[cfg(target_arch = "wasm32")] pub mod web;
 
 // ── Native-only: trait + error types ─────────────────────────────────────────
 //
 // All items below reference `reqwest` which is absent on wasm32 targets.
 // The browser path uses `JsValue` errors directly in `web::WebSpeechRecognition`.
 
-#[cfg(not(target_arch = "wasm32"))]
-use async_trait::async_trait;
-#[cfg(not(target_arch = "wasm32"))]
-use futures::Stream;
-#[cfg(not(target_arch = "wasm32"))]
-use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))] use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))] use futures::Stream;
+#[cfg(not(target_arch = "wasm32"))] use serde::{Deserialize, Serialize};
 
 // ── SttError ──────────────────────────────────────────────────────────────────
 

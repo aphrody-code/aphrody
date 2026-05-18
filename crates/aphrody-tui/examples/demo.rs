@@ -3,15 +3,13 @@
 //!
 //! Lays out three panes in a single column:
 //!
-//! - top: [`MarkdownView`] rendered via `aphrody-terminal-markdown`
-//!   (CommonMark -> ANSI -> ratatui `Line`s), with a frame counter
-//!   interpolated into the body so the live render path is visible;
-//! - middle: [`SubAgentPane`] with one row per lifecycle state
-//!   (`Running` / `Done` / `Failed` / `Pending`) — the running row's
-//!   ASCII spinner advances every 8 ticks (~128 ms);
-//! - bottom: [`McpStatusBar`] with three MCP slots whose health rotates
-//!   (`Up` -> `Down` -> `Unknown` -> `Up` ...) every 60 ticks (~1 s)
-//!   so the colour wiring is observable without external state.
+//! - top: [`MarkdownView`] rendered via `aphrody-terminal-markdown` (CommonMark -> ANSI -> ratatui
+//!   `Line`s), with a frame counter interpolated into the body so the live render path is visible;
+//! - middle: [`SubAgentPane`] with one row per lifecycle state (`Running` / `Done` / `Failed` /
+//!   `Pending`) — the running row's ASCII spinner advances every 8 ticks (~128 ms);
+//! - bottom: [`McpStatusBar`] with three MCP slots whose health rotates (`Up` -> `Down` ->
+//!   `Unknown` -> `Up` ...) every 60 ticks (~1 s) so the colour wiring is observable without
+//!   external state.
 //!
 //! Runs the canonical 60 fps loop ([`run`]) and quits on `q`, `Esc`, or
 //! `Ctrl-C`. The demo is intentionally self-contained: no MCP probes,
@@ -22,16 +20,20 @@
 
 use std::error::Error;
 
-use aphrody_tui::layout::vsplit;
-use aphrody_tui::widgets::{
-    McpHealth, McpServerSlot, McpStatusBar, MarkdownView, SubAgentPane, SubAgentRow,
-    SubAgentStatus,
+use aphrody_tui::{
+    App, CrosstermKeyCode, Render, TuiEvent, Update,
+    layout::vsplit,
+    run,
+    widgets::{
+        MarkdownView, McpHealth, McpServerSlot, McpStatusBar, SubAgentPane, SubAgentRow,
+        SubAgentStatus,
+    },
 };
-use aphrody_tui::{App, CrosstermKeyCode, Render, TuiEvent, Update, run};
-use crossterm::execute;
-use crossterm::terminal::{LeaveAlternateScreen, disable_raw_mode};
-use ratatui::Frame;
-use ratatui::layout::Constraint;
+use crossterm::{
+    execute,
+    terminal::{LeaveAlternateScreen, disable_raw_mode},
+};
+use ratatui::{Frame, layout::Constraint};
 
 /// Tick cadence (in [`aphrody_tui::TICK_MS`] units) between spinner phase
 /// advances. 8 ticks at 16 ms = ~128 ms per spinner frame, slow enough to
@@ -78,9 +80,7 @@ impl DemoApp {
                 status: SubAgentStatus::Pending,
             },
         ];
-        SubAgentPane::new(rows)
-            .spinner_frame(spinner)
-            .title("sub-agents")
+        SubAgentPane::new(rows).spinner_frame(spinner).title("sub-agents")
     }
 
     /// Build the live [`McpStatusBar`] for the current frame.
@@ -91,14 +91,8 @@ impl DemoApp {
         let phase = (self.frame / MCP_ROTATE_PERIOD_TICKS) % 3;
         let cycle = [McpHealth::Up, McpHealth::Down, McpHealth::Unknown];
         let slots = vec![
-            McpServerSlot {
-                name: "context7".to_owned(),
-                health: cycle[phase as usize],
-            },
-            McpServerSlot {
-                name: "bxc".to_owned(),
-                health: cycle[((phase + 1) % 3) as usize],
-            },
+            McpServerSlot { name: "context7".to_owned(), health: cycle[phase as usize] },
+            McpServerSlot { name: "bxc".to_owned(), health: cycle[((phase + 1) % 3) as usize] },
             McpServerSlot {
                 name: "google-mcp".to_owned(),
                 health: cycle[((phase + 2) % 3) as usize],
@@ -110,17 +104,10 @@ impl DemoApp {
     /// Build the live [`MarkdownView`] for the current frame.
     fn markdown_view(&self) -> MarkdownView {
         let body = format!(
-            "# aphrody-tui demo\n\
-             \n\
-             Live **CommonMark** rendered via `aphrody-terminal-markdown` -> ANSI -> ratatui.\n\
-             \n\
-             - frame: `{frame}`\n\
-             - tick: 16 ms (~60 fps)\n\
-             - press `q`, `Esc`, or `Ctrl-C` to quit\n\
-             \n\
-             ```rust\n\
-             fn main() {{\n    println!(\"hello, aphrody\");\n}}\n\
-             ```\n",
+            "# aphrody-tui demo\n\nLive **CommonMark** rendered via `aphrody-terminal-markdown` \
+             -> ANSI -> ratatui.\n\n- frame: `{frame}`\n- tick: 16 ms (~60 fps)\n- press `q`, \
+             `Esc`, or `Ctrl-C` to quit\n\n```rust\nfn main() {{\n    println!(\"hello, \
+             aphrody\");\n}}\n```\n",
             frame = self.frame,
         );
         MarkdownView::new(body).block_title("markdown")
@@ -134,10 +121,8 @@ impl Render for DemoApp {
         //   - sub-agents: fixed 6 rows (4 rows + 2 border lines)
         //   - mcp bar: fixed 1 row (no border, single line)
         let area = frame.area();
-        let chunks = vsplit(
-            area,
-            &[Constraint::Min(7), Constraint::Length(6), Constraint::Length(1)],
-        );
+        let chunks =
+            vsplit(area, &[Constraint::Min(7), Constraint::Length(6), Constraint::Length(1)]);
 
         frame.render_widget(self.markdown_view(), chunks[0]);
         frame.render_widget(self.sub_agent_pane(), chunks[1]);
@@ -152,12 +137,9 @@ impl Update for DemoApp {
         match event {
             TuiEvent::Tick => {
                 self.frame = self.frame.wrapping_add(1);
-            }
+            },
             TuiEvent::Key(key) => {
-                if matches!(
-                    key.code,
-                    CrosstermKeyCode::Char('q') | CrosstermKeyCode::Esc
-                ) {
+                if matches!(key.code, CrosstermKeyCode::Char('q') | CrosstermKeyCode::Esc) {
                     // The `App::request_quit` setter lives on the outer
                     // wrapper, which `Update::update` doesn't own. Restore
                     // the terminal manually (mirrors `TerminalGuard::drop`
@@ -167,11 +149,11 @@ impl Update for DemoApp {
                     let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
                     std::process::exit(0);
                 }
-            }
-            TuiEvent::Mouse(_) | TuiEvent::Resize(_, _) => {
+            },
+            TuiEvent::Mouse(_) | TuiEvent::Resize(..) => {
                 // No-op: layout is fully constraint-driven, mouse
                 // routing is out of scope for the demo.
-            }
+            },
         }
     }
 }

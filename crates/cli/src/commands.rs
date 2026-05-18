@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::{net::SocketAddr, path::PathBuf};
 
 use async_trait::async_trait;
 // `backend::chromium` is `#[cfg(target_os = "windows")]` because the master-key
@@ -364,9 +363,10 @@ cc_wrapper = "sccache"
                 }
 
                 println!("🔥 Lancement d'Autoninja sur {} threads...", cores);
-                // SAFETY: Setting environment variables in a multithreaded process is inherently unsafe.
-                // However, this CLI command runs as a short-lived process and this mutation happens
-                // before the child process is spawned, so the race window is minimal in practice.
+                // SAFETY: Setting environment variables in a multithreaded process is inherently
+                // unsafe. However, this CLI command runs as a short-lived process
+                // and this mutation happens before the child process is spawned, so
+                // the race window is minimal in practice.
                 unsafe {
                     std::env::set_var("NINJA_SUMMARIZE_BUILD", "1");
                 }
@@ -634,22 +634,20 @@ pub(crate) struct GeminiCommand {
 #[async_trait]
 impl TerminalCommand for GeminiCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        let bin_name = if cfg!(target_os = "windows") { "gemini-cli.exe" } else { "gemini-cli" };
-        let candidates = Self::resolve_candidates(bin_name);
+        let root_dir = std::env::current_dir()
+            .map_err(|e| miette::miette!("Failed to get current directory: {}", e))?;
+        
+        let script_path = root_dir.join("packages").join("gemini").join("core").join("index.ts");
+        
+        if !script_path.exists() {
+            return Err(miette::miette!("Shared Gemini CLI script not found at {}", script_path.display()));
+        }
 
-        let bin = candidates.iter().find(|p| p.exists()).ok_or_else(|| {
-            miette::miette!(
-                "Binary `{}` introuvable. Build avec :\n  cd packages/gemini-cli && bun run \
-                 build:binary\n\nCandidats vérifiés :\n  {}",
-                bin_name,
-                candidates.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("\n  ")
-            )
-        })?;
+        let mut cmd = std::process::Command::new("bun");
+        cmd.arg("run").arg(&script_path).args(&self.args);
 
-        let status = std::process::Command::new(bin)
-            .args(&self.args)
-            .status()
-            .map_err(|e| miette::miette!("Erreur d'exécution de {}: {}", bin.display(), e))?;
+        let status = cmd.status()
+            .map_err(|e| miette::miette!("Erreur d'exécution de Bun: {}", e))?;
 
         if !status.success() {
             return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
@@ -659,22 +657,7 @@ impl TerminalCommand for GeminiCommand {
 }
 
 impl GeminiCommand {
-    fn resolve_candidates(bin_name: &str) -> Vec<PathBuf> {
-        let mut out = Vec::new();
-        if let Ok(exe) = std::env::current_exe()
-            && let Some(dir) = exe.parent()
-        {
-            out.push(dir.join(bin_name));
-        }
-        let triple_bin = if cfg!(target_os = "windows") {
-            "gemini-cli-windows-x64.exe"
-        } else {
-            "gemini-cli-linux-x64"
-        };
-        out.push(PathBuf::from("target/native").join(triple_bin));
-        out.push(PathBuf::from(triple_bin));
-        out
-    }
+    // Left empty since we removed the binary resolution logic
 }
 
 pub(crate) struct SearchCommand {
@@ -706,8 +689,10 @@ impl TerminalCommand for SearchCommand {
         let text = res.text().await.map_err(|e| miette::miette!("Erreur lecture: {}", e))?;
 
         let document = scraper::Html::parse_document(&text);
-        let title_selector = scraper::Selector::parse(".result-link").expect("Invalid title selector");
-        let snippet_selector = scraper::Selector::parse(".result-snippet").expect("Invalid snippet selector");
+        let title_selector =
+            scraper::Selector::parse(".result-link").expect("Invalid title selector");
+        let snippet_selector =
+            scraper::Selector::parse(".result-snippet").expect("Invalid snippet selector");
 
         let titles: Vec<_> = document.select(&title_selector).collect();
         let snippets: Vec<_> = document.select(&snippet_selector).collect();
@@ -1422,8 +1407,7 @@ fn resolve_n2b_cli() -> anyhow::Result<std::path::PathBuf> {
         }
     }
 
-    // 2. Walk up from cwd to find the workspace root, then resolve the
-    //    well-known path.
+    // 2. Walk up from cwd to find the workspace root, then resolve the well-known path.
     if let Some(root) = repo_root() {
         let candidate = root.join("packages").join("n2b").join("src").join("cli.ts");
         if candidate.exists() {
@@ -1445,17 +1429,19 @@ fn resolve_n2b_cli() -> anyhow::Result<std::path::PathBuf> {
 /// terminal.  A non-zero exit code is returned as an `anyhow::Error` so the
 /// caller can propagate it as a `SubprocessExit` through `miette`.
 async fn spawn_n2b(cli_path: &std::path::Path, args: &[String]) -> anyhow::Result<()> {
-    use tokio::io::{AsyncBufReadExt, BufReader};
-    use tokio::process::Command;
+    use tokio::{
+        io::{AsyncBufReadExt, BufReader},
+        process::Command,
+    };
 
     let mut cmd = Command::new("bun");
     cmd.arg("run").arg(cli_path).arg("--").args(args);
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to spawn `bun`: {e}. Is bun installed and on PATH?"))?;
+    let mut child = cmd.spawn().map_err(|e| {
+        anyhow::anyhow!("Failed to spawn `bun`: {e}. Is bun installed and on PATH?")
+    })?;
 
     // Stream stdout.
     let stdout = child.stdout.take().expect("stdout piped");
@@ -1540,8 +1526,8 @@ impl N2bCommand {
             }
         }
 
-        let cli_path = resolve_n2b_cli()
-            .map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
+        let cli_path =
+            resolve_n2b_cli().map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
 
         eprintln!(
             "[n2b watch] interval={}s path={} — press Ctrl-C to stop",
@@ -1633,8 +1619,8 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
             let alive = is_pid_alive(existing_pid);
             if alive {
                 eprintln!(
-                    "[bxc daemon] already running (pid={existing_pid}). \
-                     Stop it first or remove {}.",
+                    "[bxc daemon] already running (pid={existing_pid}). Stop it first or remove \
+                     {}.",
                     pid_file.display()
                 );
                 return Ok(());
@@ -1643,19 +1629,15 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
     }
 
     // Resolve the bxc-engine executable.
-    let (program, args): (&str, Vec<String>) =
-        if which_in_path("bxc-engine") {
-            ("bxc-engine", vec!["serve".into(), format!("--port={port}")])
-        } else {
-            // Fallback: run via bun inside the worktree.
-            let bxc_worktree = if cfg!(target_os = "windows") {
-                "/c/worktree/bxc"
-            } else {
-                "/worktree/bxc"
-            };
-            let entry = format!("{bxc_worktree}/src/serve.ts");
-            ("bun", vec!["run".into(), entry, format!("--port={port}")])
-        };
+    let (program, args): (&str, Vec<String>) = if which_in_path("bxc-engine") {
+        ("bxc-engine", vec!["serve".into(), format!("--port={port}")])
+    } else {
+        // Fallback: run via bun inside the worktree.
+        let bxc_worktree =
+            if cfg!(target_os = "windows") { "/c/worktree/bxc" } else { "/worktree/bxc" };
+        let entry = format!("{bxc_worktree}/src/serve.ts");
+        ("bun", vec!["run".into(), entry, format!("--port={port}")])
+    };
 
     let mut cmd = std::process::Command::new(program);
     cmd.args(&args);
@@ -1679,15 +1661,14 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         .spawn()
         .map_err(|e| {
             miette::miette!(
-                "Failed to spawn bxc-engine: {e}. \
-                 Ensure `bxc-engine` is on PATH or /c/worktree/bxc/ is checked out."
+                "Failed to spawn bxc-engine: {e}. Ensure `bxc-engine` is on PATH or \
+                 /c/worktree/bxc/ is checked out."
             )
         })?;
 
     let pid = child.id();
-    std::fs::write(&pid_file, pid.to_string()).map_err(|e| {
-        miette::miette!("Cannot write PID file {}: {e}", pid_file.display())
-    })?;
+    std::fs::write(&pid_file, pid.to_string())
+        .map_err(|e| miette::miette!("Cannot write PID file {}: {e}", pid_file.display()))?;
 
     println!("[bxc daemon] started pid={pid} port={port}. PID file: {}", pid_file.display());
     Ok(())
@@ -1701,9 +1682,7 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
 fn is_pid_alive(pid: u32) -> bool {
     #[cfg(unix)]
     {
-        let out = std::process::Command::new("kill")
-            .args(["-0", &pid.to_string()])
-            .output();
+        let out = std::process::Command::new("kill").args(["-0", &pid.to_string()]).output();
         matches!(out, Ok(o) if o.status.success())
     }
     #[cfg(windows)]
@@ -1711,8 +1690,7 @@ fn is_pid_alive(pid: u32) -> bool {
         let out = std::process::Command::new("tasklist")
             .args(["/FI", &format!("PID eq {pid}"), "/NH"])
             .output();
-        out.map(|o| String::from_utf8_lossy(&o.stdout).contains(&pid.to_string()))
-            .unwrap_or(false)
+        out.map(|o| String::from_utf8_lossy(&o.stdout).contains(&pid.to_string())).unwrap_or(false)
     }
     #[cfg(not(any(unix, windows)))]
     {
@@ -1728,10 +1706,7 @@ fn which_in_path(name: &str) -> bool {
         .map(|path_var| {
             std::env::split_paths(&path_var).any(|dir| {
                 let candidate = dir.join(name);
-                candidate.exists()
-                    || dir
-                        .join(format!("{name}.exe"))
-                        .exists()
+                candidate.exists() || dir.join(format!("{name}.exe")).exists()
             })
         })
         .unwrap_or(false)
@@ -1837,8 +1812,7 @@ pub(crate) struct NotifyCommand {
 impl TerminalCommand for NotifyCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         use aphrody_channels::{
-            MessagingChannel, matrix::MatrixChannel, slack::SlackChannel,
-            telegram::TelegramChannel,
+            MessagingChannel, matrix::MatrixChannel, slack::SlackChannel, telegram::TelegramChannel,
         };
 
         use crate::NotifyChannel;
@@ -1854,15 +1828,12 @@ impl TerminalCommand for NotifyCommand {
 
         let room = match self.room.clone() {
             Some(r) if !r.is_empty() => r,
-            _ => std::env::var(room_env_var)
-                .ok()
-                .filter(|s| !s.is_empty())
-                .ok_or_else(|| {
-                    miette::miette!(
-                        "missing destination room: pass `--room <id>` or set `{room_env_var}` \
-                         environment variable for `aphrody notify --channel {ctor_label}`"
-                    )
-                })?,
+            _ => std::env::var(room_env_var).ok().filter(|s| !s.is_empty()).ok_or_else(|| {
+                miette::miette!(
+                    "missing destination room: pass `--room <id>` or set `{room_env_var}` \
+                     environment variable for `aphrody notify --channel {ctor_label}`"
+                )
+            })?,
         };
 
         // Dispatch to the matching adapter. Each `from_env()` returns

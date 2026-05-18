@@ -180,7 +180,7 @@ impl core::fmt::Display for TransportKind {
 /// `static` initialisers. It performs no allocation, no I/O, no FFI.
 ///
 /// ```
-/// use a2a_client::transport::{default_transport_kind, TransportKind};
+/// use a2a_client::transport::{TransportKind, default_transport_kind};
 ///
 /// let kind = default_transport_kind();
 /// assert_ne!(kind, TransportKind::Unsupported); // unless on wasi
@@ -215,11 +215,9 @@ mod kind_tests {
 
     #[test]
     fn kind_display_matches_as_str() {
-        for k in [
-            TransportKind::NativeHyper,
-            TransportKind::BrowserFetch,
-            TransportKind::Unsupported,
-        ] {
+        for k in
+            [TransportKind::NativeHyper, TransportKind::BrowserFetch, TransportKind::Unsupported]
+        {
             assert_eq!(k.to_string(), k.as_str());
         }
     }

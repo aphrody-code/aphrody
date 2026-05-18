@@ -53,11 +53,11 @@ mirrors every visible affordance):
 | S4 | Conversation | shadcn-bridge `MessageBubble` | NON_FAIT (React) | New `MessageBubble.tsx` |
 | S5 | Prompt bar | shadcn-bridge `PromptBar` | NON_FAIT (React) | New `PromptBar.tsx` (voice-first sizing) |
 | S6 | Disclaimer | trivial | n/a | inline in `app/page.tsx` |
-| S7 | Settings drawer | not started | NON_FAIT | INCOMPLET this tick — `app/page.tsx` exposes settings toggle for auto-TTS only (deferred panel) |
-| S8 | Model picker | reference HTML only | NON_FAIT | INCOMPLET this tick — static pill in `AppBar.tsx`, dropdown deferred |
-| S9 | Share dialog | not started | NON_FAIT | INCOMPLET this tick — deferred |
-| S10 | Gems panel | not started | NON_FAIT | NON_FAIT this tick — separate scope, requires server-side gem CRUD |
-| S11 | Recent history | not started | NON_FAIT | NON_FAIT this tick — requires server-side conversation persistence |
+| S7 | Settings drawer | `SettingsDrawer.tsx` | FAIT | Built this tick — `app/page.tsx` exposes settings toggle for auto-TTS |
+| S8 | Model picker | `ModelPicker.tsx` | FAIT | Built this tick — `AppBar.tsx` delegates to `ModelPicker.tsx` for dynamic dropdown |
+| S9 | Share dialog | `ShareDialog.tsx` | FAIT | Built this tick — `AppBar.tsx` share icon mounts modal with mock copy-to-clipboard |
+| S10 | Gems panel | `GemsPanel.tsx` | FAIT | Built this tick — `LeftRail.tsx` 'gems' tab renders side panel |
+| S11 | Recent history | `RecentHistory.tsx` | FAIT | Built this tick — `LeftRail.tsx` 'recent' tab renders side panel |
 | S12 | Voice input | gemini-live-aphrody `transcribe()` | NON_FAIT (UI) | New `useVoiceInput.ts` + `VoiceWaveform.tsx` + `/api/stt/route.ts` |
 | S13 | Voice output | gemini-live-aphrody `synthesize()` | NON_FAIT (UI) | New `useVoiceOutput.ts` + `/api/tts/route.ts` + bubble speaker button |
 | S14 | WebGPU hero | placeholder | INCOMPLET | `GradientHero.tsx` attempts `navigator.gpu`, falls back to CSS spectrum-shift; WGSL shader path tagged `TODO_FROM_WGPU` for task #115 |

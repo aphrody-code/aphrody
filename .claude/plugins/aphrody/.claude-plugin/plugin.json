@@ -29,12 +29,23 @@
   "skills": "./skills/",
   "commands": [
     "./commands/scrape.md",
-    "./commands/tokens.md"
+    "./commands/tokens.md",
+    "./commands/status.md"
   ],
   "agents": [
     "./agents/n2b-ultra.md",
     "./agents/cross-platform-validator.md",
-    "./agents/m3-spec-auditor.md"
+    "./agents/m3-spec-auditor.md",
+    "./agents/design-google-curator.md",
+    "./agents/yolo-prod-ready.md",
+    "./agents/ffi-architect.md",
+    "./agents/cargo-auditor.md",
+    "./agents/cpp-engineer.md",
+    "./agents/rust-architect.md",
+    "./agents/rust-engineer.md",
+    "./agents/explore.md",
+    "./agents/code-review.md",
+    "./agents/build.md"
   ],
   "hooks": "./hooks/hooks.json",
   "mcpServers": {
@@ -46,6 +57,31 @@
       ],
       "env": {
         "BXC_DAEMON_URL": "http://127.0.0.1:8765"
+      }
+    },
+    "github": {
+      "type": "streamable-http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "bxc": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "run",
+        "C:/worktree/bxc/packages/bxc-extension/server.ts"
+      ],
+      "env": {
+        "BXC_MEMORY_DB": "C:/src/aphrody/var/data/bxc-memory.sqlite"
+      }
+    },
+    "context7": {
+      "httpUrl": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}",
+        "Accept": "application/json, text/event-stream"
       }
     }
   }

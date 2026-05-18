@@ -10,22 +10,21 @@
 //!
 //! ## Transport types
 //!
-//! - **Stdio** — spawn the configured command, write `initialize` + `tools/list`
-//!   JSON-RPC requests to stdin, read the response from stdout.  Used for
-//!   `google_mcp` (the Rust binary) and `bxc` (a Bun TypeScript server).
-//! - **Http** — POST `tools/list` to the MCP SSE/HTTP endpoint, optionally
-//!   with a pre-obtained Bearer token via the `aphrody-mcp` OAuth 2.1 flow.
+//! - **Stdio** — spawn the configured command, write `initialize` + `tools/list` JSON-RPC requests
+//!   to stdin, read the response from stdout.  Used for `google_mcp` (the Rust binary) and `bxc` (a
+//!   Bun TypeScript server).
+//! - **Http** — POST `tools/list` to the MCP SSE/HTTP endpoint, optionally with a pre-obtained
+//!   Bearer token via the `aphrody-mcp` OAuth 2.1 flow.
 //!
 //! ## Default servers (feature `mcp-default-servers`)
 //!
 //! When compiled with `default-features` (i.e. the `mcp-default-servers`
 //! feature), [`default_server_specs`] returns two pre-wired specs:
 //!
-//! 1. **google_mcp** — stdio, resolves the binary from
-//!    `target/release/google_mcp[.exe]` relative to the workspace root, or
-//!    falls back to `which google_mcp`.
-//! 2. **bxc** — stdio via `bun run C:/worktree/bxc/…/server.ts`, matching the
-//!    entry in the repo `.mcp.json`.
+//! 1. **google_mcp** — stdio, resolves the binary from `target/release/google_mcp[.exe]` relative
+//!    to the workspace root, or falls back to `which google_mcp`.
+//! 2. **bxc** — stdio via `bun run C:/worktree/bxc/…/server.ts`, matching the entry in the repo
+//!    `.mcp.json`.
 //!
 //! ## Loading from `.mcp.json`
 //!
@@ -153,25 +152,12 @@ pub struct McpStatusRegistry {
 impl McpStatusRegistry {
     /// Create a new empty registry.
     pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(Inner {
-                servers: HashMap::new(),
-            })),
-        }
+        Self { inner: Arc::new(Mutex::new(Inner { servers: HashMap::new() })) }
     }
 
     /// Update (insert or replace) the status entry for `server`.
-    pub fn update(
-        &self,
-        server: impl Into<String>,
-        state: impl Into<String>,
-        rpc: Option<String>,
-    ) {
-        let status = McpServerStatus {
-            server: server.into(),
-            state: state.into(),
-            last_rpc: rpc,
-        };
+    pub fn update(&self, server: impl Into<String>, state: impl Into<String>, rpc: Option<String>) {
+        let status = McpServerStatus { server: server.into(), state: state.into(), last_rpc: rpc };
         let mut guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
         guard.servers.insert(status.server.clone(), status);
     }
@@ -301,17 +287,14 @@ async fn probe_stdio(
 
     match result {
         Ok(Ok(Some(tools))) => {
-            let tool_count = tools
-                .get("tools")
-                .and_then(|t| t.as_array())
-                .map(|a| a.len())
-                .unwrap_or(0);
+            let tool_count =
+                tools.get("tools").and_then(|t| t.as_array()).map(|a| a.len()).unwrap_or(0);
             McpServerStatus {
                 server: name.to_owned(),
                 state: "connected".to_owned(),
                 last_rpc: Some(format!("tools/list({tool_count} tools)")),
             }
-        }
+        },
         Ok(Ok(None)) => McpServerStatus {
             server: name.to_owned(),
             state: "error".to_owned(),
@@ -350,10 +333,7 @@ async fn probe_http(name: &str, url: &str, oauth: Option<&OAuthConfig>) -> McpSe
         .and_then(|var| env::var(var).ok())
         .filter(|t| !t.is_empty());
 
-    let client = match reqwest::Client::builder()
-        .timeout(HTTP_PROBE_TIMEOUT)
-        .build()
-    {
+    let client = match reqwest::Client::builder().timeout(HTTP_PROBE_TIMEOUT).build() {
         Ok(c) => c,
         Err(e) => {
             return McpServerStatus {
@@ -361,14 +341,11 @@ async fn probe_http(name: &str, url: &str, oauth: Option<&OAuthConfig>) -> McpSe
                 state: "error".to_owned(),
                 last_rpc: Some(format!("client_build_error: {e}")),
             };
-        }
+        },
     };
 
     let body = jsonrpc_request(1, "tools/list", serde_json::json!({}));
-    let mut req = client
-        .post(url)
-        .header("Content-Type", "application/json")
-        .body(body);
+    let mut req = client.post(url).header("Content-Type", "application/json").body(body);
 
     if let Some(token) = bearer {
         req = req.header("Authorization", format!("Bearer {token}"));
@@ -421,10 +398,10 @@ async fn probe_http(name: &str, url: &str, oauth: Option<&OAuthConfig>) -> McpSe
                             state: "connected".to_owned(),
                             last_rpc: Some(format!("tools/list({tool_count} tools)")),
                         }
-                    }
+                    },
                 },
             }
-        }
+        },
     }
 }
 
@@ -432,10 +409,9 @@ async fn probe_http(name: &str, url: &str, oauth: Option<&OAuthConfig>) -> McpSe
 
 /// Perform a live `tools/list` JSON-RPC probe against an MCP server.
 ///
-/// - For [`McpTransport::Stdio`]: spawn the command, exchange JSON-RPC over
-///   stdin/stdout.
-/// - For [`McpTransport::Http`]: POST JSON-RPC to the URL, with optional OAuth
-///   Bearer token from the environment.
+/// - For [`McpTransport::Stdio`]: spawn the command, exchange JSON-RPC over stdin/stdout.
+/// - For [`McpTransport::Http`]: POST JSON-RPC to the URL, with optional OAuth Bearer token from
+///   the environment.
 ///
 /// Returns a [`McpServerStatus`] describing the outcome.  This function does
 /// **not** update the [`McpStatusRegistry`] — it is a pure probe.  Use
@@ -444,10 +420,10 @@ pub async fn probe_server(spec: &McpServerSpec) -> McpServerStatus {
     match &spec.transport {
         McpTransport::Stdio { command, args, env } => {
             probe_stdio(&spec.name, command, args, env).await
-        }
+        },
         McpTransport::Http { url, oauth_provider } => {
             probe_http(&spec.name, url, oauth_provider.as_ref()).await
-        }
+        },
     }
 }
 
@@ -464,10 +440,9 @@ pub async fn probe_server(spec: &McpServerSpec) -> McpServerStatus {
 ///
 /// - `registry`  — shared status registry to update on each probe.
 /// - `specs`     — list of servers to probe.
-/// - `interval`  — how long to wait between successive probes of the same
-///   server (the loop probes all servers sequentially per tick).
-/// - `bus`       — event bus on which `LlmEvent::Mcp` events are published
-///   when state changes.
+/// - `interval`  — how long to wait between successive probes of the same server (the loop probes
+///   all servers sequentially per tick).
+/// - `bus`       — event bus on which `LlmEvent::Mcp` events are published when state changes.
 pub async fn probe_loop(
     registry: Arc<McpStatusRegistry>,
     specs: Vec<McpServerSpec>,
@@ -515,14 +490,12 @@ pub async fn probe_loop(
 /// Mapping rules (kept identical to the legacy in-crate parser so existing
 /// callers, integration tests, and serialised state stay byte-compatible):
 ///
-/// - `type` ∈ {`"streamable-http"`, `"http"`} → [`McpTransport::Http`].  An
-///   `Authorization: Bearer ${ENV}` header is rewritten to an [`OAuthConfig`]
-///   whose `token_env_var` carries the variable name, so the probe loop can
-///   pull the live bearer token from the process environment.
-/// - any other `type` (including `"stdio"` and the empty default) →
-///   [`McpTransport::Stdio`].  Other request headers are intentionally
-///   discarded because they may contain secrets that the probe loop must not
-///   echo into JSON-RPC stdin frames.
+/// - `type` ∈ {`"streamable-http"`, `"http"`} → [`McpTransport::Http`].  An `Authorization: Bearer
+///   ${ENV}` header is rewritten to an [`OAuthConfig`] whose `token_env_var` carries the variable
+///   name, so the probe loop can pull the live bearer token from the process environment.
+/// - any other `type` (including `"stdio"` and the empty default) → [`McpTransport::Stdio`].  Other
+///   request headers are intentionally discarded because they may contain secrets that the probe
+///   loop must not echo into JSON-RPC stdin frames.
 fn spec_from_entry(
     name: String,
     entry: aphrody_terminal_config::shims::McpServerEntry,
@@ -531,9 +504,7 @@ fn spec_from_entry(
         "streamable-http" | "http" => {
             let url = entry.url.unwrap_or_default();
             let token_env_var = entry.headers.get("Authorization").and_then(|v| {
-                v.strip_prefix("Bearer ${")
-                    .and_then(|s| s.strip_suffix('}'))
-                    .map(str::to_owned)
+                v.strip_prefix("Bearer ${").and_then(|s| s.strip_suffix('}')).map(str::to_owned)
             });
             let oauth_provider = token_env_var.map(|var| OAuthConfig {
                 server_url: url.clone(),
@@ -542,11 +513,11 @@ fn spec_from_entry(
                 token_env_var: Some(var),
             });
             McpTransport::Http { url, oauth_provider }
-        }
+        },
         _ => {
             let command = entry.command.unwrap_or_default();
             McpTransport::Stdio { command, args: entry.args, env: entry.env }
-        }
+        },
     };
     McpServerSpec { name, transport }
 }
@@ -571,11 +542,8 @@ fn spec_from_entry(
 pub fn load_mcp_json(path: &std::path::Path) -> anyhow::Result<Vec<McpServerSpec>> {
     let shim = aphrody_terminal_config::shims::import_mcp_json(Some(path))
         .map_err(|e| anyhow::anyhow!("cannot import {}: {e}", path.display()))?;
-    let specs = shim
-        .servers
-        .into_iter()
-        .map(|(name, entry)| spec_from_entry(name, entry))
-        .collect();
+    let specs =
+        shim.servers.into_iter().map(|(name, entry)| spec_from_entry(name, entry)).collect();
     Ok(specs)
 }
 
@@ -585,9 +553,9 @@ pub fn load_mcp_json(path: &std::path::Path) -> anyhow::Result<Vec<McpServerSpec
 ///
 /// Strategy (in order):
 /// 1. `GOOGLE_MCP_BIN` environment variable.
-/// 2. `<workspace_root>/target/release/google_mcp[.exe]` where workspace root
-///    is the directory three levels above the running binary's directory
-///    (i.e. `target/release` → `target` → workspace root).
+/// 2. `<workspace_root>/target/release/google_mcp[.exe]` where workspace root is the directory
+///    three levels above the running binary's directory (i.e. `target/release` → `target` →
+///    workspace root).
 /// 3. `which google_mcp` / `which google_mcp.exe`.
 ///
 /// Returns `None` if none of the above succeeds.
@@ -600,14 +568,14 @@ fn resolve_google_mcp_binary() -> Option<String> {
         }
     }
 
-    // 2. Relative to `cargo`'s output directory: climb from the running binary
-    //    path to find `target/release/google_mcp[.exe]`.
-    //    When running as `cargo run`, `std::env::current_exe` is inside the
-    //    `target/<profile>/` directory.  We walk up until we find a directory
-    //    whose parent contains a `Cargo.toml` (workspace root heuristic), then
-    //    look for `target/release/google_mcp`.
+    // 2. Relative to `cargo`'s output directory: climb from the running binary path to find
+    //    `target/release/google_mcp[.exe]`. When running as `cargo run`, `std::env::current_exe` is
+    //    inside the `target/<profile>/` directory.  We walk up until we find a directory whose
+    //    parent contains a `Cargo.toml` (workspace root heuristic), then look for
+    //    `target/release/google_mcp`.
     let exe_bin = std::env::current_exe().ok()?;
-    // target/release/<binary>  ->  parent = target/release  ->  parent = target  ->  parent = workspace root
+    // target/release/<binary>  ->  parent = target/release  ->  parent = target  ->  parent =
+    // workspace root
     let candidate_root: Option<PathBuf> = exe_bin
         .parent() // target/release or target/debug
         .and_then(|p| p.parent()) // target/
@@ -615,11 +583,7 @@ fn resolve_google_mcp_binary() -> Option<String> {
         .map(PathBuf::from);
 
     if let Some(root) = candidate_root {
-        let binary_name = if cfg!(target_os = "windows") {
-            "google_mcp.exe"
-        } else {
-            "google_mcp"
-        };
+        let binary_name = if cfg!(target_os = "windows") { "google_mcp.exe" } else { "google_mcp" };
         let candidate = root.join("target").join("release").join(binary_name);
         if candidate.exists() {
             return candidate.to_str().map(str::to_owned);
@@ -636,11 +600,11 @@ fn resolve_google_mcp_binary() -> Option<String> {
 /// Only available when the `mcp-default-servers` feature is enabled (the
 /// default).  Returns two specs:
 ///
-/// 1. **google_mcp** — stdio via the resolved binary path (see
-///    [`resolve_google_mcp_binary`]).  If the binary cannot be found the spec
-///    uses the string `"google_mcp"` as the command (relying on `$PATH`).
-/// 2. **bxc** — stdio via `bun run C:/worktree/bxc/packages/bxc-extension/server.ts`,
-///    matching the entry in the repository `.mcp.json`.
+/// 1. **google_mcp** — stdio via the resolved binary path (see [`resolve_google_mcp_binary`]).  If
+///    the binary cannot be found the spec uses the string `"google_mcp"` as the command (relying on
+///    `$PATH`).
+/// 2. **bxc** — stdio via `bun run C:/worktree/bxc/packages/bxc-extension/server.ts`, matching the
+///    entry in the repository `.mcp.json`.
 #[cfg(feature = "mcp-default-servers")]
 pub fn default_server_specs() -> Vec<McpServerSpec> {
     let google_mcp_cmd = resolve_google_mcp_binary().unwrap_or_else(|| "google_mcp".to_owned());
@@ -690,10 +654,10 @@ mod tests {
     /// deserialiser.  We exercise the delegation indirectly by:
     ///
     /// 1. Writing a `.mcp.json` to a tempdir.
-    /// 2. Loading it through both the public adapter (`load_mcp_json`) and the
-    ///    upstream shim loader (`import_mcp_json`).
-    /// 3. Asserting that the adapter's [`McpServerSpec`] vector exactly mirrors
-    ///    the shim's `servers` map (same names, same transport fields).
+    /// 2. Loading it through both the public adapter (`load_mcp_json`) and the upstream shim loader
+    ///    (`import_mcp_json`).
+    /// 3. Asserting that the adapter's [`McpServerSpec`] vector exactly mirrors the shim's
+    ///    `servers` map (same names, same transport fields).
     ///
     /// Any future drift between the two — e.g. someone re-introducing a private
     /// parser — would break this invariant.
@@ -730,7 +694,11 @@ mod tests {
         let via_shim = aphrody_terminal_config::shims::import_mcp_json(Some(&path))
             .expect("upstream shim must succeed");
 
-        assert_eq!(via_adapter.len(), via_shim.servers.len(), "delegation must preserve cardinality");
+        assert_eq!(
+            via_adapter.len(),
+            via_shim.servers.len(),
+            "delegation must preserve cardinality"
+        );
         assert_eq!(via_adapter.len(), 2);
 
         // Build a name→spec lookup for the adapter side.
@@ -749,11 +717,8 @@ mod tests {
                     assert_eq!(command, entry.command.as_deref().unwrap_or(""));
                     assert_eq!(args, &entry.args);
                     assert_eq!(env, &entry.env);
-                }
-                (
-                    McpTransport::Http { url, oauth_provider },
-                    "http" | "streamable-http",
-                ) => {
+                },
+                (McpTransport::Http { url, oauth_provider }, "http" | "streamable-http") => {
                     assert_eq!(url, entry.url.as_deref().unwrap_or(""));
                     // Authorization: Bearer ${TOK_VAR} → token_env_var = "TOK_VAR"
                     if let Some(auth) = entry.headers.get("Authorization") {
@@ -766,10 +731,10 @@ mod tests {
                             assert_eq!(oauth.token_env_var.as_deref(), Some(var));
                         }
                     }
-                }
-                (transport, ty) => panic!(
-                    "transport/type mismatch for {name}: type={ty}, transport={transport:?}"
-                ),
+                },
+                (transport, ty) => {
+                    panic!("transport/type mismatch for {name}: type={ty}, transport={transport:?}")
+                },
             }
         }
     }

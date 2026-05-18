@@ -15,8 +15,8 @@
 //! - `ts` — ISO-8601 UTC timestamp (millisecond precision, trailing `Z`).
 //! - `stream` — one of `"stdout"`, `"stderr"`, `"meta"`.
 //! - `line` — application payload. Two shapes are supported:
-//!   - **Passthrough**: when the child line parses as valid JSON, the parsed
-//!     value is embedded verbatim (no double quoting, no escape doubling).
+//!   - **Passthrough**: when the child line parses as valid JSON, the parsed value is embedded
+//!     verbatim (no double quoting, no escape doubling).
 //!   - **Plain text**: otherwise, the value is a JSON string.
 //!   - **Binary**: see [`frame_binary`] — the value is `{"b64":"..."}`.
 //!
@@ -36,9 +36,11 @@
 use base64::Engine as _;
 use chrono::SecondsFormat;
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command;
-use tokio::sync::mpsc;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    process::Command,
+    sync::mpsc,
+};
 
 mod error;
 pub use error::JsonOutError;
@@ -117,11 +119,7 @@ pub fn frame_line(stream: Stream, line: &str) -> Envelope {
         Some(v) if !v.is_string() => v,
         _ => serde_json::Value::String(line.to_string()),
     };
-    Envelope {
-        ts: now_ts(),
-        stream,
-        line: payload,
-    }
+    Envelope { ts: now_ts(), stream, line: payload }
 }
 
 /// Frame a binary blob (e.g. an stdout chunk that wasn't valid UTF-8) as
@@ -130,11 +128,7 @@ pub fn frame_line(stream: Stream, line: &str) -> Envelope {
 pub fn frame_binary(stream: Stream, bytes: &[u8]) -> Envelope {
     let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
     let payload = serde_json::json!({ "b64": encoded });
-    Envelope {
-        ts: now_ts(),
-        stream,
-        line: payload,
-    }
+    Envelope { ts: now_ts(), stream, line: payload }
 }
 
 // ── Async spawn helper ────────────────────────────────────────────────────────
@@ -153,19 +147,12 @@ pub async fn spawn_framed_child(
     cmd: &mut Command,
     sink: mpsc::Sender<String>,
 ) -> Result<i32, JsonOutError> {
-    cmd.stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
+    cmd.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
 
     let mut child = cmd.spawn().map_err(JsonOutError::Spawn)?;
 
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| JsonOutError::MissingPipe("stdout"))?;
-    let stderr = child
-        .stderr
-        .take()
-        .ok_or_else(|| JsonOutError::MissingPipe("stderr"))?;
+    let stdout = child.stdout.take().ok_or_else(|| JsonOutError::MissingPipe("stdout"))?;
+    let stderr = child.stderr.take().ok_or_else(|| JsonOutError::MissingPipe("stderr"))?;
 
     let sink_out = sink.clone();
     let stdout_task = tokio::spawn(async move {
@@ -177,7 +164,7 @@ pub async fn spawn_framed_child(
                     if sink_out.send(s).await.is_err() {
                         break;
                     }
-                }
+                },
                 Err(_) => break,
             }
         }
@@ -193,7 +180,7 @@ pub async fn spawn_framed_child(
                     if sink_err.send(s).await.is_err() {
                         break;
                     }
-                }
+                },
                 Err(_) => break,
             }
         }

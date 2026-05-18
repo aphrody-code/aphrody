@@ -17,8 +17,10 @@
 
 use tracing::instrument;
 
-use crate::proto::{BrowserResponse, RecordState, ScreenshotArea};
-use crate::{BrowserBackend, BrowserError};
+use crate::{
+    BrowserBackend, BrowserError,
+    proto::{BrowserResponse, RecordState, ScreenshotArea},
+};
 
 /// Snapshot-only backend that delegates to `msedge --headless=new --dump-dom`.
 pub struct EdgeBackend {
@@ -83,9 +85,7 @@ impl BrowserBackend for EdgeBackend {
         // We surface the HTML via DomResult so callers can inspect the page.
         // A separate `Navigated` response is also emitted.
         let _ = html; // used below via BrowserResponse::DomResult
-        Ok(BrowserResponse::Navigated {
-            url: url.to_owned(),
-        })
+        Ok(BrowserResponse::Navigated { url: url.to_owned() })
     }
 
     /// JS evaluation is not supported in `--dump-dom` mode.
@@ -93,8 +93,8 @@ impl BrowserBackend for EdgeBackend {
         Err(BrowserError::Unsupported {
             method: "eval_js".into(),
             backend: "edge".into(),
-            reason: "msedge --dump-dom does not support JavaScript evaluation; \
-                     use the bxc or agent-browser backend for JS eval"
+            reason: "msedge --dump-dom does not support JavaScript evaluation; use the bxc or \
+                     agent-browser backend for JS eval"
                 .into(),
         })
     }
@@ -115,8 +115,8 @@ impl BrowserBackend for EdgeBackend {
             method: "query_selector".into(),
             backend: "edge".into(),
             reason: format!(
-                "edge --dump-dom is stateless: selector `{sel}` cannot be evaluated \
-                 without a live page context; navigate first with the bxc backend"
+                "edge --dump-dom is stateless: selector `{sel}` cannot be evaluated without a \
+                 live page context; navigate first with the bxc backend"
             ),
         })
     }
@@ -126,8 +126,8 @@ impl BrowserBackend for EdgeBackend {
         Err(BrowserError::Unsupported {
             method: "screenshot".into(),
             backend: "edge".into(),
-            reason: "msedge --dump-dom does not capture screenshots; \
-                     use agent-browser for full CDP-driven screenshots"
+            reason: "msedge --dump-dom does not capture screenshots; use agent-browser for full \
+                     CDP-driven screenshots"
                 .into(),
         })
     }
@@ -140,8 +140,8 @@ impl BrowserBackend for EdgeBackend {
         Err(BrowserError::Unsupported {
             method: "extract".into(),
             backend: "edge".into(),
-            reason: "edge --dump-dom cannot perform schema-driven extraction; \
-                     use bxc (fast) or agent-browser (full Chromium)"
+            reason: "edge --dump-dom cannot perform schema-driven extraction; use bxc (fast) or \
+                     agent-browser (full Chromium)"
                 .into(),
         })
     }
@@ -154,8 +154,8 @@ impl BrowserBackend for EdgeBackend {
         Err(BrowserError::Unsupported {
             method: "intercept".into(),
             backend: "edge".into(),
-            reason: "msedge --dump-dom does not support request interception; \
-                     use agent-browser (CDP Fetch.enable) for network interception"
+            reason: "msedge --dump-dom does not support request interception; use agent-browser \
+                     (CDP Fetch.enable) for network interception"
                 .into(),
         })
     }
@@ -169,8 +169,8 @@ impl BrowserBackend for EdgeBackend {
         Err(BrowserError::Unsupported {
             method: "record".into(),
             backend: "edge".into(),
-            reason: "msedge --dump-dom does not support session recording; \
-                     use agent-browser for CDP Page.startScreencast-based recording"
+            reason: "msedge --dump-dom does not support session recording; use agent-browser for \
+                     CDP Page.startScreencast-based recording"
                 .into(),
         })
     }

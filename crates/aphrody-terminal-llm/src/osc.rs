@@ -13,8 +13,8 @@
 //! All failures (invalid base64, invalid JSON, wrong field counts) return
 //! `None` after logging via `tracing::warn!`.
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use aphrody_terminal_vt::strip_osc_envelope_required;
+use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 
 use crate::LlmEvent;
 
@@ -43,7 +43,7 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
         b"md" => {
             let text = decode_b64_utf8(payload, "aphrody-md")?;
             Some(LlmEvent::Markdown { body: text })
-        }
+        },
         b"json" => {
             let raw = decode_b64_bytes(payload, "aphrody-json")?;
             let value: serde_json::Value = match serde_json::from_slice(&raw) {
@@ -51,10 +51,10 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                 Err(e) => {
                     tracing::warn!(op = "aphrody-json", error = %e, "invalid JSON payload");
                     return None;
-                }
+                },
             };
             Some(LlmEvent::JsonInspect { payload: value })
-        }
+        },
         b"sub-agent" => {
             // <id>;<status>;<text>  — split on ';', max 3 parts
             let parts = split_fields(payload, 3);
@@ -71,7 +71,7 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                 status: parts[1].clone(),
                 text: parts[2].clone(),
             })
-        }
+        },
         b"mcp" => {
             // <server>;<state>[;<rpc>]
             let parts = split_fields(payload, 3);
@@ -88,12 +88,8 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
             } else {
                 None
             };
-            Some(LlmEvent::Mcp {
-                server: parts[0].clone(),
-                state: parts[1].clone(),
-                rpc,
-            })
-        }
+            Some(LlmEvent::Mcp { server: parts[0].clone(), state: parts[1].clone(), rpc })
+        },
         b"hook" => {
             let raw = decode_b64_bytes(payload, "aphrody-hook")?;
             let mut map: serde_json::Map<String, serde_json::Value> =
@@ -102,23 +98,19 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                     Err(e) => {
                         tracing::warn!(op = "aphrody-hook", error = %e, "invalid JSON payload");
                         return None;
-                    }
+                    },
                 };
             let event = match map.remove("event") {
                 Some(serde_json::Value::String(s)) => s,
                 _ => {
                     tracing::warn!(op = "aphrody-hook", "missing string field 'event'");
                     return None;
-                }
+                },
             };
-            let hook_payload = map
-                .remove("payload")
-                .unwrap_or(serde_json::Value::Object(Default::default()));
-            Some(LlmEvent::Hook {
-                event,
-                payload: hook_payload,
-            })
-        }
+            let hook_payload =
+                map.remove("payload").unwrap_or(serde_json::Value::Object(Default::default()));
+            Some(LlmEvent::Hook { event, payload: hook_payload })
+        },
         b"skill" => {
             let raw = decode_b64_bytes(payload, "aphrody-skill")?;
             let mut map: serde_json::Map<String, serde_json::Value> =
@@ -127,31 +119,26 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                     Err(e) => {
                         tracing::warn!(op = "aphrody-skill", error = %e, "invalid JSON payload");
                         return None;
-                    }
+                    },
                 };
             let name = match map.remove("name") {
                 Some(serde_json::Value::String(s)) => s,
                 _ => {
                     tracing::warn!(op = "aphrody-skill", "missing string field 'name'");
                     return None;
-                }
+                },
             };
             let phase = match map.remove("phase") {
                 Some(serde_json::Value::String(s)) => s,
                 _ => {
                     tracing::warn!(op = "aphrody-skill", "missing string field 'phase'");
                     return None;
-                }
+                },
             };
-            let skill_payload = map
-                .remove("payload")
-                .unwrap_or(serde_json::Value::Object(Default::default()));
-            Some(LlmEvent::Skill {
-                name,
-                phase,
-                payload: skill_payload,
-            })
-        }
+            let skill_payload =
+                map.remove("payload").unwrap_or(serde_json::Value::Object(Default::default()));
+            Some(LlmEvent::Skill { name, phase, payload: skill_payload })
+        },
         b"task" => {
             // <id>;<status>;<subject>
             let parts = split_fields(payload, 3);
@@ -168,7 +155,7 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                 status: parts[1].clone(),
                 subject: parts[2].clone(),
             })
-        }
+        },
         other => {
             // Could be aphrody-browser-* or unknown: not our concern here.
             tracing::trace!(
@@ -176,7 +163,7 @@ pub fn parse_aphrody_llm_osc(input: &[u8]) -> Option<LlmEvent> {
                 "unhandled aphrody OSC op in llm parser"
             );
             None
-        }
+        },
     }
 }
 
@@ -187,7 +174,7 @@ fn decode_b64_bytes(raw: &[u8], op: &str) -> Option<Vec<u8>> {
         Err(e) => {
             tracing::warn!(op, error = %e, "invalid base64 in OSC payload");
             None
-        }
+        },
     }
 }
 
@@ -199,7 +186,7 @@ fn decode_b64_utf8(raw: &[u8], op: &str) -> Option<String> {
         Err(e) => {
             tracing::warn!(op, error = %e, "OSC payload is not valid UTF-8 after base64 decode");
             None
-        }
+        },
     }
 }
 
@@ -217,12 +204,12 @@ fn split_fields(src: &[u8], max: usize) -> Vec<String> {
             Some(pos) => {
                 out.push(remaining[..pos].to_owned());
                 remaining = &remaining[pos + 1..];
-            }
+            },
             None => {
                 out.push(remaining.to_owned());
                 remaining = "";
                 break;
-            }
+            },
         }
     }
     if !remaining.is_empty() {

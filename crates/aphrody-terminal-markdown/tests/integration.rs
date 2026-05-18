@@ -25,10 +25,7 @@ fn render_commonmark_h1_to_h3() {
     assert!(h1.contains("foo"));
 
     // H2 -> bold + underline (SGR 1;4).
-    assert!(
-        h2.contains("\x1b[1;4m"),
-        "h2 missing bold+underline SGR: {h2:?}"
-    );
+    assert!(h2.contains("\x1b[1;4m"), "h2 missing bold+underline SGR: {h2:?}");
     assert!(h2.contains("bar"));
 
     // H3 -> bold (SGR 1).
@@ -52,10 +49,7 @@ fn render_commonmark_bold_italic() {
     assert!(bold.contains("bold"));
 
     // SGR 3 = italic.
-    assert!(
-        italic.contains("\x1b[3m"),
-        "italic missing SGR 3: {italic:?}"
-    );
+    assert!(italic.contains("\x1b[3m"), "italic missing SGR 3: {italic:?}");
     assert!(italic.contains("italic"));
 }
 
@@ -75,10 +69,7 @@ fn code_block_highlight_rust() {
     let out = r.render_commonmark(src);
     // 24-bit truecolor SGR introducer for the `fn` keyword (or any other
     // highlighted token).
-    assert!(
-        out.contains("\x1b[38;2;"),
-        "rust code block missing truecolor SGR: {out:?}"
-    );
+    assert!(out.contains("\x1b[38;2;"), "rust code block missing truecolor SGR: {out:?}");
     assert!(out.contains("main"));
 }
 
@@ -88,10 +79,7 @@ fn code_block_highlight_no_lang() {
     let src = "```\nplain body line 1\nplain body line 2\n```\n";
     let out = r.render_commonmark(src);
     // No language -> no truecolor SGR should be emitted by the highlighter.
-    assert!(
-        !out.contains("\x1b[38;2;"),
-        "unlanged block leaked truecolor SGR: {out:?}"
-    );
+    assert!(!out.contains("\x1b[38;2;"), "unlanged block leaked truecolor SGR: {out:?}");
     assert!(out.contains("plain body line 1"));
     assert!(out.contains("plain body line 2"));
 }

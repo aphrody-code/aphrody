@@ -14,17 +14,23 @@
 //! - Structured extraction: supported via CDP `Runtime.evaluate` + schema walk.
 //! - Session recording: supported (CDP `Page.startScreencast` style chunking).
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
-use serde_json::{json, Value};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::{Child, ChildStdin, ChildStdout};
-use tokio::sync::Mutex;
+use serde_json::{Value, json};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    process::{Child, ChildStdin, ChildStdout},
+    sync::Mutex,
+};
 use tracing::{debug, instrument, warn};
 
-use crate::proto::{BrowserResponse, RecordState, ScreenshotArea};
-use crate::{BrowserBackend, BrowserError};
+use crate::{
+    BrowserBackend, BrowserError,
+    proto::{BrowserResponse, RecordState, ScreenshotArea},
+};
 
 // ---------------------------------------------------------------------------
 // State
@@ -52,11 +58,10 @@ pub struct AgentBrowserBackend {
 impl AgentBrowserBackend {
     /// Spawn a new `agent-browser` subprocess.
     pub async fn spawn() -> Result<Self, BrowserError> {
-        let binary =
-            which::which("agent-browser").map_err(|e| BrowserError::SpawnFailed {
-                backend: "agent-browser".into(),
-                source: std::io::Error::new(std::io::ErrorKind::NotFound, e.to_string()),
-            })?;
+        let binary = which::which("agent-browser").map_err(|e| BrowserError::SpawnFailed {
+            backend: "agent-browser".into(),
+            source: std::io::Error::new(std::io::ErrorKind::NotFound, e.to_string()),
+        })?;
 
         let mut cmd = tokio::process::Command::new(&binary);
         cmd.arg("--stdio")
@@ -81,10 +86,7 @@ impl AgentBrowserBackend {
 
         Ok(Self {
             _child: child,
-            io: Mutex::new(Io {
-                stdin,
-                stdout: BufReader::new(stdout),
-            }),
+            io: Mutex::new(Io { stdin, stdout: BufReader::new(stdout) }),
             _binary: binary,
         })
     }
@@ -111,41 +113,27 @@ async fn rpc_call(
     line.push('\n');
 
     debug!(backend, method, id, "agent-browser rpc →");
-    io.stdin
-        .write_all(line.as_bytes())
-        .await
-        .map_err(BrowserError::Io)?;
+    io.stdin.write_all(line.as_bytes()).await.map_err(BrowserError::Io)?;
     io.stdin.flush().await.map_err(BrowserError::Io)?;
 
     let mut resp_line = String::new();
-    io.stdout
-        .read_line(&mut resp_line)
-        .await
-        .map_err(BrowserError::Io)?;
+    io.stdout.read_line(&mut resp_line).await.map_err(BrowserError::Io)?;
 
     debug!(backend, method, id, resp = %resp_line.trim(), "agent-browser rpc ←");
 
     let resp: Value = serde_json::from_str(resp_line.trim())?;
 
     if let Some(err) = resp.get("error") {
-        let msg = err
-            .get("message")
-            .and_then(|m| m.as_str())
-            .unwrap_or("unknown RPC error")
-            .to_owned();
+        let msg =
+            err.get("message").and_then(|m| m.as_str()).unwrap_or("unknown RPC error").to_owned();
         warn!(backend, method, id, error = %msg, "agent-browser rpc error");
-        return Err(BrowserError::ProtocolError {
-            backend: backend.into(),
-            message: msg,
-        });
+        return Err(BrowserError::ProtocolError { backend: backend.into(), message: msg });
     }
 
-    resp.get("result")
-        .cloned()
-        .ok_or_else(|| BrowserError::ProtocolError {
-            backend: backend.into(),
-            message: "JSON-RPC response missing `result` field".into(),
-        })
+    resp.get("result").cloned().ok_or_else(|| BrowserError::ProtocolError {
+        backend: backend.into(),
+        message: "JSON-RPC response missing `result` field".into(),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -161,24 +149,14 @@ impl BrowserBackend for AgentBrowserBackend {
     async fn navigate(&mut self, url: &str) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
         let result = rpc_call(&mut io, "navigate", json!({ "url": url }), "agent-browser").await?;
-        let final_url = result
-            .get("url")
-            .and_then(|u| u.as_str())
-            .unwrap_or(url)
-            .to_owned();
+        let final_url = result.get("url").and_then(|u| u.as_str()).unwrap_or(url).to_owned();
         Ok(BrowserResponse::Navigated { url: final_url })
     }
 
     #[instrument(skip(self, src))]
     async fn eval_js(&mut self, src: &str) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "eval",
-            json!({ "src": src }),
-            "agent-browser",
-        )
-        .await?;
+        let result = rpc_call(&mut io, "eval", json!({ "src": src }), "agent-browser").await?;
         let value = result.get("value").cloned().unwrap_or(Value::Null);
         Ok(BrowserResponse::EvalResult { value })
     }
@@ -186,13 +164,8 @@ impl BrowserBackend for AgentBrowserBackend {
     #[instrument(skip(self))]
     async fn query_selector(&mut self, sel: &str) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "querySelector",
-            json!({ "selector": sel }),
-            "agent-browser",
-        )
-        .await?;
+        let result =
+            rpc_call(&mut io, "querySelector", json!({ "selector": sel }), "agent-browser").await?;
         let nodes = result.get("nodes").cloned().unwrap_or(Value::Array(vec![]));
         Ok(BrowserResponse::DomResult { nodes })
     }
@@ -204,7 +177,7 @@ impl BrowserBackend for AgentBrowserBackend {
             ScreenshotArea::Fullpage => json!({ "area": "fullpage" }),
             ScreenshotArea::Element { selector } => {
                 json!({ "area": "element", "selector": selector })
-            }
+            },
         };
         let mut io = self.io.lock().await;
         let result = rpc_call(&mut io, "screenshot", params, "agent-browser").await?;
@@ -225,13 +198,8 @@ impl BrowserBackend for AgentBrowserBackend {
         schema: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "extract",
-            json!({ "schema": schema }),
-            "agent-browser",
-        )
-        .await?;
+        let result =
+            rpc_call(&mut io, "extract", json!({ "schema": schema }), "agent-browser").await?;
         let data = result.get("data").cloned().unwrap_or(Value::Null);
         Ok(BrowserResponse::Extracted { data })
     }
@@ -242,18 +210,9 @@ impl BrowserBackend for AgentBrowserBackend {
         rule: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         let mut io = self.io.lock().await;
-        let result = rpc_call(
-            &mut io,
-            "intercept",
-            json!({ "rule": rule }),
-            "agent-browser",
-        )
-        .await?;
-        let rule_id = result
-            .get("rule_id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("0")
-            .to_owned();
+        let result =
+            rpc_call(&mut io, "intercept", json!({ "rule": rule }), "agent-browser").await?;
+        let rule_id = result.get("rule_id").and_then(|v| v.as_str()).unwrap_or("0").to_owned();
         Ok(BrowserResponse::InterceptInstalled { rule_id })
     }
 
@@ -268,16 +227,8 @@ impl BrowserBackend for AgentBrowserBackend {
             RecordState::Stop => "stop",
         };
         let mut io = self.io.lock().await;
-        rpc_call(
-            &mut io,
-            "record",
-            json!({ "id": id, "state": state_str }),
-            "agent-browser",
-        )
-        .await?;
-        Ok(BrowserResponse::RecordAck {
-            id: id.to_owned(),
-            state,
-        })
+        rpc_call(&mut io, "record", json!({ "id": id, "state": state_str }), "agent-browser")
+            .await?;
+        Ok(BrowserResponse::RecordAck { id: id.to_owned(), state })
     }
 }

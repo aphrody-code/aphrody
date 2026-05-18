@@ -3,13 +3,12 @@
 //!
 //! # Surface
 //!
-//! - [`TerminalConfig`] — top-level strongly-typed configuration struct, with
-//!   `denyUnknownFields` so any unrecognised key in the source JSON produces a
-//!   [`ConfigError::Validation`] error.
+//! - [`TerminalConfig`] — top-level strongly-typed configuration struct, with `denyUnknownFields`
+//!   so any unrecognised key in the source JSON produces a [`ConfigError::Validation`] error.
 //! - [`load_default`] — resolve `~/.aphrody/terminal.json`, falling back to
 //!   [`TerminalConfig::default`] when the file is missing.
-//! - [`load_from_path`] — load from an explicit path with the same
-//!   missing-file → default behaviour.
+//! - [`load_from_path`] — load from an explicit path with the same missing-file → default
+//!   behaviour.
 //! - [`validate`] — parse + validate an arbitrary JSON string.
 //! - [`schema_json`] — emit the generated JSON Schema as a UTF-8 string.
 //!
@@ -18,8 +17,8 @@
 //! Higher-level callers typically:
 //!
 //! 1. [`load_default`] to get the base [`TerminalConfig`].
-//! 2. [`shims::import_claude_json`] / [`shims::import_mcp_json`] /
-//!    [`shims::import_settings_json`] to gather adjacent tool config.
+//! 2. [`shims::import_claude_json`] / [`shims::import_mcp_json`] / [`shims::import_settings_json`]
+//!    to gather adjacent tool config.
 //! 3. [`merge::merge`] to fold them into a single effective config.
 //!
 //! # Strictness
@@ -31,7 +30,11 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-use std::{collections::BTreeMap, path::{Path, PathBuf}, fs};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -147,8 +150,8 @@ pub struct TerminalConfig {
 
 /// Resolve `~/.aphrody/terminal.json`.
 fn default_terminal_json_path() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
     Ok(home.join(".aphrody").join("terminal.json"))
 }
 
@@ -197,8 +200,7 @@ pub fn validate(json: &str) -> Result<()> {
 }
 
 fn parse_and_validate(json: &str) -> Result<TerminalConfig> {
-    serde_json::from_str::<TerminalConfig>(json)
-        .map_err(|e| ConfigError::validation(e.to_string()))
+    serde_json::from_str::<TerminalConfig>(json).map_err(|e| ConfigError::validation(e.to_string()))
 }
 
 /// Emit the JSON Schema for [`TerminalConfig`] as a pretty-printed UTF-8
@@ -212,14 +214,15 @@ fn parse_and_validate(json: &str) -> Result<TerminalConfig> {
 #[must_use]
 pub fn schema_json() -> String {
     let schema = schemars::schema_for!(TerminalConfig);
-    serde_json::to_string_pretty(&schema)
-        .unwrap_or_else(|_| "{\"$schema\":\"about:blank\",\"error\":\"schema serialisation failed\"}".to_owned())
+    serde_json::to_string_pretty(&schema).unwrap_or_else(|_| {
+        "{\"$schema\":\"about:blank\",\"error\":\"schema serialisation failed\"}".to_owned()
+    })
 }
 
 // ── Re-exports ────────────────────────────────────────────────────────────────
 
 pub use merge::merge;
 pub use shims::{
-    ClaudeShim, McpShim, PermissionsBlock, SettingsShim, Shim,
-    import_claude_json, import_mcp_json, import_settings_json,
+    ClaudeShim, McpShim, PermissionsBlock, SettingsShim, Shim, import_claude_json, import_mcp_json,
+    import_settings_json,
 };

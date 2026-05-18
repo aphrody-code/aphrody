@@ -9,14 +9,13 @@
 //!
 //! # Streaming semantics
 //!
-//! - **Snapshot mode** (`application/x-ndjson`): the file is read once,
-//!   line by line, and each non-empty line is emitted as a single chunk.
-//! - **SSE mode** (`text/event-stream`): each non-empty line is wrapped
-//!   in the canonical `data: <line>\n\n` envelope per the W3C
-//!   EventSource spec.
-//! - **Tail mode** ([`CoordProxy::tail_stream`]): polls the file size
-//!   periodically (default 250 ms) and emits any new bytes appended
-//!   past the last known offset, splitting them at newline boundaries.
+//! - **Snapshot mode** (`application/x-ndjson`): the file is read once, line by line, and each
+//!   non-empty line is emitted as a single chunk.
+//! - **SSE mode** (`text/event-stream`): each non-empty line is wrapped in the canonical `data:
+//!   <line>\n\n` envelope per the W3C EventSource spec.
+//! - **Tail mode** ([`CoordProxy::tail_stream`]): polls the file size periodically (default 250 ms)
+//!   and emits any new bytes appended past the last known offset, splitting them at newline
+//!   boundaries.
 //!
 //! Missing files are treated as the empty stream — never an error — so
 //! the route stays useful before the peer has produced any output.
@@ -28,16 +27,20 @@
 //! (here, the bun listener writing the `.coord/inbox-from-aphrody.jsonl`
 //! file). Empty lines (`""` after trimming `\r\n`) are dropped.
 
-use std::collections::VecDeque;
-use std::path::{Path, PathBuf};
-use std::pin::Pin;
-use std::time::Duration;
+use std::{
+    collections::VecDeque,
+    path::{Path, PathBuf},
+    pin::Pin,
+    time::Duration,
+};
 
 use futures_util::stream::{self, BoxStream, Stream, StreamExt};
 use thiserror::Error;
-use tokio::fs::File;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, BufReader, SeekFrom};
-use tokio::time;
+use tokio::{
+    fs::File,
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, BufReader, SeekFrom},
+    time,
+};
 
 /// Default polling interval for [`CoordProxy::tail_stream`].
 pub const DEFAULT_TAIL_INTERVAL: Duration = Duration::from_millis(250);
@@ -132,10 +135,7 @@ impl CoordProxy {
     /// yet exist. Missing files surface as empty streams at request time.
     #[must_use]
     pub fn new(jsonl_path: PathBuf) -> Self {
-        Self {
-            jsonl_path,
-            tail_interval: DEFAULT_TAIL_INTERVAL,
-        }
+        Self { jsonl_path, tail_interval: DEFAULT_TAIL_INTERVAL }
     }
 
     /// Override the tail-mode polling interval.
@@ -160,20 +160,13 @@ impl CoordProxy {
     ///
     /// Only fatal I/O errors propagate from this function. A missing
     /// file is **not** an error — it yields an empty body with `200 OK`.
-    pub async fn handle_get_coord(
-        &self,
-        accept: Option<&str>,
-    ) -> Result<HttpResponse, CoordError> {
+    pub async fn handle_get_coord(&self, accept: Option<&str>) -> Result<HttpResponse, CoordError> {
         let kind = CoordResponseKind::from_accept(accept);
         let body: Pin<Box<dyn Stream<Item = Result<String, CoordError>> + Send>> = match kind {
             CoordResponseKind::Snapshot => Box::pin(self.snapshot_stream().await?),
             CoordResponseKind::Sse => Box::pin(self.sse_snapshot_stream().await?),
         };
-        Ok(HttpResponse {
-            status: 200,
-            content_type: kind.content_type(),
-            body,
-        })
+        Ok(HttpResponse { status: 200, content_type: kind.content_type(), body })
     }
 
     /// One-shot snapshot: reads the file once and emits each non-empty
@@ -223,24 +216,14 @@ impl CoordProxy {
     /// first `.next().await` is reliably observed.
     pub async fn tail_stream(&self) -> BoxStream<'static, Result<String, CoordError>> {
         let offset = seed_offset(&self.jsonl_path).await;
-        Box::pin(tail_impl(
-            self.jsonl_path.clone(),
-            self.tail_interval,
-            false,
-            offset,
-        ))
+        Box::pin(tail_impl(self.jsonl_path.clone(), self.tail_interval, false, offset))
     }
 
     /// Like [`Self::tail_stream`] but each emitted item is already
     /// wrapped in the SSE `data: <line>\n\n` envelope.
     pub async fn tail_stream_sse(&self) -> BoxStream<'static, Result<String, CoordError>> {
         let offset = seed_offset(&self.jsonl_path).await;
-        Box::pin(tail_impl(
-            self.jsonl_path.clone(),
-            self.tail_interval,
-            true,
-            offset,
-        ))
+        Box::pin(tail_impl(self.jsonl_path.clone(), self.tail_interval, true, offset))
     }
 }
 
@@ -318,24 +301,14 @@ fn tail_impl(
     sse: bool,
     initial_offset: Option<u64>,
 ) -> impl Stream<Item = Result<String, CoordError>> + Send + 'static {
-    let init = TailState {
-        path,
-        interval,
-        sse,
-        offset: initial_offset,
-        pending: VecDeque::new(),
-    };
+    let init = TailState { path, interval, sse, offset: initial_offset, pending: VecDeque::new() };
 
     stream::unfold(Some(init), |maybe_state| async move {
         let mut state = maybe_state?;
         loop {
             // 1) Drain any buffered lines from a previous read.
             if let Some(line) = state.pending.pop_front() {
-                let item = if state.sse {
-                    encode_sse(&line)
-                } else {
-                    format!("{line}\n")
-                };
+                let item = if state.sse { encode_sse(&line) } else { format!("{line}\n") };
                 return Some((Ok(item), Some(state)));
             }
 
@@ -345,15 +318,15 @@ fn tail_impl(
                     // New lines were appended to `state.pending` — loop
                     // back to drain them.
                     continue;
-                }
+                },
                 Ok(false) => {
                     // Nothing new — sleep and poll again.
                     time::sleep(state.interval).await;
-                }
+                },
                 Err(e) => {
                     // Surface the error and terminate the stream.
                     return Some((Err(e), None));
-                }
+                },
             }
         }
     })
@@ -431,19 +404,14 @@ mod tests {
             CoordResponseKind::Sse,
         );
         assert_eq!(
-            CoordResponseKind::from_accept(Some(
-                "application/json, TEXT/EVENT-STREAM;q=0.9"
-            )),
+            CoordResponseKind::from_accept(Some("application/json, TEXT/EVENT-STREAM;q=0.9")),
             CoordResponseKind::Sse,
         );
     }
 
     #[test]
     fn from_accept_defaults_to_snapshot() {
-        assert_eq!(
-            CoordResponseKind::from_accept(None),
-            CoordResponseKind::Snapshot,
-        );
+        assert_eq!(CoordResponseKind::from_accept(None), CoordResponseKind::Snapshot,);
         assert_eq!(
             CoordResponseKind::from_accept(Some("application/json")),
             CoordResponseKind::Snapshot,
