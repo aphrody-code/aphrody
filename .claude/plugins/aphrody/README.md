@@ -90,15 +90,18 @@ cd ../ && bun install --silent
 | Workflow | `build`, `explore`, `move`, `yolo-prod-ready` |
 | Comms | `discord-bot` |
 
-## MCP servers (1 — fully unified)
+## MCP servers (1 first-party — plus any third-party you install)
 
-Since v0.5.0, all 4 previous MCP servers (`bxc-scrapper`, `bxc`,
-`github`, `context7`) are fused into a **single local stdio server**
-`aphrody` exposing **25 tools** across 5 domains.
+The in-tree `bxc-scrapper` + `bxc` dual-server config is fused into a
+**single first-party local stdio server** `aphrody` exposing **18 tools**
+across 3 domains.
 
 | Server | Type | Tools | Auth |
 |---|---|---|---|
-| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **25 tools** : scraping (7) via bxc-mcp Rust subprocess + memory (3) via Bun SQLite + aphrody CLI wrappers (8) + GitHub REST proxy (5) + Context7 docs proxy (2) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN`, `GITHUB_PERSONAL_ACCESS_TOKEN`, `CONTEXT7_API_KEY` env |
+| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **18 tools** : scraping (7) via bxc-mcp Rust subprocess + memory (3) via Bun SQLite + aphrody CLI wrappers (8) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN` env |
+
+Third-party SaaS MCPs (`github`, `context7`) are intentionally **not
+bundled** — install them in your own `.claude/settings.json` if needed.
 
 Full tool catalogue, architecture diagram, env reference, and standalone
 MCPB packaging instructions in [`mcp/aphrody/README.md`](mcp/aphrody/README.md).
