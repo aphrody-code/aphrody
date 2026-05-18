@@ -27,10 +27,6 @@ pub(crate) const BYPASS_ENGINES: &[&str] = &[
     "python", "pip", "git", "docker", "make", "cmake",
 ];
 
-/// Subcommands that always dispatch to `bun <cmd> …`.
-pub(crate) const BUN_COMMANDS: &[&str] =
-    &["x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback"];
-
 /// Subcommands that always dispatch to `uv <cmd> …`.
 pub(crate) const UV_COMMANDS: &[&str] = &[
     "auth", "version", "sync", "lock", "export", "tree", "format", "tool", "python", "pip", "venv",
@@ -63,8 +59,7 @@ pub(crate) const SCRIPT_EXTS: &[&str] = &[".py", ".js", ".ts", ".jsx", ".tsx", "
 pub(crate) const NL_ENGINE_TOKENS: &[&str] = &[
     // BYPASS_ENGINES
     "bun", "uv", "cargo", "winget", "apt", "go", "npm", "yarn", "pnpm", "node", "npx", "deno",
-    "python", "pip", "git", "docker", "make", "cmake", // BUN_COMMANDS
-    "x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback",
+    "python", "pip", "git", "docker", "make", "cmake",
     // UV_COMMANDS (python/pip already covered above; harmless dup, kept for grep-ability)
     "auth", "version", "sync", "lock", "export", "tree", "format", "tool", "venv", "cache", "self",
     // CARGO_COMMANDS (tree already in UV; harmless dup)
@@ -117,7 +112,7 @@ mod tests {
     // -----------------------------------------------------------------
     #[test]
     fn every_categorised_token_is_in_nl_engine_tokens() {
-        for cat in [BYPASS_ENGINES, BUN_COMMANDS, UV_COMMANDS, CARGO_COMMANDS, STANDARD_ACTIONS] {
+        for cat in [BYPASS_ENGINES, UV_COMMANDS, CARGO_COMMANDS, STANDARD_ACTIONS] {
             for tok in cat {
                 assert!(
                     NL_ENGINE_TOKENS.contains(tok),
