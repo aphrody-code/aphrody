@@ -506,8 +506,21 @@ fn as_mcp_result(id: Value, outcome: BxcResult) -> RpcResponse {
 // ── Env knobs ───────────────────────────────────────────────────────────────
 
 fn daemon_url() -> String {
-    let raw = std::env::var("BXC_DAEMON_URL").unwrap_or_else(|_| "http://127.0.0.1:8765".to_string());
-    raw.trim_end_matches('/').to_string()
+    parse_daemon_url(std::env::var("BXC_DAEMON_URL").ok().as_deref())
+}
+
+/// Pure parsing of the BXC_DAEMON_URL env value. Extracted from
+/// [`daemon_url`] so unit tests don't race on the global env (which can
+/// not be safely mutated from concurrent tests under cargo test default
+/// scheduling).
+fn parse_daemon_url(raw: Option<&str>) -> String {
+    let s = raw.unwrap_or("http://127.0.0.1:8765");
+    let trimmed = s.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        "http://127.0.0.1:8765".to_string()
+    } else {
+        trimmed.to_string()
+    }
 }
 
 fn timeout_ms() -> u64 {
@@ -576,22 +589,25 @@ mod tests {
 
     #[test]
     fn daemon_url_default_when_unset() {
-        // SAFETY: tests run single-threaded with --test-threads=1 by default.
-        unsafe {
-            std::env::remove_var("BXC_DAEMON_URL");
-        }
-        assert_eq!(daemon_url(), "http://127.0.0.1:8765");
+        assert_eq!(parse_daemon_url(None), "http://127.0.0.1:8765");
     }
 
     #[test]
     fn daemon_url_strips_trailing_slash() {
-        unsafe {
-            std::env::set_var("BXC_DAEMON_URL", "http://localhost:9999/");
-        }
-        assert_eq!(daemon_url(), "http://localhost:9999");
-        unsafe {
-            std::env::remove_var("BXC_DAEMON_URL");
-        }
+        assert_eq!(
+            parse_daemon_url(Some("http://localhost:9999/")),
+            "http://localhost:9999"
+        );
+    }
+
+    #[test]
+    fn daemon_url_trims_whitespace_and_falls_back_when_empty() {
+        assert_eq!(
+            parse_daemon_url(Some("   http://example.com   ")),
+            "http://example.com"
+        );
+        assert_eq!(parse_daemon_url(Some("")), "http://127.0.0.1:8765");
+        assert_eq!(parse_daemon_url(Some("   ")), "http://127.0.0.1:8765");
     }
 
     #[test]
