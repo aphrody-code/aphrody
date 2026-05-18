@@ -1611,9 +1611,12 @@ fn var_run_dir() -> anyhow::Result<std::path::PathBuf> {
 /// The daemon PID is written to `var/run/bxc.pid` so subsequent commands
 /// (and the user) can check whether the engine is alive.
 ///
-/// If `bxc-engine` is not on PATH, falls back to `bun run` against the
-/// worktree location `/c/worktree/bxc/` (Windows) or `/worktree/bxc/`
-/// (Linux).
+/// Resolves `bxc-engine` via `APHRODY_BXC_ENGINE_BIN` (override) or
+/// `which::which("bxc-engine")` (PATH). Per the 100% Rust policy
+/// (memory `feedback_aphrody_rust_only`) the previous `bun run` fallback
+/// against `/worktree/bxc/src/serve.ts` has been dropped: install the
+/// Rust binary instead (`cargo install --locked --path crates/bxc-engine`
+/// or via the workspace build artefacts).
 async fn bxc_daemon(port: u16) -> miette::Result<()> {
     let pid_dir = var_run_dir().map_err(|e| miette::miette!("{e}"))?;
     let pid_file = pid_dir.join("bxc.pid");
@@ -1635,18 +1638,24 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         }
     }
 
-    // Resolve the bxc-engine executable.
-    let (program, args): (&str, Vec<String>) = if which_in_path("bxc-engine") {
-        ("bxc-engine", vec!["serve".into(), format!("--port={port}")])
+    // Resolve the bxc-engine executable. Honour APHRODY_BXC_ENGINE_BIN
+    // override first, then fall back to PATH lookup via `which`.
+    let bin_path = if let Some(p) =
+        std::env::var("APHRODY_BXC_ENGINE_BIN").ok().filter(|s| !s.is_empty())
+    {
+        std::path::PathBuf::from(p)
     } else {
-        // Fallback: run via bun inside the worktree.
-        let bxc_worktree =
-            if cfg!(target_os = "windows") { "/c/worktree/bxc" } else { "/worktree/bxc" };
-        let entry = format!("{bxc_worktree}/src/serve.ts");
-        ("bun", vec!["run".into(), entry, format!("--port={port}")])
+        which::which("bxc-engine").map_err(|e| {
+            miette::miette!(
+                "Failed to locate `bxc-engine` on PATH: {e}. Install with: cargo install \
+                 --locked --path crates/bxc-engine (workspace binary) — or override via \
+                 APHRODY_BXC_ENGINE_BIN."
+            )
+        })?
     };
+    let args: Vec<String> = vec!["serve".into(), format!("--port={port}")];
 
-    let mut cmd = std::process::Command::new(program);
+    let mut cmd = std::process::Command::new(&bin_path);
     cmd.args(&args);
 
     // Detach from the terminal on Unix; on Windows use DETACHED_PROCESS.
@@ -1668,8 +1677,9 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         .spawn()
         .map_err(|e| {
             miette::miette!(
-                "Failed to spawn bxc-engine: {e}. Ensure `bxc-engine` is on PATH or \
-                 /c/worktree/bxc/ is checked out."
+                "Failed to spawn `{}`: {e}. Ensure `bxc-engine` is on PATH (cargo install \
+                 --locked --path crates/bxc-engine) or override with APHRODY_BXC_ENGINE_BIN.",
+                bin_path.display()
             )
         })?;
 
@@ -1705,18 +1715,6 @@ fn is_pid_alive(pid: u32) -> bool {
         let _ = pid;
         false
     }
-}
-
-/// Returns true if `name` resolves to an executable on PATH.
-fn which_in_path(name: &str) -> bool {
-    std::env::var_os("PATH")
-        .map(|path_var| {
-            std::env::split_paths(&path_var).any(|dir| {
-                let candidate = dir.join(name);
-                candidate.exists() || dir.join(format!("{name}.exe")).exists()
-            })
-        })
-        .unwrap_or(false)
 }
 
 async fn bxc_recon(url: &str) -> miette::Result<()> {
