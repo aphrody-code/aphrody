@@ -14,11 +14,11 @@
 # bun-src   = "vendor/bun/src"
 
 [build]
-# sccache 0.15.0 installed via WinGet -- active on this machine.
-# Linux CI: set RUSTC_WRAPPER via mozilla-actions/sccache-action.
-# To bypass temporarily: RUSTC_WRAPPER="" cargo ...
-rustc-wrapper  = "C:\\Users\\yohan\\AppData\\Local\\Microsoft\\WinGet\\Links\\sccache.exe"
-# Use 7 of 8 logical cores; leave 1 for linker + sccache overhead.
+# sccache 0.15.0+ — resolved from PATH (WinGet on Windows, ~/.cargo/bin on
+# Linux/macOS). Use `RUSTC_WRAPPER=""` to bypass for a single invocation.
+# Setting via PATH instead of hardcoded path lets the repo work on any host.
+rustc-wrapper  = "sccache"
+# 8 cores - 1 for linker + sccache overhead. Overridable via env CARGO_BUILD_JOBS.
 jobs           = 7
 
 
@@ -251,3 +251,22 @@ lint-fast      = ["clippy", "--workspace", "--message-format=short", "--offline"
 bench-fast     = ["bench", "--workspace", "--no-default-features", "--jobs", "4"]
 build-fast     = ["build", "--release", "-p", "aphrody", "--jobs", "7"]
 test-fast      = ["nextest", "run", "--workspace", "--no-fail-fast", "--jobs", "7"]
+
+# --- 2026 best-practices additions ---------------------------------------
+# Docs without dep recompile (sccache-friendly).
+doc-fast       = ["doc", "--workspace", "--no-deps", "--locked", "--offline"]
+# Tree of duplicate crates (catch version drift fast).
+dup-deps       = ["tree", "--workspace", "--duplicates"]
+# Quick fmt check (sub-second when warm).
+fmt-check      = ["fmt", "--all", "--", "--check"]
+# Outdated deps (requires cargo-outdated).
+outdated-w     = ["outdated", "--workspace", "--root-deps-only"]
+# Dependency update + lockfile refresh, scoped to workspace members only.
+upd-workspace  = ["update", "--workspace"]
+# Quick smoke : check the `aphrody` binary alone (sub-30s warm).
+smoke          = ["check", "-p", "aphrody", "--locked", "--offline", "--message-format=short"]
+# sccache stats (after a warm run, expect >70% hit rate).
+cache-stats    = ["+stable", "build", "-Z", "unstable-options", "--config", "build.rustc-wrapper=''", "-q"]
+
+# --- Future-incompat report (warn on next-edition deprecations) -----------
+future-report  = ["report", "future-incompatibilities"]
