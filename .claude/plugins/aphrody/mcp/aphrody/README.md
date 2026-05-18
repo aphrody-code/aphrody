@@ -1,13 +1,14 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody — unified MCP server
 
-**Single stdio server** replacing the previous `bxc-scrapper` + `bxc`
-dual-server config. Exposes **14 tools** spanning scraping, in-process
-memory, page vision, and aphrody CLI wrappers.
+**Single stdio server** replacing the previous 4-server config
+(`bxc-scrapper` + `bxc` + `github` + `context7`). Exposes **25 tools**
+spanning scraping, in-process memory, aphrody CLI, GitHub REST, and
+Context7 docs proxy.
 
-## Tool catalogue (14)
+## Tool catalogue (25)
 
-### Scraping — proxied to `bxc-mcp` Rust subprocess
+### Scraping (7) — proxied to `bxc-mcp` Rust subprocess
 | Tool | Args | Returns |
 |---|---|---|
 | `aphrody_scrape` | `url`, `selector?` (default `body`) | `[{index, text}]` |
@@ -18,20 +19,43 @@ memory, page vision, and aphrody CLI wrappers.
 | `aphrody_extract_structured` | `html`, `zod_schema_json` | typed JSON via local Gemma 4 |
 | `aphrody_vision_analyze` | `screenshot_path` | elements / text / colors / fonts / hierarchy |
 
-### In-process memory — Bun SQLite, no daemon
+### In-process memory (3) — Bun SQLite, no daemon
 | Tool | Args | Returns |
 |---|---|---|
 | `aphrody_memory_set` | `key`, `value` | `{ok, key}` (upsert) |
 | `aphrody_memory_get` | `key` | `{value, created_at, updated_at}` or `{value:null}` |
 | `aphrody_memory_list` | (none) | `[{key, created_at, updated_at}, ...]` |
 
-### aphrody CLI wrappers — exec native binary
+### aphrody CLI wrappers (8) — exec native binary
 | Tool | Args | Returns |
 |---|---|---|
 | `aphrody_doctor` | (none) | `aphrody doctor --json` parsed envelope |
 | `aphrody_version` | (none) | binary version + commit + target |
-| `aphrody_dns` | `domain` | OSINT passive DNS recon (multi-source subdomains) |
-| `aphrody_notify` | `channel` (slack/telegram/matrix), `message`, `room?` | confirmation or structured error |
+| `aphrody_dns` | `domain` | OSINT passive DNS recon |
+| `aphrody_notify` | `channel`, `message`, `room?` | confirmation or structured error |
+| `aphrody_scan_tree` | `root?`, `groups?`, `top_ext?` | size + file-count breakdown JSON |
+| `aphrody_scan_manifests` | `root?` | Cargo / package / pyproject sweep JSON |
+| `aphrody_chromium_sync` | (none) | Chromium profiles + master key (Windows-only) |
+| `aphrody_a2a_prompt` | `prompt` | A2A reply (falls back to Gemini CLI) |
+
+### GitHub REST proxy (5) — replaces cloud `github` MCP
+| Tool | Args | Returns |
+|---|---|---|
+| `aphrody_github_list_issues` | `owner`, `repo`, `state?`, `per_page?` | `Issue[]` |
+| `aphrody_github_create_issue` | `owner`, `repo`, `title`, `body?`, `labels?`, `assignees?` | created `Issue` |
+| `aphrody_github_list_prs` | `owner`, `repo`, `state?`, `per_page?` | `PullRequest[]` |
+| `aphrody_github_search_repos` | `q`, `sort?`, `per_page?` | `SearchResults` |
+| `aphrody_github_get_repo` | `owner`, `repo` | `Repository` metadata |
+
+Auth : `GITHUB_PERSONAL_ACCESS_TOKEN` env (scope `repo` or `public_repo`).
+
+### Context7 docs proxy (2) — replaces cloud `context7` MCP
+| Tool | Args | Returns |
+|---|---|---|
+| `aphrody_context7_resolve_library` | `library_name` | resolved library ID |
+| `aphrody_context7_get_docs` | `library_id`, `topic?`, `tokens?` | up-to-date library docs |
+
+Auth : `CONTEXT7_API_KEY` env.
 
 ## Architecture
 
