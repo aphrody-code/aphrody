@@ -106,6 +106,13 @@ enum Command {
 
         #[arg(long, short)]
         quiet: bool,
+
+        /// Path to a file with one cookie per line in `name=value` format.
+        /// Each cookie is injected into the browser context (domain derived
+        /// from the target URL) BEFORE navigation, enabling authenticated
+        /// fetches (X, GitHub, etc.). HttpOnly cookies are supported.
+        #[arg(long)]
+        cookies_file: Option<std::path::PathBuf>,
     },
 
     Scrape {
@@ -230,6 +237,7 @@ fn normalize_v8_flags(raw: Option<&str>) -> Option<String> {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let args = Args::parse();
 
     let quiet = is_quiet_command(&args.command);
@@ -271,9 +279,9 @@ async fn main() -> anyhow::Result<()> {
                 ).await?;
             }
         }
-        Some(Command::Fetch { url, dump, selector, wait, timeout, wait_until, user_agent, stealth, eval, output, quiet }) => {
+        Some(Command::Fetch { url, dump, selector, wait, timeout, wait_until, user_agent, stealth, eval, output, quiet, cookies_file }) => {
             reject_stealth_with_socks5(global_proxy.as_deref(), stealth)?;
-            run_fetch(&url, dump, selector, wait, timeout, &wait_until, user_agent, stealth, eval, output, quiet, global_proxy).await?;
+            run_fetch(&url, dump, selector, wait, timeout, &wait_until, user_agent, stealth, eval, output, quiet, global_proxy, cookies_file).await?;
         }
         Some(Command::Scrape { urls, eval, concurrency, format, timeout, quiet }) => {
             run_parallel_scrape(urls, eval, concurrency.get(), &format, timeout, quiet, global_proxy).await?;
@@ -470,6 +478,7 @@ async fn run_multi_worker_serve(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_fetch(
     url_str: &str,
     dump: DumpFormat,
@@ -483,6 +492,7 @@ async fn run_fetch(
     output: Option<std::path::PathBuf>,
     quiet: bool,
     proxy: Option<String>,
+    cookies_file: Option<std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     // --dump original short-circuits the browser stack entirely: fetch the raw
     // response body via HTTP and stream the bytes verbatim. Useful for binary
@@ -501,6 +511,42 @@ async fn run_fetch(
     }
 
     let context = Arc::new(BrowserContext::with_options("fetch".to_string(), proxy, stealth));
+
+    // --cookies-file injection : one `name=value` per line, domain derived
+    // from target URL (.host pattern). Done BEFORE navigation so the first
+    // request sends the Cookie header. HttpOnly cookies supported (jar-level,
+    // bypasses the document.cookie JS API restriction).
+    if let Some(path) = cookies_file.as_ref() {
+        let body = std::fs::read_to_string(path)
+            .map_err(|e| anyhow::anyhow!("Failed to read --cookies-file {}: {e}", path.display()))?;
+        let target_url = url::Url::parse(url_str)
+            .map_err(|e| anyhow::anyhow!("Invalid URL {}: {e}", url_str))?;
+        let host = target_url.host_str().unwrap_or_default();
+        // ".x.com" pattern: prefix the registered domain with a dot so the
+        // cookie matches all sub-domains (api.x.com, upload.x.com, …).
+        let cookie_domain = if host.matches('.').count() >= 1 {
+            format!(".{}", host.trim_start_matches("www."))
+        } else {
+            host.to_string()
+        };
+        let mut injected = 0usize;
+        for raw_line in body.lines() {
+            let line = raw_line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            // Build a Set-Cookie header the CookieJar parser understands.
+            let set_cookie = format!(
+                "{line}; Domain={cookie_domain}; Path=/; Secure; HttpOnly"
+            );
+            context.cookie_jar.set_cookie(&set_cookie, &target_url);
+            injected += 1;
+        }
+        if !quiet {
+            eprintln!("[cookies-file] injected {injected} cookie(s) for domain {cookie_domain}");
+        }
+    }
+
     let mut page = Page::new("fetch-page".to_string(), context);
 
     if let Some(ref ua) = user_agent {
@@ -1148,7 +1194,7 @@ mod tests {
 
     #[test]
     fn parsed_serve_command_is_not_quiet() {
-        let args = Args::try_parse_from(["obscura", "serve"])
+        let args = Args::try_parse_from(["obscura", "mcp"])
             .expect("clap should accept serve");
         assert!(!is_quiet_command(&args.command));
     }
@@ -1187,11 +1233,9 @@ mod tests {
             "obscura",
             "--v8-flags",
             "--max-old-space-size=2048",
-            "serve",
-            "--port",
-            "9333",
+            "mcp",
         ])
-        .expect("clap should accept --v8-flags with serve");
+        .expect("clap should accept --v8-flags with mcp");
         assert_eq!(args.v8_flags.as_deref(), Some("--max-old-space-size=2048"));
     }
 
@@ -1310,6 +1354,7 @@ mod tests {
             eval: None,
             quiet: true,
             output: None,
+            cookies_file: None,
         });
         assert!(is_quiet_command(&cmd));
     }
