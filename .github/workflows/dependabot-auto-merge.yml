@@ -62,7 +62,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Evaluate merge eligibility
         id: evaluate
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           DEPENDENCY_TYPE: ${{ steps.meta.outputs.dependency-type }}
@@ -117,7 +117,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Auto-merge eligible PR
         if: steps.evaluate.outputs.eligible == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -138,7 +138,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Comment — manual review required
         if: steps.evaluate.outputs.eligible == 'false'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
