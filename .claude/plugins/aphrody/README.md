@@ -90,20 +90,18 @@ cd ../ && bun install --silent
 | Workflow | `build`, `explore`, `move`, `yolo-prod-ready` |
 | Comms | `discord-bot` |
 
-## MCP servers (3 — unified local + 2 cloud)
+## MCP servers (1 — fully unified)
 
-Since v0.4.0, the previous `bxc-scrapper` + `bxc` dual-stdio config is
-fused into a **single local server `aphrody`** exposing 14 tools.
+Since v0.5.0, all 4 previous MCP servers (`bxc-scrapper`, `bxc`,
+`github`, `context7`) are fused into a **single local stdio server**
+`aphrody` exposing **25 tools** across 5 domains.
 
 | Server | Type | Tools | Auth |
 |---|---|---|---|
-| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **14 tools** : `aphrody_{scrape, recon, detect, search, atlas_route, extract_structured, vision_analyze}` (scraping via bxc-mcp Rust subprocess) + `aphrody_memory_{set, get, list}` (Bun SQLite) + `aphrody_{doctor, version, dns, notify}` (CLI exec wrappers) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN` env |
-| **`github`** | streamable-http | Official GitHub Copilot MCP. Issues, PRs, repos. | `GITHUB_PERSONAL_ACCESS_TOKEN` env |
-| **`context7`** | http | Library docs + version checking (preferred over WebSearch for lib docs). | `CONTEXT7_API_KEY` env |
+| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **25 tools** : scraping (7) via bxc-mcp Rust subprocess + memory (3) via Bun SQLite + aphrody CLI wrappers (8) + GitHub REST proxy (5) + Context7 docs proxy (2) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN`, `GITHUB_PERSONAL_ACCESS_TOKEN`, `CONTEXT7_API_KEY` env |
 
-The unified `aphrody` server ships its own `manifest.json` and can be
-packed as a standalone `.mcpb` bundle for distribution outside the
-plugin — see [`mcp/aphrody/README.md`](mcp/aphrody/README.md).
+Full tool catalogue, architecture diagram, env reference, and standalone
+MCPB packaging instructions in [`mcp/aphrody/README.md`](mcp/aphrody/README.md).
 
 ## Hooks (PostToolUse on Edit | Write | MultiEdit)
 

@@ -5,6 +5,45 @@ All notable changes to the `.claude/plugins/aphrody/` plugin. Format:
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-05-19
+
+### Added
+- **11 new tools in the unified `aphrody` MCP server** (14 → 25 total) :
+  - 4 aphrody CLI wrappers : `aphrody_scan_tree`, `aphrody_scan_manifests`,
+    `aphrody_chromium_sync`, `aphrody_a2a_prompt`.
+  - 5 GitHub REST proxy tools : `aphrody_github_list_issues`,
+    `aphrody_github_create_issue`, `aphrody_github_list_prs`,
+    `aphrody_github_search_repos`, `aphrody_github_get_repo`. Direct
+    `fetch()` against api.github.com with `GITHUB_PERSONAL_ACCESS_TOKEN`.
+  - 2 Context7 docs proxy tools : `aphrody_context7_resolve_library`,
+    `aphrody_context7_get_docs`. Direct `fetch()` against mcp.context7.com.
+- `manifest.json` user_config : 2 new sensitive fields (`github_token`,
+  `context7_api_key`) for MCPB bundle installs.
+
+### Changed
+- **`plugin.json` mcpServers** : `github` + `context7` cloud entries
+  removed. The unified `aphrody` server now proxies them as native tools,
+  reusing the same env vars (`GITHUB_PERSONAL_ACCESS_TOKEN`,
+  `CONTEXT7_API_KEY`). Single server entry, zero loss of functionality.
+- Plugin version 0.4.0 → 0.5.0.
+- `mcp/aphrody/` server version 0.1.0 → 0.2.0.
+- README rewrites : tool catalogue table now covers 5 categories
+  (scraping / memory / CLI / GitHub / Context7) instead of 3.
+
+### Removed
+- `github` cloud MCP server (streamable-http) — proxied by 5 unified
+  tools instead.
+- `context7` cloud MCP server (http) — proxied by 2 unified tools
+  instead.
+- `aphrody_search` CLI wrapper (was redundant with the bxc-proxied
+  `aphrody_search` Google SERP tool ; the CLI flavour was flaky).
+
+### Validation
+- 25/25 tools registered (was 14/14).
+- `bun run server/index.ts --list-tools` lists all 25 names.
+- `bun -e JSON.parse(...)` valid on plugin.json + manifest.json.
+- No duplicate-tool error after the rename pass.
+
 ## [0.4.0] — 2026-05-19
 
 ### Added
