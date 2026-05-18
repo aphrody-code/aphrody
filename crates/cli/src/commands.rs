@@ -1395,55 +1395,54 @@ impl TerminalCommand for TokensCommand {
 }
 
 // ── aphrody n2b ──────────────────────────────────────────────────────────────
+//
+// Sous-commande façade pour le binaire Rust `n2b` (upstream
+// https://github.com/aphrody-code/n2b, branche aphrody — déclaré en
+// workspace.dependencies via git). Avant 2026-05-18 cette façade
+// shellait vers `bun run packages/n2b/src/cli.ts` ; la policy 100% Rust
+// (memory feedback_aphrody_rust_only) interdit désormais bun, donc on
+// invoque le binaire natif compilé. Installation côté user :
+//
+//     cargo install --locked --git https://github.com/aphrody-code/n2b.git \
+//                   --branch aphrody n2b
+//
+// Le chemin du binaire peut être surchargé via `APHRODY_N2B_BIN`.
 
-/// Locate the `packages/n2b/src/cli.ts` entry-point relative to the repository
-/// root.  Falls back to `APHRODY_N2B_CLI` env override for packaged installs.
-fn resolve_n2b_cli() -> anyhow::Result<std::path::PathBuf> {
-    // 1. Explicit override (packaged install or CI).
-    if let Ok(v) = std::env::var("APHRODY_N2B_CLI") {
-        let p = std::path::PathBuf::from(v);
-        if p.exists() {
-            return Ok(p);
+/// Résout le binaire `n2b` à invoquer. Honore `APHRODY_N2B_BIN` puis se
+/// rabat sur la résolution PATH standard.
+fn resolve_n2b_bin() -> std::path::PathBuf {
+    if let Ok(v) = std::env::var("APHRODY_N2B_BIN") {
+        if !v.is_empty() {
+            return std::path::PathBuf::from(v);
         }
     }
-
-    // 2. Walk up from cwd to find the workspace root, then resolve the well-known path.
-    if let Some(root) = repo_root() {
-        let candidate = root.join("packages").join("n2b").join("src").join("cli.ts");
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-        return Err(anyhow::anyhow!(
-            "n2b CLI not found at {}. Run `bun install` inside packages/n2b/ first.",
-            candidate.display()
-        ));
-    }
-
-    Err(anyhow::anyhow!(
-        "Cannot locate repository root. Set APHRODY_N2B_CLI to the absolute path of \
-         packages/n2b/src/cli.ts."
-    ))
+    // Laisse `Command::new` faire la résolution PATH (cross-platform).
+    std::path::PathBuf::from("n2b")
 }
 
-/// Spawn `bun run <n2b-cli> -- <args>` and stream its stdout/stderr to the
-/// terminal.  A non-zero exit code is returned as an `anyhow::Error` so the
-/// caller can propagate it as a `SubprocessExit` through `miette`.
-async fn spawn_n2b(cli_path: &std::path::Path, args: &[String]) -> anyhow::Result<()> {
+/// Spawn `n2b <args>` (binaire Rust natif) et stream stdout/stderr.  Un
+/// code de sortie non nul est propagé comme `anyhow::Error`.
+async fn spawn_n2b(args: &[String]) -> anyhow::Result<()> {
     use tokio::{
         io::{AsyncBufReadExt, BufReader},
         process::Command,
     };
 
-    let mut cmd = Command::new("bun");
-    cmd.arg("run").arg(cli_path).arg("--").args(args);
+    let bin = resolve_n2b_bin();
+    let mut cmd = Command::new(&bin);
+    cmd.args(args);
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
     let mut child = cmd.spawn().map_err(|e| {
-        anyhow::anyhow!("Failed to spawn `bun`: {e}. Is bun installed and on PATH?")
+        anyhow::anyhow!(
+            "Failed to spawn `{}`: {e}. Install with: cargo install --locked --git \
+             https://github.com/aphrody-code/n2b.git --branch aphrody n2b \
+             (or override via APHRODY_N2B_BIN).",
+            bin.display()
+        )
     })?;
 
-    // Stream stdout.
     let stdout = child.stdout.take().expect("stdout piped");
     let stderr = child.stderr.take().expect("stderr piped");
 
@@ -1484,9 +1483,7 @@ impl TerminalCommand for N2bCommand {
             return self.execute_watch().await;
         }
 
-        let cli_path =
-            resolve_n2b_cli().map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
-        spawn_n2b(&cli_path, &self.args).await.map_err(|e| miette::miette!("{e}"))
+        spawn_n2b(&self.args).await.map_err(|e| miette::miette!("{e}"))
     }
 }
 
@@ -1526,9 +1523,6 @@ impl N2bCommand {
             }
         }
 
-        let cli_path =
-            resolve_n2b_cli().map_err(|e| miette::miette!("n2b CLI resolution failed: {e}"))?;
-
         eprintln!(
             "[n2b watch] interval={}s path={} — press Ctrl-C to stop",
             interval_s,
@@ -1536,7 +1530,7 @@ impl N2bCommand {
         );
 
         loop {
-            let mut scan_args = Vec::new();
+            let mut scan_args = vec!["scan".to_string()];
             if let Some(ref p) = scan_path {
                 scan_args.push(p.clone());
             }
@@ -1548,7 +1542,7 @@ impl N2bCommand {
                     eprintln!("[n2b watch] Ctrl-C received — exiting");
                     break;
                 }
-                result = spawn_n2b(&cli_path, &scan_args) => {
+                result = spawn_n2b(&scan_args) => {
                     if let Err(e) = result {
                         eprintln!("[n2b watch] scan error: {e}");
                     }
