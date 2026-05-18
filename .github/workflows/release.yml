@@ -76,6 +76,12 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: mozilla-actions/sccache-action@v0.0.10
 
+      - name: Install zig (cross-targets prerequisite)
+        if: ${{ matrix.cross == 'zigbuild' }}
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+
       - name: Install zigbuild (cross-targets)
         if: ${{ matrix.cross == 'zigbuild' }}
         uses: taiki-e/install-action@v2
@@ -88,6 +94,7 @@ jobs:
           tool: cargo-auditable
 
       - name: Build (auditable + reproducible profile)
+        shell: bash
         env:
           SOURCE_DATE_EPOCH: ${{ github.event.head_commit.timestamp && '1700000000' || '1700000000' }}
         run: |
