@@ -1,7 +1,8 @@
 ---
-description: Recon + targeted scrape on a URL via the aphrody CLI (which auto-starts the bxc Bun daemon on demand). Returns CDN, framework detection, headers, css selectors, status, bytes, and (optionally) selector-scoped text extraction.
+description: Recon + targeted scrape on a URL via the aphrody CLI (auto-starts bxc Bun daemon). Returns CDN, framework detection, headers, css selectors, status, bytes, and (optionally) selector-scoped text extraction.
 argument-hint: <url> [css-selector]
 allowed-tools: Bash, Read, Write
+model: sonnet
 ---
 
 # /scrape — aphrody recon + scrape (auto-start bxc)

@@ -1,0 +1,25 @@
+---
+# aphrody plugin per-project settings — template.
+#
+# Copy this file to `.claude/aphrody.local.md` at the root of any
+# project where you want the plugin's behaviour overridden.
+# After editing, restart Claude Code so hooks re-load.
+#
+# All fields are optional; defaults match production behaviour.
+
+enabled: true                  # set false to disable the plugin in this project
+bxc_driver: bun                # bun (default, full /api/* surface) | rust (CDP only)
+bxc_port: 8765                 # daemon port (matches BXC_DAEMON_URL default)
+bxc_auto_start: true           # auto-spawn `aphrody bxc daemon` on first scrape/tokens call
+hooks_blocking: false          # cargo-check hook: false=advisory, true=block on warnings
+log_level: info                # debug | info | warn | error
+---
+
+# Project notes (free-form)
+
+Anything below the second `---` is treated as free-form context that
+the plugin agents can read when relevant. Use it to record :
+
+- which folder of the repo the plugin should focus on
+- any project-specific overrides not covered by the frontmatter
+- a one-line description of the project for the `/status` summary
