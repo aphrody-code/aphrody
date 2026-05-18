@@ -121,6 +121,13 @@ description  = "aphrody — the ultimate cross-platform CLI (Linux/Windows/WASM)
 keywords     = ["cli", "cross-platform", "rust", "linux", "wasm"]
 categories   = ["command-line-utilities", "development-tools", "web-programming"]
 
+# Public-facing URLs propagated to each crate's metadata (visible on
+# crates.io / docs.rs). The X handle is the autonomous agent's own
+# account (created 2026-05-18) — distinct from the human maintainer.
+[workspace.package.metadata.urls]
+github = "https://github.com/aphrody-code/aphrody"
+x      = "https://x.com/aphrody_code"
+
 # ----------------------------------------------------------------------------
 # Centralized dependencies — every crate uses `{ workspace = true }`.
 # Caret MAJOR.MINOR; Cargo.lock pins exact patches for reproducibility.
