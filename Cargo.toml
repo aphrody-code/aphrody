@@ -66,6 +66,8 @@ members = [
     "crates/aphrody-terminal-config",
     # aphrody-tui — pure-Rust ratatui-style DSL (canonical long-term native TUI, 60fps target)
     "crates/aphrody-tui",
+    # aphrody-skills-runtime — SKILL.md aggregator (Rust port of packages/aphrody-skills, Phase 4.1)
+    "crates/aphrody-skills-runtime",
     # bxc rust-bridge
     "crates/bxc-engine",
     "crates/obscura-browser",
@@ -79,6 +81,9 @@ exclude = [
     "crates/coreutils",
     "crates/util-linux",
     "crates/a2a-slimrpc",
+    # aphrody-x-client : self-rooted workspace (intégrera root workspace
+    # plus tard quand agent-twitter-client 0.1.x stabilisé).
+    "crates/aphrody-x-client",
     # n2b-* : working copies de l'upstream aphrody-code/n2b@aphrody (cf.
     # memory project_aphrody_owned_tools). Workspace indépendant, conso
     # via workspace.dependencies git refs au lieu de path deps.
