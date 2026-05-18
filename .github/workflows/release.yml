@@ -74,6 +74,10 @@ jobs:
         with:
           toolchain: nightly
           targets: ${{ matrix.target }}
+          components: rust-src
+      - name: Ensure rust-std for target (rustup belt-and-suspenders)
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
       - uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Install zig (cross-targets prerequisite)
