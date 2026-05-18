@@ -78,7 +78,7 @@ pub const FALLBACK_DARK: &[(&str, &str)] = &[
 /// Returns `true` if `value` is the name of a known M3 token.
 #[must_use]
 pub fn is_m3_token(value: &str) -> bool {
-    TOKEN_NAMES.iter().any(|name| *name == value)
+    TOKEN_NAMES.contains(&value)
 }
 
 /// Resolves a color string to a CSS-compatible hex value: tokens go through
