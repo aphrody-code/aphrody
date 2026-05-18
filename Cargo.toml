@@ -79,6 +79,19 @@ exclude = [
     "crates/coreutils",
     "crates/util-linux",
     "crates/a2a-slimrpc",
+    # n2b-* : working copies de l'upstream aphrody-code/n2b@aphrody (cf.
+    # memory project_aphrody_owned_tools). Workspace indépendant, conso
+    # via workspace.dependencies git refs au lieu de path deps.
+    "crates/n2b-ai",
+    "crates/n2b-cli",
+    "crates/n2b-core",
+    "crates/n2b-github",
+    "crates/n2b-native",
+    "crates/n2b-registry",
+    "crates/n2b-report",
+    "crates/n2b-rules",
+    "crates/n2b-scanners",
+    "crates/n2b-types",
     # vendor/ retiré 2026-05-18 : ne contenait que des stubs Bun/uv/depot_tools
     # (interdits par la policy 100% Rust). Si on a besoin d'une référence Rust
     # vendored à l'avenir, recréer le dossier ad hoc.
