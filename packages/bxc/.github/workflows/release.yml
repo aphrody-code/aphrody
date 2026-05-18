@@ -1,0 +1,123 @@
+name: Release - Multi-Platform Artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    name: Build Artifacts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            artifact_name: bxc-linux-x64
+            bun_target: bun-linux-x64
+          - os: windows-latest
+            target: windows-x64
+            artifact_name: bxc-windows-x64
+            bun_target: bun-windows-x64
+          - os: macos-latest
+            target: macos-arm64
+            artifact_name: bxc-macos-arm64
+            bun_target: bun-darwin-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust-bridge
+
+      - name: Build Rust (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: cd rust-bridge && cargo build --release
+      
+      - name: Build Rust (Windows MSVC)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd rust-bridge
+          cargo build --release --target x86_64-pc-windows-msvc
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static -C target-cpu=x86-64-v3 -C lto=fat"
+
+      - name: Compile Standalone (Bun Bytecode)
+        run: |
+          mkdir -p dist/release
+          bun build --compile --target=${{ matrix.bun_target }} --minify --bytecode --outfile dist/release/bxc src/serverless/standalone.ts
+          cd packages/bxc-extension && bun build ./server.ts --compile --target=${{ matrix.bun_target }} --outfile ../../dist/release/bxc-mcp
+        if: matrix.os != 'windows-latest'
+
+      - name: Compile Standalone (Windows Bytecode)
+        run: |
+          mkdir dist\release
+          bun build --compile --target=${{ matrix.bun_target }} --minify --bytecode --outfile dist\release\bxc.exe src\serverless\standalone.ts
+          cd packages\bxc-extension && bun build .\server.ts --compile --target=${{ matrix.bun_target }} --outfile ..\..\dist\release\bxc-mcp.exe
+        if: matrix.os == 'windows-latest'
+
+      - name: Package Artifacts
+        shell: bash
+        run: |
+          cd dist/release
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            cp ../../rust-bridge/target/x86_64-pc-windows-msvc/release/bxc_rust_bridge.dll .
+            zip -r ../../${{ matrix.artifact_name }}.zip .
+          else
+            cp ../../rust-bridge/target/release/libbxc_rust_bridge.* .
+            tar -czvf ../../${{ matrix.artifact_name }}.tar.gz .
+          fi
+
+      - name: Generate Provenance (Attestations)
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            *.zip
+            *.tar.gz
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            *.zip
+            *.tar.gz
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Generate Checksums
+        run: |
+          find . -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print0 \
+            | xargs -0 sha256sum > SHA256SUMS.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            */*.zip
+            */*.tar.gz
+            SHA256SUMS.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
