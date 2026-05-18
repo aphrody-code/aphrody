@@ -24,7 +24,15 @@
     "documentation_url": "file:///C:/src/aphrody/docs/SOURCE_OF_TRUTH.md",
     "provider": {
       "organization": "Anthropic — Claude Code session, user yohanpierre15@gmail.com (gh: aphrody-code)",
-      "url": "https://claude.com/code"
+      "url": "https://claude.com/code",
+      "urls": {
+        "github": "https://github.com/aphrody-code",
+        "x": "https://x.com/aphrody_code"
+      }
+    },
+    "social": {
+      "x": "https://x.com/aphrody_code",
+      "github": "https://github.com/aphrody-code/aphrody"
     },
     "supported_interfaces": [
       {

@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-1.0.0--canary-orange.svg)](docs/PLAN.md)
 [![Rust](https://img.shields.io/badge/rust-nightly%201.97%20(edition%202024)-orange.svg)](rust-toolchain.toml)
-[![Bun](https://img.shields.io/badge/scripting-Bun%20(no%20node)-black.svg)](https://bun.sh)
+[![X](https://img.shields.io/badge/X-%40aphrody__code-black.svg?logo=x)](https://x.com/aphrody_code)
 [![Supply-chain](https://img.shields.io/badge/supply--chain-cargo--vet%20%2B%20cargo--deny-green.svg)](supply-chain/config.toml)
 [![Cross-platform](https://img.shields.io/badge/cross--platform-Linux%20%7C%20Win%20%7C%20wasm-blueviolet.svg)](docs/cargo/CROSS_PLATFORM.md)
 
