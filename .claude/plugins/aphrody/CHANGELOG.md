@@ -5,6 +5,55 @@ All notable changes to the `.claude/plugins/aphrody/` plugin. Format:
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-19
+
+### Added
+- **NEW unified MCP server `aphrody`** under
+  `mcp/aphrody/` — Bun stdio server fusing **14 tools** :
+  - 7 scraping tools proxied to the `bxc-mcp` Rust subprocess
+    (lazy-spawned on first scraping call) : `aphrody_scrape`,
+    `aphrody_recon`, `aphrody_detect`, `aphrody_search`,
+    `aphrody_atlas_route`, `aphrody_extract_structured`,
+    `aphrody_vision_analyze`.
+  - 3 in-process SQLite memory tools (no daemon) :
+    `aphrody_memory_set`, `aphrody_memory_get`, `aphrody_memory_list`.
+  - 4 aphrody CLI exec wrappers : `aphrody_doctor`, `aphrody_version`,
+    `aphrody_dns`, `aphrody_notify`.
+- MCPB manifest (`mcp/aphrody/manifest.json`, v0.4) so the server can be
+  packed standalone with `npx @anthropic-ai/mcpb pack` and dropped onto
+  Claude Desktop. 4 `user_config` settings exposed (bxc daemon URL,
+  memory DB path, aphrody binary, bxc-mcp binary).
+- `mcp/aphrody/README.md` with full architecture diagram, tool catalogue,
+  install instructions (plugin and MCPB), env var table, smoke tests,
+  and security notes.
+
+### Changed
+- **`plugin.json` MCP block** : `bxc-scrapper` + `bxc` (dual stdio
+  servers) replaced by a single `aphrody` stdio server pointing to
+  `${CLAUDE_PLUGIN_ROOT}/mcp/aphrody/server/index.ts`. `github` +
+  `context7` cloud servers kept as-is.
+- Version 0.3.1 → 0.4.0 (one-server unification = breaking change for
+  any external consumer that referenced the old MCP names).
+- Plugin description updated to mention the unified surface and the
+  14-tool fusion.
+
+### Removed
+- Standalone `bxc-scrapper` and `bxc` MCP entries from `plugin.json`.
+  Both functionalities are now served by the unified `aphrody` server.
+  (The `bxc-mcp` Rust binary and `packages/bxc/` Bun extension are still
+  used — just composed inside the new server, not exposed as separate
+  MCPs.)
+
+### Validation
+- `bun install` succeeds (93 deps, 7.5 s).
+- `bun run server/index.ts --list-tools` returns 14 tools with valid
+  JSON Schema draft-07 inputSchemas.
+- Full MCP handshake roundtrip OK (`initialize` →
+  `notifications/initialized` → `tools/list` → 14 tools listed →
+  `tools/call name=aphrody_version` → real binary output).
+- `aphrody_memory_set` + `aphrody_memory_get` roundtrip OK on
+  `$HOME/.aphrody/aphrody-memory.sqlite`.
+
 ## [0.3.1] — 2026-05-19
 
 ### Added

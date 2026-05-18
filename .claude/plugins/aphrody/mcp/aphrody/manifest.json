@@ -1,0 +1,72 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "aphrody",
+  "version": "0.1.0",
+  "description": "Unified aphrody MCP server. One stdio surface for scraping (bxc-mcp Rust subprocess), in-process SQLite memory + page vision, and the native `aphrody` CLI (scrape/recon/detect/tokens/doctor/dns/notify). Replaces the previous bxc-scrapper + bxc dual-server config in one bundle.",
+  "author": {
+    "name": "aphrody-code",
+    "email": "37252373+aphrody-code@users.noreply.github.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "homepage": "https://github.com/aphrody-code/aphrody",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aphrody",
+    "bxc",
+    "scraping",
+    "material-design-3",
+    "memory",
+    "vision",
+    "unified",
+    "mcp"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.ts",
+    "mcp_config": {
+      "command": "bun",
+      "args": ["run", "${__dirname}/server/index.ts"],
+      "env": {
+        "BXC_DAEMON_URL": "${user_config.bxc_daemon_url}",
+        "BXC_MEMORY_DB": "${user_config.memory_db_path}",
+        "APHRODY_BIN": "${user_config.aphrody_bin}",
+        "BXC_MCP_BIN": "${user_config.bxc_mcp_bin}"
+      }
+    }
+  },
+  "user_config": {
+    "bxc_daemon_url": {
+      "type": "string",
+      "title": "bxc daemon URL",
+      "description": "Base URL of the bxc Bun /api/* daemon. Defaults to local.",
+      "default": "http://127.0.0.1:8765",
+      "required": false
+    },
+    "memory_db_path": {
+      "type": "file",
+      "title": "Memory SQLite path",
+      "description": "Where the in-process memory tools persist data. Auto-created if missing.",
+      "default": "${HOME}/.aphrody/aphrody-memory.sqlite",
+      "required": false
+    },
+    "aphrody_bin": {
+      "type": "string",
+      "title": "aphrody CLI binary",
+      "description": "Absolute path to the `aphrody` binary. Leave blank to resolve via $PATH (`which aphrody`).",
+      "default": "aphrody",
+      "required": false
+    },
+    "bxc_mcp_bin": {
+      "type": "string",
+      "title": "bxc-mcp Rust binary",
+      "description": "Absolute path to the `bxc-mcp` binary that backs the 7 scraping tools. Leave blank to resolve via $PATH.",
+      "default": "bxc-mcp",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}
