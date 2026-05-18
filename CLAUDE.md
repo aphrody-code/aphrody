@@ -24,6 +24,80 @@ la compilation sur Linux** : il est strictement gated `#[cfg(target_os = "window
 L'ancien sous-projet `google_os` (kernel emulator hybride Win-NT) a été **sorti
 du workspace** (archivé sous `C:\google-os-archive\`). Ne pas le réintroduire.
 
+## 0.3. Exception Rust-only : fusion bxc (2026-05-19)
+
+`packages/bxc/` est la **fusion in-tree du projet `aphrody-code/bxc`** (browser
+engine Bun + Lightpanda + curl-impersonate Chrome 131 + CDP-compat). Décision
+utilisateur 2026-05-19 : on importe le projet bxc *tel quel*, **TS/Bun/Zig
+inclus**, suspendant temporairement la règle [[feedback_aphrody_rust_only]]
+pour ce sous-arbre uniquement.
+
+Layout en place :
+
+- `packages/bxc/` — mirror complet du repo `aphrody-code/bxc` (12 MB) : sous-workspace
+  Bun avec `packages/{api,bxc-extension,llm-extract,omnistack}`, `src/` (cdp,
+  ffi, mirror, profiles, scrapers, …), `rust-bridge/` (sous-workspace Rust FFI),
+  `bin/bxc`, `Makefile`, `package.json`, `bun.lock` (excluded), `tsconfig.json`,
+  `turbo.json`. Exclus du mirror : `.git`, `node_modules`, `target`, `dist`,
+  `build`.
+- `scripts/bxc/` — 20 scripts utilitaires bxc (`build-windows.{ps1,ts}`,
+  `build-standalone.ts`, `cron-scheduler.ts`, `god-mode-executor.ts`,
+  `apply-bxc-rebrand.ts`, `backup-bxc.sh`, …) exposés au niveau scripts/ pour
+  découvrabilité.
+- `docs/bxc/` — `docs/` complet de bxc + tous les .md racine (`CLAUDE.md`,
+  `GEMINI.md`, `MEGA-PLAN.md`, `SKILLS.md`, `README.md`, `CHANGELOG.md`,
+  `PUBLISHING.md`, `CONTRIBUTING.md`, `AGENTS-ARCHITECTURE.json`).
+
+Conséquences :
+
+- Le CLI `aphrody {tokens, scrape, bxc detect, bxc daemon}` peut désormais
+  être branché soit sur `crates/bxc-engine/` (Rust workspace), soit sur
+  `packages/bxc/bin/bxc` (Bun binary), au choix du runtime ; pas de duplication
+  fonctionnelle — `crates/bxc-engine` reste l'implémentation Rust canonique
+  (cf. memory [[project_aphrody_owned_tools]]), `packages/bxc/` est la
+  référence amont avec features TS bleeding-edge (MCP server, GraphQL,
+  extension VSCode).
+- Toolchain ajouté requis pour build : `bun >= 1.3.14`, `zig` (pour
+  `packages/omnistack/src/native/omni.zig`). N'affecte pas le build Rust
+  workspace (les deux sont indépendants).
+- `node_modules/` reste gitignored globalement (`.gitignore:21`).
+
+## 0.4. État binaire installé (snapshot 2026-05-19)
+
+`cargo build --release -p aphrody --locked` → `target/x86_64-pc-windows-msvc/release/aphrody.exe`
+(8.3 MB, 3 min 28 s) copié dans `~/.local/bin/aphrody.exe` (PATH déjà résolu,
+convention memory `feedback_clone_path_c_src`).
+Smoke matrix complète des 27 sous-commandes dans
+[`docs/PLAN.md` §P-Test](docs/PLAN.md#phase-p-test--validation-end-to-end-binaire-install%C3%A9-2026-05-19) :
+**19 ✅ / 3 ⚠️ / 5 ❌**.
+
+Gaps critiques à clore avant publish-ladder :
+
+- **`bxc-engine` dep manquante** dans `aphrody self bootstrap` — sans ça,
+  `aphrody {tokens, scrape, bxc detect, bxc daemon}` échouent out-of-the-box.
+  Fix : `cargo install --locked --path crates/bxc-engine` automatisé dans
+  bootstrap, ou copie `target/release/bxc-engine[.exe]` → `~/.local/bin/`.
+- **`coreutils` / `util-linux` orphans** — `crates/coreutils/` et
+  `crates/util-linux/` sont *hors workspace* (cf. §4 "Hors workspace") mais
+  les commandes `aphrody coreutils|util-linux` restent wired dans
+  `crates/cli/src/main.rs` et plantent `os error 267`. Fix : cfg-gate ou
+  retrait des variants `Commands` enum, sinon binaires distincts.
+- **`mirror`** silent exit 0 sans log — vérifier intention (no-op ou
+  background spawn ?), ajouter `[ok] mirror started (…)` ou `[skip]`.
+- **`search`** Google scraping retourne 0 (Google bloque) — ajouter fallback
+  DuckDuckGo HTML / Brave Search API.
+- **`aphrody version --json`** absent (parity manquante avec
+  `aphrody doctor --json` qui marche déjà).
+
+Outputs validés OK : `version`, `doctor` (+`--json`), `self bootstrap --check`,
+`completions {5 shells}`, `scan {tree, manifests}`, `dns` (287 sous-domaines
+sur google.com), `a2a "ping"` → **"pong"** via fallback Gemini CLI,
+`notify` (erreur structurée propre sans creds),
+`oc-{onboard, pairing, reset, uninstall, docs}` (incl. `--dry-run` chains),
+`chromium sync` (7 profils + master key déchiffrée),
+`term` (WS server `ws://127.0.0.1:18799` prêt), `gemini --version` (0.42.0),
+`n2b scan` (0.6.0).
+
 ## 0.5. MISSION DU JOUR — clore PLAN.md ⏳ items (2026-05-18+)
 
 `docs/PLAN.md` recense ~14 items `⏳` actionables sans intervention humaine.

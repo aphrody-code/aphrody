@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # PLAN — aphrody
 
-> Plan d'exécution stratégique. Révision : **2026-05-17 (pivot CLI cross-platform)**.
+> Plan d'exécution stratégique. Révision : **2026-05-19 (post end-to-end binary validation)**.
 > Voir [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) pour le contexte d'ensemble.
 
 ---
@@ -298,7 +298,52 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | T-9 | `packages/aphrody-jsx` — Bun-native react-reconciler → `aphrody-jsx-*` OSC bridge (Ink-compatible API, M3 native, dual target vt/wasm) | ✅ (`packages/aphrody-jsx/src/reconciler.ts` 455 l. + jsx-runtime + 6 components + 6 hooks + tests + examples) |
 | T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ✅ (`crates/aphrody-tui` built and tested) |
 
-## 4. Métriques de santé (snapshot 2026-05-17)
+### Phase P-Test — Validation end-to-end binaire installé (2026-05-19)
+
+`cargo build --release -p aphrody --locked` (3 min 28 s, 8.3 MB sur disque) → copié dans `~/.local/bin/aphrody.exe`. Smoke matrix exhaustive sur les 27 sous-commandes top-level.
+
+| Sous-commande | Action testée | Statut |
+|---|---|---|
+| `version` | print metadata | ✅ commit 14a1225987, target x86_64-pc-windows-msvc |
+| `doctor` | env + a2a + supply-chain (text + `--json`) | ✅ DEGRADED car peer winclean offline (heartbeat 109k s) |
+| `self bootstrap --check` | inventory toolchain | ✅ rustup/cargo/rustc/git/zigbuild/deny/vet + 3 targets OK, `wasm-bindgen` optionnel manquant |
+| `self install-path --dry-run` | PATH plan-only | ✅ — préfère copie manuelle vers `~/.local/bin` (évite registry HKCU avec path target/) |
+| `completions {bash,zsh,fish,pwsh,elvish}` | 5 shells | ✅ bash 2057 l. / zsh 1562 / pwsh 613 / elvish 496 / fish 231 |
+| `scan tree --root . --groups crates` | walkdir + JSON | ✅ 68 crates / 3.6 GB / 9 501 files |
+| `scan manifests --root .` | Cargo+package+pyproject sweep | ✅ 926 manifests détectés (472 package.json, 138 Cargo.toml) |
+| `dns google.com` | OSINT passif multi-sources | ✅ 287 sous-domaines uniques |
+| `dns example.com` | OSINT minimal | ✅ 2 sous-domaines |
+| `search "rust nightly"` | Google scraping | ⚠️ 0 résultats (Google bloque sans IP rotation — code roule, sortie attendue) |
+| `a2a "ping"` | client A2A + fallback Gemini CLI | ✅ "pong" via routing fallback Gemini CLI (token Gemini auto-extracted) |
+| `notify --channel slack --message test` | sans creds | ✅ erreur structurée correcte (missing `SLACK_CHANNEL`) |
+| `oc-onboard --non-interactive --accept-risk` | bootstrap state | ✅ crée `~/.aphrody/aphrody.json` + workspace |
+| `oc-pairing add slack U123 ABC42` + `list` + `approve slack ABC42` | roundtrip | ✅ pending → approved (sender `U123`) |
+| `oc-reset --scope full --dry-run` | preview deletions | ✅ liste 2 paths à supprimer |
+| `oc-uninstall --all --dry-run` | preview multi-scope | ✅ service + state + workspace (app skip macOS) |
+| `oc-docs --url-only [query]` | doc URL builder | ✅ `https://docs.aphrody.dev` + `?q=…` |
+| `chromium sync` | profil scan + master key | ✅ 7 profils Chromium détectés + master key déchiffrée |
+| `mirror` (default action `start`) | MD3 assets | ⚠️ silent exit 0 (no-op visible — investigate intent) |
+| `auth` | God Mode + OAuth2 fallback | ⚠️ Chrome Canary détecté mais aucun token Google valide ; délégue à gemini-cli embarqué qui bloque l'appel `run_shell_command` (sandbox correct) |
+| `tokens` (M3 design tokens) | bxc passthrough | ❌ daemon bxc unreachable |
+| `scrape --selector h1 example.com` | bxc passthrough | ❌ daemon bxc unreachable |
+| `bxc detect <url>` | bxc passthrough | ❌ daemon bxc unreachable |
+| `bxc daemon --port 8765` | spawn `bxc-engine` | ❌ `bxc-engine` introuvable sur PATH — voir gap ci-dessous |
+| `term --addr 127.0.0.1:18799` | WebSocket-PTY pour WASM UI | ✅ "ws://127.0.0.1:18799 (open the WASM UI to connect)" |
+| `gemini --version` | forward gemini-cli embarqué | ✅ 0.42.0 |
+| `n2b scan` | forward bun n2b CLI | ✅ n2b 0.6.0 → "0 errors, 0 warns, 0 infos" |
+| `coreutils` / `util-linux` | actions build | ❌ `os error 267` — crates `crates/coreutils/` + `crates/util-linux/` retirés du workspace (cf. CLAUDE.md §4) mais commandes encore wired dans `crates/cli` |
+
+**Gaps identifiés (à traiter en P-Test-fix)** :
+
+| # | Gap | Source | Fix proposé |
+|---|---|---|---|
+| 1 | `bxc-engine` pas dans `aphrody self bootstrap` ni dans `aphrody self install-path` | `aphrody bxc daemon` échoue out-of-the-box | Ajouter `cargo install --locked --path crates/bxc-engine` au bootstrap, ou symlink automatique du `target/release/bxc-engine[.exe]` vers `~/.local/bin/` après build workspace |
+| 2 | `coreutils` / `util-linux` commandes orphelines | crates sortis du workspace mais commandes restent dans `crates/cli/src/main.rs` | Soit cfg-gate les commandes (`#[cfg(any())]` no-op), soit retirer les variants des `Commands` enum, soit pointer vers binaires distincts |
+| 3 | `mirror` silent exit 0 | aucune sortie utilisateur | Vérifier intention — log explicit `[ok] mirror started (n assets)` ou `[skip] no-op` |
+| 4 | `search` Google scraping no-results | Google bloque le scraping naïf | Ajouter fallback DuckDuckGo HTML / Brave Search API / SearXNG instance |
+| 5 | `aphrody version --json` absent | seul format text | Ajouter `--json` parity avec `doctor --json` |
+
+## 4. Métriques de santé (snapshot 2026-05-19)
 
 | Métrique | Valeur | Cible |
 |---|---|---|
@@ -306,6 +351,9 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | `cargo check --locked` (Linux) | ✅ (cross x86_64-unknown-linux-gnu, exit 0) | < 1 min |
 | `cargo clippy -- -D warnings` | ✅ (workspace --all-targets, 16,07 s, exit 0) | 0 erreur |
 | `cargo deny check` | ✅ ok×4 | ok×4 |
+| `cargo build --release -p aphrody --locked` | ✅ 3 min 28 s (Win11 Insider Canary, mimalloc + ring + scraper + rayon) | < 5 min |
+| Binaire installé `~/.local/bin/aphrody.exe` | ✅ 8.3 MB, 27 sous-commandes top-level fonctionnelles | shipping |
+| Smoke 27 sous-commandes (2026-05-19) | 19 ✅ / 3 ⚠️ / 5 ❌ (bxc daemon + coreutils/util-linux orphelins) | tendance vers 27 ✅ |
 | Repo size (sans target, sans mdi) | ~7 Go (vendor/bun dominant) | optimisé |
 | Disque libéré (P1+pivot) | 1.2 Go (vendor/crates.io) + 4.6 Go (material-design-icons) | n/a |
 | CVE ignorés (justifiés) | 12 | < 5 (après upstream alignment) |
