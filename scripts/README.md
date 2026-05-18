@@ -47,8 +47,8 @@ best-effort, cf. `CLAUDE.md` §0).
 | ---------------------------- | --------------------------------------------------------------- |
 | `ievr-serve.ps1`             | Bootstrap bun :8787 (IEVR ops).                                 |
 | `ievr-verify.ps1`            | Gates 1+2/5 — HTTP 200 + Edge screenshot.                       |
-| `scan-manifests.ps1`         | Audit `*.toml` / `package.json` across workspace.               |
-| `scan-tree.ps1`              | Filesystem tree snapshot for audit.                             |
+| ~~`scan-manifests.ps1`~~     | Replaced by `aphrody scan manifests` (Rust, cross-platform).    |
+| ~~`scan-tree.ps1`~~          | Replaced by `aphrody scan tree` (Rust, cross-platform).         |
 | `archive-crates.ps1`         | Move a crate out of workspace into `C:\aphrody-archive\`.       |
 | `archive-google-os.ps1`      | Specific archival for legacy `google_os` crate.                 |
 | `drop-purged-dirs.ps1`       | Remove purged build artefact directories.                       |
