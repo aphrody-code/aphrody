@@ -15,10 +15,17 @@ target/
 # NOTE: supply-chain/imports.lock IS tracked (cargo-vet feed pins).
 
 # ----------------------------------------------------------------------------
-# 2. Bun / Node / npm  (node is FORBIDDEN â€” only bun.lock is committed)
+# 2. Bun / Node / npm  (all FORBIDDEN — repo is 100% Rust since 2026-05-18,
+#    cf. CLAUDE.md §2 + memory feedback_aphrody_rust_only)
 # ----------------------------------------------------------------------------
 node_modules/
+bun.lock
 bun.lockb
+bunfig.toml
+turbo.json
+turbo.jsonc
+tsconfig.json
+tsconfig.*.json
 .npm/
 .npmrc
 .yarn/
