@@ -1,0 +1,25 @@
+# Self-rooted workspace pour éviter toute collision avec les agents bg
+# qui éditent simultanément le root Cargo.toml. À folder dans le root
+# workspace.members plus tard, une fois tous les ports stabilisés.
+[workspace]
+
+[package]
+name        = "aphrody-x-client"
+version     = "0.1.0"
+edition     = "2024"
+license     = "Apache-2.0"
+description = "aphrody — X / Twitter client (cookie-based auth, no API key required, agent-twitter-client wrapper)"
+repository  = "https://github.com/aphrody-code/aphrody"
+
+[[bin]]
+name = "aphrody-x"
+path = "src/main.rs"
+
+[dependencies]
+agent-twitter-client = "0.1.2"
+tokio                = { version = "1.52", features = ["full"] }
+clap                 = { version = "4", features = ["derive", "env"] }
+anyhow               = "1"
+dotenvy              = "0.15"
+serde                = { version = "1", features = ["derive"] }
+serde_json           = "1"
