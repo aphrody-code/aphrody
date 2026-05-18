@@ -1,0 +1,29 @@
+[package]
+name                    = "aphrody-xtask"
+publish                 = false
+version.workspace       = true
+edition.workspace       = true
+rust-version.workspace  = true
+license.workspace       = true
+repository.workspace    = true
+authors.workspace       = true
+description             = "aphrody — workspace dev tasks (Rust port of scripts/*.ts). Invoked via `cargo xtask <op>`."
+
+[[bin]]
+name = "aphrody-xtask"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+clap            = { workspace = true }
+anyhow          = { workspace = true }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+serde_yaml      = { workspace = true }
+walkdir         = { workspace = true }
+tempfile        = { workspace = true }
+fs_extra        = { workspace = true }
+tracing         = { workspace = true }
+tracing-subscriber = { workspace = true }

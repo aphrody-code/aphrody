@@ -176,6 +176,9 @@ quiet   = false
 [alias]
 # Hermetic CI: lockfile must match Cargo.toml, no network access permitted.
 ci             = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--", "-D", "warnings"]
+# aphrody-xtask — Rust port of scripts/*.ts. Adds sub-commands progressively
+# (cf. docs/PLAN_RUST_ONLY.md Phase 2). `cargo xtask skills-sync <owner>/<repo>`.
+xtask          = ["run", "--quiet", "-p", "aphrody-xtask", "--release", "--"]
 ci-offline     = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--offline", "--", "-D", "warnings"]
 ci-frozen      = ["clippy", "--workspace", "--all-targets", "--all-features", "--frozen",  "--", "-D", "warnings"]
 xt             = ["nextest", "run", "--workspace", "--all-features", "--locked"]
