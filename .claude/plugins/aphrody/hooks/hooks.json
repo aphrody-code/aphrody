@@ -1,5 +1,6 @@
 {
   "$schema": "https://code.claude.com/schema/hooks.json",
+  "description": "aphrody PostToolUse hooks: cargo check (advisory) + cargo xtask toml-validate (blocking). Both run after Edit/Write/MultiEdit and surface stderr to Claude.",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,12 +9,12 @@
           {
             "type": "command",
             "command": "cargo check --workspace --message-format json --locked --offline",
-            "timeout": 60000
+            "timeout": 60
           },
           {
             "type": "command",
             "command": "cargo xtask toml-validate",
-            "timeout": 30000
+            "timeout": 30
           }
         ]
       }
