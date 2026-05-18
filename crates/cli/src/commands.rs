@@ -634,30 +634,43 @@ pub(crate) struct GeminiCommand {
 #[async_trait]
 impl TerminalCommand for GeminiCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        let root_dir = std::env::current_dir()
-            .map_err(|e| miette::miette!("Failed to get current directory: {}", e))?;
-        
-        let script_path = root_dir.join("packages").join("gemini").join("core").join("index.ts");
-        
-        if !script_path.exists() {
-            return Err(miette::miette!("Shared Gemini CLI script not found at {}", script_path.display()));
-        }
+        // Invoque le binaire `gemini` (CLI Google natif, installable via
+        // `npm install -g @google/gemini-cli` côté user OU déjà détecté
+        // sur PATH par crates/gemini-runtime). La policy 100% Rust (memory
+        // feedback_aphrody_rust_only) interdit `bun run packages/...` :
+        // on délègue ici au binaire système comme on le fait pour n2b.
+        //
+        // Sur Windows, `Command::new("gemini")` ne consulte pas PATHEXT —
+        // npm shippe le shim en `.cmd`. On utilise donc `which` pour
+        // résoudre le chemin absolu cross-platform, avec override possible
+        // via `APHRODY_GEMINI_BIN`.
+        let bin_path = if let Some(p) =
+            std::env::var("APHRODY_GEMINI_BIN").ok().filter(|s| !s.is_empty())
+        {
+            std::path::PathBuf::from(p)
+        } else {
+            which::which("gemini").map_err(|e| {
+                miette::miette!(
+                    "Failed to locate `gemini` on PATH: {e}. Install with: \
+                     npm install -g @google/gemini-cli (le binaire Google \
+                     n'a pas encore d'équivalent Rust upstream) — ou \
+                     override via APHRODY_GEMINI_BIN."
+                )
+            })?
+        };
 
-        let mut cmd = std::process::Command::new("bun");
-        cmd.arg("run").arg(&script_path).args(&self.args);
+        let mut cmd = std::process::Command::new(&bin_path);
+        cmd.args(&self.args);
 
-        let status = cmd.status()
-            .map_err(|e| miette::miette!("Erreur d'exécution de Bun: {}", e))?;
+        let status = cmd.status().map_err(|e| {
+            miette::miette!("Failed to spawn `{}`: {e}", bin_path.display())
+        })?;
 
         if !status.success() {
             return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
         }
         Ok(())
     }
-}
-
-impl GeminiCommand {
-    // Left empty since we removed the binary resolution logic
 }
 
 pub(crate) struct SearchCommand {
