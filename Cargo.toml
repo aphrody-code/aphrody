@@ -290,6 +290,14 @@ rusqlite           = { version = "0.37", features = ["bundled"] }
 denokv_sqlite      = { version = "0.13" }
 denokv_proto       = { version = "0.13" }
 deno_error         = { version = "0.7" }
+# LanceDB: serverless vector database, pure Rust + Arrow.  Used by
+# aphrody-memory's LanceDB backend (ported from openclaw/extensions/memory-lancedb).
+# Pinned matched arrow/arrow-array/arrow-schema versions to keep the
+# FixedSizeList vector column compatible with lancedb's expected types.
+lancedb            = { version = "0.29", default-features = false }
+arrow              = { version = "58" }
+arrow-array        = { version = "58" }
+arrow-schema       = { version = "58" }
 
 # --- UI / desktop ---------------------------------------------------------
 wry                = { version = "0.55" }
