@@ -60,6 +60,14 @@ thiserror                 = { workspace = true }
 # compile on wasm32 (cf. crates/aphrody-channels/Cargo.toml).
 aphrody-channels          = { path = "../aphrody-channels" }
 
+# --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_Registry",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
 # --- WebAssembly targets ---------------------------------------------------
 # Minimal tokio surface (the only features supported on wasm).
 [target.'cfg(target_arch = "wasm32")'.dependencies]

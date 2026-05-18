@@ -15,6 +15,7 @@
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
+#[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 
 use std::path::PathBuf;
 
@@ -208,6 +209,12 @@ enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+    /// Installer / bootstrap natif (remplace les .ps1/.sh scripts/).
+    #[command(name = "self")]
+    SelfCmd {
+        #[command(subcommand)]
+        action: SelfAction,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
@@ -228,6 +235,34 @@ enum CrosActions {
 enum ChromiumActions {
     /// Synchronise les profils Chromium
     Sync,
+}
+
+/// Actions for the `self` kernel subcommand (installer + bootstrap).
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum SelfAction {
+    /// Register the release binary on the user PATH (HKCU on Windows,
+    /// symlink into $HOME/.local/bin on Unix).
+    InstallPath {
+        /// Absolute path to the aphrody binary; defaults to
+        /// `<cwd>/target/release/aphrody[.exe]`.
+        #[arg(long)]
+        bin: Option<PathBuf>,
+        /// Run `cargo build -p aphrody --release --locked` first when the
+        /// binary is missing.
+        #[arg(long)]
+        build: bool,
+        /// Plan-only: print the intended actions, never mutate PATH/symlinks.
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Inventory dev toolchain (rustup, cargo, git, zigbuild, wasm targets).
+    /// With `--check`, prints the inventory and exits non-zero on missing
+    /// required tools; without it, attempts `rustup target add` to fill gaps.
+    Bootstrap {
+        /// Print inventory only; do not install anything.
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 /// Actions for the `bxc` kernel subcommand.
@@ -372,6 +407,16 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
         },
+        Some(Commands::SelfCmd { action }) => match action {
+            SelfAction::InstallPath { bin, build, dry_run } => {
+                self_cmd::InstallPathCommand { bin, build_if_missing: build, dry_run }
+                    .execute(ctx)
+                    .await?;
+            },
+            SelfAction::Bootstrap { check } => {
+                self_cmd::BootstrapCommand { check }.execute(ctx).await?;
+            },
+        },
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
             // the legacy bun/uv/cargo engine dispatcher only for tokens
@@ -472,6 +517,7 @@ fn main() {
                 Commands::Bxc { .. } => "bxc",
                 Commands::Notify { .. } => "notify",
                 Commands::Completions { .. } => "completions",
+                Commands::SelfCmd { .. } => "self",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),
             };
