@@ -79,7 +79,9 @@ exclude = [
     "crates/coreutils",
     "crates/util-linux",
     "crates/a2a-slimrpc",
-    "vendor",
+    # vendor/ retiré 2026-05-18 : ne contenait que des stubs Bun/uv/depot_tools
+    # (interdits par la policy 100% Rust). Si on a besoin d'une référence Rust
+    # vendored à l'avenir, recréer le dossier ad hoc.
 ]
 # Pivot 2026-05-17 :
 # - `google_os`  archivé vers C:\google-os-archive\
