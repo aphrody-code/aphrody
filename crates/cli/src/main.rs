@@ -17,6 +17,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
 
 use std::path::PathBuf;
 
@@ -220,6 +221,72 @@ enum Commands {
     Scan {
         #[command(subcommand)]
         action: ScanAction,
+    },
+    /// (ported from openclaw) Bootstrap aphrody local state + seed config.
+    #[cfg(not(target_arch = "wasm32"))]
+    OcOnboard {
+        /// Override the default agent workspace directory.
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+        /// Run without interactive prompts (CI / scripts).
+        #[arg(long)]
+        non_interactive: bool,
+        /// Required with `--non-interactive`: acknowledge security defaults.
+        #[arg(long)]
+        accept_risk: bool,
+        /// Overwrite an existing aphrody.json instead of bailing out.
+        #[arg(long, short)]
+        force: bool,
+    },
+    /// (ported from openclaw) Reset local state. Choose a scope:
+    /// `config`, `config-creds-sessions`, or `full`.
+    #[cfg(not(target_arch = "wasm32"))]
+    OcReset {
+        /// Reset scope.
+        #[arg(long, value_enum)]
+        scope: oc_cmd::ResetScope,
+        /// Confirm the destructive operation (required unless --dry-run).
+        #[arg(long)]
+        yes: bool,
+        /// Preview deletions without touching disk.
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// (ported from openclaw) Uninstall aphrody scopes (service / state /
+    /// workspace / app, or `--all`).
+    #[cfg(not(target_arch = "wasm32"))]
+    OcUninstall {
+        #[arg(long)]
+        service: bool,
+        #[arg(long)]
+        state: bool,
+        #[arg(long)]
+        workspace: bool,
+        #[arg(long)]
+        app: bool,
+        #[arg(long)]
+        all: bool,
+        #[arg(long)]
+        yes: bool,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// (ported from openclaw) Secure DM pairing — list / approve / inject
+    /// requests against the local pairing store (~/.aphrody/pairing.json).
+    #[cfg(not(target_arch = "wasm32"))]
+    OcPairing {
+        #[command(subcommand)]
+        action: oc_cmd::PairingAction,
+    },
+    /// (ported from openclaw) Open or search the documentation site.
+    #[cfg(not(target_arch = "wasm32"))]
+    OcDocs {
+        /// Free-form search query (joined with spaces).
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        query: Vec<String>,
+        /// Print only the URL; do not attempt to open a browser.
+        #[arg(long)]
+        url_only: bool,
     },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
@@ -467,6 +534,33 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             ScanAction::Manifests { root, output } => {
                 scan_cmd::ManifestsCommand { root, output }.execute(ctx).await?;
             },
+        },
+        Some(Commands::OcOnboard { workspace, non_interactive, accept_risk, force }) => {
+            oc_cmd::OnboardCommand { workspace, non_interactive, accept_risk, force }
+                .execute(ctx)
+                .await?;
+        },
+        Some(Commands::OcReset { scope, yes, dry_run }) => {
+            oc_cmd::ResetCommand { scope, yes, dry_run }.execute(ctx).await?;
+        },
+        Some(Commands::OcUninstall { service, state, workspace, app, all, yes, dry_run }) => {
+            oc_cmd::UninstallCommand {
+                service,
+                state,
+                workspace,
+                app,
+                all,
+                yes,
+                dry_run,
+            }
+            .execute(ctx)
+            .await?;
+        },
+        Some(Commands::OcPairing { action }) => {
+            oc_cmd::PairingCommand { action }.execute(ctx).await?;
+        },
+        Some(Commands::OcDocs { query, url_only }) => {
+            oc_cmd::DocsCommand { query, url_only }.execute(ctx).await?;
         },
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
