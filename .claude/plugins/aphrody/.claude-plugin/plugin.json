@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.2.0",
-  "description": "aphrody plugin: skills (pixel-perfect, rust-target-check, m3-component), agents (n2b-ultra, cross-platform-validator, m3-spec-auditor), /scrape and /tokens slash commands powered by the bxc-scrapper MCP server, and PostToolUse hooks (oxlint, cargo-check, cargo-toml-validate). Cross-platform (Linux #1, Windows #2, WASM #3), Bun-only, zero stubs.",
+  "version": "0.3.0",
+  "description": "aphrody plugin: unified bxc/n2b/aphrody CLI integration. Slash commands /scrape, /tokens, /status drive the aphrody binary (auto-start bxc Bun daemon, /api/* routes, native schema). Agents (aphrody-cli, n2b-*, m3-*, cross-platform-validator, yolo-prod-ready, …) + skills (pixel-perfect, m3-component, agent-browser, …) + PostToolUse hooks (cargo check, cargo xtask toml-validate). Two MCP servers: bxc-scrapper (Rust, 7 scraping tools) + bxc (Bun, memory/vision/CDP). Cross-platform (Linux #1, Windows #2, WASM #3).",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -33,16 +33,8 @@
     "./commands/status.md"
   ],
   "agents": [
+    "./agents/aphrody-cli.md",
     "./agents/build.md",
-    "./agents/bun-api.md",
-    "./agents/bun-deployer.md",
-    "./agents/bun-dreamer.md",
-    "./agents/bun-explorer.md",
-    "./agents/bun-native.md",
-    "./agents/bun-reviewer.md",
-    "./agents/bun-runner.md",
-    "./agents/bun-wasm.md",
-    "./agents/bun-web-api.md",
     "./agents/cargo-auditor.md",
     "./agents/code-review.md",
     "./agents/cpp-engineer.md",
@@ -60,14 +52,12 @@
     "./agents/n2b-contract-guard.md",
     "./agents/n2b-ultra.md",
     "./agents/n2b.md",
-    "./agents/nextjs-developer.md",
     "./agents/performance-engineer.md",
     "./agents/postgres-pro.md",
     "./agents/rust-architect.md",
     "./agents/rust-engineer.md",
     "./agents/security-engineer.md",
     "./agents/sre-engineer.md",
-    "./agents/typescript-pro.md",
     "./agents/yolo-prod-ready.md",
     "./agents/zig-engineer.md"
   ],
@@ -75,16 +65,8 @@
   "mcpServers": {
     "bxc-scrapper": {
       "type": "stdio",
-      "command": "cargo",
-      "args": [
-        "run",
-        "--quiet",
-        "--release",
-        "-p",
-        "bxc-engine",
-        "--bin",
-        "bxc-mcp"
-      ],
+      "command": "bxc-mcp",
+      "args": [],
       "env": {
         "BXC_DAEMON_URL": "http://127.0.0.1:8765"
       }
@@ -101,7 +83,7 @@
       "command": "bun",
       "args": [
         "run",
-        "C:/worktree/bxc/packages/bxc-extension/server.ts"
+        "C:/src/aphrody/packages/bxc/packages/bxc-extension/server.ts"
       ],
       "env": {
         "BXC_MEMORY_DB": "C:/src/aphrody/var/data/bxc-memory.sqlite"
