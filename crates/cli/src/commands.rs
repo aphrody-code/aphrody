@@ -12,7 +12,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use crate::{
     context::{GoogleContext, TerminalCommand},
     nl_tokens::{
-        BUN_COMMANDS, BYPASS_ENGINES, CARGO_COMMANDS, SCRIPT_EXTS, STANDARD_ACTIONS, UV_COMMANDS,
+        BYPASS_ENGINES, CARGO_COMMANDS, SCRIPT_EXTS, STANDARD_ACTIONS, UV_COMMANDS,
     },
     platform,
     scrape::ScrapeClient,
@@ -477,26 +477,35 @@ pub(crate) struct AutoCommand {
 #[async_trait]
 impl TerminalCommand for AutoCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        // Policy 100% Rust (memory `feedback_aphrody_rust_only`) :
+        // `AutoCommand` n'auto-spawn JAMAIS `bun` implicitement. Les
+        // utilisateurs qui veulent invoquer bun passent par BYPASS_ENGINES
+        // (`aphrody bun add foo`). Le runtime par défaut est `cargo`.
         if self.args.is_empty() {
-            return Self::run_process("bun", Vec::<String>::new());
+            eprintln!(
+                "⚠️  [Auto] No arguments. Usage: `aphrody <cmd> [args]` or `aphrody \"<NL prompt>\"`.\n   \
+                 Default engine is `cargo` (workspace 100% Rust). Use BYPASS engines explicitly: \
+                 `aphrody bun add foo`, `aphrody uv sync`, `aphrody npm i`, etc."
+            );
+            return Err(miette::Report::new(SubprocessExit(2)));
         }
 
         let first_arg = &self.args[0];
 
-        // All four category lists (BYPASS_ENGINES, BUN_COMMANDS,
-        // UV_COMMANDS, CARGO_COMMANDS, STANDARD_ACTIONS, SCRIPT_EXTS)
-        // come from `crate::nl_tokens` so the NL detector in `main.rs`
-        // and this dispatcher cannot drift.
+        // All category lists (BYPASS_ENGINES, UV_COMMANDS, CARGO_COMMANDS,
+        // STANDARD_ACTIONS, SCRIPT_EXTS) come from `crate::nl_tokens` so
+        // the NL detector in `main.rs` and this dispatcher cannot drift.
+        //
+        // Note (Phase 5, 2026-05-18) : `BUN_COMMANDS` a été retiré du
+        // dispatcher implicite — bun reste accessible via BYPASS_ENGINES.
 
-        // Explicit engine bypass
+        // Explicit engine bypass (`bun`, `uv`, `cargo`, `npm`, …)
         if BYPASS_ENGINES.contains(&first_arg.as_str()) {
             return Self::run_process(first_arg, &self.args[1..]);
         }
         // Specific commands
         else if UV_COMMANDS.contains(&first_arg.as_str()) {
             return Self::run_process("uv", &self.args[..]);
-        } else if BUN_COMMANDS.contains(&first_arg.as_str()) {
-            return Self::run_process("bun", &self.args[..]);
         } else if CARGO_COMMANDS.contains(&first_arg.as_str()) {
             return Self::run_process("cargo", &self.args[..]);
         }
@@ -507,7 +516,9 @@ impl TerminalCommand for AutoCommand {
         // Overlapping Universal Commands (run, install, add, remove, test, build...)
         let is_run_script = first_arg == "run" || first_arg == "exec";
 
-        let mut target_engine = "bun"; // Default to bun
+        // Default engine = `cargo` (Rust-first policy). Bun/Node ne sont
+        // jamais sélectionnés implicitement par le dispatcher.
+        let mut target_engine = "cargo";
 
         if !is_known_technical_command && !is_script_file {
             // If it's neither a known standard action nor a direct script execution, it's likely a
@@ -528,27 +539,35 @@ impl TerminalCommand for AutoCommand {
             || first_arg.ends_with(".jsx")
             || first_arg.ends_with(".tsx")
         {
-            return Self::run_process("bun", &self.args[..]);
+            // Policy 100% Rust : aucun spawn implicite vers un runtime JS.
+            // L'utilisateur doit passer par le BYPASS explicite
+            // (`aphrody bun run X.ts`) ou installer un runtime tiers.
+            eprintln!(
+                "⚠️  [Auto] `{first_arg}` est un script JS/TS — le dispatcher 100% Rust ne \
+                 spawn pas de runtime JS implicitement.\n   \
+                 Utiliser le bypass explicite : `aphrody bun run {first_arg}` (ou \
+                 `aphrody node {first_arg}`, `aphrody deno run {first_arg}`)."
+            );
+            return Err(miette::Report::new(SubprocessExit(2)));
         } else if first_arg.ends_with(".rs") {
             let mut new_args = vec!["run".to_string()];
             new_args.extend(self.args.clone());
             return Self::run_process("cargo", new_args);
         } else {
-            // Contextual ecosystem detection
+            // Contextual ecosystem detection. Note : `package.json` ne
+            // sélectionne plus `bun` implicitement (policy 100% Rust) ;
+            // l'utilisateur passe par `aphrody bun <cmd>` au besoin.
             let has_cargo = std::path::Path::new("Cargo.toml").exists();
             let has_uv = std::path::Path::new("pyproject.toml").exists()
                 || std::path::Path::new("requirements.txt").exists();
             let has_go = std::path::Path::new("go.mod").exists();
-            let has_bun = std::path::Path::new("package.json").exists();
 
-            if has_cargo && !has_bun {
+            if has_cargo {
                 target_engine = "cargo";
-            } else if has_uv && !has_bun {
+            } else if has_uv {
                 target_engine = "uv";
-            } else if has_go && !has_bun {
+            } else if has_go {
                 target_engine = "go";
-            } else if has_bun {
-                target_engine = "bun";
             } else {
                 // No project file. If it's a global install (e.g. `google install git`), fallback
                 // to system manager
