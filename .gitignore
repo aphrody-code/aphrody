@@ -57,6 +57,8 @@ build/
 coverage/
 *.lcov
 var/
+# Mirrored external corpora (scraped HTML / assets / manifests).
+assets/scrape/
 
 # ----------------------------------------------------------------------------
 # 4. C++ / MSVC / CMake
@@ -403,3 +405,12 @@ lefthook.yml
 /path.json
 /monorepo-map.json
 /map.json
+
+# ----------------------------------------------------------------------------
+# 21. Claude Code plugin local settings (.claude/aphrody.local.md pattern)
+# ----------------------------------------------------------------------------
+# The `aphrody` plugin reads per-project settings from
+# `.claude/aphrody.local.md` (cf. plugin-settings standard from plugin-dev).
+# These files contain user-local plugin config and must never be committed.
+.claude/*.local.md
+.claude/*.local.json

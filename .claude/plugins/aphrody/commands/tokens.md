@@ -1,7 +1,8 @@
 ---
-description: Scrapes Material Design 3 design tokens from m3.material.io (or any URL provided) via the aphrody CLI (auto-start bxc Bun daemon). Writes a normalized JSON bundle to packages/ui/tokens/m3.json.
+description: Scrapes Material Design 3 design tokens from m3.material.io (or any URL) via the aphrody CLI (auto-start bxc Bun daemon). Writes a normalized JSON bundle to packages/ui/tokens/m3.json.
 argument-hint: [url]
 allowed-tools: Bash, Read, Write, Glob
+model: sonnet
 ---
 
 # /tokens — Material Design 3 token scraper (via aphrody CLI)

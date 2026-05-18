@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.3.0",
-  "description": "aphrody plugin: unified bxc/n2b/aphrody CLI integration. Slash commands /scrape, /tokens, /status drive the aphrody binary (auto-start bxc Bun daemon, /api/* routes, native schema). Agents (aphrody-cli, n2b-*, m3-*, cross-platform-validator, yolo-prod-ready, …) + skills (pixel-perfect, m3-component, agent-browser, …) + PostToolUse hooks (cargo check, cargo xtask toml-validate). Two MCP servers: bxc-scrapper (Rust, 7 scraping tools) + bxc (Bun, memory/vision/CDP). Cross-platform (Linux #1, Windows #2, WASM #3).",
+  "version": "0.3.1",
+  "description": "Unified bxc / n2b / aphrody CLI automation surface for Claude Code. Slash commands (/scrape, /tokens, /status) drive the native `aphrody` binary, which auto-spawns the bxc Bun daemon and exposes `/api/*` routes end-to-end. 27 agents (aphrody-cli, n2b-*, m3-*, cross-platform-validator, yolo-prod-ready, …), 35+ skills (pixel-perfect, m3-component, agent-browser, …), PostToolUse hooks (cargo check, cargo xtask toml-validate). Two MCP servers: bxc-scrapper (Rust binary, 7 scraping tools) + bxc (Bun, memory / vision / CDP). Cross-platform: Linux #1, Windows #2, WASM #3.",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -83,10 +83,10 @@
       "command": "bun",
       "args": [
         "run",
-        "C:/src/aphrody/packages/bxc/packages/bxc-extension/server.ts"
+        "${CLAUDE_PLUGIN_ROOT}/../../../packages/bxc/packages/bxc-extension/server.ts"
       ],
       "env": {
-        "BXC_MEMORY_DB": "C:/src/aphrody/var/data/bxc-memory.sqlite"
+        "BXC_MEMORY_DB": "${CLAUDE_PLUGIN_ROOT}/../../../var/data/bxc-memory.sqlite"
       }
     },
     "context7": {
