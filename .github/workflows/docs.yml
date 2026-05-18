@@ -35,23 +35,9 @@ jobs:
         with:
           toolchain: nightly
       - uses: Swatinem/rust-cache@v2
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun install
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install bun deps (frozen lockfile)
-        run: bun install --frozen-lockfile
 
       - name: Drift check docs/SUMMARY.md
-        run: bun run docs:summary:check
+        run: cargo run -p aphrody-summary --release --locked -- --check
 
       - name: cargo doc (workspace, no deps)
         env:

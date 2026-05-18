@@ -7,7 +7,11 @@
 #
 #  Deny-list (pinned per CLAUDE.md §7 or flagged NEEDS-REVIEW this session):
 #    tracing-subscriber, rand, flume, notify-debouncer-full, rusqlite,
-#    schemars, toml, foldhash, zod
+#    schemars, toml, foldhash
+#
+#  100% Rust repo (2026-05-18): only the cargo ecosystem is tracked by
+#  dependabot — npm/bun deps removed from the deny-list along with the
+#  package.json / bun.lock purge (Phase 6 of PLAN_RUST_ONLY.md).
 #
 #  Trigger: pull_request_target — required so the workflow runs with write
 #  permissions on PRs originating from the dependabot[bot] fork context.
@@ -58,7 +62,6 @@ jobs:
       #   schemars            — triaged NEEDS-REVIEW (derive macro ABI)
       #   toml                — triaged NEEDS-REVIEW (parse API breakage history)
       #   foldhash            — triaged NEEDS-REVIEW (niche hasher, pin for reproducibility)
-      #   zod                 — triaged NEEDS-REVIEW (npm, schema breakage risk)
       # ------------------------------------------------------------------
       - name: Evaluate merge eligibility
         id: evaluate
@@ -83,7 +86,6 @@ jobs:
               'schemars',
               'toml',
               'foldhash',
-              'zod',
             ]);
 
             // dependabot/fetch-metadata returns a comma-separated list when

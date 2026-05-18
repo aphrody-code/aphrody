@@ -117,7 +117,7 @@ jobs:
           cp "$BIN_PATH" "$STAGE/"
           cp README.md LICENSE "$STAGE/"
           # gemini-cli bundling removed 2026-05-18 (see build-gemini comment above).
-          # User installs gemini via `bun install -g @google/gemini-cli`.
+          # Users install gemini-cli separately if desired (out-of-scope for this Rust release).
           if [[ "${{ matrix.archive }}" == "zip" ]]; then
             7z a "artifacts/$STAGE.zip" "$STAGE"
           else
