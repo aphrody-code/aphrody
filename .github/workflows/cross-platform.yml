@@ -431,7 +431,7 @@ jobs:
       - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p cli --locked
 
   # --------------------------------------------------------------------------
-  # 8. Docs drift check
+  # 8. Docs drift check (Rust-only — cargo run -p aphrody-summary --check)
   # --------------------------------------------------------------------------
   docs:
     name: docs (SUMMARY drift)
@@ -440,18 +440,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
         with:
-          bun-version: latest
-      - name: Cache Bun install
-        uses: actions/cache@v4
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.bun/install/cache
-          # Primary key keys off both lockfile formats so a switch between
-          # bun.lock (text) and bun.lockb (binary) does not invalidate the
-          # cache. restore-keys fall back to any previous bun cache snapshot.
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-      - run: bun install --frozen-lockfile
-      - run: bun run docs:summary:check
+          shared-key: docs-summary
+      - name: docs SUMMARY drift check
+        run: cargo run -p aphrody-summary --release --locked -- --check

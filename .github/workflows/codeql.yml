@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # ============================================================================
-#  aphrody — CodeQL security scanning (Rust + TypeScript)
+#  aphrody — CodeQL security scanning (Rust-only, 100% Rust repo)
 #  Schedule: every Monday 06:00 UTC (low CI contention window)
 #  Permissions: minimum required for security-events upload only.
 # ============================================================================
@@ -33,8 +33,6 @@ jobs:
         include:
           - language: rust
             build-mode: manual
-          - language: javascript-typescript
-            build-mode: none
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +40,6 @@ jobs:
       # Pinned to nightly SHA 2026-05-17; re-pin via:
       #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
       - name: Setup Rust toolchain (nightly, pinned SHA)
-        if: matrix.language == 'rust'
         uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
         with:
           toolchain: nightly
@@ -55,13 +52,10 @@ jobs:
           languages: ${{ matrix.language }}
           queries: security-and-quality
 
-      # Rust: CodeQL requires a build trace to extract semantic information.
+      # CodeQL requires a build trace to extract semantic information for Rust.
       # We use --workspace --locked --offline so the scan mirrors the same
       # hermetic inputs used by the cross-platform CI job.
-      # TS/JS: CodeQL infers the dependency graph without a build step
-      # (build-mode: none), so this step is skipped for that language.
-      - name: Build workspace (Rust only — CodeQL build trace)
-        if: matrix.language == 'rust'
+      - name: Build workspace (CodeQL build trace)
         run: cargo build --workspace --locked --offline
 
       - name: Perform CodeQL analysis
