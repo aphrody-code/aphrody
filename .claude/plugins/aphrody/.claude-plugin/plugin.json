@@ -74,10 +74,16 @@
   "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "bxc-scrapper": {
-      "command": "bun",
+      "type": "stdio",
+      "command": "cargo",
       "args": [
         "run",
-        "${CLAUDE_PLUGIN_ROOT}/mcp/bxc-scrapper/server.ts"
+        "--quiet",
+        "--release",
+        "-p",
+        "bxc-engine",
+        "--bin",
+        "bxc-mcp"
       ],
       "env": {
         "BXC_DAEMON_URL": "http://127.0.0.1:8765"

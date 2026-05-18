@@ -11,6 +11,10 @@ path = "src/main.rs"
 name = "obscura-worker"
 path = "src/worker.rs"
 
+[[bin]]
+name = "bxc-mcp"
+path = "src/bin/bxc_mcp.rs"
+
 [features]
 default = []
 stealth = ["obscura-browser/stealth", "obscura-net/stealth", "obscura-mcp/stealth"]
@@ -30,3 +34,5 @@ anyhow = { workspace = true }
 url = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+rustls = { workspace = true, features = ["ring"] }
+reqwest = { workspace = true }
