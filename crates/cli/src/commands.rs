@@ -307,7 +307,7 @@ target_os = ['chromeos']
                     ProgressStyle::default_spinner()
                         .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
                         .template("{spinner:.green} [{elapsed_precise}] {msg}")
-                        .unwrap(),
+                        .expect("Invalid progress bar template"),
                 );
                 pb.set_message("Synchronisation Chromium en cours...");
                 pb.enable_steady_tick(std::time::Duration::from_millis(100));
@@ -706,8 +706,8 @@ impl TerminalCommand for SearchCommand {
         let text = res.text().await.map_err(|e| miette::miette!("Erreur lecture: {}", e))?;
 
         let document = scraper::Html::parse_document(&text);
-        let title_selector = scraper::Selector::parse(".result-link").unwrap();
-        let snippet_selector = scraper::Selector::parse(".result-snippet").unwrap();
+        let title_selector = scraper::Selector::parse(".result-link").expect("Invalid title selector");
+        let snippet_selector = scraper::Selector::parse(".result-snippet").expect("Invalid snippet selector");
 
         let titles: Vec<_> = document.select(&title_selector).collect();
         let snippets: Vec<_> = document.select(&snippet_selector).collect();
