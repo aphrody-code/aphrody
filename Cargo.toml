@@ -63,6 +63,14 @@ members = [
     "crates/aphrody-terminal-config",
     # aphrody-tui — pure-Rust ratatui-style DSL (canonical long-term native TUI, 60fps target)
     "crates/aphrody-tui",
+    # bxc rust-bridge
+    "crates/bxc-engine",
+    "crates/obscura-browser",
+    "crates/obscura-cdp",
+    "crates/obscura-dom",
+    "crates/obscura-js",
+    "crates/obscura-mcp",
+    "crates/obscura-net",
 ]
 exclude = [
     "crates/coreutils",
@@ -347,15 +355,9 @@ n2b-native         = { git = "https://github.com/aphrody-code/n2b.git", branch =
 n2b-registry       = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-registry" }
 # bxc, ui, next.js sont des packages Bun/TS — voir packages/{bxc,ui,next.js}/README.md.
 
-# --- bxc Rust-bridge (branche aphrody, isolée d'upstream main) ------------
+# --- bxc Rust-bridge (local crates) ------------
 # Cf. docs/research/BXC_CARTOGRAPHY.md pour la cartographie complète.
-# obscura-* sont les 7 crates Rust de bxc (DOM, net, browser, CDP, JS, MCP, engine).
-obscura-dom        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-dom" }
-obscura-net        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-net" }
-obscura-browser    = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-browser" }
-obscura-cdp        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-cdp" }
-obscura-js         = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-js" }
-obscura-mcp        = { git = "https://github.com/aphrody-code/bxc.git", branch = "aphrody", package = "obscura-mcp" }
+# obscura-* sont les crates Rust de bxc (DOM, net, browser, CDP, JS, MCP, engine).
 
 # --- SWC / Vercel Rust ecosystem (publics crates.io) ---------------------
 # Cf. docs/research/NEXTJS_VERCEL_RUST_CRATES.md pour la cartographie complète.
@@ -430,6 +432,21 @@ sysinfo            = { version = "0.39", default-features = false, features = ["
 # --- Misc -----------------------------------------------------------------
 itertools          = { version = "0.14" }
 nix                = { version = "0.31" }
+
+# --- bxc dependencies ---
+html5ever = "0.39"
+markup5ever = "0.39"
+selectors = "0.38"
+servo_arc = "0.4"
+cssparser = "0.37"
+v8 = "147.4.0"
+obscura-dom = { path = "crates/obscura-dom" }
+obscura-net = { path = "crates/obscura-net" }
+obscura-browser = { path = "crates/obscura-browser" }
+obscura-cdp = { path = "crates/obscura-cdp" }
+obscura-js = { path = "crates/obscura-js" }
+obscura-mcp = { path = "crates/obscura-mcp" }
+bxc-engine = { path = "crates/bxc-engine" }
 
 # --- mrx integration (migrated 2026-05-17 from vps/packages/mrx) ----------
 # Apache-2.0, 5 crates : core (types) → detect (manifests) → audit (parallel walker)
