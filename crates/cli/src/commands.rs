@@ -364,6 +364,9 @@ cc_wrapper = "sccache"
                 }
 
                 println!("🔥 Lancement d'Autoninja sur {} threads...", cores);
+                // SAFETY: Setting environment variables in a multithreaded process is inherently unsafe.
+                // However, this CLI command runs as a short-lived process and this mutation happens
+                // before the child process is spawned, so the race window is minimal in practice.
                 unsafe {
                     std::env::set_var("NINJA_SUMMARIZE_BUILD", "1");
                 }

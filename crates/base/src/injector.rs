@@ -19,6 +19,9 @@ use windows::Win32::{
 
 /// Injecte une DLL dans un processus cible via son PID.
 pub fn inject_dll(pid: u32, dll_path: &str) -> Result<()> {
+    // SAFETY: We interact with the Windows API directly to manage process memory
+    // and thread execution. OpenProcess, VirtualAllocEx, WriteProcessMemory and
+    // CreateRemoteThread are called with valid handles and correctly sized buffers.
     unsafe {
         // 1. Ouvrir le processus cible
         let h_process = OpenProcess(
