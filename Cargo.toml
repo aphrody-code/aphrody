@@ -23,6 +23,9 @@ members = [
     "crates/mrx-cli",
     # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
     "crates/aphrody-translate",
+    # aphrody-xtask — Rust port of scripts/*.ts via `cargo xtask <op>`.
+    # Replaces Bun/Node script invocations (docs/PLAN_RUST_ONLY.md Phase 2).
+    "crates/aphrody-xtask",
     # aphrody-wasm — browser-facing wasm-bindgen wrapper for base primitives
     "crates/aphrody-wasm",
     # ievr-tools — IEVR binary inventory analysis (consumes peer-Claude scan JSON)
