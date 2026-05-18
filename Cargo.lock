@@ -1318,6 +1318,7 @@ dependencies = [
  "obscura-js",
  "obscura-mcp",
  "obscura-net",
+ "reqwest",
  "rustls",
  "serde",
  "serde_json",

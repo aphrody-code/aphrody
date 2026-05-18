@@ -7,6 +7,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+mod optimize_assets;
+mod runtimes_detect;
 mod skills_sync;
 
 #[derive(Parser)]
@@ -27,6 +29,15 @@ enum Op {
     /// Sync a remote SKILL.md catalog into ./.claude/skills/.
     /// Replaces scripts/skills-sync.ts (Bun).
     SkillsSync(skills_sync::Args),
+
+    /// Optimize repo assets (PNG via oxipng, CSS via lightningcss).
+    /// Replaces scripts/optimize-assets.ts (Bun).
+    OptimizeAssets(optimize_assets::Args),
+
+    /// Probe CLI runtimes on PATH and emit a JSON manifest.
+    /// Replaces scripts/runtimes-detect.ts (Bun). Bun/Node/Lightpanda/n2b
+    /// entries dropped per the 100% Rust policy.
+    RuntimesDetect(runtimes_detect::Args),
 }
 
 fn main() -> Result<()> {
@@ -41,5 +52,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.op {
         Op::SkillsSync(args) => skills_sync::run(args),
+        Op::OptimizeAssets(args) => optimize_assets::run(args),
+        Op::RuntimesDetect(args) => runtimes_detect::run(args),
     }
 }
