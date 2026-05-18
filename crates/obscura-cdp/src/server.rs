@@ -358,7 +358,7 @@ async fn process_with_interception(
                 break;
             }
             Some(intercepted) = async {
-                if let Some(ref mut irx) = intercept_rx {
+                if let Some(irx) = intercept_rx.as_mut() {
                     irx.recv().await
                 } else {
                     std::future::pending().await
