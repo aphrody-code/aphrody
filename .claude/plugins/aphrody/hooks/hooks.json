@@ -7,17 +7,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/oxclint.ts\"",
-            "timeout": 30000
-          },
-          {
-            "type": "command",
-            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/cargo-check.ts\"",
+            "command": "cargo check --workspace --message-format json --locked --offline",
             "timeout": 60000
           },
           {
             "type": "command",
-            "command": "bun run \"${CLAUDE_PLUGIN_ROOT}/hooks/cargo-toml-validate.ts\"",
+            "command": "cargo xtask toml-validate",
             "timeout": 30000
           }
         ]
