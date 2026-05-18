@@ -90,14 +90,20 @@ cd ../ && bun install --silent
 | Workflow | `build`, `explore`, `move`, `yolo-prod-ready` |
 | Comms | `discord-bot` |
 
-## MCP servers (4)
+## MCP servers (3 — unified local + 2 cloud)
 
-| Server | Type | Powers | Auth |
+Since v0.4.0, the previous `bxc-scrapper` + `bxc` dual-stdio config is
+fused into a **single local server `aphrody`** exposing 14 tools.
+
+| Server | Type | Tools | Auth |
 |---|---|---|---|
-| **`bxc-scrapper`** | stdio (Rust `bxc-mcp`) | 7 scraping tools : `bxc_scrape`, `bxc_recon`, `bxc_detect`, `google_search`, `google_atlas_route`, `extract_structured`, `vision_analyze` | `BXC_DAEMON_URL` env |
-| **`bxc`** | stdio (Bun `bxc-extension/server.ts`) | Memory + vision + CDP tools : `tune_memory_sqlite`, `vision_analyze`, `start_scraping_subagent`, `auto_detect_skills`, `bxc_cdp_*` | `BXC_MEMORY_DB` env (defaults to `${CLAUDE_PLUGIN_ROOT}/../../../var/data/bxc-memory.sqlite`) |
+| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **14 tools** : `aphrody_{scrape, recon, detect, search, atlas_route, extract_structured, vision_analyze}` (scraping via bxc-mcp Rust subprocess) + `aphrody_memory_{set, get, list}` (Bun SQLite) + `aphrody_{doctor, version, dns, notify}` (CLI exec wrappers) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN` env |
 | **`github`** | streamable-http | Official GitHub Copilot MCP. Issues, PRs, repos. | `GITHUB_PERSONAL_ACCESS_TOKEN` env |
 | **`context7`** | http | Library docs + version checking (preferred over WebSearch for lib docs). | `CONTEXT7_API_KEY` env |
+
+The unified `aphrody` server ships its own `manifest.json` and can be
+packed as a standalone `.mcpb` bundle for distribution outside the
+plugin — see [`mcp/aphrody/README.md`](mcp/aphrody/README.md).
 
 ## Hooks (PostToolUse on Edit | Write | MultiEdit)
 

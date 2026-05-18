@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.3.1",
-  "description": "Unified bxc / n2b / aphrody CLI automation surface for Claude Code. Slash commands (/scrape, /tokens, /status) drive the native `aphrody` binary, which auto-spawns the bxc Bun daemon and exposes `/api/*` routes end-to-end. 27 agents (aphrody-cli, n2b-*, m3-*, cross-platform-validator, yolo-prod-ready, …), 35+ skills (pixel-perfect, m3-component, agent-browser, …), PostToolUse hooks (cargo check, cargo xtask toml-validate). Two MCP servers: bxc-scrapper (Rust binary, 7 scraping tools) + bxc (Bun, memory / vision / CDP). Cross-platform: Linux #1, Windows #2, WASM #3.",
+  "version": "0.4.0",
+  "description": "Unified bxc / n2b / aphrody CLI automation surface for Claude Code. Slash commands (/scrape, /tokens, /status) drive the native `aphrody` binary, which auto-spawns the bxc Bun daemon and exposes `/api/*` routes end-to-end. 27 agents (aphrody-cli, n2b-*, m3-*, cross-platform-validator, yolo-prod-ready, …), 35+ skills (pixel-perfect, m3-component, agent-browser, …), PostToolUse hooks (cargo check, cargo xtask toml-validate). One local MCP server `aphrody` fuses 14 tools (scraping via bxc-mcp subprocess + SQLite memory + aphrody CLI wrappers) — packaged as a drop-in MCPB bundle under mcp/aphrody/. Plus cloud MCP servers github + context7. Cross-platform: Linux #1, Windows #2, WASM #3.",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -63,12 +63,18 @@
   ],
   "hooks": "./hooks/hooks.json",
   "mcpServers": {
-    "bxc-scrapper": {
+    "aphrody": {
       "type": "stdio",
-      "command": "bxc-mcp",
-      "args": [],
+      "command": "bun",
+      "args": [
+        "run",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/aphrody/server/index.ts"
+      ],
       "env": {
-        "BXC_DAEMON_URL": "http://127.0.0.1:8765"
+        "BXC_DAEMON_URL": "http://127.0.0.1:8765",
+        "BXC_MEMORY_DB": "${HOME}/.aphrody/aphrody-memory.sqlite",
+        "APHRODY_BIN": "aphrody",
+        "BXC_MCP_BIN": "bxc-mcp"
       }
     },
     "github": {
@@ -76,17 +82,6 @@
       "url": "https://api.githubcopilot.com/mcp/",
       "headers": {
         "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
-    },
-    "bxc": {
-      "type": "stdio",
-      "command": "bun",
-      "args": [
-        "run",
-        "${CLAUDE_PLUGIN_ROOT}/../../../packages/bxc/packages/bxc-extension/server.ts"
-      ],
-      "env": {
-        "BXC_MEMORY_DB": "${CLAUDE_PLUGIN_ROOT}/../../../var/data/bxc-memory.sqlite"
       }
     },
     "context7": {
