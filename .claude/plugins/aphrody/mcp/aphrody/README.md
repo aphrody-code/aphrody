@@ -1,12 +1,16 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody — unified MCP server
 
-**Single stdio server** replacing the previous 4-server config
-(`bxc-scrapper` + `bxc` + `github` + `context7`). Exposes **25 tools**
-spanning scraping, in-process memory, aphrody CLI, GitHub REST, and
-Context7 docs proxy.
+**Single stdio server** consolidating the previous in-tree
+`bxc-scrapper` + `bxc` dual-server config. Exposes **18 first-party
+tools** spanning scraping, in-process memory, and aphrody CLI wrappers.
 
-## Tool catalogue (25)
+Third-party SaaS MCP servers (GitHub, Context7) are **intentionally
+NOT bundled** — they have their own canonical endpoints. Install them
+separately in your `.claude/settings.json` (or `~/.claude/settings.json`)
+if you need them.
+
+## Tool catalogue (18)
 
 ### Scraping (7) — proxied to `bxc-mcp` Rust subprocess
 | Tool | Args | Returns |
@@ -38,24 +42,6 @@ Context7 docs proxy.
 | `aphrody_chromium_sync` | (none) | Chromium profiles + master key (Windows-only) |
 | `aphrody_a2a_prompt` | `prompt` | A2A reply (falls back to Gemini CLI) |
 
-### GitHub REST proxy (5) — replaces cloud `github` MCP
-| Tool | Args | Returns |
-|---|---|---|
-| `aphrody_github_list_issues` | `owner`, `repo`, `state?`, `per_page?` | `Issue[]` |
-| `aphrody_github_create_issue` | `owner`, `repo`, `title`, `body?`, `labels?`, `assignees?` | created `Issue` |
-| `aphrody_github_list_prs` | `owner`, `repo`, `state?`, `per_page?` | `PullRequest[]` |
-| `aphrody_github_search_repos` | `q`, `sort?`, `per_page?` | `SearchResults` |
-| `aphrody_github_get_repo` | `owner`, `repo` | `Repository` metadata |
-
-Auth : `GITHUB_PERSONAL_ACCESS_TOKEN` env (scope `repo` or `public_repo`).
-
-### Context7 docs proxy (2) — replaces cloud `context7` MCP
-| Tool | Args | Returns |
-|---|---|---|
-| `aphrody_context7_resolve_library` | `library_name` | resolved library ID |
-| `aphrody_context7_get_docs` | `library_id`, `topic?`, `tokens?` | up-to-date library docs |
-
-Auth : `CONTEXT7_API_KEY` env.
 
 ## Architecture
 

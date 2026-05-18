@@ -5,6 +5,26 @@ All notable changes to the `.claude/plugins/aphrody/` plugin. Format:
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-05-19
+
+### Removed
+- **Reverted GitHub + Context7 proxy tools** from the unified `aphrody`
+  MCP server. These are third-party SaaS endpoints with their own
+  canonical hosts (api.github.com / mcp.context7.com) — bundling them
+  into a first-party plugin proxy was overreach. Users who need them
+  install them in their own `.claude/settings.json`.
+  - Dropped 7 tools : `aphrody_github_{list_issues, create_issue,
+    list_prs, search_repos, get_repo}` + `aphrody_context7_{resolve_library,
+    get_docs}`.
+  - Dropped 2 env vars from plugin.json + manifest.json user_config
+    (`GITHUB_PERSONAL_ACCESS_TOKEN`, `CONTEXT7_API_KEY`).
+  - Tool count : 25 → 18.
+
+### Validation
+- 18/18 tools registered, all first-party (bxc + memory + aphrody CLI).
+- `plugin.json` + `manifest.json` parse OK.
+- `bun run server/index.ts --list-tools` lists 18 names.
+
 ## [0.5.0] — 2026-05-19
 
 ### Added

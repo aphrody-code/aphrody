@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.5.0",
-  "description": "Single-MCP-server automation surface for Claude Code. ONE `aphrody` stdio server fuses 21 tools across 5 domains : (1) scraping via bxc-mcp Rust subprocess (7), (2) in-process SQLite memory (3), (3) aphrody CLI wrappers — doctor/version/dns/notify/scan_tree/scan_manifests/chromium_sync/search/a2a_prompt (9), (4) GitHub REST proxy — list_issues/create_issue/list_prs/search_repos/get_repo (5), (5) Context7 docs proxy — resolve_library/get_docs (2). 3 slash commands (/scrape, /tokens, /status) driving the native `aphrody` binary with auto-start bxc Bun daemon. 27 agents (aphrody-cli, n2b-*, m3-*, …), 35+ skills. PostToolUse hooks. MCPB-packageable for Claude Desktop. Cross-platform: Linux #1, Windows #2, WASM #3.",
+  "version": "0.5.1",
+  "description": "Single-MCP-server automation surface for Claude Code. ONE `aphrody` stdio server fuses 18 tools across 3 first-party domains : (1) scraping via bxc-mcp Rust subprocess (7), (2) in-process SQLite memory (3), (3) aphrody CLI wrappers — doctor/version/dns/notify/scan_tree/scan_manifests/chromium_sync/a2a_prompt (8). Third-party MCPs (github, context7) are NOT bundled — install them separately. 3 slash commands (/scrape, /tokens, /status). 27 agents, 35+ skills. PostToolUse hooks. MCPB-packageable. Cross-platform: Linux #1, Windows #2, WASM #3.",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -74,9 +74,7 @@
         "BXC_DAEMON_URL": "http://127.0.0.1:8765",
         "BXC_MEMORY_DB": "${HOME}/.aphrody/aphrody-memory.sqlite",
         "APHRODY_BIN": "aphrody",
-        "BXC_MCP_BIN": "bxc-mcp",
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}",
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+        "BXC_MCP_BIN": "bxc-mcp"
       }
     }
   }
