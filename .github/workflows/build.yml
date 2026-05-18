@@ -21,7 +21,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_INCREMENTAL: 0
-  # sccache via mozilla-actions/sccache-action@v0.0.5 (GHA cache backend).
+  # sccache via mozilla-actions/sccache-action@v0.0.10 (GHA cache backend).
   # Aligned with cross-platform.yml and bench.yml (pipeline-optimization
   # 2026-05-18). Each rust job ends with a non-fatal
   # `sccache --show-stats || true` for graceful degradation.
@@ -43,7 +43,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.5
+        uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
