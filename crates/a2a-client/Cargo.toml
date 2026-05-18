@@ -16,6 +16,15 @@ categories.workspace    = true
 [lib]
 name = "a2a_client"
 
+# Pure-Rust port of `.claude/plugins/aphrody/skills/a2a-duel-loop/scripts/duel-cycle.ts`
+# (PLAN_RUST_ONLY.md Phase 4.5). Native-only — depends on tokio + reqwest for
+# the optional POST /msg mirror, which excludes wasm32 (already cfg-gated in the
+# library deps below).
+[[bin]]
+name = "a2a-duel-loop"
+path = "src/bin/a2a_duel_loop.rs"
+required-features = []
+
 [lints]
 workspace = true
 
@@ -30,6 +39,12 @@ auto_impl = { workspace = true }
 bytes = "1"
 tracing = { workspace = true }
 uuid = { workspace = true }
+# `a2a-duel-loop` binary deps (native-only consumers; cfg-gated transitively via
+# the [target.'cfg(not(target_family = "wasm"))'.dependencies] tokio+reqwest).
+clap = { workspace = true }
+chrono = { workspace = true }
+getrandom = { workspace = true }
+hex = { workspace = true }
 
 # Native (Linux / Windows / macOS): full tokio + reqwest with TLS.
 # reqwest uses OS networking (mio, hyper, rustls) — not available on wasm32.

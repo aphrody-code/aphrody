@@ -21,13 +21,17 @@ This skill formalises one **iteration** of the duel: read what the peer last sai
 ## The loop, one iteration
 
 ```
-1.  bun .claude/skills/a2a-duel-loop/scripts/duel-cycle.ts --iteration N [--side aphrody|winclean]
+1.  cargo run -q -p a2a-client-lf --bin a2a-duel-loop -- --iteration N [--side aphrody|winclean]
         → reads `C:\winclean\.coord\inbox-from-{peer}.jsonl` last line
         → reads peer ai.json for fresh asset inventory / open_asks
         → composes a reply envelope (id apx-duel-N-<hex>, from/to inferred from --side)
         → appends to the correct inbox JSONL
         → POSTs to localhost:8788/msg (if listener responds) for mirroring
         → bumps the matching heartbeat-*.txt
+
+    Flags identical to the deprecated TS driver: --iteration N (required), --side
+    {aphrody|winclean}, --coord-dir <path> (env APHRODY_COORD_DIR), --subject S,
+    --body S, --type {ping|ask|fact|ack}, --re <id>, --no-http, --dry-run.
 
 2.  Optional: Agent({ subagent_type: "code-reviewer", description: "Review duel tick N",
         prompt: "Read the envelope just appended (...) and the peer's last 3 envelopes. Flag
