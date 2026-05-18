@@ -366,7 +366,8 @@ cargo audit-machete  # unused dependencies
 - [`scripts/n2b-batch.ps1`](./scripts/n2b-batch.ps1) + [`scripts/n2b-batch.sh`](./scripts/n2b-batch.sh) — migration parallèle `ForEach-Object -Parallel` / `xargs -P`.
 - [`scripts/bxc-crawl.ps1`](./scripts/bxc-crawl.ps1) + [`scripts/bxc-crawl.sh`](./scripts/bxc-crawl.sh) — crawl parallèle URLs × actions + loop + cache.
 - [`scripts/bxc-supervise.ps1`](./scripts/bxc-supervise.ps1) + [`scripts/bxc-supervise.sh`](./scripts/bxc-supervise.sh) — watchdog daemon bxc auto-restart.
-- [`scripts/Install-AphrodyToPath.ps1`](./scripts/Install-AphrodyToPath.ps1) + [`scripts/install-aphrody-path.sh`](./scripts/install-aphrody-path.sh) — install binaire dans PATH.
+- `aphrody self install-path` — register the release binary on the user PATH (HKCU on Windows, symlink into `$HOME/.local/bin` on Unix). `--dry-run` previews actions without mutating PATH; `--build` compiles the release binary first.
+- `aphrody self bootstrap [--check]` — inventory rustup/cargo/git/zigbuild and the priority Rust targets (Linux > Windows > wasm); without `--check`, runs `rustup target add` + `rustup component add rust-src` to fill the gaps.
 
 ### Kernel subcommands (depuis 2026-05-18)
 - `aphrody n2b [args]` — façade `packages/n2b/src/cli.ts` via bun.
