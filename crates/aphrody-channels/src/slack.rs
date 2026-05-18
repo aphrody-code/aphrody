@@ -443,9 +443,11 @@ impl MessagingChannel for SlackChannel {
 #[allow(unsafe_code)]
 mod tests {
     use super::*;
+    use crate::test_util::ENV_LOCK;
 
     #[test]
     fn from_env_fails_when_variable_absent() {
+        let _guard = ENV_LOCK.lock().unwrap();
         // Make sure the variable is not set in the test process.
         unsafe {
             std::env::remove_var("SLACK_BOT_TOKEN");
@@ -459,6 +461,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("SLACK_BOT_TOKEN", "xoxb-test-token");
         }

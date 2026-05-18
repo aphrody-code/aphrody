@@ -7,11 +7,11 @@
 //!
 //! - [`ConfigError::Io`] — filesystem I/O failed (file unreadable, perms, etc.).
 //! - [`ConfigError::Parse`] — the raw bytes were not syntactically valid JSON.
-//! - [`ConfigError::Validation`] — the JSON was valid but did not match the
-//!   strict `TerminalConfig` schema (unknown fields, wrong types, …).
-//! - [`ConfigError::Schema`] — the JSON Schema itself could not be generated
-//!   (currently only fires if `serde_json::to_string` fails, which is
-//!   essentially unreachable on well-formed schemars output).
+//! - [`ConfigError::Validation`] — the JSON was valid but did not match the strict `TerminalConfig`
+//!   schema (unknown fields, wrong types, …).
+//! - [`ConfigError::Schema`] — the JSON Schema itself could not be generated (currently only fires
+//!   if `serde_json::to_string` fails, which is essentially unreachable on well-formed schemars
+//!   output).
 
 use std::path::PathBuf;
 
@@ -49,10 +49,7 @@ impl ConfigError {
     /// Build an [`ConfigError::Io`] from an arbitrary path and `std::io::Error`.
     #[must_use]
     pub fn io(path: impl Into<PathBuf>, source: std::io::Error) -> Self {
-        Self::Io {
-            path: path.into(),
-            source,
-        }
+        Self::Io { path: path.into(), source }
     }
 
     /// Build a [`ConfigError::Validation`] from any displayable message.

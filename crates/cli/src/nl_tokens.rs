@@ -3,11 +3,10 @@
 // `nl_tokens` — canonical inventory of "engine tokens" and the natural-
 // language prompt detector shared by:
 //
-//   * `crate::main::is_natural_language_prompt` — routes argv tails that
-//     look like a NL prompt to the native A2A JSON-RPC client.
-//   * `crate::commands::AutoCommand::execute`   — routes engine tokens
-//     (`bun add x`, `cargo build`, `python foo.py`, …) to the right
-//     userland tool, then falls back to the A2A agent otherwise.
+//   * `crate::main::is_natural_language_prompt` — routes argv tails that look like a NL prompt to
+//     the native A2A JSON-RPC client.
+//   * `crate::commands::AutoCommand::execute`   — routes engine tokens (`bun add x`, `cargo build`,
+//     `python foo.py`, …) to the right userland tool, then falls back to the A2A agent otherwise.
 //
 // Keeping both call sites in sync is critical: a token that appears in
 // the dispatcher but not in the NL detector would be silently re-routed
@@ -29,9 +28,8 @@ pub(crate) const BYPASS_ENGINES: &[&str] = &[
 ];
 
 /// Subcommands that always dispatch to `bun <cmd> …`.
-pub(crate) const BUN_COMMANDS: &[&str] = &[
-    "x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback",
-];
+pub(crate) const BUN_COMMANDS: &[&str] =
+    &["x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback"];
 
 /// Subcommands that always dispatch to `uv <cmd> …`.
 pub(crate) const UV_COMMANDS: &[&str] = &[
@@ -52,8 +50,7 @@ pub(crate) const STANDARD_ACTIONS: &[&str] = &[
 ];
 
 /// File extensions that mark argv[0] as a script path rather than a NL prompt.
-pub(crate) const SCRIPT_EXTS: &[&str] =
-    &[".py", ".js", ".ts", ".jsx", ".tsx", ".rs", ".sh"];
+pub(crate) const SCRIPT_EXTS: &[&str] = &[".py", ".js", ".ts", ".jsx", ".tsx", ".rs", ".sh"];
 
 /// Flat union of every token that, if it appears as `argv[0]`, marks the
 /// invocation as a wrapped engine command (NOT a natural-language prompt).
@@ -66,8 +63,7 @@ pub(crate) const SCRIPT_EXTS: &[&str] =
 pub(crate) const NL_ENGINE_TOKENS: &[&str] = &[
     // BYPASS_ENGINES
     "bun", "uv", "cargo", "winget", "apt", "go", "npm", "yarn", "pnpm", "node", "npx", "deno",
-    "python", "pip", "git", "docker", "make", "cmake",
-    // BUN_COMMANDS
+    "python", "pip", "git", "docker", "make", "cmake", // BUN_COMMANDS
     "x", "repl", "link", "unlink", "patch", "pm", "info", "why", "create", "c", "feedback",
     // UV_COMMANDS (python/pip already covered above; harmless dup, kept for grep-ability)
     "auth", "version", "sync", "lock", "export", "tree", "format", "tool", "venv", "cache", "self",
@@ -88,8 +84,7 @@ pub(crate) const NL_ENGINE_TOKENS: &[&str] = &[
 ///   1. Empty argv → `false` (nothing to forward).
 ///   2. `argv[0]` starts with `-` → `false` (a flag, leave to clap).
 ///   3. `argv[0]` ∈ `NL_ENGINE_TOKENS` → `false` (a known engine token).
-///   4. `argv[0]` ends with a `SCRIPT_EXTS` extension → `false` (a script
-///      path).
+///   4. `argv[0]` ends with a `SCRIPT_EXTS` extension → `false` (a script path).
 ///   5. Otherwise → `true` (NL prompt).
 pub(crate) fn is_natural_language_prompt(args: &[String]) -> bool {
     let Some(first) = args.first() else {
@@ -169,11 +164,11 @@ mod tests {
 
         // 5 natural-language prompts — must all be classified as NL.
         let nl_panel = [
-            "what",         // single-word question opener
-            "explain",      // verb
-            "summarise",    // verb
-            "Quelle",       // capitalised French question opener
-            "comment",      // verb / French question
+            "what",      // single-word question opener
+            "explain",   // verb
+            "summarise", // verb
+            "Quelle",    // capitalised French question opener
+            "comment",   // verb / French question
         ];
         for tok in nl_panel {
             assert!(

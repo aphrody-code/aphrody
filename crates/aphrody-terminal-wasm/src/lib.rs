@@ -7,11 +7,10 @@
 //!
 //! # Modules
 //!
-//! - Root (`lib.rs`) — [`TerminalHandle`]: VT terminal DOM renderer + keyboard
-//!   input.
-//! - [`coord_pane`] — [`mount_a2a_pane`] / [`A2aPaneHandle`]: "Coord channel"
-//!   pane that displays A2A envelopes from the `.coord/` JSONL mailbox.
-//!   Integrates [`a2a_ui`] for envelope parsing and DOM rendering.
+//! - Root (`lib.rs`) — [`TerminalHandle`]: VT terminal DOM renderer + keyboard input.
+//! - [`coord_pane`] — [`mount_a2a_pane`] / [`A2aPaneHandle`]: "Coord channel" pane that displays
+//!   A2A envelopes from the `.coord/` JSONL mailbox. Integrates [`a2a_ui`] for envelope parsing and
+//!   DOM rendering.
 //!
 //! # Usage (JS/TS side)
 //!
@@ -35,9 +34,8 @@
 ///
 /// Public API: [`mount_a2a_pane`] / [`A2aPaneHandle`].
 pub mod coord_pane;
-pub use coord_pane::{mount_a2a_pane, A2aPaneHandle};
-
 use aphrody_terminal_vt::{Color, TerminalState};
+pub use coord_pane::{A2aPaneHandle, mount_a2a_pane};
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, HtmlElement, KeyboardEvent, Node};
@@ -103,10 +101,9 @@ impl TerminalHandle {
     /// - No element with `target_id` exists in the document.
     #[wasm_bindgen]
     pub fn new(target_id: &str, cols: u16, rows: u16) -> Result<TerminalHandle, JsValue> {
-        let window = web_sys::window()
-            .ok_or_else(|| JsValue::from_str("no window object"))?;
-        let document: Document = window.document()
-            .ok_or_else(|| JsValue::from_str("no document"))?;
+        let window = web_sys::window().ok_or_else(|| JsValue::from_str("no window object"))?;
+        let document: Document =
+            window.document().ok_or_else(|| JsValue::from_str("no document"))?;
 
         let root: HtmlElement = document
             .get_element_by_id(target_id)
@@ -129,12 +126,7 @@ impl TerminalHandle {
         let state = TerminalState::new(cols, rows);
 
         // Build the initial DOM grid.
-        let mut handle = TerminalHandle {
-            state,
-            root,
-            cell_h_px: 16.8,
-            on_data: None,
-        };
+        let mut handle = TerminalHandle { state, root, cell_h_px: 16.8, on_data: None };
         handle.build_dom_grid(&document, cols, rows)?;
 
         Ok(handle)
@@ -164,10 +156,8 @@ impl TerminalHandle {
     /// Propagates any DOM manipulation error.
     pub fn resize(&mut self, cols: u16, rows: u16) -> Result<(), JsValue> {
         self.state.resize(cols, rows);
-        let window = web_sys::window()
-            .ok_or_else(|| JsValue::from_str("no window"))?;
-        let document = window.document()
-            .ok_or_else(|| JsValue::from_str("no document"))?;
+        let window = web_sys::window().ok_or_else(|| JsValue::from_str("no window"))?;
+        let document = window.document().ok_or_else(|| JsValue::from_str("no document"))?;
         // Clear existing children. first_child/remove_child are on Node.
         {
             let root_node: &Node = self.root.as_ref();
@@ -193,16 +183,9 @@ impl TerminalHandle {
 
     /// Build the DOM grid from scratch: `rows` × `<div class="row">` each
     /// containing `cols` × `<span>` elements.  One span per cell.
-    fn build_dom_grid(
-        &mut self,
-        document: &Document,
-        cols: u16,
-        rows: u16,
-    ) -> Result<(), JsValue> {
+    fn build_dom_grid(&mut self, document: &Document, cols: u16, rows: u16) -> Result<(), JsValue> {
         for r in 0..rows {
-            let row_div: HtmlElement = document
-                .create_element("div")?
-                .dyn_into::<HtmlElement>()?;
+            let row_div: HtmlElement = document.create_element("div")?.dyn_into::<HtmlElement>()?;
             row_div.set_class_name("row");
             let row_style = row_div.style();
             row_style.set_property("display", "block")?;
@@ -210,9 +193,8 @@ impl TerminalHandle {
             row_style.set_property("white-space", "pre")?;
 
             for c in 0..cols {
-                let span: HtmlElement = document
-                    .create_element("span")?
-                    .dyn_into::<HtmlElement>()?;
+                let span: HtmlElement =
+                    document.create_element("span")?.dyn_into::<HtmlElement>()?;
                 let cell = self.state.cell(r, c);
                 span.set_text_content(Some(&char_to_str(cell.ch)));
                 let s = span.style();
@@ -240,8 +222,7 @@ impl TerminalHandle {
             }
         }) as Box<dyn FnMut(KeyboardEvent)>);
 
-        self.root
-            .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
+        self.root.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         // Leak the closure so it remains alive for the lifetime of the element.
         // This is intentional: the listener lives as long as the DOM element does.
         closure.forget();
@@ -265,9 +246,8 @@ impl TerminalHandle {
         let spans = row_as_node.child_nodes();
 
         for c in 0..self.state.cols() {
-            let span_node = spans
-                .item(u32::from(c))
-                .ok_or_else(|| JsValue::from_str("span out of range"))?;
+            let span_node =
+                spans.item(u32::from(c)).ok_or_else(|| JsValue::from_str("span out of range"))?;
             let span: HtmlElement = span_node
                 .dyn_into::<HtmlElement>()
                 .map_err(|_| JsValue::from_str("span is not HtmlElement"))?;
@@ -289,11 +269,7 @@ impl TerminalHandle {
 /// Non-printable characters (including NUL) are replaced with a space so that
 /// the DOM span always has exactly one visible glyph width.
 fn char_to_str(ch: char) -> String {
-    if ch == '\0' || ch.is_control() {
-        " ".to_owned()
-    } else {
-        ch.to_string()
-    }
+    if ch == '\0' || ch.is_control() { " ".to_owned() } else { ch.to_string() }
 }
 
 /// Apply attribute flags to a CSS style declaration.
@@ -302,19 +278,12 @@ fn apply_attr_style(
     attr: aphrody_terminal_vt::Attr,
 ) -> Result<(), JsValue> {
     use aphrody_terminal_vt::Attr;
-    style.set_property(
-        "font-weight",
-        if attr.contains(Attr::BOLD) { "bold" } else { "normal" },
-    )?;
+    style.set_property("font-weight", if attr.contains(Attr::BOLD) { "bold" } else { "normal" })?;
     style.set_property(
         "font-style",
         if attr.contains(Attr::ITALIC) { "italic" } else { "normal" },
     )?;
-    let decoration = if attr.contains(Attr::UNDERLINE) {
-        "underline"
-    } else {
-        "none"
-    };
+    let decoration = if attr.contains(Attr::UNDERLINE) { "underline" } else { "none" };
     style.set_property("text-decoration", decoration)?;
     // INVERSE: swap fg/bg at the call site when building cell colours, so no
     // extra CSS property is needed here — the colours are already swapped in
@@ -332,20 +301,20 @@ fn key_to_ansi_bytes(evt: &KeyboardEvent) -> Vec<u8> {
     let key = evt.key();
     match key.as_str() {
         // Named keys with fixed ANSI/VT mappings.
-        "Enter"     => vec![b'\r'],
+        "Enter" => vec![b'\r'],
         "Backspace" => vec![0x7F],
-        "Tab"       => vec![b'\t'],
-        "Escape"    => vec![0x1B],
-        "ArrowUp"   => vec![0x1B, b'[', b'A'],
+        "Tab" => vec![b'\t'],
+        "Escape" => vec![0x1B],
+        "ArrowUp" => vec![0x1B, b'[', b'A'],
         "ArrowDown" => vec![0x1B, b'[', b'B'],
-        "ArrowRight"=> vec![0x1B, b'[', b'C'],
+        "ArrowRight" => vec![0x1B, b'[', b'C'],
         "ArrowLeft" => vec![0x1B, b'[', b'D'],
-        "Home"      => vec![0x1B, b'[', b'H'],
-        "End"       => vec![0x1B, b'[', b'F'],
-        "PageUp"    => vec![0x1B, b'[', b'5', b'~'],
-        "PageDown"  => vec![0x1B, b'[', b'6', b'~'],
-        "Delete"    => vec![0x1B, b'[', b'3', b'~'],
-        "Insert"    => vec![0x1B, b'[', b'2', b'~'],
+        "Home" => vec![0x1B, b'[', b'H'],
+        "End" => vec![0x1B, b'[', b'F'],
+        "PageUp" => vec![0x1B, b'[', b'5', b'~'],
+        "PageDown" => vec![0x1B, b'[', b'6', b'~'],
+        "Delete" => vec![0x1B, b'[', b'3', b'~'],
+        "Insert" => vec![0x1B, b'[', b'2', b'~'],
         // Printable single-character keys: use the UTF-8 encoding directly.
         k if k.chars().count() == 1 => {
             let ch = k.chars().next();
@@ -354,7 +323,7 @@ fn key_to_ansi_bytes(evt: &KeyboardEvent) -> Vec<u8> {
             let mut buf = [0u8; 4];
             ch.encode_utf8(&mut buf);
             buf[..ch.len_utf8()].to_vec()
-        }
+        },
         // Modifier-only keys and unrecognised sequences produce no output.
         _ => vec![],
     }

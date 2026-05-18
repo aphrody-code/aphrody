@@ -4,15 +4,13 @@
 //!
 //! This crate ships both as a library and as a binary:
 //!
-//! - **Binary** (`aphrody-summary`): walks the repo's `docs/` tree, mirrors
-//!   the top-level `README.md` / `CHANGELOG.md` / etc. into `docs/_root/`,
-//!   and writes the assembled `SUMMARY.md` to disk. CI uses
-//!   `cargo run -p aphrody-summary -- --check` to assert the file is up to
-//!   date with the tree.
-//! - **Library**: exposes [`generate`] for in-process consumers (the
-//!   `aphrody-terminal-llm` "docs preview" pane invokes this directly to
-//!   render the markdown TOC inline, instead of shelling out to
-//!   `cargo run`).
+//! - **Binary** (`aphrody-summary`): walks the repo's `docs/` tree, mirrors the top-level
+//!   `README.md` / `CHANGELOG.md` / etc. into `docs/_root/`, and writes the assembled `SUMMARY.md`
+//!   to disk. CI uses `cargo run -p aphrody-summary -- --check` to assert the file is up to date
+//!   with the tree.
+//! - **Library**: exposes [`generate`] for in-process consumers (the `aphrody-terminal-llm` "docs
+//!   preview" pane invokes this directly to render the markdown TOC inline, instead of shelling out
+//!   to `cargo run`).
 //!
 //! ## Library usage
 //!

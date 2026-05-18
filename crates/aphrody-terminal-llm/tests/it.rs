@@ -3,12 +3,12 @@
 
 use std::sync::Arc;
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use aphrody_terminal_llm::{
     EventBus, HookEntry, HookEventLog, LlmEvent, McpServerSpec, McpStatusRegistry, McpTransport,
     OAuthConfig, SkillSlot, SkillState, SubAgentRegistry, TaskTree, load_mcp_json,
     parse_aphrody_llm_osc, probe_loop,
 };
+use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -97,7 +97,7 @@ fn osc_parse_json_inspect() {
         LlmEvent::JsonInspect { payload } => {
             assert_eq!(payload["key"].as_str().unwrap(), "value");
             assert_eq!(payload["num"].as_i64().unwrap(), 42);
-        }
+        },
         other => panic!("unexpected: {other:?}"),
     }
 }
@@ -115,7 +115,7 @@ fn osc_parse_sub_agent_fields() {
             assert_eq!(id, "a1");
             assert_eq!(status, "done");
             assert_eq!(text, "ok");
-        }
+        },
         other => panic!("unexpected: {other:?}"),
     }
 }
@@ -134,7 +134,7 @@ fn osc_parse_mcp_with_optional_rpc() {
             assert_eq!(server, "my-server");
             assert_eq!(state, "connected");
             assert_eq!(rpc.as_deref(), Some("tools/list"));
-        }
+        },
         other => panic!("unexpected: {other:?}"),
     }
 
@@ -214,10 +214,7 @@ fn hook_event_log_capacity_eviction() {
     let log = HookEventLog::new(3);
 
     for i in 0..4_u32 {
-        log.push(HookEntry {
-            event: format!("event-{i}"),
-            payload: serde_json::Value::Null,
-        });
+        log.push(HookEntry { event: format!("event-{i}"), payload: serde_json::Value::Null });
     }
 
     // Capacity is 3, so the oldest (event-0) should be gone.
@@ -273,10 +270,7 @@ fn mcp_registry_update_and_snapshot() {
 
 #[test]
 fn osc_parse_st_terminator() {
-    let raw = format!(
-        "\x1b]aphrody-md;{}\x1b\\",
-        B64.encode("## ST terminated".as_bytes())
-    );
+    let raw = format!("\x1b]aphrody-md;{}\x1b\\", B64.encode("## ST terminated".as_bytes()));
     let ev = parse_aphrody_llm_osc(raw.as_bytes()).expect("ST terminator must be accepted");
     match ev {
         LlmEvent::Markdown { body } => assert_eq!(body, "## ST terminated"),
@@ -307,7 +301,7 @@ fn mcp_server_spec_serde_roundtrip() {
             assert_eq!(command, "my-mcp-binary");
             assert_eq!(args, &["--stdio"]);
             assert_eq!(env.get("DEBUG").map(String::as_str), Some("1"));
-        }
+        },
         other => panic!("unexpected transport after roundtrip: {other:?}"),
     }
 
@@ -332,16 +326,15 @@ fn mcp_server_spec_serde_roundtrip() {
             assert_eq!(url, "https://mcp.example.com/");
             let oauth = oauth_provider.as_ref().expect("oauth_provider must be Some");
             assert_eq!(oauth.token_env_var.as_deref(), Some("MCP_TOKEN"));
-        }
+        },
         other => panic!("unexpected transport after roundtrip: {other:?}"),
     }
 }
 
 // ---------------------------------------------------------------------------
-// 15. probe_loop: publishes LlmEvent::Mcp when state changes
-//     Uses a mock probe by wiring a spec whose command is guaranteed to
-//     fail immediately ("__nonexistent_cmd__"), producing state "error".
-//     The loop must publish the transition from nothing → "error".
+// 15. probe_loop: publishes LlmEvent::Mcp when state changes Uses a mock probe by wiring a spec
+//     whose command is guaranteed to fail immediately ("__nonexistent_cmd__"), producing state
+//     "error". The loop must publish the transition from nothing → "error".
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
@@ -386,7 +379,7 @@ async fn probe_loop_publishes_event_on_state_change() {
                 state == "error" || state == "timeout",
                 "expected error or timeout state, got {state:?}"
             );
-        }
+        },
         other => panic!("unexpected event kind: {other:?}"),
     }
 
@@ -445,7 +438,7 @@ fn load_mcp_json_compat() {
                 env.get("BXC_MEMORY_DB").map(String::as_str),
                 Some("C:/src/aphrody/var/data/bxc-memory.sqlite")
             );
-        }
+        },
         other => panic!("bxc transport must be Stdio, got {other:?}"),
     }
 
@@ -455,11 +448,8 @@ fn load_mcp_json_compat() {
         McpTransport::Http { url, oauth_provider } => {
             assert_eq!(url, "https://api.githubcopilot.com/mcp/");
             let oauth = oauth_provider.as_ref().expect("github must have oauth_provider");
-            assert_eq!(
-                oauth.token_env_var.as_deref(),
-                Some("GITHUB_PERSONAL_ACCESS_TOKEN")
-            );
-        }
+            assert_eq!(oauth.token_env_var.as_deref(), Some("GITHUB_PERSONAL_ACCESS_TOKEN"));
+        },
         other => panic!("github transport must be Http, got {other:?}"),
     }
 }

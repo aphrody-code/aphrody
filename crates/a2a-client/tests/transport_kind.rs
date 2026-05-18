@@ -60,10 +60,8 @@ fn jsonrpc_transport_advertises_protocol_name() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     let client = reqwest::Client::new();
-    let transport: Box<dyn Transport> = Box::new(JsonRpcTransport::new(
-        client,
-        "http://127.0.0.1:0/jsonrpc".to_string(),
-    ));
+    let transport: Box<dyn Transport> =
+        Box::new(JsonRpcTransport::new(client, "http://127.0.0.1:0/jsonrpc".to_string()));
     assert_eq!(transport.protocol_name(), "jsonrpc");
 }
 

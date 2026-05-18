@@ -6,12 +6,11 @@
 // `#![cfg(target_arch = "wasm32")]` file, so they cannot be instantiated
 // in a native test runner.  This file therefore has two sections:
 //
-//   - `wasm32` target  : a `wasm_bindgen_test` that verifies the re-exported
-//     type is accessible from the crate's public surface.
+//   - `wasm32` target  : a `wasm_bindgen_test` that verifies the re-exported type is accessible
+//     from the crate's public surface.
 //
-//   - native (non-wasm32) : a trivial marker test that documents why the
-//     module is absent and keeps `nextest` happy (a test file with zero
-//     test functions emits a linker warning on some hosts).
+//   - native (non-wasm32) : a trivial marker test that documents why the module is absent and keeps
+//     `nextest` happy (a test file with zero test functions emits a linker warning on some hosts).
 //
 // Run the wasm32 variant:
 //   wasm-pack test --headless --firefox crates/aphrody-wasm
@@ -52,14 +51,8 @@ mod wasm32_tests {
     fn gradient_error_display_canvas_not_found() {
         use aphrody_wasm::gradient_hero::GradientError;
         let msg = GradientError::CanvasNotFound("my-canvas".to_owned()).to_string();
-        assert!(
-            msg.contains("my-canvas"),
-            "error message should contain canvas id, got: {msg}",
-        );
-        assert!(
-            msg.contains("not found"),
-            "error message should mention 'not found', got: {msg}",
-        );
+        assert!(msg.contains("my-canvas"), "error message should contain canvas id, got: {msg}",);
+        assert!(msg.contains("not found"), "error message should mention 'not found', got: {msg}",);
     }
 
     /// Verify that `GradientError::WebGpuUnavailable` formats without panicking.

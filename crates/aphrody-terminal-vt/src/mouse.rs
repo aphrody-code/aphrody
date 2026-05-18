@@ -81,11 +81,7 @@ pub fn encode_sgr_1006(ev: MouseEvent) -> Vec<u8> {
         MouseButton::WheelDown => 65,
         MouseButton::None => 3,
     };
-    let motion_bit: u32 = if matches!(ev.kind, MouseEventKind::Move) {
-        0b0010_0000
-    } else {
-        0
-    };
+    let motion_bit: u32 = if matches!(ev.kind, MouseEventKind::Move) { 0b0010_0000 } else { 0 };
     let code = base | ev.modifiers.mask() | motion_bit;
     let final_byte = match ev.kind {
         MouseEventKind::Release => b'm',
@@ -205,10 +201,7 @@ mod tests {
         assert_eq!(parsed, ev);
 
         // Release uses lowercase 'm' as the final byte.
-        let release = MouseEvent {
-            kind: MouseEventKind::Release,
-            ..ev
-        };
+        let release = MouseEvent { kind: MouseEventKind::Release, ..ev };
         assert_eq!(encode_sgr_1006(release), b"\x1b[<0;300;500m");
 
         // Right-click with ctrl modifier.
@@ -217,10 +210,7 @@ mod tests {
             y: 20,
             button: MouseButton::Right,
             kind: MouseEventKind::Press,
-            modifiers: MouseModifiers {
-                ctrl: true,
-                ..Default::default()
-            },
+            modifiers: MouseModifiers { ctrl: true, ..Default::default() },
         };
         let rc_bytes = encode_sgr_1006(rc);
         // Code = button(2) | ctrl(16) = 18.

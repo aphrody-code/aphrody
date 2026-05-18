@@ -15,28 +15,21 @@
 #![forbid(unsafe_code)]
 
 // Native-only modules: reqwest + tokio do not compile for wasm32.
-#[cfg(not(target_arch = "wasm32"))]
-pub mod discord_shim;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod elevenlabs;
+#[cfg(not(target_arch = "wasm32"))] pub mod discord_shim;
+#[cfg(not(target_arch = "wasm32"))] pub mod elevenlabs;
 
 // Browser-native module: only compiled when targeting wasm32.
-#[cfg(target_arch = "wasm32")]
-pub mod web;
+#[cfg(target_arch = "wasm32")] pub mod web;
 
 // ── Native-only: trait + error types ─────────────────────────────────────────
 //
 // All items below reference `reqwest` which is absent on wasm32 targets.
 // The browser path uses `JsValue` errors directly in `web::WebSpeechSynth`.
 
-#[cfg(not(target_arch = "wasm32"))]
-use async_trait::async_trait;
-#[cfg(not(target_arch = "wasm32"))]
-use bytes::Bytes;
-#[cfg(not(target_arch = "wasm32"))]
-use futures::Stream;
-#[cfg(not(target_arch = "wasm32"))]
-use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))] use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))] use bytes::Bytes;
+#[cfg(not(target_arch = "wasm32"))] use futures::Stream;
+#[cfg(not(target_arch = "wasm32"))] use serde::{Deserialize, Serialize};
 
 /// Error type for all native voice provider operations.
 ///

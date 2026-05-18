@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn invalid_base_url_rejected() {
-        let err = OpenAiProxyAdapter::new("key", "not://!!invalid").unwrap_err();
+        let err = OpenAiProxyAdapter::new("key", "://invalid").unwrap_err();
         // Either a URL parse error or a config error; both are acceptable.
         assert!(matches!(err, GatewayError::Url(_) | GatewayError::Config(_)));
     }

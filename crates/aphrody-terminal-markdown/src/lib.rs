@@ -2,12 +2,11 @@
 //! Inline CommonMark renderer for `aphrody-terminal`.
 //!
 //! Surface:
-//! - [`MarkdownRenderer`] — parses CommonMark via `comrak`, walks the AST,
-//!   and emits ANSI text (SGR bold/italic/underline for inline styling,
-//!   24-bit truecolor for fenced code via `syntect`).
-//! - [`OscMdDetector`] — recognises the `aphrody-md;<base64>` OSC payload
-//!   emitted by `aphrody-terminal-llm` (`crates/aphrody-terminal-llm/src/osc.rs`)
-//!   and returns the decoded markdown source.
+//! - [`MarkdownRenderer`] — parses CommonMark via `comrak`, walks the AST, and emits ANSI text (SGR
+//!   bold/italic/underline for inline styling, 24-bit truecolor for fenced code via `syntect`).
+//! - [`OscMdDetector`] — recognises the `aphrody-md;<base64>` OSC payload emitted by
+//!   `aphrody-terminal-llm` (`crates/aphrody-terminal-llm/src/osc.rs`) and returns the decoded
+//!   markdown source.
 //!
 //! The renderer is deterministic and pure (no I/O, no globals beyond a
 //! `OnceCell`-cached `SyntaxSet`/`ThemeSet`). All public types are `Send + Sync`.
@@ -19,10 +18,12 @@ mod heading;
 
 use aphrody_terminal_vt::strip_osc_envelope_str;
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
-use comrak::nodes::{AstNode, NodeValue};
-use comrak::{Arena, Options, parse_document};
-
 pub use code::{DEFAULT_THEME, render_code_block_ansi};
+use comrak::{
+    Arena, Options,
+    nodes::{AstNode, NodeValue},
+    parse_document,
+};
 pub use heading::heading_ansi_prefix;
 
 /// ANSI SGR helpers.
@@ -43,9 +44,7 @@ pub struct MarkdownRenderer {
 
 impl std::fmt::Debug for MarkdownRenderer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MarkdownRenderer")
-            .field("theme", &self.theme)
-            .finish()
+        f.debug_struct("MarkdownRenderer").field("theme", &self.theme).finish()
     }
 }
 
@@ -59,9 +58,7 @@ impl MarkdownRenderer {
     /// Construct with the default syntect theme ([`DEFAULT_THEME`]).
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            theme: DEFAULT_THEME.to_owned(),
-        }
+        Self { theme: DEFAULT_THEME.to_owned() }
     }
 
     /// Construct with an explicit bundled syntect theme name
@@ -70,9 +67,7 @@ impl MarkdownRenderer {
     /// [`DEFAULT_THEME`] at render time.
     #[must_use]
     pub fn with_theme(theme: &str) -> Self {
-        Self {
-            theme: theme.to_owned(),
-        }
+        Self { theme: theme.to_owned() }
     }
 
     /// Render a CommonMark source to an ANSI-coloured `String`.
@@ -113,11 +108,11 @@ impl MarkdownRenderer {
                 self.render_inlines(node, out);
                 out.push_str(SGR_RESET);
                 out.push('\n');
-            }
+            },
             NodeValue::Paragraph => {
                 self.render_inlines(node, out);
                 out.push('\n');
-            }
+            },
             NodeValue::CodeBlock(cb) => {
                 let lang = cb.info.split_whitespace().next().unwrap_or("");
                 let rendered = self.render_code_block(&cb.literal, lang);
@@ -125,10 +120,10 @@ impl MarkdownRenderer {
                 if !rendered.ends_with('\n') {
                     out.push('\n');
                 }
-            }
+            },
             NodeValue::ThematicBreak => {
                 out.push_str("---\n");
-            }
+            },
             NodeValue::BlockQuote => {
                 let mut inner = String::new();
                 for child in node.children() {
@@ -139,12 +134,12 @@ impl MarkdownRenderer {
                     out.push_str(line);
                     out.push('\n');
                 }
-            }
+            },
             NodeValue::List(_) => {
                 for child in node.children() {
                     self.render_block(child, out);
                 }
-            }
+            },
             NodeValue::Item(_) => {
                 out.push_str("- ");
                 let mut inner = String::new();
@@ -155,13 +150,13 @@ impl MarkdownRenderer {
                 // bullet line stays compact.
                 out.push_str(inner.trim_end_matches('\n'));
                 out.push('\n');
-            }
+            },
             _ => {
                 // Fallback: render whatever inline text is reachable so we
                 // never silently swallow content.
                 self.render_inlines(node, out);
                 out.push('\n');
-            }
+            },
         }
     }
 
@@ -176,23 +171,23 @@ impl MarkdownRenderer {
                     out.push_str(SGR_BOLD);
                     self.render_inlines(child, out);
                     out.push_str(SGR_RESET);
-                }
+                },
                 NodeValue::Emph => {
                     out.push_str(SGR_ITALIC);
                     self.render_inlines(child, out);
                     out.push_str(SGR_RESET);
-                }
+                },
                 NodeValue::Strikethrough => {
                     // SGR 9 = crossed-out.
                     out.push_str("\x1b[9m");
                     self.render_inlines(child, out);
                     out.push_str(SGR_RESET);
-                }
+                },
                 NodeValue::Underline => {
                     out.push_str(SGR_UNDERLINE);
                     self.render_inlines(child, out);
                     out.push_str(SGR_RESET);
-                }
+                },
                 NodeValue::Code(c) => {
                     // Inline code: reverse video so it visually pops in
                     // every terminal palette without relying on truecolor.
@@ -201,7 +196,7 @@ impl MarkdownRenderer {
                     out.push_str(&c.literal);
                     out.push(' ');
                     out.push_str(SGR_RESET);
-                }
+                },
                 NodeValue::Link(l) => {
                     out.push_str(SGR_UNDERLINE);
                     self.render_inlines(child, out);
@@ -211,7 +206,7 @@ impl MarkdownRenderer {
                         out.push_str(&l.url);
                         out.push(')');
                     }
-                }
+                },
                 NodeValue::Image(l) => {
                     out.push_str("[image]");
                     if !l.url.is_empty() {
@@ -219,7 +214,7 @@ impl MarkdownRenderer {
                         out.push_str(&l.url);
                         out.push(')');
                     }
-                }
+                },
                 NodeValue::HtmlInline(s) => out.push_str(s),
                 _ => self.render_inlines(child, out),
             }
@@ -271,15 +266,9 @@ mod tests {
         // bare body
         assert_eq!(d.feed("aphrody-md;SGVsbG8=").as_deref(), Some("Hello"));
         // framed with BEL
-        assert_eq!(
-            d.feed("\x1b]aphrody-md;SGVsbG8=\x07").as_deref(),
-            Some("Hello")
-        );
+        assert_eq!(d.feed("\x1b]aphrody-md;SGVsbG8=\x07").as_deref(), Some("Hello"));
         // framed with ST
-        assert_eq!(
-            d.feed("\x1b]aphrody-md;SGVsbG8=\x1b\\").as_deref(),
-            Some("Hello")
-        );
+        assert_eq!(d.feed("\x1b]aphrody-md;SGVsbG8=\x1b\\").as_deref(), Some("Hello"));
     }
 
     #[test]

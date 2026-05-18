@@ -21,21 +21,20 @@
 #![deny(unsafe_code)]
 
 pub mod coord;
+use std::{net::SocketAddr, path::PathBuf};
+
+use anyhow::{Context as _, Result};
 pub use coord::{
     CoordError, CoordProxy, CoordResponseKind, HttpResponse as CoordHttpResponse,
     NDJSON_CONTENT_TYPE, SSE_CONTENT_TYPE,
 };
-
-use std::net::SocketAddr;
-use std::path::PathBuf;
-
-use anyhow::{Context as _, Result};
-use futures_util::stream::StreamExt;
-use futures_util::SinkExt;
-use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+use futures_util::{SinkExt, stream::StreamExt};
+use portable_pty::{CommandBuilder, PtySize, native_pty_system};
 use serde::Deserialize;
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::mpsc;
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::mpsc,
+};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info, warn};
 
@@ -58,12 +57,7 @@ pub struct PtyConfig {
 
 impl Default for PtyConfig {
     fn default() -> Self {
-        Self {
-            cols: 80,
-            rows: 24,
-            shell: None,
-            cwd: None,
-        }
+        Self { cols: 80, rows: 24, shell: None, cwd: None }
     }
 }
 
@@ -93,11 +87,7 @@ pub fn default_shell() -> String {
 #[cfg(target_os = "windows")]
 fn which_shell(name: &str) -> bool {
     use std::process::Command;
-    Command::new("where")
-        .arg(name)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    Command::new("where").arg(name).output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 // ── Control message ───────────────────────────────────────────────────────────
@@ -120,9 +110,7 @@ enum ControlMsg {
 /// This function runs indefinitely.  Cancel the surrounding task to shut down
 /// the server.
 pub async fn serve(addr: SocketAddr, cfg: PtyConfig) -> Result<()> {
-    let listener = TcpListener::bind(addr)
-        .await
-        .with_context(|| format!("bind {addr}"))?;
+    let listener = TcpListener::bind(addr).await.with_context(|| format!("bind {addr}"))?;
     info!("aphrody-terminal-backend listening on {addr}");
 
     loop {
@@ -142,20 +130,13 @@ pub async fn serve(addr: SocketAddr, cfg: PtyConfig) -> Result<()> {
 /// Upgrade a raw TCP stream to WebSocket, open a pty, and bridge them.
 async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
     // WebSocket upgrade.
-    let ws_stream = tokio_tungstenite::accept_async(stream)
-        .await
-        .context("WebSocket handshake")?;
+    let ws_stream = tokio_tungstenite::accept_async(stream).await.context("WebSocket handshake")?;
     let (mut ws_sink, mut ws_source) = ws_stream.split();
 
     // Open pty via portable_pty.
     let pty_system = native_pty_system();
     let pty_pair = pty_system
-        .openpty(PtySize {
-            rows: cfg.rows,
-            cols: cfg.cols,
-            pixel_width: 0,
-            pixel_height: 0,
-        })
+        .openpty(PtySize { rows: cfg.rows, cols: cfg.cols, pixel_width: 0, pixel_height: 0 })
         .context("openpty")?;
 
     // Build shell command.
@@ -189,11 +170,11 @@ async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
                     if pty_tx.blocking_send(buf[..n].to_vec()).is_err() {
                         break;
                     }
-                }
+                },
                 Err(e) => {
                     debug!("pty read error: {e}");
                     break;
-                }
+                },
             }
         }
     });
@@ -222,7 +203,7 @@ async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
                     if std::io::Write::write_all(&mut writer, &data).is_err() {
                         break;
                     }
-                }
+                },
                 None => break,
             }
         }
@@ -235,7 +216,7 @@ async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
             Err(e) => {
                 debug!("ws recv error: {e}");
                 break;
-            }
+            },
         };
 
         match msg {
@@ -243,33 +224,26 @@ async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
                 if ws_to_pty_tx.send(bytes).await.is_err() {
                     break;
                 }
-            }
-            Message::Text(text) => {
-                match serde_json::from_str::<ControlMsg>(&text) {
-                    Ok(ControlMsg::Resize { cols, rows }) => {
-                        let size = PtySize {
-                            rows,
-                            cols,
-                            pixel_width: 0,
-                            pixel_height: 0,
-                        };
-                        if resize_tx.send(size).await.is_err() {
-                            break;
-                        }
+            },
+            Message::Text(text) => match serde_json::from_str::<ControlMsg>(&text) {
+                Ok(ControlMsg::Resize { cols, rows }) => {
+                    let size = PtySize { rows, cols, pixel_width: 0, pixel_height: 0 };
+                    if resize_tx.send(size).await.is_err() {
+                        break;
                     }
-                    Ok(ControlMsg::Data { bytes }) => {
-                        if ws_to_pty_tx.send(bytes).await.is_err() {
-                            break;
-                        }
+                },
+                Ok(ControlMsg::Data { bytes }) => {
+                    if ws_to_pty_tx.send(bytes).await.is_err() {
+                        break;
                     }
-                    Err(e) => {
-                        debug!("unrecognised control msg: {e}");
-                    }
-                }
-            }
+                },
+                Err(e) => {
+                    debug!("unrecognised control msg: {e}");
+                },
+            },
             Message::Close(_) => break,
             // Ping/Pong are handled by tungstenite automatically.
-            _ => {}
+            _ => {},
         }
     }
 

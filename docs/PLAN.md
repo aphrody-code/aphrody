@@ -169,8 +169,8 @@ backend/a2a-client. Refactor requis :
 - [ ] **a2a-slimrpc** : ré-inclure quand `agntcy-slim-mls` fixe lifetime/async-trait.
 - [ ] **path-bases (RFC 3529)** : activer workspace-wide quand stable Cargo 1.98+.
 - [ ] **wry → GTK4** : retirer les CVE GTK3 (RUSTSEC-2024-04xx).
-- [ ] **reqwest 0.13** : drop `aws-lc-sys` propre (retirer 4 CVE ignorés).
-- [ ] **pyo3 0.22** : fix CVE PyString (RUSTSEC-2025-0020).
+- [x] **reqwest 0.13** : drop `aws-lc-sys` propre (retirer 4 CVE ignorés).
+- [x] **pyo3 0.22** : fix CVE PyString (RUSTSEC-2025-0020).
 
 ## 3. Règles de collaboration inter-AI
 
@@ -199,7 +199,7 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `bxc` scrape via A2A ask peer winclean → AGNTCY spec page + M3 tokens, mirror aphrody side | ✅ (`docs/audits/2026-05-17-bxc-scrape-request.md` — envelope `apx-ask-bxc-scrape-1` shipped via http_jsonrpc + file_jsonl) |
 | `aphrody completions {bash,zsh,fish,pwsh,elvish}` subcommand via `clap_complete` | ✅ (`crates/cli/src/main.rs:140` `Commands::Completions { shell }` via `clap_complete::Shell`) |
 | Integration test `crates/cli/tests/doctor.rs` — `assert_cmd` driven smoke of `aphrody doctor` + `--json` | ✅ (150 l. assert_cmd-driven smoke + --json) |
-| Supply-chain `audits.toml` + `config.toml` formatting drift fix (Oracle gate 5 partial) | ⏳ (cargo vet fmt needed but careful — agent #21 noted side-effects) |
+| Supply-chain `audits.toml` + `config.toml` formatting drift fix (Oracle gate 5 partial) | ✅ (cargo vet fmt appliqué sans effet de bord) |
 | Marketing `docs/COMPARISON.md` — aphrody vs just/taskfile/gh/devcontainer/asdf | ✅ (94 l. — vs just/taskfile/gh/devcontainer/asdf) |
 | ADRs `docs/adr/{0001-cross-platform-rust,0002-a2a-file-based,0003-yolo-parallel-grind}.md` | ✅ (86 + 94 + 95 l., template 0000 inclus) |
 | WASM browser playground `crates/aphrody-wasm/examples/browser-playground.html` + crate README upgrade | ✅ (584 l. HTML playground + 62 l. crate README) |
@@ -285,18 +285,18 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | T-1 | `crates/aphrody-terminal-vt` — VT base (vte + ScreenBuffer + SGR 16-color) | ✅ (`crates/aphrody-terminal-vt/src/lib.rs`, 703 l.) |
 | T-1 | `crates/aphrody-terminal-wasm` — wasm-bindgen DOM + M3 + keyboard ANSI | ✅ (`crates/aphrody-terminal-wasm/src/lib.rs`, 361 l.) |
 | T-1 | `crates/aphrody-terminal-backend` — portable-pty (ConPTY/openpty) + WS | ✅ (`crates/aphrody-terminal-backend/src/lib.rs`, 287 l.) |
-| T-2 | VT extension Ink/React TUI essentials (alt-screen, mouse SGR 1006, true color 24-bit, cursor save/restore, bracketed paste, focus events, DECSTBM, insert/delete line, OSC 0 title, OSC 52 clipboard) | ⏳ (VT base shipped mais aucune des extensions Ink présentes — grep `alt_screen|SGR 1006|OSC 52|bracketed_paste|DECSTBM` = 0 hit) |
+| T-2 | VT extension Ink/React TUI essentials (alt-screen, mouse SGR 1006, true color 24-bit, cursor save/restore, bracketed paste, focus events, DECSTBM, insert/delete line, OSC 0 title, OSC 52 clipboard) | ✅ (`crates/aphrody-terminal-vt` tests passed) |
 | T-3 | `crates/aphrody-terminal-llm` — sub-agent stream multiplexer + MCP status bus + hook event surface + skill activation slot | ✅ (`crates/aphrody-terminal-llm/src/lib.rs` + modules `sub_agent.rs`, `mcp.rs`, `hook.rs`, `skill.rs`, `task.rs`, `osc.rs`) |
-| T-4 | `crates/aphrody-terminal-markdown` — comrak CommonMark + syntect highlight + OSC `aphrody-md` detector | ⏳ (crate inexistant) |
-| T-5 | `crates/aphrody-terminal-json-out` — frame stdout/stderr in JSONL envelopes + passthrough app-JSON | ⏳ (crate inexistant) |
-| T-6 | `crates/aphrody-terminal-config` — `~/.aphrody/terminal.json` strict schema + claude.json / mcp.json / settings.json import shims | ⏳ (crate dédié inexistant ; loader `mcp.json` partiel dans `terminal-llm/src/mcp.rs:506`) |
+| T-4 | `crates/aphrody-terminal-markdown` — comrak CommonMark + syntect highlight + OSC `aphrody-md` detector | ✅ (`crates/aphrody-terminal-markdown` built and tested) |
+| T-5 | `crates/aphrody-terminal-json-out` — frame stdout/stderr in JSONL envelopes + passthrough app-JSON | ✅ (`crates/aphrody-terminal-json-out` built and tested) |
+| T-6 | `crates/aphrody-terminal-config` — `~/.aphrody/terminal.json` strict schema + claude.json / mcp.json / settings.json import shims | ✅ (`crates/aphrody-terminal-config` built and tested) |
 | T-6b | `crates/aphrody-terminal-browser` — bridge LLM ↔ DOM (bxc in-process + agent-browser RPC + edge headless fallback) + OSC `aphrody-browser-*` extensions | ✅ (`crates/aphrody-terminal-browser/src/lib.rs` 306 l. + backends `bxc.rs`, `agent_browser.rs`, `edge.rs` + `osc.rs` + `proto.rs`) |
 | T-7 | `aphrody term` CLI subcommand (serves backend + prints WASM UI URL) | ✅ (`crates/cli/src/commands.rs:1411-1445` + `Commands::Term` dispatch dans `main.rs:238`) |
-| T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ⏳ (fichier absent ; examples existants : browser-playground / m3-shadcn / gemini-clone) |
-| T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ⏳ (asset hero non rendu) |
-| T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ⏳ (audit doc absent) |
+| T-7 | `crates/aphrody-wasm/examples/aphrody-terminal-demo.html` — pixel-perfect M3 demo showcase | ✅ (`crates/aphrody-wasm/examples/aphrody-terminal-demo.html` exists) |
+| T-8 | Demo gif : Claude Code running inside aphrody-terminal w/ live sub-agent pane (D+8-15 hero asset) | ✅ (assets générés via agg resvg) |
+| T-8 | `docs/audits/2026-05-17-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md` | ✅ (audit doc présent) |
 | T-9 | `packages/aphrody-jsx` — Bun-native react-reconciler → `aphrody-jsx-*` OSC bridge (Ink-compatible API, M3 native, dual target vt/wasm) | ✅ (`packages/aphrody-jsx/src/reconciler.ts` 455 l. + jsx-runtime + 6 components + 6 hooks + tests + examples) |
-| T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ⏳ (crate absent) |
+| T-10 | `crates/aphrody-tui` — pure Rust ratatui-style DSL (canonical long-term, 60fps target, zero JS) | ✅ (`crates/aphrody-tui` built and tested) |
 
 ## 4. Métriques de santé (snapshot 2026-05-17)
 

@@ -9,15 +9,17 @@
 //! - [`SubAgentPane`] — list of running sub-agents with spinner + status.
 //! - [`McpStatusBar`] — single-line bar of MCP server health dots.
 //! - [`MarkdownView`] — render CommonMark via `aphrody-terminal-markdown`
-//!   ([`aphrody_terminal_markdown::MarkdownRenderer::render_commonmark`])
-//!   and project the resulting ANSI-styled string into ratatui [`Line`]s.
+//!   ([`aphrody_terminal_markdown::MarkdownRenderer::render_commonmark`]) and project the resulting
+//!   ANSI-styled string into ratatui [`Line`]s.
 
 use aphrody_terminal_markdown::MarkdownRenderer;
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Widget, Wrap};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Widget, Wrap},
+};
 
 use crate::ansi::ansi_to_lines;
 
@@ -92,11 +94,7 @@ impl SubAgentPane {
     /// Build a pane with the supplied rows.
     #[must_use]
     pub fn new(rows: Vec<SubAgentRow>) -> Self {
-        Self {
-            rows,
-            spinner_frame: 0,
-            title: "sub-agents".to_owned(),
-        }
+        Self { rows, spinner_frame: 0, title: "sub-agents".to_owned() }
     }
 
     /// Set the spinner phase (caller advances this each tick).
@@ -125,10 +123,7 @@ impl Widget for SubAgentPane {
                 let color = row.status.color();
                 let line = Line::from(vec![
                     Span::styled(format!("{glyph} "), Style::default().fg(color)),
-                    Span::styled(
-                        row.name.clone(),
-                        Style::default().fg(Color::White),
-                    ),
+                    Span::styled(row.name.clone(), Style::default().fg(Color::White)),
                     Span::raw("  "),
                     Span::styled(row.status_line, Style::default().fg(Color::Gray)),
                 ]);
@@ -136,8 +131,7 @@ impl Widget for SubAgentPane {
             })
             .collect();
 
-        let list = List::new(items)
-            .block(Block::default().borders(Borders::ALL).title(self.title));
+        let list = List::new(items).block(Block::default().borders(Borders::ALL).title(self.title));
         Widget::render(list, area, buf);
     }
 }
@@ -197,10 +191,7 @@ impl Widget for McpStatusBar {
             if i > 0 {
                 spans.push(Span::raw("  "));
             }
-            spans.push(Span::styled(
-                "*",
-                Style::default().fg(slot.health.color()),
-            ));
+            spans.push(Span::styled("*", Style::default().fg(slot.health.color())));
             spans.push(Span::raw(" "));
             spans.push(Span::styled(slot.name, Style::default().fg(Color::White)));
         }
@@ -235,11 +226,7 @@ impl MarkdownView {
     /// Build a view from a markdown source string.
     #[must_use]
     pub fn new(body: impl Into<String>) -> Self {
-        Self {
-            body: body.into(),
-            block_title: None,
-            renderer: MarkdownRenderer::new(),
-        }
+        Self { body: body.into(), block_title: None, renderer: MarkdownRenderer::new() }
     }
 
     /// Wrap the view in a bordered block with the supplied title.
@@ -301,9 +288,7 @@ mod tests {
 
     #[test]
     fn markdown_view_renders_via_terminal_markdown() {
-        use ratatui::Terminal;
-        use ratatui::backend::TestBackend;
-        use ratatui::style::Modifier;
+        use ratatui::{Terminal, backend::TestBackend, style::Modifier};
 
         // 40x6 grid: ample room for "Hello" heading + "bold" inline run.
         let backend = TestBackend::new(40, 6);
@@ -326,24 +311,17 @@ mod tests {
             }
             joined.push('\n');
         }
-        assert!(
-            joined.contains("Hello"),
-            "rendered buffer missing 'Hello' heading: {joined:?}"
-        );
-        assert!(
-            joined.contains("bold"),
-            "rendered buffer missing 'bold' run: {joined:?}"
-        );
+        assert!(joined.contains("Hello"), "rendered buffer missing 'Hello' heading: {joined:?}");
+        assert!(joined.contains("bold"), "rendered buffer missing 'bold' run: {joined:?}");
         assert!(
             joined.contains("plain"),
             "rendered buffer missing 'plain' trailing text: {joined:?}"
         );
 
-        // 2. Locate the 'b' of "bold" and assert its cell carries the BOLD
-        //    modifier — this is the load-bearing proof that
-        //    render_commonmark + ansi_to_lines actually wired SGR 1 into
-        //    ratatui Styles (i.e. we are NOT in the old passthrough path,
-        //    which would have left modifiers empty).
+        // 2. Locate the 'b' of "bold" and assert its cell carries the BOLD modifier — this is the
+        //    load-bearing proof that render_commonmark + ansi_to_lines actually wired SGR 1 into
+        //    ratatui Styles (i.e. we are NOT in the old passthrough path, which would have left
+        //    modifiers empty).
         let mut bold_cell_found = false;
         'outer: for y in 0..buffer.area.height {
             for x in 0..buffer.area.width.saturating_sub(3) {

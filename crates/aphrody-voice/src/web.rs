@@ -60,8 +60,8 @@ impl WebSpeechSynth {
 
     /// Enqueue `text` for synthesis with optional voice, rate, and pitch.
     ///
-    /// * `voice_name` — BCP-47 name of a voice returned by [`list_voices`].
-    ///   When `None` the browser chooses its default voice.
+    /// * `voice_name` — BCP-47 name of a voice returned by [`list_voices`]. When `None` the browser
+    ///   chooses its default voice.
     /// * `rate` — speech rate multiplier (0.1 – 10.0; 1.0 = normal).
     /// * `pitch` — pitch multiplier (0.0 – 2.0; 1.0 = normal).
     ///

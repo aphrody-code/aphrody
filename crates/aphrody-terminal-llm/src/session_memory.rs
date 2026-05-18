@@ -5,12 +5,11 @@
 //! Matrix row `T-INT-memory` integration point. The pane delegates **all**
 //! storage and similarity search to the [`aphrody_memory`] crate:
 //!
-//! - [`aphrody_memory::jsonl::JsonlBackend`] — durable append-on-rewrite store,
-//!   one `<root>/<ns>.jsonl` file per namespace (the same envelope shape used
-//!   by the `.coord/inbox-from-aphrody.jsonl` A2A mailboxes).
-//! - [`aphrody_memory::MemoryBackend::search`] — exact cosine similarity over
-//!   embeddings (brute-force fallback for the HNSW backend per the crate's
-//!   migration note).
+//! - [`aphrody_memory::jsonl::JsonlBackend`] — durable append-on-rewrite store, one
+//!   `<root>/<ns>.jsonl` file per namespace (the same envelope shape used by the
+//!   `.coord/inbox-from-aphrody.jsonl` A2A mailboxes).
+//! - [`aphrody_memory::MemoryBackend::search`] — exact cosine similarity over embeddings
+//!   (brute-force fallback for the HNSW backend per the crate's migration note).
 //!
 //! ### Embedding strategy
 //!
@@ -35,15 +34,11 @@
 //!
 //! [`publish_to`]: SessionMemoryPane::publish_to
 
-use std::{
-    path::Path,
-    sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
 use anyhow::{Context, Result};
-use tokio::sync::Mutex;
-
 use aphrody_memory::{Embedding, MemoryBackend, MemoryRecord, jsonl::JsonlBackend};
+use tokio::sync::Mutex;
 
 use crate::{EventBus, LlmEvent};
 
@@ -102,12 +97,9 @@ impl SessionMemoryPane {
     ///
     /// Propagates any I/O or deserialisation error from [`JsonlBackend::open`].
     pub async fn open(root: impl AsRef<Path>) -> Result<Self> {
-        let backend = JsonlBackend::open(root)
-            .await
-            .context("open JsonlBackend for session-memory pane")?;
-        Ok(Self {
-            memory: Arc::new(Mutex::new(backend)),
-        })
+        let backend =
+            JsonlBackend::open(root).await.context("open JsonlBackend for session-memory pane")?;
+        Ok(Self { memory: Arc::new(Mutex::new(backend)) })
     }
 
     /// Record `entry` (a terminal command or sub-agent transcript line) into
@@ -123,10 +115,7 @@ impl SessionMemoryPane {
         let key = format!("{}/{}", record.ns, record.id);
 
         let mut guard = self.memory.lock().await;
-        guard
-            .put(&key, record)
-            .await
-            .context("put session-memory record into JsonlBackend")
+        guard.put(&key, record).await.context("put session-memory record into JsonlBackend")
     }
 
     /// Recall the `limit` most-similar past entries for `query`, ordered by
@@ -157,10 +146,7 @@ impl SessionMemoryPane {
 
         Ok(scored
             .into_iter()
-            .map(|(rec, score)| SessionMemoryEntry {
-                command: rec.content,
-                score,
-            })
+            .map(|(rec, score)| SessionMemoryEntry { command: rec.content, score })
             .collect())
     }
 
@@ -176,19 +162,11 @@ impl SessionMemoryPane {
     ///
     /// Propagates either the recall failure or the publish failure (no
     /// subscribers, channel closed, etc.).
-    pub async fn publish_to(
-        &self,
-        bus: &EventBus,
-        query: &str,
-        limit: usize,
-    ) -> Result<usize> {
+    pub async fn publish_to(&self, bus: &EventBus, query: &str, limit: usize) -> Result<usize> {
         let matches = self.recall(query, limit).await?;
         let entries: Vec<String> = matches.into_iter().map(|m| m.command).collect();
         let count = bus
-            .publish(LlmEvent::SessionRecall {
-                query: query.to_owned(),
-                entries,
-            })
+            .publish(LlmEvent::SessionRecall { query: query.to_owned(), entries })
             .map_err(|e| anyhow::anyhow!("event bus has no subscribers: {e}"))?;
         Ok(count)
     }
@@ -298,10 +276,8 @@ mod tests {
         let bus = EventBus::new(8);
         let mut rx = bus.subscribe();
 
-        let receivers = pane
-            .publish_to(&bus, "ls /tmp", 5)
-            .await
-            .expect("publish recall to event bus");
+        let receivers =
+            pane.publish_to(&bus, "ls /tmp", 5).await.expect("publish recall to event bus");
         assert!(receivers >= 1, "expected at least one subscriber, got {receivers}");
 
         let ev = rx.recv().await.expect("recv recall event");

@@ -11,10 +11,12 @@
 //! the body is never mangled.
 
 use once_cell::sync::Lazy;
-use syntect::easy::HighlightLines;
-use syntect::highlighting::{Style, Theme, ThemeSet};
-use syntect::parsing::SyntaxSet;
-use syntect::util::{LinesWithEndings, as_24_bit_terminal_escaped};
+use syntect::{
+    easy::HighlightLines,
+    highlighting::{Style, Theme, ThemeSet},
+    parsing::SyntaxSet,
+    util::{LinesWithEndings, as_24_bit_terminal_escaped},
+};
 
 /// Default theme name. `base16-ocean.dark` ships with syntect's
 /// `default-themes` and is the same default `bat` uses.
@@ -26,10 +28,9 @@ static THEMES: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
 /// Render a single fenced code block as ANSI-coloured text.
 ///
 /// * `code` — raw block body (may end with a trailing newline).
-/// * `lang` — info-string (`"rust"`, `"py"`, `"json"`, ...). Empty or
-///   unknown languages return `code` verbatim.
-/// * `theme_name` — bundled syntect theme; falls back to [`DEFAULT_THEME`]
-///   if not found.
+/// * `lang` — info-string (`"rust"`, `"py"`, `"json"`, ...). Empty or unknown languages return
+///   `code` verbatim.
+/// * `theme_name` — bundled syntect theme; falls back to [`DEFAULT_THEME`] if not found.
 #[must_use]
 pub fn render_code_block_ansi(code: &str, lang: &str, theme_name: &str) -> String {
     if lang.is_empty() {
@@ -71,10 +72,7 @@ mod tests {
     fn unknown_lang_passthrough() {
         let src = "hello world\n";
         assert_eq!(render_code_block_ansi(src, "", DEFAULT_THEME), src);
-        assert_eq!(
-            render_code_block_ansi(src, "no-such-lang-xyz", DEFAULT_THEME),
-            src
-        );
+        assert_eq!(render_code_block_ansi(src, "no-such-lang-xyz", DEFAULT_THEME), src);
     }
 
     #[test]

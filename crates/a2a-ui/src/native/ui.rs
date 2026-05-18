@@ -86,15 +86,15 @@ impl Palette {
         {
             // Fallback: ANSI-256 approximation of M3 dark-theme baseline.
             Self {
-                surface: Color::Indexed(234),          // near #1C1B1F
-                on_surface: Color::Indexed(253),        // near #E6E1E5
-                surface_variant: Color::Indexed(237),   // near #49454F
+                surface: Color::Indexed(234),            // near #1C1B1F
+                on_surface: Color::Indexed(253),         // near #E6E1E5
+                surface_variant: Color::Indexed(237),    // near #49454F
                 on_surface_variant: Color::Indexed(251), // near #CAC4D0
-                primary: Color::Indexed(183),           // near #D0BCFF
-                on_primary: Color::Indexed(55),         // near #381E72
-                secondary: Color::Indexed(182),         // near #CCC2DC
-                tertiary: Color::Indexed(218),          // near #EFB8C8
-                error: Color::Indexed(217),             // near #F2B8B0
+                primary: Color::Indexed(183),            // near #D0BCFF
+                on_primary: Color::Indexed(55),          // near #381E72
+                secondary: Color::Indexed(182),          // near #CCC2DC
+                tertiary: Color::Indexed(218),           // near #EFB8C8
+                error: Color::Indexed(217),              // near #F2B8B0
             }
         }
     }
@@ -125,9 +125,7 @@ fn age_label(mtime: Option<SystemTime>) -> (&'static str, Color) {
     let Some(mtime) = mtime else {
         return ("UNKNOWN", Color::DarkGray);
     };
-    let age = SystemTime::now()
-        .duration_since(mtime)
-        .unwrap_or(Duration::MAX);
+    let age = SystemTime::now().duration_since(mtime).unwrap_or(Duration::MAX);
 
     if age < Duration::from_secs(5 * 60) {
         ("ONLINE", Color::Green)
@@ -143,10 +141,7 @@ fn fmt_age(mtime: Option<SystemTime>) -> String {
     let Some(mtime) = mtime else {
         return "?".to_owned();
     };
-    let secs = SystemTime::now()
-        .duration_since(mtime)
-        .unwrap_or(Duration::ZERO)
-        .as_secs();
+    let secs = SystemTime::now().duration_since(mtime).unwrap_or(Duration::ZERO).as_secs();
     if secs < 3600 {
         format!("{}m {}s", secs / 60, secs % 60)
     } else {
@@ -214,10 +209,7 @@ fn draw_header(frame: &mut Frame, area: Rect, state: &DrawState) {
     let line = Line::from(vec![
         Span::styled(
             "  A2A coord channel  ",
-            Style::default()
-                .fg(pal.on_primary)
-                .bg(pal.primary)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(pal.on_primary).bg(pal.primary).add_modifier(Modifier::BOLD),
         ),
         Span::raw("  "),
         Span::styled("aphrody", Style::default().fg(pal.primary).add_modifier(Modifier::BOLD)),
@@ -233,9 +225,7 @@ fn draw_header(frame: &mut Frame, area: Rect, state: &DrawState) {
         Span::raw("]"),
     ]);
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .style(Style::default().bg(pal.surface));
+    let block = Block::default().borders(Borders::ALL).style(Style::default().bg(pal.surface));
 
     let paragraph = Paragraph::new(Text::from(line)).block(block);
     frame.render_widget(paragraph, area);
@@ -258,11 +248,7 @@ fn draw_body(frame: &mut Frame, area: Rect, state: &mut DrawState) {
 fn draw_list(frame: &mut Frame, area: Rect, state: &mut DrawState) {
     let pal = state.palette;
 
-    let title = format!(
-        " inbox-from-{} ({}) ",
-        state.active_side,
-        state.envelopes.len()
-    );
+    let title = format!(" inbox-from-{} ({}) ", state.active_side, state.envelopes.len());
 
     let match_set: std::collections::HashSet<usize> =
         state.search_matches.iter().copied().collect();
@@ -285,11 +271,7 @@ fn draw_list(frame: &mut Frame, area: Rect, state: &mut DrawState) {
             let topic: String = env.topic.chars().take(30).collect();
 
             // Short timestamp: take only the time portion (after 'T').
-            let ts_short: &str = env
-                .ts
-                .find('T')
-                .map(|p| &env.ts[p + 1..])
-                .unwrap_or(&env.ts);
+            let ts_short: &str = env.ts.find('T').map(|p| &env.ts[p + 1..]).unwrap_or(&env.ts);
 
             let line = Line::from(vec![
                 Span::styled(format!("{:<8}", &env.kind), Style::default().fg(kc)),
@@ -299,10 +281,7 @@ fn draw_list(frame: &mut Frame, area: Rect, state: &mut DrawState) {
                     Style::default().fg(pal.on_surface_variant),
                 ),
                 Span::raw(" "),
-                Span::styled(
-                    format!("{:<10}", ts_short),
-                    Style::default().fg(pal.surface_variant),
-                ),
+                Span::styled(format!("{:<10}", ts_short), Style::default().fg(pal.surface_variant)),
                 Span::raw(" "),
                 Span::styled(
                     topic,
@@ -320,10 +299,8 @@ fn draw_list(frame: &mut Frame, area: Rect, state: &mut DrawState) {
         })
         .collect();
 
-    let block = Block::default()
-        .title(title)
-        .borders(Borders::ALL)
-        .style(Style::default().bg(pal.surface));
+    let block =
+        Block::default().title(title).borders(Borders::ALL).style(Style::default().bg(pal.surface));
 
     let list = List::new(items)
         .block(block)
@@ -356,9 +333,7 @@ fn draw_detail(frame: &mut Frame, area: Rect, state: &DrawState) {
         .borders(Borders::ALL)
         .style(Style::default().bg(pal.surface));
 
-    let paragraph = Paragraph::new(content)
-        .block(block)
-        .wrap(Wrap { trim: false });
+    let paragraph = Paragraph::new(content).block(block).wrap(Wrap { trim: false });
     frame.render_widget(paragraph, area);
 }
 
@@ -399,10 +374,7 @@ fn build_detail_text<'a>(env: &Envelope, pal: &Palette) -> Text<'a> {
     }
 
     lines.push(Line::raw(""));
-    lines.push(Line::from(Span::styled(
-        "body:",
-        Style::default().fg(pal.on_surface_variant),
-    )));
+    lines.push(Line::from(Span::styled("body:", Style::default().fg(pal.on_surface_variant))));
     lines.push(Line::raw(""));
 
     // Try to pretty-print the body if it is JSON; fall back to raw text.
@@ -463,11 +435,8 @@ fn draw_footer(frame: &mut Frame, area: Rect, state: &DrawState) {
         "  / search  |  n/N match  ".to_owned()
     };
 
-    let tab_label = if state.active_side == "aphrody" {
-        "Tab -> winclean"
-    } else {
-        "Tab -> aphrody"
-    };
+    let tab_label =
+        if state.active_side == "aphrody" { "Tab -> winclean" } else { "Tab -> aphrody" };
 
     let line = Line::from(vec![
         Span::styled(" q ", Style::default().fg(pal.error).add_modifier(Modifier::BOLD)),
@@ -475,22 +444,15 @@ fn draw_footer(frame: &mut Frame, area: Rect, state: &DrawState) {
         Span::styled(" r ", Style::default().fg(pal.primary).add_modifier(Modifier::BOLD)),
         Span::raw("refresh  "),
         Span::raw(search_hint),
-        Span::styled(
-            " Enter ",
-            Style::default().fg(pal.tertiary).add_modifier(Modifier::BOLD),
-        ),
+        Span::styled(" Enter ", Style::default().fg(pal.tertiary).add_modifier(Modifier::BOLD)),
         Span::raw("expand  "),
         Span::styled(
             format!(" {tab_label} "),
-            Style::default()
-                .fg(pal.on_surface_variant)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(pal.on_surface_variant).add_modifier(Modifier::BOLD),
         ),
     ]);
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .style(Style::default().bg(pal.surface));
+    let block = Block::default().borders(Borders::ALL).style(Style::default().bg(pal.surface));
 
     let paragraph = Paragraph::new(Text::from(line)).block(block);
     frame.render_widget(paragraph, area);

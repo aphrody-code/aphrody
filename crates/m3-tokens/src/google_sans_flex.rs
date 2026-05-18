@@ -192,10 +192,7 @@ mod tests {
             ALL_AXES[5].tag,
         ];
         for required in ["wght", "opsz", "wdth", "GRAD", "slnt", "ROND"] {
-            assert!(
-                tags.contains(&required),
-                "axis `{required}` must be present in ALL_AXES"
-            );
+            assert!(tags.contains(&required), "axis `{required}` must be present in ALL_AXES");
         }
     }
 

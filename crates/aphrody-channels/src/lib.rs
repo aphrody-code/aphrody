@@ -312,3 +312,9 @@ mod tests {
         assert!(err.to_string().contains("channel_not_found"));
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_util {
+    use std::sync::Mutex;
+    pub(crate) static ENV_LOCK: Mutex<()> = Mutex::new(());
+}

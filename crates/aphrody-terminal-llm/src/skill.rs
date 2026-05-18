@@ -41,11 +41,7 @@ pub struct SkillSlot {
 impl SkillSlot {
     /// Create an empty registry.
     pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(Inner {
-                slots: HashMap::new(),
-            })),
-        }
+        Self { inner: Arc::new(Mutex::new(Inner { slots: HashMap::new() })) }
     }
 
     /// Activate (or update) a skill slot. Sets state to `Active`.
@@ -81,9 +77,7 @@ impl SkillSlot {
     pub fn set_error(&self, name: &str, message: impl Into<String>) {
         let mut guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(entry) = guard.slots.get_mut(name) {
-            entry.state = SkillState::Error {
-                message: message.into(),
-            };
+            entry.state = SkillState::Error { message: message.into() };
         }
     }
 
@@ -106,7 +100,7 @@ impl SkillSlot {
                     // Ensure slot exists, then set idle.
                     self.activate(name, phase, payload.clone());
                     self.deactivate(name);
-                }
+                },
                 "error" => {
                     let msg = payload
                         .get("message")
@@ -116,11 +110,11 @@ impl SkillSlot {
                     // Create slot if it doesn't exist.
                     self.activate(name, phase, payload.clone());
                     self.set_error(name, msg);
-                }
+                },
                 _ => {
                     // Update last_phase without forcing a state transition.
                     self.activate(name, phase, payload.clone());
-                }
+                },
             }
         }
     }
