@@ -324,10 +324,10 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | `chromium sync` | profil scan + master key | ✅ 7 profils Chromium détectés + master key déchiffrée |
 | `mirror` (default action `start`) | MD3 assets | ⚠️ silent exit 0 (no-op visible — investigate intent) |
 | `auth` | God Mode + OAuth2 fallback | ⚠️ Chrome Canary détecté mais aucun token Google valide ; délégue à gemini-cli embarqué qui bloque l'appel `run_shell_command` (sandbox correct) |
-| `tokens` (M3 design tokens) | bxc passthrough | ❌ daemon bxc unreachable |
-| `scrape --selector h1 example.com` | bxc passthrough | ❌ daemon bxc unreachable |
-| `bxc detect <url>` | bxc passthrough | ❌ daemon bxc unreachable |
-| `bxc daemon --port 8765` | spawn `bxc-engine` | ❌ `bxc-engine` introuvable sur PATH — voir gap ci-dessous |
+| `tokens` (M3 design tokens) | bxc passthrough | ⚠️ schema mismatch — voir gap #1 |
+| `scrape --selector h1 example.com` | bxc passthrough | ⚠️ live response OK (Cloudflare CDN détecté sur example.com via bxc API server), mais `aphrody scrape` rejette le schema — voir gap #1 |
+| `bxc detect <url>` | bxc passthrough | ⚠️ live response OK via bxc API, mais schema mismatch — voir gap #1 |
+| `bxc daemon --port 8765` | spawn `bxc-engine` | ⚠️ binaire installé (`~/.local/bin/bxc-engine.exe` 49 MB) mais subcommand `serve` absent (binaire = CDP server `Launch`, pas API server) — voir gap #1 |
 | `term --addr 127.0.0.1:18799` | WebSocket-PTY pour WASM UI | ✅ "ws://127.0.0.1:18799 (open the WASM UI to connect)" |
 | `gemini --version` | forward gemini-cli embarqué | ✅ 0.42.0 |
 | `n2b scan` | forward bun n2b CLI | ✅ n2b 0.6.0 → "0 errors, 0 warns, 0 infos" |
@@ -337,7 +337,7 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 
 | # | Gap | Source | Fix proposé |
 |---|---|---|---|
-| 1 | `bxc-engine` pas dans `aphrody self bootstrap` ni dans `aphrody self install-path` | `aphrody bxc daemon` échoue out-of-the-box | Ajouter `cargo install --locked --path crates/bxc-engine` au bootstrap, ou symlink automatique du `target/release/bxc-engine[.exe]` vers `~/.local/bin/` après build workspace |
+| 1 | **Chaîne bxc cassée à trois niveaux**. Détail : (a) `aphrody bxc daemon` invoque `bxc-engine serve --port 8765` mais le binaire Rust `bxc-engine` (alias "obscura" dans `crates/bxc-engine/`) n'a pas de subcommand `serve` — uniquement `launch` (CDP server WebSocket port 9222), `fetch`, `scrape`, `mcp`, `chrome-path`. (b) Quand on lance le bon serveur HTTP API via `packages/bxc/` (Bun, `bun run src/cli/index.ts api --port 8765`), les routes sont préfixées `/api/recon`, `/api/detect`, `/api/scrape`, mais `crates/cli/src/scrape.rs:89,113` POST sur `/recon`, `/scrape` (pas de prefix). (c) Le schema des réponses diverge : `aphrody scrape` attend `SelectorResult { url, selector, matches }` mais bxc Bun retourne `[{index, text}]`. Aphrody → bxc demande **3 fix orthogonaux**, à grouper en P-Test-fix-bxc. Validation live faite : bxc Bun `/api/scrape?url=https://example.com&selector=h1` → `[{index:0, text:"Example Domain"}]`, `/api/detect` → Cloudflare CDN identifié (cf-ray header), `/healthz` 200 OK | Fixes ordered : (1) patcher `commands.rs:1675` `serve --port=…` → `api --port=…` ou `launch --port=…` selon target ; (2) patcher `scrape.rs:89,113` `/recon`/`/scrape` → `/api/recon`/`/api/scrape` ou rendre configurable via `BXC_DAEMON_URL` qui peut inclure `/api` suffix ; (3) ajouter adaptateur de schema OU réécrire le response struct dans `scrape.rs` pour matcher bxc Bun |
 | 2 | `coreutils` / `util-linux` commandes orphelines | crates sortis du workspace mais commandes restent dans `crates/cli/src/main.rs` | Soit cfg-gate les commandes (`#[cfg(any())]` no-op), soit retirer les variants des `Commands` enum, soit pointer vers binaires distincts |
 | 3 | `mirror` silent exit 0 | aucune sortie utilisateur | Vérifier intention — log explicit `[ok] mirror started (n assets)` ou `[skip] no-op` |
 | 4 | `search` Google scraping no-results | Google bloque le scraping naïf | Ajouter fallback DuckDuckGo HTML / Brave Search API / SearXNG instance |
@@ -353,7 +353,8 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | `cargo deny check` | ✅ ok×4 | ok×4 |
 | `cargo build --release -p aphrody --locked` | ✅ 3 min 28 s (Win11 Insider Canary, mimalloc + ring + scraper + rayon) | < 5 min |
 | Binaire installé `~/.local/bin/aphrody.exe` | ✅ 8.3 MB, 27 sous-commandes top-level fonctionnelles | shipping |
-| Smoke 27 sous-commandes (2026-05-19) | 19 ✅ / 3 ⚠️ / 5 ❌ (bxc daemon + coreutils/util-linux orphelins) | tendance vers 27 ✅ |
+| Smoke 27 sous-commandes (2026-05-19) | 19 ✅ / 6 ⚠️ / 2 ❌ (coreutils/util-linux orphelins ; chaîne bxc validée live mais 3 mismatchs à fixer côté aphrody) | tendance vers 27 ✅ |
+| Chaîne bxc live (2026-05-19) | ✅ `bxc-engine` (Rust, 49 MB) + `packages/bxc/rust-bridge/bxc_rust_bridge.dll` + `bxc api` Bun server tournent ; `/api/scrape` extrait "Example Domain" depuis example.com en <1s ; `/api/detect` identifie Cloudflare CDN. aphrody attache requires 3 patches docs §gap #1 | aphrody scrape live |
 | Repo size (sans target, sans mdi) | ~7 Go (vendor/bun dominant) | optimisé |
 | Disque libéré (P1+pivot) | 1.2 Go (vendor/crates.io) + 4.6 Go (material-design-icons) | n/a |
 | CVE ignorés (justifiés) | 12 | < 5 (après upstream alignment) |
