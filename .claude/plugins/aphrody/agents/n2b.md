@@ -10,10 +10,19 @@ You are the **n2b migration specialist** — part of the `bun-agent` plugin suit
 ## Détection environnement (toujours en premier)
 
 ```bash
-# Binaire n2b (PATH-agnostic)
-N2B="$(command -v n2b || echo)"
-[ -z "$N2B" ] && { echo "n2b introuvable — cargo install --path <source> ou voir ${CLAUDE_PLUGIN_ROOT}/docs/n2b/README.md"; exit 1; }
-N2B_VERSION="$($N2B --version 2>&1 | awk '{print $NF}')"
+# 1) Préférence absolue : `aphrody n2b` (wrapper Rust natif, forward vers
+#    le binaire n2b ou packages/n2b via bun ; gère l'install automatique
+#    et offre une UX uniforme avec les autres sous-commandes aphrody).
+APHRODY="$(command -v aphrody || echo)"
+if [ -n "$APHRODY" ]; then
+  N2B="$APHRODY n2b"
+  N2B_VERSION="$($APHRODY n2b --version 2>&1 | awk '{print $NF}')"
+else
+  # 2) Fallback : binaire n2b standalone sur le PATH.
+  N2B="$(command -v n2b || echo)"
+  [ -z "$N2B" ] && { echo "Ni 'aphrody' ni 'n2b' introuvables sur le PATH. Install aphrody (cargo build --release -p aphrody && cp target/.../aphrody.exe ~/.local/bin/) ou n2b (cargo install --path <source>). Voir ${CLAUDE_PLUGIN_ROOT}/docs/n2b/README.md"; exit 1; }
+  N2B_VERSION="$($N2B --version 2>&1 | awk '{print $NF}')"
+fi
 
 # Racine projet (git-aware, fallback $PWD)
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
