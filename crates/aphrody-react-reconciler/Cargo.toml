@@ -1,0 +1,31 @@
+[package]
+name                    = "aphrody-react-reconciler"
+version.workspace       = true
+edition.workspace       = true
+rust-version.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+repository.workspace    = true
+license.workspace       = true
+description             = "aphrody — host-side React reconciler primitives (Element tree, props diff, OSC frame codec, hook state) ported from packages/aphrody-jsx. Cross-platform: linux, windows, wasm32."
+keywords.workspace      = true
+categories.workspace    = true
+
+[lib]
+name       = "aphrody_react_reconciler"
+path       = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+base64      = { workspace = true }
+thiserror   = { workspace = true }
+
+# WASM bindings — exposed only on wasm32-unknown-unknown.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys       = { workspace = true }
+
+[lints]
+workspace = true

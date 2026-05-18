@@ -1,6 +1,6 @@
 // audit_openclaw_ext.rs — Rust port of scripts/openclaw-extensions-audit.ts.
 //
-// Enumerates every extension under `C:/worktree/openclaw/extensions/`,
+// Enumerates every extension under `C:/src/openclaw/extensions/`,
 // extracts metadata (name, description, version, LOC, test count, deps),
 // scores each by port-priority for aphrody, and emits a ranked roadmap.
 
@@ -16,7 +16,7 @@ use regex::Regex;
 use serde::Serialize;
 use walkdir::WalkDir;
 
-const DEFAULT_SOURCE: &str = "C:/worktree/openclaw/extensions";
+const DEFAULT_SOURCE: &str = "C:/src/openclaw/extensions";
 
 const CHANNEL_ADAPTERS: &[&str] = &[
     "discord", "slack", "telegram", "whatsapp", "signal", "imessage", "irc",

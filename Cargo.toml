@@ -68,6 +68,9 @@ members = [
     "crates/aphrody-tui",
     # aphrody-skills-runtime — SKILL.md aggregator (Rust port of packages/aphrody-skills, Phase 4.1)
     "crates/aphrody-skills-runtime",
+    # aphrody-react-reconciler — host-side React reconciler primitives
+    # (Rust port of packages/aphrody-jsx, Phase 4.2).
+    "crates/aphrody-react-reconciler",
     # bxc rust-bridge
     "crates/bxc-engine",
     "crates/obscura-browser",

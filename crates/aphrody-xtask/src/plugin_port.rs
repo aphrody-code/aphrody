@@ -32,14 +32,14 @@ pub(crate) struct Args {
     #[arg(long)]
     check: bool,
 
-    /// Override path to the openclaw clone (default: C:/worktree/openclaw).
-    #[arg(long = "source-oc", default_value = "C:/worktree/openclaw")]
+    /// Override path to the openclaw clone (default: C:/src/openclaw).
+    #[arg(long = "source-oc", default_value = "C:/src/openclaw")]
     source_oc: PathBuf,
 
-    /// Override path to the open-design clone (default: C:/worktree/open-design).
+    /// Override path to the open-design clone (default: C:/src/open-design).
     /// Kept for CLI parity with the .ts script even though only `source-oc` is
     /// consulted by the vendoring pipeline today.
-    #[arg(long = "source-od", default_value = "C:/worktree/open-design")]
+    #[arg(long = "source-od", default_value = "C:/src/open-design")]
     #[allow(dead_code)]
     source_od: PathBuf,
 }
@@ -132,7 +132,7 @@ cargo xtask plugin-port
 ```
 
 Pass `--source-oc <path>` to override the upstream clone location
-(defaults to `C:/worktree/openclaw`).
+(defaults to `C:/src/openclaw`).
 
 Use `--check` in CI to fail-fast when the upstream clone is missing.
 "

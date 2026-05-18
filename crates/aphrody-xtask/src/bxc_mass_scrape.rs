@@ -17,11 +17,11 @@ use anyhow::{Context, Result};
 use clap::Args as ClapArgs;
 use serde::{Deserialize, Serialize};
 
-const DEFAULT_BXC_ROOT: &str = "C:/worktree/bxc";
+const DEFAULT_BXC_ROOT: &str = "C:/src/bxc";
 
 #[derive(Debug, ClapArgs)]
 pub(crate) struct Args {
-    /// Path to a cloned bxc repo (default: C:/worktree/bxc or $BXC_ROOT).
+    /// Path to a cloned bxc repo (default: C:/src/bxc or $BXC_ROOT).
     #[arg(long)]
     bxc: Option<PathBuf>,
 

@@ -21,11 +21,11 @@ use clap::Args as ClapArgs;
 #[derive(Debug, ClapArgs)]
 pub(crate) struct Args {
     /// Path to the openclaw clone.
-    #[arg(long, default_value = "C:/worktree/openclaw")]
+    #[arg(long, default_value = "C:/src/openclaw")]
     openclaw: PathBuf,
 
     /// Path to the open-design clone.
-    #[arg(long, default_value = "C:/worktree/open-design")]
+    #[arg(long, default_value = "C:/src/open-design")]
     open_design: PathBuf,
 
     /// Output markdown path.
