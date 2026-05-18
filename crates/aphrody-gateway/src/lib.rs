@@ -14,6 +14,8 @@
 //! server-sent-events (SSE) stream parsed into [`ChatChunk`] items.
 
 pub mod cloudflare;
+pub mod gemini_cli;
+pub mod google_antigravity;
 pub mod openai_proxy;
 pub mod vercel;
 
