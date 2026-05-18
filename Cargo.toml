@@ -71,6 +71,20 @@ members = [
     # aphrody-react-reconciler — host-side React reconciler primitives
     # (Rust port of packages/aphrody-jsx, Phase 4.2).
     "crates/aphrody-react-reconciler",
+    # aphrody-design-* — open-design Rust port lanes (YOLO grind 2026-05-18):
+    #   * agents   : PATH detector + spawner for Claude Code / Gemini CLI /
+    #                Antigravity CLI (ACP/Stdio protocol dispatch, SSE).
+    #   * sidecar  : streaming <artifact> block parser + multi-format manifest
+    #                normalizer (SHA-256 digest, schema validate).
+    #   * daemon   : SQLite-backed project store + design-systems registry.
+    #   * material : M3 (HCT tonal palettes, schemes, motion, typography).
+    "crates/aphrody-design-agents",
+    "crates/aphrody-design-sidecar",
+    "crates/aphrody-design-daemon",
+    "crates/aphrody-design-material",
+    # aphrody-wgpu-material — Material Design 3 component library rendered
+    # on wgpu (WebGPU), native winit host + WASM browser surface.
+    "crates/aphrody-wgpu-material",
     # bxc rust-bridge
     "crates/bxc-engine",
     "crates/obscura-browser",
@@ -305,6 +319,49 @@ tao                = { version = "0.35" }
 
 # --- Python FFI -----------------------------------------------------------
 pyo3               = { version = "0.24", features = ["auto-initialize", "abi3-py311"] }
+
+# --- Markdown / docs renderers --------------------------------------------
+# `comrak` is the CommonMark/GFM parser used by aphrody-terminal-markdown and
+# aphrody-design-material. The `syntect` feature gates code-block highlighting
+# (which we pair with `syntect = "5.3"` below). Keep `default-features = false`
+# at the consumer level so each crate opts into the syntect bridge explicitly.
+comrak             = { version = "0.52", default-features = false }
+syntect            = { version = "5.3", default-features = false, features = ["default-fancy"] }
+
+# --- XML pull parser ------------------------------------------------------
+# `quick-xml` powers the streaming <artifact> block parser in
+# aphrody-design-sidecar. Encoding feature carries UTF-16/Latin-1 sniffers.
+quick-xml          = { version = "0.36", default-features = false, features = ["encoding"] }
+
+# --- Tokio helpers --------------------------------------------------------
+# `tokio-util` codec adapters (FramedRead/Write) backing the ACP newline
+# protocol in aphrody-design-agents. `futures-core` is the trait crate the
+# spawner's `Stream<Item = AgentEvent>` returns.
+tokio-util         = { version = "0.7", features = ["codec"] }
+futures-core       = { version = "0.3" }
+
+# --- ID + time primitives -------------------------------------------------
+# Crockford-base32 ULIDs (lexicographic sort = creation order, monotonic per
+# process). Used by aphrody-design-daemon's project store.
+ulid               = { version = "1", features = ["serde"] }
+# `time` is a thinner alternative to `chrono` chosen by aphrody-design-daemon
+# for `OffsetDateTime` formatting / parsing.
+time               = { version = "0.3", features = ["macros", "formatting", "parsing", "serde"] }
+
+# --- 2D vector tessellation + colorimetry ---------------------------------
+# `lyon` tessellates rounded-rect / path geometry for aphrody-wgpu-material
+# shape primitives. `palette` provides the OKLCH/HCT colour math reused by
+# Material Design 3 tonal palettes.
+lyon               = { version = "1.0" }
+palette            = { version = "0.7", default-features = false, features = ["std"] }
+
+# --- Native windowing + text shaping (wgpu host) --------------------------
+# `winit` 0.30 surface-handle API; cosmic-text glyph shaper; `pollster` to
+# block on async device init from sync `winit::application::ApplicationHandler`.
+# All gated `cfg(not(target_arch = "wasm32"))` at the consumer level.
+winit              = { version = "0.30" }
+cosmic-text        = { version = "0.19" }
+pollster           = { version = "0.3" }
 
 # --- HTML / JS tooling ----------------------------------------------------
 scraper            = { version = "0.27" }
