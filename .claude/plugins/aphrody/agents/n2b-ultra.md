@@ -44,22 +44,36 @@ a glob of packages), produce a commit-ready diff that:
 ## Toolchain
 
 The n2b CLI is the source of truth for rewrite rules (68 rules,
-AST-driven via `oxc_parser`). Invoke it as follows.
+AST-driven via `oxc_parser`). Resolution order — **always honour the
+first reachable**:
 
-### When the n2b workspace crate is available
+### 1. `aphrody n2b` (PREFERRED — unified entrypoint)
 
-If `cargo run -p n2b-cli --manifest-path Cargo.toml --quiet -- --help`
-returns 0, use it:
+If `aphrody` is on PATH, route every invocation through it. The wrapper
+handles n2b installation, version pinning, and uniform UX with the
+other 26 aphrody sub-commands :
 
 ```bash
-cargo run -p n2b-cli --quiet -- scan <path>     # report-only
-cargo run -p n2b-cli --quiet -- migrate <path>  # apply rewrites
-cargo run -p n2b-cli --quiet -- verify <path>   # post-migration audit
+aphrody n2b scan <path>     # report-only
+aphrody n2b migrate <path>  # apply rewrites
+aphrody n2b verify <path>   # post-migration audit
 ```
 
-### When standalone (preferred for plugin contexts)
+### 2. Workspace crate (dev contexts inside aphrody/)
 
-Use the published Bun binary:
+If `cargo run -p n2b-cli --manifest-path Cargo.toml --quiet -- --help`
+returns 0 AND `aphrody` is unavailable, use it directly :
+
+```bash
+cargo run -p n2b-cli --quiet -- scan <path>
+cargo run -p n2b-cli --quiet -- migrate <path>
+cargo run -p n2b-cli --quiet -- verify <path>
+```
+
+### 3. Bun standalone (fully external contexts)
+
+Published Bun binary, fallback only when neither `aphrody` nor the
+workspace crate are reachable :
 
 ```bash
 bunx @aphrody-code/n2b-cli scan <path>
@@ -67,8 +81,8 @@ bunx @aphrody-code/n2b-cli migrate <path>
 bunx @aphrody-code/n2b-cli verify <path>
 ```
 
-If neither is available, FAIL LOUDLY with the exact missing-dep error.
-Do not hand-roll rewrites — that's how regressions creep in.
+If none of the three are available, FAIL LOUDLY with the exact missing-dep
+error. Do not hand-roll rewrites — that's how regressions creep in.
 
 ## Workflow (must follow in order)
 
