@@ -23,7 +23,24 @@
 //! # }
 //! ```
 
-#![forbid(unsafe_code)]
+// `auth.rs` tests need `unsafe { std::env::set_var }` (nightly Rust mandates
+// unsafe for env-var mutation since 1.83). Confine the relaxation to test
+// builds; the non-test runtime surface remains 100% safe code.
+#![cfg_attr(not(test), forbid(unsafe_code))]
+
+pub mod auth;
+pub mod web_search;
+
+pub use auth::{
+    AuthError, GeminiCliCredentials, TokenResponse, api_key_headers, default_creds_path,
+    exchange_code_for_tokens, refresh_tokens, request_token_grant, resolve_client_id_from_env,
+    resolve_client_secret_from_env,
+};
+pub use web_search::{
+    Citation, DEFAULT_BASE_URL as WEB_SEARCH_DEFAULT_BASE_URL,
+    DEFAULT_MODEL as WEB_SEARCH_DEFAULT_MODEL, SearchResults, TimeRange, WebSearchConfig,
+    WebSearchError, build_endpoint_url, build_request_body, parse_response, web_search,
+};
 
 use std::{path::PathBuf, process::Stdio};
 
