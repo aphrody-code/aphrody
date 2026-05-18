@@ -16,7 +16,11 @@ name = "aphrody-x"
 path = "src/main.rs"
 
 [dependencies]
-agent-twitter-client = "0.1.2"
+# distrihub fork (Nov 2025) — patché .domain("x.com") sur les 4 sites de
+# cookie injection, contre le cornip/agent-twitter-client 0.1.2 upstream
+# (Dec 2024, repo supprimé) qui hard-codait twitter.com pre-rebrand →
+# 401 Unauthorized sur les cookies modernes .x.com.
+agent-twitter-client = { git = "https://github.com/distrihub/agent-twitter-client.git" }
 tokio                = { version = "1.52", features = ["full"] }
 clap                 = { version = "4", features = ["derive", "env"] }
 anyhow               = "1"
