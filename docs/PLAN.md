@@ -166,9 +166,9 @@ backend/a2a-client. Refactor requis :
 
 ### Upstream alignment
 
-- [ ] **a2a-slimrpc** : ré-inclure quand `agntcy-slim-mls` fixe lifetime/async-trait.
-- [ ] **path-bases (RFC 3529)** : activer workspace-wide quand stable Cargo 1.98+.
-- [ ] **wry → GTK4** : retirer les CVE GTK3 (RUSTSEC-2024-04xx).
+- [🔒] **a2a-slimrpc** : ré-inclure quand `agntcy-slim-mls` fixe lifetime/async-trait (bloqué upstream).
+- [🔒] **path-bases (RFC 3529)** : activer workspace-wide quand stable Cargo 1.98+ (bloqué par release Cargo).
+- [🔒] **wry → GTK4** : retirer les CVE GTK3 (RUSTSEC-2024-04xx). (Bloqué upstream : wry 0.55 ne supporte pas encore nativement GTK4 / webkit6-rs).
 - [x] **reqwest 0.13** : drop `aws-lc-sys` propre (retirer 4 CVE ignorés).
 - [x] **pyo3 0.22** : fix CVE PyString (RUSTSEC-2025-0020).
 
