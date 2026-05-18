@@ -59,6 +59,10 @@ thiserror                 = { workspace = true }
 # the underlying crate pulls reqwest + tokio rt-multi-thread which do not
 # compile on wasm32 (cf. crates/aphrody-channels/Cargo.toml).
 aphrody-channels          = { path = "../aphrody-channels" }
+# `aphrody scan {tree, manifests}` — parallel filesystem walk + manifest parse.
+walkdir                   = { workspace = true }
+ignore                    = { workspace = true }
+rayon                     = { workspace = true }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]

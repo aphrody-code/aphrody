@@ -15,6 +15,7 @@
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
+#[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 
 use std::path::PathBuf;
@@ -215,6 +216,11 @@ enum Commands {
         #[command(subcommand)]
         action: SelfAction,
     },
+    /// Repo analytics : scan tree (size/file-count) + scan manifests (Cargo/JSON/TOML).
+    Scan {
+        #[command(subcommand)]
+        action: ScanAction,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
@@ -235,6 +241,36 @@ enum CrosActions {
 enum ChromiumActions {
     /// Synchronise les profils Chromium
     Sync,
+}
+
+/// Actions for the `scan` kernel subcommand (repo analytics).
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum ScanAction {
+    /// Size + file-count breakdown for top-level groups (vendor/packages/
+    /// crates by default).
+    Tree {
+        /// Root of the project; defaults to the current working directory.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// Comma-separated list of top-level group directories to scan.
+        #[arg(long, value_delimiter = ',')]
+        groups: Vec<String>,
+        /// Output JSON file path; `-` writes to stdout. Omitted = prints
+        /// only the console summary.
+        #[arg(long, short)]
+        output: Option<PathBuf>,
+        /// Number of top extensions to include per directory.
+        #[arg(long, default_value = "5")]
+        top_ext: usize,
+    },
+    /// Walk the repo for Cargo.toml / package.json / pyproject.toml / etc.
+    /// and emit metadata (name, version, dependency count, workspace members).
+    Manifests {
+        #[arg(long)]
+        root: Option<PathBuf>,
+        #[arg(long, short)]
+        output: Option<PathBuf>,
+    },
 }
 
 /// Actions for the `self` kernel subcommand (installer + bootstrap).
@@ -417,6 +453,21 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 self_cmd::BootstrapCommand { check }.execute(ctx).await?;
             },
         },
+        Some(Commands::Scan { action }) => match action {
+            ScanAction::Tree { root, groups, output, top_ext } => {
+                scan_cmd::TreeCommand {
+                    root,
+                    groups,
+                    output,
+                    top_ext_count: top_ext,
+                }
+                .execute(ctx)
+                .await?;
+            },
+            ScanAction::Manifests { root, output } => {
+                scan_cmd::ManifestsCommand { root, output }.execute(ctx).await?;
+            },
+        },
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
             // the legacy bun/uv/cargo engine dispatcher only for tokens
@@ -518,6 +569,7 @@ fn main() {
                 Commands::Notify { .. } => "notify",
                 Commands::Completions { .. } => "completions",
                 Commands::SelfCmd { .. } => "self",
+                Commands::Scan { .. } => "scan",
                 Commands::Auto(_) => "auto",
                 Commands::Version => unreachable!(),
             };
