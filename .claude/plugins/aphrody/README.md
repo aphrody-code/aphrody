@@ -90,21 +90,21 @@ cd ../ && bun install --silent
 | Workflow | `build`, `explore`, `move`, `yolo-prod-ready` |
 | Comms | `discord-bot` |
 
-## MCP servers (1 first-party — plus any third-party you install)
+## MCP server (1 — pure Rust, fused)
 
-The in-tree `bxc-scrapper` + `bxc` dual-server config is fused into a
-**single first-party local stdio server** `aphrody` exposing **18 tools**
-across 3 domains.
+The previous `bxc-scrapper` + `google_mcp` separate servers are fused
+into a **single Rust binary** `aphrody-mcp` (6.5 MB, sub-millisecond
+cold-start, zero JS runtime).
 
-| Server | Type | Tools | Auth |
-|---|---|---|---|
-| **`aphrody`** | stdio (Bun, `mcp/aphrody/server/index.ts`) | **18 tools** : scraping (7) via bxc-mcp Rust subprocess + memory (3) via Bun SQLite + aphrody CLI wrappers (8) | `BXC_DAEMON_URL`, `BXC_MEMORY_DB`, `APHRODY_BIN`, `BXC_MCP_BIN` env |
+| Server | Type | Binary | Tools | Env |
+|---|---|---|---|---|
+| **`aphrody`** | stdio | `aphrody-mcp` (Rust, ex-`google_mcp` + ex-`bxc-mcp` fused) | **15 tools** : 8 ex-google_mcp (`coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard`) + 7 ex-bxc-mcp (`bxc_scrape, bxc_recon, bxc_detect, google_search, google_atlas_route, extract_structured, vision_analyze`) | `BXC_DAEMON_URL`, `BXC_TIMEOUT_MS`, `BXC_VISION_MIN_BYTES` |
 
 Third-party SaaS MCPs (`github`, `context7`) are intentionally **not
 bundled** — install them in your own `.claude/settings.json` if needed.
 
-Full tool catalogue, architecture diagram, env reference, and standalone
-MCPB packaging instructions in [`mcp/aphrody/README.md`](mcp/aphrody/README.md).
+Install : `cargo build --release -p google_mcp --bin aphrody-mcp` then
+copy `target/<triple>/release/aphrody-mcp[.exe]` to `~/.local/bin/`.
 
 ## Hooks (PostToolUse on Edit | Write | MultiEdit)
 

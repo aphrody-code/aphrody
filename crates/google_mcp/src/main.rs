@@ -70,6 +70,120 @@ pub struct StartDashboardRequest {
 }
 
 // ---------------------------------------------------------------------------
+// bxc daemon proxy DTOs (7 fused-in scraping tools, ex-bxc-mcp)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct BxcScrapeRequest {
+    #[schemars(description = "Fully-qualified http(s) URL to scrape.")]
+    pub url: String,
+    #[schemars(description = "CSS selector. Defaults to `body`.")]
+    pub selector: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct BxcUrlOnlyRequest {
+    #[schemars(description = "Fully-qualified http(s) URL.")]
+    pub url: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct GoogleSearchRequest {
+    #[schemars(description = "Search query string.")]
+    pub query: String,
+    #[schemars(description = "Interface language (ISO 639-1 code). Defaults to 'en'.")]
+    pub hl: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ExtractStructuredRequest {
+    #[schemars(description = "Raw HTML to extract from.")]
+    pub html: String,
+    #[schemars(description = "JSON-Schema-shaped extraction target. Server validates LLM output.")]
+    pub zod_schema_json: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct VisionAnalyzeRequest {
+    #[schemars(description = "Absolute or workspace-relative path to a PNG / WebP screenshot.")]
+    pub screenshot_path: String,
+}
+
+// ---------------------------------------------------------------------------
+// bxc daemon HTTP helper (shared reqwest client, OnceLock-cached)
+// ---------------------------------------------------------------------------
+
+fn bxc_daemon_url() -> String {
+    std::env::var("BXC_DAEMON_URL")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "http://127.0.0.1:8765".to_string())
+}
+
+fn bxc_timeout_ms() -> u64 {
+    std::env::var("BXC_TIMEOUT_MS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .filter(|&n| n > 0)
+        .unwrap_or(30_000)
+}
+
+static BXC_CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+
+fn bxc_client() -> &'static reqwest::Client {
+    BXC_CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_millis(bxc_timeout_ms()))
+            .user_agent(format!("aphrody-mcp/{}", env!("CARGO_PKG_VERSION")))
+            .build()
+            .expect("bxc reqwest client build")
+    })
+}
+
+async fn bxc_call(tool: &str, args: serde_json::Value) -> String {
+    let base = bxc_daemon_url();
+    let url = format!("{base}/v1/{tool}");
+    let req = bxc_client().post(&url).json(&args);
+    match req.send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            match resp.text().await {
+                Ok(body) => {
+                    if !status.is_success() {
+                        let snippet: String = body.chars().take(512).collect();
+                        let env = json!({
+                            "error": "BXC_BAD_REQUEST",
+                            "reason": format!("daemon HTTP {status}: {snippet}"),
+                            "daemon_attempt": url,
+                        });
+                        return serde_json::to_string_pretty(&env)
+                            .unwrap_or_else(|_| body.clone());
+                    }
+                    body
+                }
+                Err(e) => {
+                    let env = json!({
+                        "error": "BXC_INVALID_RESPONSE",
+                        "reason": format!("read body: {e}"),
+                        "daemon_attempt": url,
+                    });
+                    serde_json::to_string_pretty(&env).unwrap_or_default()
+                }
+            }
+        }
+        Err(e) => {
+            let kind = if e.is_timeout() { "BXC_TIMEOUT" } else { "BXC_UNAVAILABLE" };
+            let env = json!({
+                "error": kind,
+                "reason": format!("daemon {url}: {e}"),
+                "daemon_attempt": url,
+            });
+            serde_json::to_string_pretty(&env).unwrap_or_default()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // MCP tool router
 // ---------------------------------------------------------------------------
 
@@ -556,6 +670,159 @@ impl GoogleMcpServer {
              - GET http://{bound_addr}/health  — liveness probe (JSON)\n\
              - GET http://{bound_addr}/info    — PID, uptime, memory (JSON)"
         )
+    }
+
+    // -----------------------------------------------------------------------
+    // 9. bxc_scrape — fused from ex-bxc-mcp.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Extract text content from <url> matching <selector> (default `body`). \
+                          Uses the bxc static profile when JS is not needed. Returns \
+                          { extractions: string[] }.")]
+    async fn bxc_scrape(
+        &self,
+        Parameters(BxcScrapeRequest { url, selector }): Parameters<BxcScrapeRequest>,
+    ) -> String {
+        let selector = selector.unwrap_or_else(|| "body".to_string());
+        bxc_call("scrape", json!({ "url": url, "selector": selector })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 10. bxc_recon
+    // -----------------------------------------------------------------------
+    #[tool(description = "First-touch reconnaissance: HTTP headers, CDN, framework fingerprints, \
+                          asset inventory (js/css/img/font), embedded CSS, and a screenshot saved \
+                          by the daemon. Returns { headers, cdn, frameworks, assets, css, \
+                          screenshot_path }.")]
+    async fn bxc_recon(
+        &self,
+        Parameters(BxcUrlOnlyRequest { url }): Parameters<BxcUrlOnlyRequest>,
+    ) -> String {
+        bxc_call("recon", json!({ "url": url })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 11. bxc_detect
+    // -----------------------------------------------------------------------
+    #[tool(description = "Framework / CMS / library fingerprinting via wappalyzergo, IP-range \
+                          matching, header heuristics, and CSP analysis. Returns \
+                          { tech: DetectedTech[] }.")]
+    async fn bxc_detect(
+        &self,
+        Parameters(BxcUrlOnlyRequest { url }): Parameters<BxcUrlOnlyRequest>,
+    ) -> String {
+        bxc_call("detect", json!({ "url": url })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 12. google_search
+    // -----------------------------------------------------------------------
+    #[tool(description = "Google web search via bxc's ghost profile (Lightpanda + stealth). \
+                          Returns organic SERP results. Honors mandate-guard (Google-only \
+                          routing). Returns { results: OrganicResult[] }.")]
+    async fn google_search(
+        &self,
+        Parameters(GoogleSearchRequest { query, hl }): Parameters<GoogleSearchRequest>,
+    ) -> String {
+        let hl = hl.unwrap_or_else(|| "en".to_string());
+        if query.trim().is_empty() {
+            return serde_json::to_string_pretty(&json!({
+                "error": "BXC_BAD_REQUEST",
+                "reason": "query must be a non-empty string"
+            }))
+            .unwrap_or_default();
+        }
+        bxc_call("google_search", json!({ "query": query, "hl": hl })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 13. google_atlas_route
+    // -----------------------------------------------------------------------
+    #[tool(description = "For a Google-domain URL, returns the bxc Atlas recommendation: which \
+                          profile to use (static / fast / stealth-wiz / stealth-spa / \
+                          stealth-lit / max), stealth hints, and the detected framework. Returns \
+                          { profile, stealth_hints, framework }.")]
+    async fn google_atlas_route(
+        &self,
+        Parameters(BxcUrlOnlyRequest { url }): Parameters<BxcUrlOnlyRequest>,
+    ) -> String {
+        bxc_call("google_atlas_route", json!({ "url": url })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 14. extract_structured
+    // -----------------------------------------------------------------------
+    #[tool(description = "Typed structured extraction: takes raw HTML and a JSON-Schema. First \
+                          call uses the local Gemma 4 (llama.cpp) to learn CSS selectors; \
+                          subsequent calls reuse the cache for <1 ms/page. Returns the validated \
+                          typed JSON.")]
+    async fn extract_structured(
+        &self,
+        Parameters(ExtractStructuredRequest { html, zod_schema_json }): Parameters<
+            ExtractStructuredRequest,
+        >,
+    ) -> String {
+        if html.is_empty() {
+            return serde_json::to_string_pretty(&json!({
+                "error": "BXC_BAD_REQUEST",
+                "reason": "html must be non-empty"
+            }))
+            .unwrap_or_default();
+        }
+        if let Err(e) = serde_json::from_str::<serde_json::Value>(&zod_schema_json) {
+            return serde_json::to_string_pretty(&json!({
+                "error": "BXC_BAD_REQUEST",
+                "reason": format!("zod_schema_json is not valid JSON: {e}")
+            }))
+            .unwrap_or_default();
+        }
+        bxc_call(
+            "extract_structured",
+            json!({ "html": html, "schema": zod_schema_json }),
+        )
+        .await
+    }
+
+    // -----------------------------------------------------------------------
+    // 15. vision_analyze
+    // -----------------------------------------------------------------------
+    #[tool(description = "Vision pipeline over a screenshot saved by bxc_recon (or any local PNG \
+                          / WebP). Extracts dominant colors, font candidates, visible text, \
+                          element layout, and a coarse hierarchy. Returns { elements, text, \
+                          colors, fonts, hierarchy }.")]
+    async fn vision_analyze(
+        &self,
+        Parameters(VisionAnalyzeRequest { screenshot_path }): Parameters<VisionAnalyzeRequest>,
+    ) -> String {
+        let meta = match std::fs::metadata(&screenshot_path) {
+            Ok(m) => m,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "BXC_BAD_REQUEST",
+                    "reason": format!("unable to stat screenshot_path '{screenshot_path}': {e}"),
+                }))
+                .unwrap_or_default();
+            }
+        };
+        let size = meta.len();
+        let min = std::env::var("BXC_VISION_MIN_BYTES")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(1024);
+        if size < min {
+            return serde_json::to_string_pretty(&json!({
+                "error": "BXC_BAD_REQUEST",
+                "reason": format!(
+                    "screenshot_path '{screenshot_path}' is {size}B (< BXC_VISION_MIN_BYTES={min}); \
+                     refusing to vision-analyze a likely corrupt image"
+                ),
+            }))
+            .unwrap_or_default();
+        }
+        bxc_call(
+            "vision_analyze",
+            json!({ "screenshot_path": screenshot_path }),
+        )
+        .await
     }
 }
 
