@@ -324,10 +324,11 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | `chromium sync` | profil scan + master key | ✅ 7 profils Chromium détectés + master key déchiffrée |
 | `mirror` (default action `start`) | MD3 assets | ⚠️ silent exit 0 (no-op visible — investigate intent) |
 | `auth` | God Mode + OAuth2 fallback | ⚠️ Chrome Canary détecté mais aucun token Google valide ; délégue à gemini-cli embarqué qui bloque l'appel `run_shell_command` (sandbox correct) |
-| `tokens` (M3 design tokens) | bxc passthrough | ⚠️ schema mismatch — voir gap #1 |
-| `scrape --selector h1 example.com` | bxc passthrough | ⚠️ live response OK (Cloudflare CDN détecté sur example.com via bxc API server), mais `aphrody scrape` rejette le schema — voir gap #1 |
-| `bxc detect <url>` | bxc passthrough | ⚠️ live response OK via bxc API, mais schema mismatch — voir gap #1 |
-| `bxc daemon --port 8765` | spawn `bxc-engine` | ⚠️ binaire installé (`~/.local/bin/bxc-engine.exe` 49 MB) mais subcommand `serve` absent (binaire = CDP server `Launch`, pas API server) — voir gap #1 |
+| `tokens` (M3 design tokens) | bxc passthrough (`:root` selector + regex `--md-*`) | ✅ écrit JSON (0 entrées pour m3.material.io car tokens en shadow DOM ; à enrichir) |
+| `scrape --selector h1 example.com` | auto-start bxc daemon + `/api/scrape` | ✅ `{"matches":[{"index":0,"text":"Example Domain"}], "selector":"h1", "url":"https://example.com"}` |
+| `bxc detect <url>` | `/api/detect` | ✅ identifie Cloudflare CDN (cf-ray + IPs) + DNS (`elliott.ns.cloudflare.com`) sur example.com |
+| `bxc recon <url>` | `/api/recon` | ✅ `{$schema:"bxc-recon-v1", url, finalUrl, bytes:528, httpStatus:200, cssSelectors:[a,body,div,h1], headers:{cdnVendor:Cloudflare, …}, gotoMs:20.0}` |
+| `bxc daemon --port 8765` | auto-select Bun driver via `select_bxc_driver()` | ✅ `[bxc daemon] started pid=13772 port=8765 driver=Bun. PID file: var/run/bxc.pid` ; `/healthz` 200 OK |
 | `term --addr 127.0.0.1:18799` | WebSocket-PTY pour WASM UI | ✅ "ws://127.0.0.1:18799 (open the WASM UI to connect)" |
 | `gemini --version` | forward gemini-cli embarqué | ✅ 0.42.0 |
 | `n2b scan` | forward bun n2b CLI | ✅ n2b 0.6.0 → "0 errors, 0 warns, 0 infos" |
