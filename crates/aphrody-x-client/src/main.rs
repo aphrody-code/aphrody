@@ -4,21 +4,34 @@
 // client TS, 11k★ upstream). Auth via cookies seulement — pas besoin de
 // X dev portal, pas de free-tier cap 50req/24h.
 //
-// ⚠ BUG UPSTREAM CONNU (2026-05-18, validé par test live) :
-// `agent-twitter-client 0.1.2` (cornip/agent-twitter-client, dernier
-// release Dec 2024) hard-code `domain("twitter.com")` dans
-// `set_from_cookie_string` (src/auth/user_auth.rs:528). Les cookies
-// modernes émis sur `.x.com` (depuis le rebrand Twitter → X) ne sont
-// donc pas envoyés aux endpoints `api.x.com/*`, ce qui produit un
-// `401 Unauthorized` sur le premier appel auth-required (get_profile,
-// send_tweet, etc.). Workaround disponibles :
-//   1. Fork local de agent-twitter-client patchant la ligne 528 pour
-//      attacher domain="x.com" (ou mieux: domain dérivé de l'URL)
-//   2. Migrer vers `rig-twitter` (fork ai16z plus récent — à valider)
-//   3. Utiliser `bxc fetch --cookies-file` (commit 2481a5d9b) en
-//      attendant : bxc émet les cookies correctement sur .x.com et
-//      retourne du HTML SSR utilisable (user-id + handle + name visibles).
-// Issue upstream à ouvrir : github.com/cornip/agent-twitter-client.
+// ⚠ STATUS (2026-05-18, validé par test live avec cookies frais) :
+// La crate `agent-twitter-client 0.1.2` (upstream cornip/agent-twitter-
+// client, repo DELETED) ne fonctionne PAS out-of-the-box pour X :
+//
+// Bug #1 — `domain("twitter.com")` hard-codé (Dec 2024, pre-rebrand)
+//   Symptôme : cookies .x.com pas envoyés → 401 Unauthorized
+//   Fork qui le fixe : `distrihub/agent-twitter-client` (Nov 2025,
+//   `.domain("x.com")` lignes 515/581/616/637). Cargo.toml de cette
+//   crate pointe sur ce fork via git dep.
+//
+// Bug #2 (PERSISTANT même avec le fork distrihub) :
+//   Même avec cookies frais `auth_token + ct0 + twid + kdt + guest_id
+//   + personalization_id + __cf_bm` injectés, l'API X retourne
+//   `{"errors":[{"message":"Could not authenticate you","code":32}]}`
+//   sur tous les endpoints GraphQL. Suggère que la lib oublie un header
+//   ou que la signature ct0 n'est pas calculée correctement (CSRF
+//   format X interne). Pas réparable depuis cette crate sans patcher
+//   la lib sous-jacente.
+//
+// **Path de prod recommandé pour scraping X chez aphrody :**
+//   → `bxc fetch <url> --cookies-file <file>` (commit 2481a5d9b, GREEN
+//     test ultime : user-id + display name + handle extraits du HTML).
+//   → Pour post / actions write : passer par X Premium API officiel
+//     (Bearer Token v2 sur api.x.com/2/*) plutôt que cookie scraping
+//     (TOS-clean + plus stable).
+//
+// Cette crate est conservée comme placeholder du jour où une lib Rust
+// auth-correct sera dispo (suivre rig-twitter ou edisontim fork).
 //
 // Auth lookup order :
 //   1. CLI flag `--cookie-string "auth_token=...; ct0=...; ..."`
