@@ -1625,17 +1625,114 @@ fn var_run_dir() -> anyhow::Result<std::path::PathBuf> {
     Ok(dir)
 }
 
-/// Start the bxc-engine daemon as a detached background process.
+/// Locate the `packages/bxc/` sources expected by the Bun driver.
+///
+/// Resolution order:
+///   1. `APHRODY_BXC_ROOT` env var (explicit path).
+///   2. `<repo_root>/packages/bxc/` (dev layout).
+///   3. `<exe_dir>/../packages/bxc/` (installed-alongside layout).
+fn resolve_bxc_root() -> Option<std::path::PathBuf> {
+    if let Some(p) =
+        std::env::var("APHRODY_BXC_ROOT").ok().filter(|s| !s.is_empty())
+    {
+        let cand = std::path::PathBuf::from(p);
+        if cand.join("src/cli/index.ts").exists() {
+            return Some(cand);
+        }
+    }
+    if let Some(root) = repo_root() {
+        let cand = root.join("packages").join("bxc");
+        if cand.join("src/cli/index.ts").exists() {
+            return Some(cand);
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cand = dir.join("..").join("packages").join("bxc");
+            if cand.join("src/cli/index.ts").exists() {
+                return Some(cand);
+            }
+        }
+    }
+    None
+}
+
+/// Which engine drives `aphrody bxc daemon`.
+///
+/// `Bun` is the default: full HTTP API (`/api/recon`, `/api/detect`,
+/// `/api/scrape`) consumed by `crates/cli/src/scrape.rs`.
+/// `Rust` falls back to `crates/bxc-engine` which exposes CDP only
+/// (`launch` subcommand) — useful when bun is absent but the HTTP API
+/// won't be available.
+#[derive(Debug, Clone, Copy)]
+enum BxcDriver {
+    Bun,
+    Rust,
+}
+
+/// Auto-detect which driver to use:
+///   - explicit override via `APHRODY_BXC_DRIVER=bun|rust`,
+///   - else prefer `Bun` if `bun` + `packages/bxc/` are available,
+///   - else `Rust` if `bxc-engine` is on PATH (or `APHRODY_BXC_ENGINE_BIN` set).
+fn select_bxc_driver() -> miette::Result<(BxcDriver, std::process::Command)> {
+    let override_val = std::env::var("APHRODY_BXC_DRIVER").ok();
+    let want_bun = matches!(override_val.as_deref(), Some("bun")) || override_val.is_none();
+    let want_rust = matches!(override_val.as_deref(), Some("rust"));
+
+    if want_bun {
+        if let (Ok(bun), Some(bxc_root)) = (which::which("bun"), resolve_bxc_root()) {
+            let entry = bxc_root.join("src/cli/index.ts");
+            let mut cmd = std::process::Command::new(bun);
+            // `bun run <script> api --port <port>` (port wiring added by caller).
+            cmd.args(["run", entry.to_string_lossy().as_ref(), "api"]);
+            // bxc reads its workspace root from cwd, not from import.meta.dir for
+            // some paths (e.g. patches/, vendor/), so chdir before spawn.
+            cmd.current_dir(&bxc_root);
+            return Ok((BxcDriver::Bun, cmd));
+        }
+    }
+
+    if want_rust || want_bun {
+        let bin_path = if let Some(p) =
+            std::env::var("APHRODY_BXC_ENGINE_BIN").ok().filter(|s| !s.is_empty())
+        {
+            std::path::PathBuf::from(p)
+        } else {
+            which::which("bxc-engine").map_err(|e| {
+                miette::miette!(
+                    "No bxc driver found. Tried bun+packages/bxc/ (set `APHRODY_BXC_ROOT` \
+                     if non-standard layout), then `bxc-engine` on PATH (cargo install \
+                     --locked --path crates/bxc-engine): {e}"
+                )
+            })?
+        };
+        let mut cmd = std::process::Command::new(bin_path);
+        // crates/bxc-engine exposes `launch` (CDP server) — NOT a `/api/*`
+        // HTTP server. `aphrody scrape` will still fail to reach
+        // `/api/recon` etc. with this driver. Use only when bun is missing.
+        cmd.arg("launch");
+        return Ok((BxcDriver::Rust, cmd));
+    }
+
+    Err(miette::miette!(
+        "APHRODY_BXC_DRIVER={:?} not recognised. Use `bun` or `rust`.",
+        override_val.unwrap_or_default()
+    ))
+}
+
+/// Start the bxc daemon as a detached background process.
 ///
 /// The daemon PID is written to `var/run/bxc.pid` so subsequent commands
 /// (and the user) can check whether the engine is alive.
 ///
-/// Resolves `bxc-engine` via `APHRODY_BXC_ENGINE_BIN` (override) or
-/// `which::which("bxc-engine")` (PATH). Per the 100% Rust policy
-/// (memory `feedback_aphrody_rust_only`) the previous `bun run` fallback
-/// against `/worktree/bxc/src/serve.ts` has been dropped: install the
-/// Rust binary instead (`cargo install --locked --path crates/bxc-engine`
-/// or via the workspace build artefacts).
+/// Driver auto-selection (see [`select_bxc_driver`]):
+///   - default: Bun driver from `packages/bxc/` (full HTTP API at
+///     `/api/recon`, `/api/detect`, `/api/scrape`, `/healthz`).
+///   - fallback: `crates/bxc-engine` Rust binary (CDP only).
+///
+/// Both drivers honour `--port <port>`. The Bun driver is what
+/// `crates/cli/src/scrape.rs` expects; the Rust binary is left as an
+/// escape hatch when bun isn't installed.
 async fn bxc_daemon(port: u16) -> miette::Result<()> {
     let pid_dir = var_run_dir().map_err(|e| miette::miette!("{e}"))?;
     let pid_file = pid_dir.join("bxc.pid");
@@ -1643,8 +1740,6 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
     // Check if a daemon is already running at the stored PID.
     if let Ok(text) = std::fs::read_to_string(&pid_file) {
         if let Ok(existing_pid) = text.trim().parse::<u32>() {
-            // Portable liveness check: on Unix use `kill -0 <pid>` via a shell
-            // command; on Windows probe via `tasklist /FI "PID eq <pid>"`.
             let alive = is_pid_alive(existing_pid);
             if alive {
                 eprintln!(
@@ -1657,27 +1752,9 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         }
     }
 
-    // Resolve the bxc-engine executable. Honour APHRODY_BXC_ENGINE_BIN
-    // override first, then fall back to PATH lookup via `which`.
-    let bin_path = if let Some(p) =
-        std::env::var("APHRODY_BXC_ENGINE_BIN").ok().filter(|s| !s.is_empty())
-    {
-        std::path::PathBuf::from(p)
-    } else {
-        which::which("bxc-engine").map_err(|e| {
-            miette::miette!(
-                "Failed to locate `bxc-engine` on PATH: {e}. Install with: cargo install \
-                 --locked --path crates/bxc-engine (workspace binary) — or override via \
-                 APHRODY_BXC_ENGINE_BIN."
-            )
-        })?
-    };
-    let args: Vec<String> = vec!["serve".into(), format!("--port={port}")];
+    let (driver, mut cmd) = select_bxc_driver()?;
+    cmd.args(["--port", &port.to_string()]);
 
-    let mut cmd = std::process::Command::new(&bin_path);
-    cmd.args(&args);
-
-    // Detach from the terminal on Unix; on Windows use DETACHED_PROCESS.
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -1696,9 +1773,10 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         .spawn()
         .map_err(|e| {
             miette::miette!(
-                "Failed to spawn `{}`: {e}. Ensure `bxc-engine` is on PATH (cargo install \
-                 --locked --path crates/bxc-engine) or override with APHRODY_BXC_ENGINE_BIN.",
-                bin_path.display()
+                "Failed to spawn bxc daemon ({:?} driver): {e}. \
+                 Install bun + run from a checkout of the workspace, \
+                 or `cargo install --locked --path crates/bxc-engine`.",
+                driver
             )
         })?;
 
@@ -1706,7 +1784,10 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
     std::fs::write(&pid_file, pid.to_string())
         .map_err(|e| miette::miette!("Cannot write PID file {}: {e}", pid_file.display()))?;
 
-    println!("[bxc daemon] started pid={pid} port={port}. PID file: {}", pid_file.display());
+    println!(
+        "[bxc daemon] started pid={pid} port={port} driver={driver:?}. PID file: {}",
+        pid_file.display()
+    );
     Ok(())
 }
 
