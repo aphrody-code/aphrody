@@ -91,7 +91,7 @@ jobs:
         with:
           toolchain: nightly
           targets: ${{ matrix.target }}
-      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Install zigbuild (cross-targets)
         if: ${{ matrix.cross == 'zigbuild' }}

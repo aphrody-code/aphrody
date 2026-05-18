@@ -85,7 +85,7 @@ jobs:
           toolchain: nightly
           targets: x86_64-unknown-linux-gnu
           components: clippy
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: lint-clippy
@@ -112,7 +112,7 @@ jobs:
           toolchain: nightly
           targets: x86_64-unknown-linux-gnu
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: linux-x86_64
@@ -234,7 +234,7 @@ jobs:
           toolchain: nightly
           targets: x86_64-pc-windows-msvc
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: windows-x86_64
@@ -282,7 +282,7 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.target }}
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.target }}
@@ -331,7 +331,7 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.target }}
           components: rust-src
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.target }}
