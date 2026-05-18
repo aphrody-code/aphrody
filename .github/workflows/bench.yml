@@ -29,7 +29,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_INCREMENTAL: 0
-  # sccache via mozilla-actions/sccache-action@v0.0.5 (aligned with
+  # sccache via mozilla-actions/sccache-action@v0.0.10 (aligned with
   # cross-platform.yml and build.yml per pipeline-optimization 2026-05-18).
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
@@ -46,7 +46,7 @@ jobs:
         with:
           toolchain: nightly
           targets: x86_64-unknown-linux-gnu
-      - uses: mozilla-actions/sccache-action@v0.0.5
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: bench
