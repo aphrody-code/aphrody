@@ -8,6 +8,7 @@
 //!
 //! ```no_run
 //! use std::path::Path;
+//!
 //! use a2a_ui::native::{NativeTuiArgs, run_native_tui};
 //!
 //! run_native_tui(Path::new("C:/winclean/.coord"), NativeTuiArgs::default()).unwrap();
@@ -33,10 +34,7 @@ pub struct NativeTuiArgs {
 
 impl Default for NativeTuiArgs {
     fn default() -> Self {
-        Self {
-            refresh_secs: 2,
-            initial_side: "aphrody".to_owned(),
-        }
+        Self { refresh_secs: 2, initial_side: "aphrody".to_owned() }
     }
 }
 

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Integration tests for `aphrody-terminal-config`.
 
-use std::collections::BTreeMap;
-use std::fs;
+use std::{collections::BTreeMap, fs};
 
 use aphrody_terminal_config::{
     ClaudeShim, ConfigError, LlmPaneConfig, McpShim, PermissionsConfig, SettingsShim, Shim,
@@ -28,7 +27,7 @@ fn schema_validate_unknown_field_rejected() {
                 msg.to_lowercase().contains("unknown"),
                 "expected unknown-field error, got: {msg}"
             );
-        }
+        },
         other => panic!("expected ValidationError, got {other:?}"),
     }
 }
@@ -44,14 +43,8 @@ fn schema_json_well_formed() {
     let schema = schema_json();
     let parsed: serde_json::Value =
         serde_json::from_str(&schema).expect("schema_json must produce valid JSON");
-    assert!(
-        parsed.get("$schema").is_some(),
-        "schema must contain $schema"
-    );
-    assert!(
-        parsed.get("properties").is_some(),
-        "schema must contain properties"
-    );
+    assert!(parsed.get("$schema").is_some(), "schema must contain $schema");
+    assert!(parsed.get("properties").is_some(), "schema must contain properties");
 }
 
 // ── import_*_json ─────────────────────────────────────────────────────────────
@@ -69,11 +62,8 @@ fn import_claude_json_minimal() {
 fn import_mcp_json_servers() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join(".mcp.json");
-    fs::write(
-        &path,
-        r#"{"mcpServers":{"foo":{"type":"stdio","command":"echo","args":["hi"]}}}"#,
-    )
-    .unwrap();
+    fs::write(&path, r#"{"mcpServers":{"foo":{"type":"stdio","command":"echo","args":["hi"]}}}"#)
+        .unwrap();
     let shim: McpShim = import_mcp_json(Some(&path)).unwrap();
     assert_eq!(shim.servers.len(), 1);
     let foo = shim.servers.get("foo").expect("foo present");
@@ -103,10 +93,7 @@ fn merge_precedence_terminal_wins() {
         keymap: BTreeMap::new(),
         mcp_servers: BTreeMap::new(),
     };
-    let claude = ClaudeShim {
-        theme: Some("dark".to_owned()),
-        keymap: Default::default(),
-    };
+    let claude = ClaudeShim { theme: Some("dark".to_owned()), keymap: Default::default() };
     let merged = merge(base, vec![Shim::Claude(claude)]);
     assert_eq!(merged.theme.name, "light", "terminal.json must win");
 }
@@ -115,19 +102,13 @@ fn merge_precedence_terminal_wins() {
 fn merge_keymap_union() {
     let mut base_keymap = BTreeMap::new();
     base_keymap.insert("a".to_owned(), "1".to_owned());
-    let base = TerminalConfig {
-        keymap: base_keymap,
-        ..TerminalConfig::default()
-    };
+    let base = TerminalConfig { keymap: base_keymap, ..TerminalConfig::default() };
 
     let mut shim_keymap = std::collections::HashMap::new();
     shim_keymap.insert("b".to_owned(), "2".to_owned());
     // Conflict: shim tries to override "a" — base must win.
     shim_keymap.insert("a".to_owned(), "shim_a".to_owned());
-    let claude = ClaudeShim {
-        theme: None,
-        keymap: shim_keymap,
-    };
+    let claude = ClaudeShim { theme: None, keymap: shim_keymap };
 
     let merged = merge(base, vec![Shim::Claude(claude)]);
     assert_eq!(merged.keymap.get("a"), Some(&"1".to_owned()), "terminal wins on conflict");
@@ -153,9 +134,5 @@ fn import_shims_missing_file_returns_default() {
     let absent = dir.path().join("nope.json");
     assert!(import_claude_json(Some(&absent)).unwrap().theme.is_none());
     assert!(import_mcp_json(Some(&absent)).unwrap().servers.is_empty());
-    assert!(import_settings_json(Some(&absent))
-        .unwrap()
-        .permissions
-        .allow
-        .is_empty());
+    assert!(import_settings_json(Some(&absent)).unwrap().permissions.allow.is_empty());
 }

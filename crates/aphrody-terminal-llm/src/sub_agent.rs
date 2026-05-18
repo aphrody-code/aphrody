@@ -40,24 +40,21 @@ impl SubAgentRegistry {
     /// Create a new empty registry with the given channel capacity for live updates.
     pub fn new(channel_capacity: usize) -> Self {
         let (tx, _) = broadcast::channel(channel_capacity);
-        Self {
-            inner: Arc::new(Mutex::new(Inner {
-                agents: HashMap::new(),
-                tx,
-            })),
-        }
+        Self { inner: Arc::new(Mutex::new(Inner { agents: HashMap::new(), tx })) }
     }
 
     /// Update (insert or replace) the entry for `id` and broadcast the new snapshot.
-    pub fn update(&self, id: impl Into<String>, status: impl Into<String>, text: impl Into<String>) {
-        let info = SubAgentInfo {
-            id: id.into(),
-            status: status.into(),
-            last_text: text.into(),
-        };
+    pub fn update(
+        &self,
+        id: impl Into<String>,
+        status: impl Into<String>,
+        text: impl Into<String>,
+    ) {
+        let info = SubAgentInfo { id: id.into(), status: status.into(), last_text: text.into() };
         let mut guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
         guard.agents.insert(info.id.clone(), info.clone());
-        // Broadcast even if there are no listeners (that's fine — SendError just means 0 receivers).
+        // Broadcast even if there are no listeners (that's fine — SendError just means 0
+        // receivers).
         let _ = guard.tx.send(info);
     }
 

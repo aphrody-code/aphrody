@@ -11,9 +11,8 @@
 // Endpoint resolution order:
 //   1. `AutoCommand::endpoint` (explicit, e.g. set by a flag in the future).
 //   2. `APHRODY_A2A_ENDPOINT` environment variable.
-//   3. `http://localhost:8788/jsonrpc` — the peer winclean coord listener,
-//      which is the conventional A2A endpoint on developer workstations
-//      (see CLAUDE.md §6.1).
+//   3. `http://localhost:8788/jsonrpc` — the peer winclean coord listener, which is the
+//      conventional A2A endpoint on developer workstations (see CLAUDE.md §6.1).
 //
 // Streaming output is unbuffered: every text chunk is flushed to stdout as
 // soon as it arrives. This matches the LLM-first terminal UX (no spinner,
@@ -25,13 +24,15 @@
 
 #![cfg(not(target_arch = "wasm32"))]
 
-use std::env;
-use std::io::{self, Write as _};
+use std::{
+    env,
+    io::{self, Write as _},
+};
 
-use a2a::{Message, Part, PartContent, Role, SendMessageRequest, SendMessageResponse,
-           StreamResponse};
-use a2a_client::A2AClient;
-use a2a_client::jsonrpc::JsonRpcTransport;
+use a2a::{
+    Message, Part, PartContent, Role, SendMessageRequest, SendMessageResponse, StreamResponse,
+};
+use a2a_client::{A2AClient, jsonrpc::JsonRpcTransport};
 use futures::StreamExt as _;
 use reqwest::Client;
 
@@ -167,8 +168,7 @@ pub(crate) async fn run(opts: AutoCommand) -> Result<i32, AutoCommandError> {
 
     if opts.stream {
         let stream_result = client.send_streaming_message(&request).await;
-        let mut stream =
-            stream_result.map_err(|e| classify_error(&endpoint, e))?;
+        let mut stream = stream_result.map_err(|e| classify_error(&endpoint, e))?;
 
         let mut wrote_anything = false;
         while let Some(event) = stream.next().await {
@@ -202,10 +202,8 @@ pub(crate) async fn run(opts: AutoCommand) -> Result<i32, AutoCommandError> {
             stdout.flush()?;
         }
     } else {
-        let response = client
-            .send_message(&request)
-            .await
-            .map_err(|e| classify_error(&endpoint, e))?;
+        let response =
+            client.send_message(&request).await.map_err(|e| classify_error(&endpoint, e))?;
 
         match response {
             SendMessageResponse::Message(m) => {

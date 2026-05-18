@@ -74,10 +74,7 @@ pub enum BrowserResponse {
     /// DOM query result as a JSON tree.
     DomResult { nodes: serde_json::Value },
     /// PNG screenshot bytes, base64-encoded.
-    Screenshot {
-        area: ScreenshotArea,
-        png_b64: String,
-    },
+    Screenshot { area: ScreenshotArea, png_b64: String },
     /// Intercept rule installed; returns the rule ID assigned by the backend.
     InterceptInstalled { rule_id: String },
     /// Extracted structured data matching the caller-supplied schema.

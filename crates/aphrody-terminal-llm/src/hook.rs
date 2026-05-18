@@ -76,10 +76,7 @@ impl HookEventLog {
     /// Convenience method: apply an `LlmEvent::Hook` event from the bus.
     pub fn apply_event(&self, ev: &LlmEvent) {
         if let LlmEvent::Hook { event, payload } = ev {
-            self.push(HookEntry {
-                event: event.clone(),
-                payload: payload.clone(),
-            });
+            self.push(HookEntry { event: event.clone(), payload: payload.clone() });
         }
     }
 }

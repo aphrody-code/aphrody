@@ -74,14 +74,8 @@ mod tests {
     #[test]
     fn vsplit_three_constraints_yields_three_rects() {
         let area = Rect::new(0, 0, 40, 20);
-        let rows = vsplit(
-            area,
-            &[
-                Constraint::Length(3),
-                Constraint::Min(0),
-                Constraint::Length(1),
-            ],
-        );
+        let rows =
+            vsplit(area, &[Constraint::Length(3), Constraint::Min(0), Constraint::Length(1)]);
         assert_eq!(rows.len(), 3);
         assert_eq!(rows[0].y, 0);
         assert_eq!(rows[0].height, 3);
@@ -95,10 +89,7 @@ mod tests {
     #[test]
     fn hsplit_percentages_sum_to_full_width() {
         let area = Rect::new(0, 0, 100, 10);
-        let cols = hsplit(
-            area,
-            &[Constraint::Percentage(30), Constraint::Percentage(70)],
-        );
+        let cols = hsplit(area, &[Constraint::Percentage(30), Constraint::Percentage(70)]);
         assert_eq!(cols.len(), 2);
         assert_eq!(cols[0].width + cols[1].width, 100);
     }

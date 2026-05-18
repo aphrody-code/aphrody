@@ -6,20 +6,21 @@
 //! into a [`ratatui::widgets::Paragraph`]. It is intentionally narrow:
 //!
 //! - Recognises the subset of SGR parameters emitted by
-//!   [`aphrody_terminal_markdown::MarkdownRenderer::render_commonmark`]:
-//!   reset (`0`), bold (`1`), dim (`2`), italic (`3`), underline (`4`),
-//!   reverse (`7`), strike (`9`), the basic 8 + bright 8 foreground/background
-//!   colours, the `38;2;R;G;B` / `48;2;R;G;B` 24-bit colour forms emitted by
+//!   [`aphrody_terminal_markdown::MarkdownRenderer::render_commonmark`]: reset (`0`), bold (`1`),
+//!   dim (`2`), italic (`3`), underline (`4`), reverse (`7`), strike (`9`), the basic 8 + bright 8
+//!   foreground/background colours, the `38;2;R;G;B` / `48;2;R;G;B` 24-bit colour forms emitted by
 //!   `syntect` highlighting, and the `38;5;N` / `48;5;N` 256-colour forms.
-//! - Ignores every other CSI sequence (cursor movement, OSC, etc.) — the
-//!   markdown renderer does not produce them.
+//! - Ignores every other CSI sequence (cursor movement, OSC, etc.) — the markdown renderer does not
+//!   produce them.
 //!
 //! The parser is allocation-aware (one `Span` per styled run, one `Line`
 //! per `\n`) but never panics: malformed sequences are dropped on the floor
 //! and the offending bytes are appended verbatim.
 
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use ratatui::{
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+};
 
 /// Convert an ANSI-styled `String` into ratatui lines.
 ///
@@ -102,11 +103,7 @@ pub fn ansi_to_lines(src: &str) -> Vec<Line<'static>> {
     lines
 }
 
-fn flush_text(
-    spans: &mut Vec<Span<'static>>,
-    text: &mut String,
-    style: Style,
-) {
+fn flush_text(spans: &mut Vec<Span<'static>>, text: &mut String, style: Style) {
     if text.is_empty() {
         return;
     }
@@ -124,10 +121,7 @@ fn apply_sgr(params: &str, mut style: Style) -> Style {
         return Style::default();
     }
 
-    let raw: Vec<u16> = trimmed
-        .split(';')
-        .map(|p| p.trim().parse::<u16>().unwrap_or(0))
-        .collect();
+    let raw: Vec<u16> = trimmed.split(';').map(|p| p.trim().parse::<u16>().unwrap_or(0)).collect();
 
     let mut idx = 0;
     while idx < raw.len() {
@@ -152,7 +146,7 @@ fn apply_sgr(params: &str, mut style: Style) -> Style {
                 s.add_modifier = style.add_modifier;
                 s.sub_modifier = style.sub_modifier;
                 style = s;
-            }
+            },
             40..=47 => style = style.bg(basic_color(p - 40, false)),
             49 => {
                 let mut s = Style::default();
@@ -160,7 +154,7 @@ fn apply_sgr(params: &str, mut style: Style) -> Style {
                 s.add_modifier = style.add_modifier;
                 s.sub_modifier = style.sub_modifier;
                 style = s;
-            }
+            },
             90..=97 => style = style.fg(basic_color(p - 90, true)),
             100..=107 => style = style.bg(basic_color(p - 100, true)),
             38 | 48 => {
@@ -187,8 +181,8 @@ fn apply_sgr(params: &str, mut style: Style) -> Style {
                 }
                 // Unknown extended form — bail to avoid misaligning.
                 break;
-            }
-            _ => {}
+            },
+            _ => {},
         }
         idx += 1;
     }
@@ -243,10 +237,11 @@ mod tests {
         assert_eq!(lines.len(), 1);
         let spans = &lines[0].spans;
         // plain run, bold run, tail run
-        assert!(spans.iter().any(|s| {
-            s.content == "bold"
-                && s.style.add_modifier.contains(Modifier::BOLD)
-        }));
+        assert!(
+            spans
+                .iter()
+                .any(|s| { s.content == "bold" && s.style.add_modifier.contains(Modifier::BOLD) })
+        );
         assert!(spans.iter().any(|s| s.content == " tail"));
     }
 
@@ -255,10 +250,7 @@ mod tests {
         let lines = ansi_to_lines("\x1b[38;2;255;100;50mx\x1b[0m");
         assert_eq!(lines.len(), 1);
         let spans = &lines[0].spans;
-        let styled = spans
-            .iter()
-            .find(|s| s.content == "x")
-            .expect("x span present");
+        let styled = spans.iter().find(|s| s.content == "x").expect("x span present");
         assert_eq!(styled.style.fg, Some(Color::Rgb(255, 100, 50)));
     }
 

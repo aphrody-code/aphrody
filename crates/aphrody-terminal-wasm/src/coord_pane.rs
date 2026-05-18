@@ -53,13 +53,11 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use a2a_ui::Envelope;
 use js_sys::Function;
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{closure::Closure, prelude::*};
 use web_sys::{Element, Window};
 
 // ── M3 tokens ────────────────────────────────────────────────────────────────
@@ -169,13 +167,11 @@ impl A2aPaneHandle {
 ///
 /// # What this does
 ///
-/// 1. Applies M3 dark `surface_variant` background and `on_surface` text
-///    colour to `parent_id`.
-/// 2. Performs an initial load via [`load_envelopes`] and renders all envelope
-///    rows using [`a2a_ui::render_envelope_list`].
-/// 3. Installs a `setInterval` callback (2 000 ms) that re-loads envelopes and
-///    appends only *new* rows (delta append — already-rendered rows are not
-///    touched).
+/// 1. Applies M3 dark `surface_variant` background and `on_surface` text colour to `parent_id`.
+/// 2. Performs an initial load via [`load_envelopes`] and renders all envelope rows using
+///    [`a2a_ui::render_envelope_list`].
+/// 3. Installs a `setInterval` callback (2 000 ms) that re-loads envelopes and appends only *new*
+///    rows (delta append — already-rendered rows are not touched).
 ///
 /// # Errors
 ///
@@ -192,8 +188,8 @@ impl A2aPaneHandle {
 /// already wired for real data — only the data source function needs to change.
 #[wasm_bindgen]
 pub fn mount_a2a_pane(parent_id: &str) -> Result<A2aPaneHandle, JsValue> {
-    let window: Window = web_sys::window()
-        .ok_or_else(|| JsValue::from_str("mount_a2a_pane: no global window"))?;
+    let window: Window =
+        web_sys::window().ok_or_else(|| JsValue::from_str("mount_a2a_pane: no global window"))?;
 
     let document = window
         .document()
@@ -201,13 +197,9 @@ pub fn mount_a2a_pane(parent_id: &str) -> Result<A2aPaneHandle, JsValue> {
 
     // ── Locate and style the container element ─────────────────────────────
 
-    let container: Element = document
-        .get_element_by_id(parent_id)
-        .ok_or_else(|| {
-            JsValue::from_str(&format!(
-                "mount_a2a_pane: element #{parent_id} not found"
-            ))
-        })?;
+    let container: Element = document.get_element_by_id(parent_id).ok_or_else(|| {
+        JsValue::from_str(&format!("mount_a2a_pane: element #{parent_id} not found"))
+    })?;
 
     // Apply M3 tonal surface chrome.
     let style = container
@@ -236,10 +228,7 @@ pub fn mount_a2a_pane(parent_id: &str) -> Result<A2aPaneHandle, JsValue> {
 
     // ── Polling state (shared with the interval closure) ───────────────────
 
-    let state = Rc::new(RefCell::new(PaneState {
-        container,
-        rendered_count: initial_count,
-    }));
+    let state = Rc::new(RefCell::new(PaneState { container, rendered_count: initial_count }));
 
     let state_clone = Rc::clone(&state);
 
@@ -304,13 +293,14 @@ pub fn mount_a2a_pane(parent_id: &str) -> Result<A2aPaneHandle, JsValue> {
 
 #[cfg(test)]
 mod tests {
-    use super::{load_envelopes, SAMPLE_MAILBOX};
     use a2a_ui::Envelope;
+
+    use super::{SAMPLE_MAILBOX, load_envelopes};
 
     #[test]
     fn sample_mailbox_parses_to_three_envelopes() {
-        let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX)
-            .expect("SAMPLE_MAILBOX must parse without error");
+        let envelopes =
+            Envelope::parse_jsonl(SAMPLE_MAILBOX).expect("SAMPLE_MAILBOX must parse without error");
         assert_eq!(envelopes.len(), 3, "expected 3 envelopes in SAMPLE_MAILBOX");
     }
 
@@ -324,46 +314,26 @@ mod tests {
         // parse path directly.
         let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX)
             .expect("load_envelopes must succeed with embedded sample");
-        assert!(
-            !envelopes.is_empty(),
-            "load_envelopes must return at least one envelope"
-        );
+        assert!(!envelopes.is_empty(), "load_envelopes must return at least one envelope");
     }
 
     #[test]
     fn all_sample_envelopes_have_required_fields() {
-        let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX)
-            .expect("SAMPLE_MAILBOX parse");
+        let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX).expect("SAMPLE_MAILBOX parse");
         for (i, env) in envelopes.iter().enumerate() {
-            assert!(
-                !env.from.is_empty(),
-                "envelope[{i}].from must not be empty"
-            );
-            assert!(
-                !env.kind.is_empty(),
-                "envelope[{i}].kind must not be empty"
-            );
-            assert_eq!(
-                env.v,
-                Some(1),
-                "envelope[{i}].v must be 1 (current protocol version)"
-            );
+            assert!(!env.from.is_empty(), "envelope[{i}].from must not be empty");
+            assert!(!env.kind.is_empty(), "envelope[{i}].kind must not be empty");
+            assert_eq!(env.v, Some(1), "envelope[{i}].v must be 1 (current protocol version)");
         }
     }
 
     #[test]
     fn envelopes_serialise_back_to_json_array() {
-        let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX)
-            .expect("SAMPLE_MAILBOX parse");
-        let json = serde_json::to_string(&envelopes)
-            .expect("Vec<Envelope> must serialise to JSON");
-        assert!(
-            json.starts_with('['),
-            "serialised envelopes must be a JSON array"
-        );
+        let envelopes = Envelope::parse_jsonl(SAMPLE_MAILBOX).expect("SAMPLE_MAILBOX parse");
+        let json = serde_json::to_string(&envelopes).expect("Vec<Envelope> must serialise to JSON");
+        assert!(json.starts_with('['), "serialised envelopes must be a JSON array");
         // Round-trip: parse the JSON array back.
-        let rt: Vec<Envelope> =
-            serde_json::from_str(&json).expect("round-trip deserialise");
+        let rt: Vec<Envelope> = serde_json::from_str(&json).expect("round-trip deserialise");
         assert_eq!(rt.len(), envelopes.len(), "round-trip must preserve count");
     }
 }

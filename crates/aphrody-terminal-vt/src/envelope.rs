@@ -16,13 +16,11 @@
 //!
 //! ## API surface
 //!
-//! - [`strip_osc_envelope`] — tolerant byte strip (used when the VT bus
-//!   may have already removed the introducer/terminator before forwarding).
-//! - [`strip_osc_envelope_str`] — string-slice variant for callers that
-//!   parse OSC content as UTF-8.
-//! - [`strip_osc_envelope_required`] — strict byte strip that returns
-//!   `None` if the introducer or terminator is missing. Use for callers
-//!   that consume the raw VT slice directly.
+//! - [`strip_osc_envelope`] — tolerant byte strip (used when the VT bus may have already removed
+//!   the introducer/terminator before forwarding).
+//! - [`strip_osc_envelope_str`] — string-slice variant for callers that parse OSC content as UTF-8.
+//! - [`strip_osc_envelope_required`] — strict byte strip that returns `None` if the introducer or
+//!   terminator is missing. Use for callers that consume the raw VT slice directly.
 //!
 //! All three are zero-copy: they return sub-slices of `input`.
 
@@ -91,11 +89,7 @@ pub fn strip_osc_envelope_str(input: &str) -> &str {
 #[must_use]
 pub fn strip_osc_envelope_required(input: &[u8]) -> Option<&[u8]> {
     let body = input.strip_prefix(OSC_INTRODUCER)?;
-    if let Some(body) = body.strip_suffix(&[BEL]) {
-        Some(body)
-    } else {
-        body.strip_suffix(ST)
-    }
+    if let Some(body) = body.strip_suffix(&[BEL]) { Some(body) } else { body.strip_suffix(ST) }
 }
 
 // ---------------------------------------------------------------------------

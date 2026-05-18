@@ -73,8 +73,8 @@ pub fn import_claude_json(path: Option<&Path>) -> Result<ClaudeShim> {
 }
 
 fn default_claude_json_path() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
     Ok(home.join(".claude.json"))
 }
 
@@ -182,8 +182,8 @@ pub fn import_settings_json(path: Option<&Path>) -> Result<SettingsShim> {
 }
 
 fn default_settings_json_path() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| ConfigError::validation("home directory not resolvable"))?;
     Ok(home.join(".claude").join("settings.json"))
 }
 

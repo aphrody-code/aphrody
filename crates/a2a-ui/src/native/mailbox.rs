@@ -5,8 +5,10 @@
 //! the coord directory.  Files are re-parsed only when their mtime has
 //! advanced, preserving cursor position across refreshes.
 
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::{
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use anyhow::Result;
 
@@ -28,11 +30,7 @@ impl Mailbox {
     ///
     /// Does not read the file; call [`Self::refresh`] to load envelopes.
     pub fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            envelopes: Vec::new(),
-            last_mtime: None,
-        }
+        Self { path, envelopes: Vec::new(), last_mtime: None }
     }
 
     /// Re-read the file if its mtime has advanced since the last read.
@@ -55,7 +53,7 @@ impl Mailbox {
                     return Ok(true);
                 }
                 return Ok(false);
-            }
+            },
             Err(e) => return Err(anyhow::anyhow!("stat {}: {e}", self.path.display())),
         };
 
@@ -126,9 +124,5 @@ impl MailboxPair {
 /// `side` must be `"aphrody"` or `"winclean"`; any other value returns the
 /// aphrody mailbox as a safe default.
 pub fn mailbox_pair_envelopes<'a>(pair: &'a MailboxPair, side: &str) -> &'a [crate::Envelope] {
-    if side == "winclean" {
-        &pair.from_winclean.envelopes
-    } else {
-        &pair.from_aphrody.envelopes
-    }
+    if side == "winclean" { &pair.from_winclean.envelopes } else { &pair.from_aphrody.envelopes }
 }

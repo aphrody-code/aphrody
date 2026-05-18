@@ -29,9 +29,8 @@ use wasm_bindgen::prelude::*;
 ///
 /// Returns `Err` when neither form is available.
 fn get_recognition_ctor() -> Result<Function, JsValue> {
-    let win: JsValue = web_sys::window()
-        .ok_or_else(|| JsValue::from_str("no global `window` object"))?
-        .into();
+    let win: JsValue =
+        web_sys::window().ok_or_else(|| JsValue::from_str("no global `window` object"))?.into();
 
     // Try standard name first.
     let standard = Reflect::get(&win, &JsValue::from_str("SpeechRecognition"))?;
@@ -45,9 +44,7 @@ fn get_recognition_ctor() -> Result<Function, JsValue> {
         return Ok(webkit.unchecked_into::<Function>());
     }
 
-    Err(JsValue::from_str(
-        "SpeechRecognition is unavailable in this browser",
-    ))
+    Err(JsValue::from_str("SpeechRecognition is unavailable in this browser"))
 }
 
 /// Call a named method on a `JsValue` object with no arguments.
@@ -110,10 +107,7 @@ impl WebSpeechRecognition {
         Reflect::set(&inner, &JsValue::from_str("continuous"), &JsValue::from_bool(false))?;
         Reflect::set(&inner, &JsValue::from_str("lang"), &JsValue::from_str(lang))?;
 
-        Ok(WebSpeechRecognition {
-            inner,
-            lang: lang.to_owned(),
-        })
+        Ok(WebSpeechRecognition { inner, lang: lang.to_owned() })
     }
 
     /// The BCP-47 language tag this recogniser is configured for.

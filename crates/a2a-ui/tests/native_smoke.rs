@@ -6,11 +6,16 @@
 
 #![cfg(feature = "native")]
 
-use a2a_ui::Envelope;
-use a2a_ui::native::mailbox::MailboxPair;
-use a2a_ui::native::ui::{DrawState, Palette, draw};
-use ratatui::{Terminal, backend::TestBackend, widgets::ListState};
 use std::time::SystemTime;
+
+use a2a_ui::{
+    Envelope,
+    native::{
+        mailbox::MailboxPair,
+        ui::{DrawState, Palette, draw},
+    },
+};
+use ratatui::{Terminal, backend::TestBackend, widgets::ListState};
 
 // ---------------------------------------------------------------------------
 // Sample envelopes used across tests
@@ -86,11 +91,7 @@ fn one_frame_draw_does_not_panic() {
 fn mailbox_refresh_reads_fixture_file() {
     let dir = tempfile::tempdir().expect("create tempdir");
     let inbox_path = dir.path().join("inbox-from-aphrody.jsonl");
-    std::fs::write(
-        &inbox_path,
-        format!("{SAMPLE_A}\n{SAMPLE_B}\n"),
-    )
-    .expect("write fixture");
+    std::fs::write(&inbox_path, format!("{SAMPLE_A}\n{SAMPLE_B}\n")).expect("write fixture");
 
     let mut pair = MailboxPair::new(dir.path());
     let changed = pair.refresh().expect("refresh must succeed");

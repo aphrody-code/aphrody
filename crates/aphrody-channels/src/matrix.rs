@@ -502,9 +502,11 @@ fn urlencoding_encode(s: &str) -> String {
 #[allow(unsafe_code)]
 mod tests {
     use super::*;
+    use crate::test_util::ENV_LOCK;
 
     #[test]
     fn from_env_fails_on_missing_homeserver() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::remove_var("MATRIX_HOMESERVER");
         }
@@ -523,6 +525,7 @@ mod tests {
 
     #[test]
     fn from_env_fails_on_missing_token() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("MATRIX_HOMESERVER", "https://matrix.org");
         }
@@ -544,6 +547,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_all_vars() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("MATRIX_HOMESERVER", "https://matrix.example.org");
         }

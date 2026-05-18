@@ -24,7 +24,7 @@
     clippy::struct_excessive_bools,
     clippy::cast_possible_truncation,
     clippy::range_plus_one,
-    clippy::explicit_iter_loop,
+    clippy::explicit_iter_loop
 )]
 
 use bitflags::bitflags;
@@ -41,7 +41,7 @@ pub use envelope::{
     strip_osc_envelope_str,
 };
 pub use mouse::{
-    decode_sgr_1006, encode_sgr_1006, MouseButton, MouseEvent, MouseEventKind, MouseModifiers,
+    MouseButton, MouseEvent, MouseEventKind, MouseModifiers, decode_sgr_1006, encode_sgr_1006,
 };
 
 // ── Colour ───────────────────────────────────────────────────────────────────
@@ -145,12 +145,7 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Self {
-            ch: ' ',
-            fg: DEFAULT_FG,
-            bg: DEFAULT_BG,
-            attr: Attr::empty(),
-        }
+        Self { ch: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, attr: Attr::empty() }
     }
 }
 
@@ -169,11 +164,7 @@ pub struct Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Self {
-            row: 0,
-            col: 0,
-            visible: true,
-        }
+        Self { row: 0, col: 0, visible: true }
     }
 }
 
@@ -461,12 +452,8 @@ impl TerminalState {
         let row = usize::from(self.cursor.row);
         let col = usize::from(self.cursor.col);
         let idx = row * usize::from(self.cols) + col;
-        self.cells[idx] = Cell {
-            ch,
-            fg: self.current_fg,
-            bg: self.current_bg,
-            attr: self.current_attr,
-        };
+        self.cells[idx] =
+            Cell { ch, fg: self.current_fg, bg: self.current_bg, attr: self.current_attr };
         self.dirty[row] = true;
 
         if self.cursor.col + 1 >= self.cols {
@@ -581,7 +568,7 @@ impl TerminalState {
                 for r in usize::from(self.cursor.row)..usize::from(self.rows) {
                     self.dirty[r] = true;
                 }
-            }
+            },
             1 => {
                 let end = usize::from(self.cursor.row) * usize::from(self.cols)
                     + usize::from(self.cursor.col)
@@ -592,13 +579,13 @@ impl TerminalState {
                 for r in 0..=usize::from(self.cursor.row) {
                     self.dirty[r] = true;
                 }
-            }
+            },
             _ => {
                 for cell in &mut self.cells {
                     *cell = Cell::default();
                 }
                 self.dirty.iter_mut().for_each(|d| *d = true);
-            }
+            },
         }
     }
 
@@ -612,17 +599,17 @@ impl TerminalState {
                 for cell in &mut self.cells[row_start + col..row_start + cols] {
                     *cell = Cell::default();
                 }
-            }
+            },
             1 => {
                 for cell in &mut self.cells[row_start..row_start + col + 1] {
                     *cell = Cell::default();
                 }
-            }
+            },
             _ => {
                 for cell in &mut self.cells[row_start..row_start + cols] {
                     *cell = Cell::default();
                 }
-            }
+            },
         }
         self.dirty[row] = true;
     }
@@ -633,7 +620,7 @@ impl TerminalState {
                 self.current_attr = Attr::empty();
                 self.current_fg = DEFAULT_FG;
                 self.current_bg = DEFAULT_BG;
-            }
+            },
             1 => self.current_attr.insert(Attr::BOLD),
             3 => self.current_attr.insert(Attr::ITALIC),
             4 => self.current_attr.insert(Attr::UNDERLINE),
@@ -650,7 +637,7 @@ impl TerminalState {
             49 => self.current_bg = DEFAULT_BG,
             90..=97 => self.current_fg = ansi_to_color(p - 90 + 8),
             100..=107 => self.current_bg = ansi_to_color(p - 100 + 8),
-            _ => {}
+            _ => {},
         }
     }
 
@@ -710,11 +697,11 @@ impl TerminalState {
                         continue;
                     }
                     i += 2;
-                }
+                },
                 _ => {
                     self.apply_sgr_param(p);
                     i += 1;
-                }
+                },
             }
         }
     }
@@ -741,10 +728,10 @@ impl TerminalState {
                 } else {
                     self.exit_alt_screen();
                 }
-            }
+            },
             // Bracketed paste.
             2004 => self.bracketed_paste = enable,
-            _ => {}
+            _ => {},
         }
     }
 
@@ -840,19 +827,13 @@ fn palette_256(idx: u16) -> Color {
             let r6 = v / 36;
             let g6 = (v / 6) % 6;
             let b6 = v % 6;
-            let level = |n: u16| -> u8 {
-                if n == 0 {
-                    0
-                } else {
-                    (55 + n * 40).min(255) as u8
-                }
-            };
+            let level = |n: u16| -> u8 { if n == 0 { 0 } else { (55 + n * 40).min(255) as u8 } };
             Color::new(level(r6), level(g6), level(b6))
-        }
+        },
         232..=255 => {
             let grey = (8 + (idx - 232) * 10).min(255) as u8;
             Color::new(grey, grey, grey)
-        }
+        },
         _ => DEFAULT_FG,
     }
 }
@@ -869,31 +850,25 @@ impl Perform for TerminalState {
             b'\r' => self.cursor.col = 0,
             b'\n' | 0x0B | 0x0C => {
                 self.newline();
-            }
+            },
             b'\x08' => {
                 if self.cursor.col > 0 {
                     self.cursor.col -= 1;
                 }
-            }
+            },
             b'\t' => {
                 let next_tab = (self.cursor.col / 8 + 1) * 8;
                 self.cursor.col = next_tab.min(self.cols.saturating_sub(1));
-            }
-            0x07 => {}
-            _ => {}
+            },
+            0x07 => {},
+            _ => {},
         }
     }
 
     fn csi_dispatch(&mut self, params: &Params, intermediates: &[u8], _ignore: bool, action: char) {
         let mut param_iter = params.iter();
-        let p1: u16 = param_iter
-            .next()
-            .and_then(|sp| sp.first().copied())
-            .unwrap_or(0);
-        let p2: u16 = param_iter
-            .next()
-            .and_then(|sp| sp.first().copied())
-            .unwrap_or(0);
+        let p1: u16 = param_iter.next().and_then(|sp| sp.first().copied()).unwrap_or(0);
+        let p2: u16 = param_iter.next().and_then(|sp| sp.first().copied()).unwrap_or(0);
 
         // Private DECSET / DECRST (`CSI ? Ps h` / `CSI ? Ps l`).
         if intermediates.first() == Some(&b'?') {
@@ -906,7 +881,7 @@ impl Perform for TerminalState {
                         }
                     }
                     return;
-                }
+                },
                 _ => return,
             }
         }
@@ -916,40 +891,40 @@ impl Perform for TerminalState {
             'A' => {
                 let n = Self::param_or_one(p1);
                 self.cursor.row = self.cursor.row.saturating_sub(n);
-            }
+            },
             // CUD
             'B' => {
                 let n = Self::param_or_one(p1);
                 self.cursor.row = (self.cursor.row + n).min(self.rows.saturating_sub(1));
-            }
+            },
             // CUF
             'C' => {
                 let n = Self::param_or_one(p1);
                 self.cursor.col = (self.cursor.col + n).min(self.cols.saturating_sub(1));
-            }
+            },
             // CUB
             'D' => {
                 let n = Self::param_or_one(p1);
                 self.cursor.col = self.cursor.col.saturating_sub(n);
-            }
+            },
             // CUP / HVP
             'H' | 'f' => {
                 let row = Self::param_or_one(p1).saturating_sub(1);
                 let col = Self::param_or_one(p2).saturating_sub(1);
                 self.cursor.row = row.min(self.rows.saturating_sub(1));
                 self.cursor.col = col.min(self.cols.saturating_sub(1));
-            }
+            },
             // Focus events: ESC [ I (in) / ESC [ O (out) arrive as CSI sequences.
             'I' => {
                 if self.focus_events {
                     self.focus_queue.push(FocusEvent::In);
                 }
-            }
+            },
             'O' => {
                 if self.focus_events {
                     self.focus_queue.push(FocusEvent::Out);
                 }
-            }
+            },
             // ED
             'J' => self.erase_display(p1),
             // EL
@@ -958,12 +933,12 @@ impl Perform for TerminalState {
             'L' => {
                 let n = Self::param_or_one(p1);
                 self.insert_lines(n);
-            }
+            },
             // DL — Delete Line.
             'M' => {
                 let n = Self::param_or_one(p1);
                 self.delete_lines(n);
-            }
+            },
             // SGR.
             'm' => self.handle_sgr(params),
             // DECSTBM — Set Top/Bottom Margins.
@@ -977,28 +952,26 @@ impl Perform for TerminalState {
                     self.cursor.row = 0;
                     self.cursor.col = 0;
                 }
-            }
+            },
             // Bracketed paste boundaries: ESC [ 200~ / ESC [ 201~ arrive
             // with `~` as the final byte and the parameter encoding the
             // tilde sequence.
-            '~' => {
-                match p1 {
-                    200 => {
-                        if self.bracketed_paste {
-                            self.paste_active = true;
-                            self.paste_queue.push(PasteEvent::Start);
-                        }
+            '~' => match p1 {
+                200 => {
+                    if self.bracketed_paste {
+                        self.paste_active = true;
+                        self.paste_queue.push(PasteEvent::Start);
                     }
-                    201 => {
-                        if self.bracketed_paste {
-                            self.paste_active = false;
-                            self.paste_queue.push(PasteEvent::End);
-                        }
+                },
+                201 => {
+                    if self.bracketed_paste {
+                        self.paste_active = false;
+                        self.paste_queue.push(PasteEvent::End);
                     }
-                    _ => {}
-                }
-            }
-            _ => {}
+                },
+                _ => {},
+            },
+            _ => {},
         }
     }
 
@@ -1018,14 +991,14 @@ impl Perform for TerminalState {
                 if let Some(title) = osc::decode_title(params) {
                     self.title_queue.push(title);
                 }
-            }
+            },
             // OSC 52 — clipboard set/query.
             b"52" => {
                 if let Some(text) = osc::decode_clipboard(params) {
                     self.clipboard_queue.push(text);
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -1037,7 +1010,7 @@ impl Perform for TerminalState {
         match byte {
             b'7' => self.save_cursor(),
             b'8' => self.restore_cursor(),
-            _ => {}
+            _ => {},
         }
     }
 }
@@ -1331,7 +1304,12 @@ mod tests {
         for i in 0..6_u16 {
             t.feed(format!("\x1b[{};1H", i + 1).as_bytes());
             let ch: &[u8] = match i {
-                0 => b"A", 1 => b"B", 2 => b"C", 3 => b"D", 4 => b"E", _ => b"F",
+                0 => b"A",
+                1 => b"B",
+                2 => b"C",
+                3 => b"D",
+                4 => b"E",
+                _ => b"F",
             };
             t.feed(ch);
         }

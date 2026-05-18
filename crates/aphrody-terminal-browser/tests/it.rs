@@ -5,12 +5,10 @@
 //! Backend tests that require external binaries are marked `#[ignore]` with
 //! a precise reason so CI can gate them appropriately.
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
-
 use aphrody_terminal_browser::{
-    Active, BrowserRequest, RecordState, ScreenshotArea,
-    osc::parse_aphrody_browser_osc,
+    Active, BrowserRequest, RecordState, ScreenshotArea, osc::parse_aphrody_browser_osc,
 };
+use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 
 // ---------------------------------------------------------------------------
 // OSC parser tests — no external binaries required
@@ -21,12 +19,11 @@ use aphrody_terminal_browser::{
 fn osc_parse_nav_minimal() {
     // Full framing: ESC ] ... BEL
     let seq = b"\x1b]aphrody-browser-nav;https://example.com\x07";
-    let req = parse_aphrody_browser_osc(seq)
-        .expect("should parse nav OSC sequence");
+    let req = parse_aphrody_browser_osc(seq).expect("should parse nav OSC sequence");
     match req {
         BrowserRequest::Nav { url } => {
             assert_eq!(url, "https://example.com");
-        }
+        },
         other => panic!("expected Nav, got {other:?}"),
     }
 }
@@ -37,12 +34,11 @@ fn osc_parse_eval_base64() {
     let js = "document.title";
     let b64 = B64.encode(js.as_bytes());
     let seq = format!("aphrody-browser-eval;{b64}");
-    let req = parse_aphrody_browser_osc(seq.as_bytes())
-        .expect("should parse eval OSC sequence");
+    let req = parse_aphrody_browser_osc(seq.as_bytes()).expect("should parse eval OSC sequence");
     match req {
         BrowserRequest::Eval { src } => {
             assert_eq!(src, js, "decoded JS must match original");
-        }
+        },
         other => panic!("expected Eval, got {other:?}"),
     }
 }
@@ -53,12 +49,11 @@ fn osc_parse_dom_base64() {
     let selector = "#content > p.lead";
     let b64 = B64.encode(selector.as_bytes());
     let seq = format!("aphrody-browser-dom;{b64}");
-    let req = parse_aphrody_browser_osc(seq.as_bytes())
-        .expect("should parse dom OSC sequence");
+    let req = parse_aphrody_browser_osc(seq.as_bytes()).expect("should parse dom OSC sequence");
     match req {
         BrowserRequest::Dom { selector: s } => {
             assert_eq!(s, selector);
-        }
+        },
         other => panic!("expected Dom, got {other:?}"),
     }
 }
@@ -67,14 +62,11 @@ fn osc_parse_dom_base64() {
 #[test]
 fn osc_parse_screenshot_element() {
     let seq = b"aphrody-browser-screenshot;element:#hero-banner";
-    let req = parse_aphrody_browser_osc(seq)
-        .expect("should parse screenshot element OSC");
+    let req = parse_aphrody_browser_osc(seq).expect("should parse screenshot element OSC");
     match req {
-        BrowserRequest::Screenshot {
-            area: ScreenshotArea::Element { selector },
-        } => {
+        BrowserRequest::Screenshot { area: ScreenshotArea::Element { selector } } => {
             assert_eq!(selector, "#hero-banner");
-        }
+        },
         other => panic!("expected Screenshot(Element), got {other:?}"),
     }
 }
@@ -83,8 +75,7 @@ fn osc_parse_screenshot_element() {
 #[test]
 fn osc_parse_screenshot_fullpage() {
     let seq = b"aphrody-browser-screenshot;fullpage";
-    let req = parse_aphrody_browser_osc(seq)
-        .expect("should parse screenshot fullpage OSC");
+    let req = parse_aphrody_browser_osc(seq).expect("should parse screenshot fullpage OSC");
     assert!(
         matches!(req, BrowserRequest::Screenshot { area: ScreenshotArea::Fullpage }),
         "expected Fullpage variant"
@@ -96,25 +87,23 @@ fn osc_parse_screenshot_fullpage() {
 fn osc_parse_record_states() {
     // start
     let start_seq = b"aphrody-browser-record;session-42;start";
-    let start = parse_aphrody_browser_osc(start_seq)
-        .expect("should parse record start");
+    let start = parse_aphrody_browser_osc(start_seq).expect("should parse record start");
     match start {
         BrowserRequest::Record { id, state } => {
             assert_eq!(id, "session-42");
             assert_eq!(state, RecordState::Start);
-        }
+        },
         other => panic!("expected Record, got {other:?}"),
     }
 
     // stop
     let stop_seq = b"aphrody-browser-record;session-42;stop";
-    let stop = parse_aphrody_browser_osc(stop_seq)
-        .expect("should parse record stop");
+    let stop = parse_aphrody_browser_osc(stop_seq).expect("should parse record stop");
     match stop {
         BrowserRequest::Record { id, state } => {
             assert_eq!(id, "session-42");
             assert_eq!(state, RecordState::Stop);
-        }
+        },
         other => panic!("expected Record, got {other:?}"),
     }
 }
@@ -125,13 +114,12 @@ fn osc_parse_intercept_base64_json() {
     let rule = r#"{"url_pattern":"*api.example.com*","action":"block"}"#;
     let b64 = B64.encode(rule.as_bytes());
     let seq = format!("aphrody-browser-intercept;{b64}");
-    let req = parse_aphrody_browser_osc(seq.as_bytes())
-        .expect("should parse intercept OSC");
+    let req = parse_aphrody_browser_osc(seq.as_bytes()).expect("should parse intercept OSC");
     match req {
         BrowserRequest::Intercept { rule: r } => {
             assert_eq!(r["url_pattern"], "*api.example.com*");
             assert_eq!(r["action"], "block");
-        }
+        },
         other => panic!("expected Intercept, got {other:?}"),
     }
 }
@@ -142,12 +130,11 @@ fn osc_parse_extract_base64_json() {
     let schema = r#"{"type":"object","properties":{"price":{"type":"number"}}}"#;
     let b64 = B64.encode(schema.as_bytes());
     let seq = format!("aphrody-browser-extract;{b64}");
-    let req = parse_aphrody_browser_osc(seq.as_bytes())
-        .expect("should parse extract OSC");
+    let req = parse_aphrody_browser_osc(seq.as_bytes()).expect("should parse extract OSC");
     match req {
         BrowserRequest::Extract { schema: s } => {
             assert_eq!(s["type"], "object");
-        }
+        },
         other => panic!("expected Extract, got {other:?}"),
     }
 }
@@ -156,20 +143,14 @@ fn osc_parse_extract_base64_json() {
 #[test]
 fn osc_parse_unknown_prefix_returns_none() {
     let seq = b"aphrody-md;SGVsbG8=";
-    assert!(
-        parse_aphrody_browser_osc(seq).is_none(),
-        "non-browser OSC must return None"
-    );
+    assert!(parse_aphrody_browser_osc(seq).is_none(), "non-browser OSC must return None");
 }
 
 /// Unknown op (after `aphrody-browser-`) must return None.
 #[test]
 fn osc_parse_unknown_op_returns_none() {
     let seq = b"aphrody-browser-bogus;payload";
-    assert!(
-        parse_aphrody_browser_osc(seq).is_none(),
-        "unknown op must return None"
-    );
+    assert!(parse_aphrody_browser_osc(seq).is_none(), "unknown op must return None");
 }
 
 /// ST-terminated OSC must parse identically to BEL-terminated.
@@ -177,8 +158,7 @@ fn osc_parse_unknown_op_returns_none() {
 fn osc_parse_st_terminator() {
     // ST = ESC backslash
     let seq = b"\x1b]aphrody-browser-nav;https://st.example.com\x1b\\";
-    let req = parse_aphrody_browser_osc(seq)
-        .expect("ST-terminated OSC must parse");
+    let req = parse_aphrody_browser_osc(seq).expect("ST-terminated OSC must parse");
     assert!(matches!(req, BrowserRequest::Nav { url } if url == "https://st.example.com"));
 }
 
@@ -200,13 +180,13 @@ async fn active_probe_returns_some_backend_or_unsupported() {
                 matches!(name, "bxc" | "agent-browser" | "edge"),
                 "unexpected backend name: {name}"
             );
-        }
+        },
         Err(aphrody_terminal_browser::BrowserError::Unsupported { .. }) => {
             // Expected on machines with no browser binaries installed.
-        }
+        },
         Err(e) => {
             panic!("probe() returned unexpected error variant: {e}");
-        }
+        },
     }
 }
 
@@ -219,10 +199,7 @@ async fn active_probe_returns_some_backend_or_unsupported() {
 ///
 /// Skipped on non-Windows because msedge is not available there, and skipped
 /// at runtime if msedge is not on PATH (even on Windows).
-#[cfg_attr(
-    not(target_os = "windows"),
-    ignore = "msedge is only available on Windows"
-)]
+#[cfg_attr(not(target_os = "windows"), ignore = "msedge is only available on Windows")]
 #[tokio::test]
 async fn edge_backend_dump_dom_about_blank() {
     use aphrody_terminal_browser::backend::edge::msedge_available;
@@ -236,10 +213,7 @@ async fn edge_backend_dump_dom_about_blank() {
         .await
         .expect("msedge --dump-dom about:blank must succeed");
 
-    assert!(
-        !html.is_empty(),
-        "msedge --dump-dom about:blank produced empty output"
-    );
+    assert!(!html.is_empty(), "msedge --dump-dom about:blank produced empty output");
     // about:blank renders a minimal HTML document.
     assert!(
         html.contains("<html") || html.contains("<!DOCTYPE"),

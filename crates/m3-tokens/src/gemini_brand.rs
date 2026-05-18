@@ -216,14 +216,14 @@ pub fn export_css() -> String {
 ///
 /// The emitted CSS contains, in this order:
 ///
-/// 1. Eight `--aphrody-brand-*` color tokens (blue, purple, pink, yellow,
-///    green, cyan, orange, red) — uppercase `#RRGGBB`.
-/// 2. Four `--aphrody-*-tone` / `--aphrody-spectrum-shift` linear gradients
-///    (spectrum-shift, warm-tone, success-tone, shimmer).
+/// 1. Eight `--aphrody-brand-*` color tokens (blue, purple, pink, yellow, green, cyan, orange, red)
+///    — uppercase `#RRGGBB`.
+/// 2. Four `--aphrody-*-tone` / `--aphrody-spectrum-shift` linear gradients (spectrum-shift,
+///    warm-tone, success-tone, shimmer).
 /// 3. Terminal monospace font stack (`--aphrody-mono-font`).
 /// 4. Three corner radii (`--aphrody-corner-card`, `-pill`, `-chip`).
-/// 5. The companion M3 baseline scale referenced by the HTML demo
-///    (`--m3-color-primary` family + `--m3-corner-*` + `--m3-typescale-*`).
+/// 5. The companion M3 baseline scale referenced by the HTML demo (`--m3-color-primary` family +
+///    `--m3-corner-*` + `--m3-typescale-*`).
 ///
 /// All values are computed from the Rust constants in this module and from
 /// the M3 baseline cascade ([`crate::color::BASELINE`], [`crate::shape`],
@@ -232,9 +232,7 @@ pub fn export_css() -> String {
 #[cfg(feature = "std")]
 #[must_use]
 pub fn export_aphrody_brand_css() -> String {
-    use crate::color::BASELINE;
-    use crate::shape as sh;
-    use crate::typography as ty;
+    use crate::{color::BASELINE, shape as sh, typography as ty};
 
     // Uppercase hex helper, matching the existing HTML convention.
     fn hex_upper(argb: u32) -> String {
@@ -300,10 +298,7 @@ pub fn export_aphrody_brand_css() -> String {
         ("label-small", ty::LABEL_SMALL),
     ];
     for (name, style) in m3_type {
-        s.push_str(&format!(
-            "  --m3-typescale-{name}-size: {}px;\n",
-            style.size_dp as u32
-        ));
+        s.push_str(&format!("  --m3-typescale-{name}-size: {}px;\n", style.size_dp as u32));
         s.push_str(&format!(
             "  --m3-typescale-{name}-line-height: {}px;\n",
             style.line_height_dp as u32
@@ -330,34 +325,28 @@ pub fn export_aphrody_brand_css() -> String {
     // ── Aphrody gradients (spectrum-shift, warm-tone, success-tone, shimmer) ─
     s.push_str("\n  /* Aphrody brand gradients */\n");
     s.push_str(
-        "  --aphrody-spectrum-shift: linear-gradient(90deg, \
-         var(--aphrody-brand-blue) 0%, \
-         var(--aphrody-brand-purple) 50%, \
-         var(--aphrody-brand-pink) 100%);\n",
+        "  --aphrody-spectrum-shift: linear-gradient(90deg, var(--aphrody-brand-blue) 0%, \
+         var(--aphrody-brand-purple) 50%, var(--aphrody-brand-pink) 100%);\n",
     );
     s.push_str(
-        "  --aphrody-warm-tone: linear-gradient(45deg, \
-         var(--aphrody-brand-yellow) 0%, \
+        "  --aphrody-warm-tone: linear-gradient(45deg, var(--aphrody-brand-yellow) 0%, \
          var(--aphrody-brand-pink) 100%);\n",
     );
     s.push_str(&format!(
-        "  --aphrody-success-tone: linear-gradient(135deg, \
-         {} 0%, \
-         var(--aphrody-brand-green) 100%);\n",
+        "  --aphrody-success-tone: linear-gradient(135deg, {} 0%, var(--aphrody-brand-green) \
+         100%);\n",
         hex_upper(APHRODY_GREEN_DEEP),
     ));
     s.push_str(
-        "  --aphrody-shimmer: linear-gradient(90deg, \
-         transparent 0%, \
-         color-mix(in srgb, white 35%, transparent) 50%, \
-         transparent 100%);\n",
+        "  --aphrody-shimmer: linear-gradient(90deg, transparent 0%, color-mix(in srgb, white \
+         35%, transparent) 50%, transparent 100%);\n",
     );
 
     // ── Aphrody terminal-specific tokens ───────────────────────────────────
     s.push_str("\n  /* Aphrody terminal-specific tokens */\n");
     s.push_str(
-        "  --aphrody-mono-font: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', \
-         'Menlo', 'Consolas', 'Liberation Mono', monospace;\n",
+        "  --aphrody-mono-font: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', 'Menlo', \
+         'Consolas', 'Liberation Mono', monospace;\n",
     );
     s.push_str(&format!("  --aphrody-corner-card: {}px;\n", sh::LARGE.dp));
     s.push_str(&format!("  --aphrody-corner-pill: {}px;\n", sh::FULL.dp));
@@ -520,11 +509,9 @@ mod tests {
         assert!(css.contains("--m3-typescale-display-large-size: 57px;"));
 
         // Token-line count sanity (≥ 30 declarations — not a stub)
-        let decl_lines = css.lines().filter(|l| l.contains(": ") && l.trim().ends_with(';')).count();
-        assert!(
-            decl_lines >= 30,
-            "expected at least 30 CSS token declarations, got {decl_lines}"
-        );
+        let decl_lines =
+            css.lines().filter(|l| l.contains(": ") && l.trim().ends_with(';')).count();
+        assert!(decl_lines >= 30, "expected at least 30 CSS token declarations, got {decl_lines}");
 
         // Single :root opener / single closer (well-formed block)
         assert_eq!(css.matches(":root {").count(), 1, "exactly one `:root {{` block expected");

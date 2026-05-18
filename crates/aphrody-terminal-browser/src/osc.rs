@@ -72,11 +72,7 @@ pub fn parse_aphrody_browser_osc(input: &[u8]) -> Option<BrowserRequest> {
 /// Remove any OSC framing characters a caller may have included.
 fn strip_osc_framing(input: &[u8]) -> &[u8] {
     // Strip leading ESC ]
-    let input = if input.starts_with(b"\x1b]") {
-        &input[2..]
-    } else {
-        input
-    };
+    let input = if input.starts_with(b"\x1b]") { &input[2..] } else { input };
     // Strip trailing BEL or ST
     if input.ends_with(b"\x07") {
         &input[..input.len() - 1]
@@ -131,9 +127,7 @@ fn parse_screenshot(payload: &[u8]) -> Option<BrowserRequest> {
         if sel.is_empty() {
             return None;
         }
-        ScreenshotArea::Element {
-            selector: sel.to_owned(),
-        }
+        ScreenshotArea::Element { selector: sel.to_owned() }
     } else {
         return None;
     };

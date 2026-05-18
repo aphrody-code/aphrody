@@ -19,8 +19,7 @@
 // a browser-runtime operation; the gate lives inside gradient_hero.rs itself
 // (`#![cfg(target_arch = "wasm32")]` at the top of the file).
 pub mod gradient_hero;
-#[cfg(target_arch = "wasm32")]
-pub use gradient_hero::GradientHero;
+#[cfg(target_arch = "wasm32")] pub use gradient_hero::GradientHero;
 
 /// Installs the browser panic hook and wires `log` macros to `console.*`.
 ///

@@ -10,12 +10,11 @@
 //!
 //! Two consumption modes are offered:
 //!
-//! - [`DocsPreviewPane::render`] — synchronous; returns the rendered
-//!   markdown body directly (used by tests and CLI dumps).
-//! - [`DocsPreviewPane::publish_to`] — pushes the same body onto an
-//!   [`EventBus`] as `LlmEvent::Markdown { body }`, so any subscribed
-//!   renderer (WASM, ratatui, etc.) picks it up via the existing
-//!   broadcast channel.
+//! - [`DocsPreviewPane::render`] — synchronous; returns the rendered markdown body directly (used
+//!   by tests and CLI dumps).
+//! - [`DocsPreviewPane::publish_to`] — pushes the same body onto an [`EventBus`] as
+//!   `LlmEvent::Markdown { body }`, so any subscribed renderer (WASM, ratatui, etc.) picks it up
+//!   via the existing broadcast channel.
 
 use anyhow::Result;
 

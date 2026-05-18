@@ -42,11 +42,7 @@ pub struct TaskTree {
 impl TaskTree {
     /// Create a new empty task tree.
     pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(Inner {
-                nodes: HashMap::new(),
-            })),
-        }
+        Self { inner: Arc::new(Mutex::new(Inner { nodes: HashMap::new() })) }
     }
 
     /// Update (insert or replace) a task node.
@@ -71,11 +67,8 @@ impl TaskTree {
         let mut guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
 
         // Preserve existing children if the node already existed.
-        let existing_children = guard
-            .nodes
-            .get(&id)
-            .map(|n| n.children.clone())
-            .unwrap_or_default();
+        let existing_children =
+            guard.nodes.get(&id).map(|n| n.children.clone()).unwrap_or_default();
 
         let node = TaskNode {
             id: id.clone(),
@@ -114,12 +107,7 @@ impl TaskTree {
         guard
             .nodes
             .values()
-            .filter(|n| {
-                n.parent
-                    .as_ref()
-                    .map(|pid| !guard.nodes.contains_key(pid))
-                    .unwrap_or(true)
-            })
+            .filter(|n| n.parent.as_ref().map(|pid| !guard.nodes.contains_key(pid)).unwrap_or(true))
             .map(|n| n.id.clone())
             .collect()
     }
@@ -131,9 +119,7 @@ impl TaskTree {
     pub fn apply_event(&self, ev: &LlmEvent) {
         if let LlmEvent::Task { id, status, subject } = ev {
             // Preserve existing parent.
-            let existing_parent = self
-                .get(id)
-                .and_then(|n| n.parent);
+            let existing_parent = self.get(id).and_then(|n| n.parent);
             self.update(id, existing_parent, status, subject);
         }
     }

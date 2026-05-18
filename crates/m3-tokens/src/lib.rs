@@ -39,7 +39,6 @@ pub mod typography;
 
 // Re-export the CSS exporter at crate root when std is available.
 #[cfg(feature = "std")] pub use color::export_css;
-
 // Re-export the Aphrody brand CSS exporter (consumed by HTML/WASM examples
 // such as `crates/aphrody-wasm/examples/aphrody-terminal-demo.html`).
 #[cfg(feature = "std")] pub use gemini_brand::export_aphrody_brand_css;

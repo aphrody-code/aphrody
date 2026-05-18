@@ -54,18 +54,12 @@ fn main() -> anyhow::Result<()> {
     let coord_dir = cli.coord.unwrap_or_else(default_coord_dir);
 
     if !coord_dir.exists() {
-        anyhow::bail!(
-            "coord directory does not exist: {}",
-            coord_dir.display()
-        );
+        anyhow::bail!("coord directory does not exist: {}", coord_dir.display());
     }
 
     let refresh_secs = cli.refresh.max(1);
 
-    let args = a2a_ui::native::NativeTuiArgs {
-        refresh_secs,
-        initial_side: cli.side,
-    };
+    let args = a2a_ui::native::NativeTuiArgs { refresh_secs, initial_side: cli.side };
 
     a2a_ui::native::run_native_tui(&coord_dir, args)
 }
