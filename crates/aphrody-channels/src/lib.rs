@@ -7,13 +7,16 @@
 //! - **Telegram** — Bot API (sendMessage, sendDocument, getUpdates long-poll, getChat /
 //!   getMyCommands for room listing).
 //! - **Matrix** — Client-Server API v3 (/_matrix/client/v3/) with /sync long-poll.
+//! - **Discord** — REST API v10 (POST `/channels/{id}/messages`, polling history fallback).
+//!   Ported from `openclaw/extensions/discord` (TS, ~140 source files).
+//! - **X / Twitter** — wraps the `aphrody-x` binary (cookie auth, see
+//!   `crates/aphrody-x-client`).
 //!
 //! ## Next-tick TODOs (documented, not implemented)
 //!
 //! The following adapters are planned for future ticks, mirroring the full
-//! openclaw extension catalogue (highest-LOC first after the starter three):
+//! openclaw extension catalogue (highest-LOC first after the starter five):
 //!
-//! - `discord` — Discord Bot Gateway (WebSocket + REST).
 //! - `whatsapp` — WhatsApp Cloud API (Meta Business Platform).
 //! - `signal` — Signal Messenger (signal-cli JSON RPC).
 //! - `imessage` — iMessage (macOS-only AppleScript / BlueBubbles REST).
@@ -34,9 +37,11 @@
 
 #![deny(unsafe_code)]
 
+pub mod discord;
 pub mod matrix;
 pub mod slack;
 pub mod telegram;
+pub mod x;
 
 use std::path::Path;
 
