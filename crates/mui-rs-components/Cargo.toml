@@ -1,0 +1,30 @@
+[package]
+name = "mui-rs-components"
+description = "M3 component library — 36+ Material Design 3 components (native GPU)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+wasm    = ["mui-rs-renderer/web", "wasm-bindgen", "wasm-bindgen-futures"]
+
+[dependencies]
+thiserror.workspace = true
+taffy.workspace = true
+parley.workspace = true
+fontique.workspace = true
+accesskit.workspace = true
+tracing.workspace = true
+mui-rs-tokens     = { path = "../mui-rs-tokens" }
+mui-rs-renderer   = { path = "../mui-rs-renderer" }
+mui-rs-motion     = { path = "../mui-rs-motion" }
+
+wasm-bindgen         = { workspace = true, optional = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+
+[dev-dependencies]
+insta.workspace = true
