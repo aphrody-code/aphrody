@@ -414,3 +414,18 @@ lefthook.yml
 # These files contain user-local plugin config and must never be committed.
 .claude/*.local.md
 .claude/*.local.json
+
+# ----------------------------------------------------------------------------
+# 22. A2A coordination runtime (`ai/` in-tree, since 2026-05-19)
+# ----------------------------------------------------------------------------
+# The `ai/` directory is the source of truth for cross-Claude A2A
+# coordination (cf. ai.json + CLAUDE.md §6.1). Its structure (README.md,
+# peers/.gitkeep) is tracked but the runtime payloads are ephemeral state
+# that changes every tick — never commit them.
+ai/heartbeat.txt
+ai/inbox.jsonl
+ai/outbox.jsonl
+ai/peers/*.ai.json
+# Negation: explicitly keep the placeholder + docs.
+!ai/README.md
+!ai/peers/.gitkeep

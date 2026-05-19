@@ -7,9 +7,9 @@
   "license": "Apache-2.0",
 
   "canonical_manifest": {
-    "note": "The full A2A CollaborationManifest (AGNTCY a2a/v0.4 compatible, with AgentCards + skills + tasks + transports) is at `C:/src/aphrody/ai.json` (or `../ai.json` from this file). This `.well-known/ai.json` is the lightweight HTTP-discoverable subset listing only the channels peers use to reach aphrody.",
+    "note": "The full A2A CollaborationManifest (AGNTCY a2a v1.0 / lf.a2a.v1 compatible, with AgentCards + skills + tasks + transports) is at `C:/src/aphrody/ai.json` (or `../ai.json` from this file). This `.well-known/ai.json` is the lightweight HTTP-discoverable subset listing only the channels peers use to reach aphrody.",
     "path": "../ai.json",
-    "spec": "a2a/v0.4 + winclean-coord-ext/1"
+    "spec": "a2a/v1.0 (lf.a2a.v1) + winclean-coord-ext/1"
   },
 
   "agent": {
@@ -73,15 +73,22 @@
     {
       "type": "file_jsonl",
       "direction": "bidirectional",
-      "purpose": "asynchronous A2A mailbox (durable, git-friendly)",
-      "path": "C:/winclean/.coord/",
-      "inbox": "inbox-from-aphrody.jsonl",
-      "outbox": "inbox-from-winclean.jsonl"
+      "purpose": "asynchronous A2A mailbox (durable, git-friendly) — in-tree canonical depuis 2026-05-19",
+      "path": "C:/src/aphrody/ai/",
+      "inbox": "ai/inbox.jsonl",
+      "outbox": "ai/outbox.jsonl",
+      "peer_mirror": {
+        "path": "C:/winclean/.coord/",
+        "inbox": "inbox-from-aphrody.jsonl",
+        "outbox": "inbox-from-winclean.jsonl",
+        "note": "Back-compat mirror — peer winclean's source of truth, aphrody appends here best-effort during transition."
+      }
     },
     {
       "type": "http_jsonrpc",
       "direction": "inbound",
       "endpoint": "http://localhost:8788",
+      "purpose": "Peer-side (winclean) HTTP gateway over its .coord/ — aphrody has no in-tree HTTP listener yet (see PLAN.md R-A R1.4).",
       "routes": [
         { "method": "GET",  "path": "/ping",  "purpose": "liveness + handshake payload" },
         { "method": "POST", "path": "/msg",   "purpose": "append JSON envelope to inbox-from-winclean.jsonl" },
@@ -91,9 +98,10 @@
     {
       "type": "heartbeat_file",
       "direction": "outbound",
-      "path": "C:/winclean/.coord/heartbeat-aphrody.txt",
+      "path": "C:/src/aphrody/ai/heartbeat.txt",
+      "peer_mirror_path": "C:/winclean/.coord/heartbeat-aphrody.txt",
       "ttl_seconds": 600,
-      "purpose": "proof-of-life timestamp (ISO-8601 UTC)"
+      "purpose": "proof-of-life timestamp (ISO-8601 UTC) — canonical in-tree, mirrored to peer for back-compat."
     },
     {
       "type": "git_tag",
