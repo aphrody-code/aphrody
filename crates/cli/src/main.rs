@@ -196,6 +196,16 @@ enum Commands {
         #[command(subcommand)]
         action: McpAction,
     },
+    /// Reverse engineering — triage a binary (PE32/PE64/ELF32/ELF64).
+    ///
+    /// Detects format via magic bytes, parses with goblin, extracts sections
+    /// with per-section Shannon entropy, imports, exports, ASCII/UTF-16LE
+    /// strings sample, SHA-256 fingerprint. Pure Rust, no GPL deps.
+    #[cfg(not(target_arch = "wasm32"))]
+    Re {
+        #[command(subcommand)]
+        action: ReAction,
+    },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
     /// Credentials lus depuis l'environnement (voir `aphrody notify --help`).
@@ -471,6 +481,27 @@ pub(crate) enum McpAction {
     },
 }
 
+/// Actions for the `re` kernel subcommand (Reverse engineering).
+///
+/// Backed by the `aphrody-re` crate (pure Rust, goblin + sha2). Output is
+/// pretty-printed JSON on stdout — pipe to `jq` for filtering.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum ReAction {
+    /// Triage a binary: detect format (PE32/PE64/ELF32/ELF64), parse
+    /// sections + entropy + imports/exports + strings sample + SHA-256.
+    ///
+    /// Example: aphrody re triage /usr/bin/ls | jq '.format, .arch, .entry_point'
+    Triage {
+        /// Path to the binary to analyse. Read into memory in full
+        /// (best for binaries < 100 MB).
+        path: PathBuf,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
+}
+
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
 // canonical token inventory and the detector are shared with
 // `commands::AutoCommand::execute` to guarantee both call sites agree.
@@ -549,6 +580,22 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             },
             McpAction::Call { config, server, tool, args } => {
                 mcp_cmd::McpCallCommand { config, server, tool, args }.execute(ctx).await?;
+            },
+        },
+        Some(Commands::Re { action }) => match action {
+            ReAction::Triage { path, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let report = aphrody_re::triage(&bytes)
+                    .map_err(|e| miette::miette!("aphrody-re triage failed: {e}"))?;
+                let json = if pretty {
+                    serde_json::to_string_pretty(&report)
+                } else {
+                    serde_json::to_string(&report)
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
             },
         },
         Some(Commands::Notify { channel, message, room }) => {
