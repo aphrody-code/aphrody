@@ -22,6 +22,7 @@ tracing.workspace = true
 m3-tokens     = { path = "../m3-tokens" }
 mui-rs-renderer   = { path = "../mui-rs-renderer" }
 mui-rs-motion     = { path = "../mui-rs-motion" }
+serde.workspace = true
 
 wasm-bindgen         = { workspace = true, optional = true }
 wasm-bindgen-futures = { workspace = true, optional = true }
