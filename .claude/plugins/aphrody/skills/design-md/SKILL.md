@@ -1,5 +1,6 @@
 ---
 name: design-md
+version: "1.0.0"
 description: |
   Create and manage DESIGN.md files. Useful for capturing design direction, tokens, and visual rules in a single source of truth.
 triggers:

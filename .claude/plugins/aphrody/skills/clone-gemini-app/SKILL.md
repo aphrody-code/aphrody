@@ -1,5 +1,6 @@
 ---
 name: clone-gemini-app
+version: "1.0.0"
 description: Skill to recursively scrape, reverse-engineer, and perfectly clone the Gemini web app into a native Rust desktop app using our MD3 UI library.
 ---
 

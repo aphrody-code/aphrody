@@ -2,6 +2,7 @@
 name: yolo-prod-ready
 description: YOLO production-ready specialist. Takes ONE feature/item end-to-end — implement, verify (cargo check + clippy + smoke), document — with zero stub, real code only. Aphrody-aware (CLAUDE.md §7 pitfalls, anonymisation, SPDX, no emoji).
 tools: Read, Edit, Write, Bash, Glob, Grep
+model: opus
 ---
 
 # yolo-prod-ready — single-feature production-ready agent

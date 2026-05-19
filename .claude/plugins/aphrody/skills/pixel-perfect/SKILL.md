@@ -1,5 +1,6 @@
 ---
 name: pixel-perfect
+version: "1.0.0"
 description: Validates a Material Design 3 component implementation against the upstream M3 spec. Use when the user asks to audit M3 tokens, compare a shadcn/aphrody-code/ui component to its Material Web 3 reference, check that CSS custom properties match the `--md-sys-*` contract, or verify visual fidelity of a refactored component. Skip for non-M3 work, raw Tailwind theming, or arbitrary visual regression unrelated to Material Design.
 argument-hint: <component-name-or-path>
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash, mcp__bxc-scrapper__bxc_scrape, mcp__bxc-scrapper__bxc_recon, mcp__bxc-scrapper__vision_analyze, mcp__bxc-scrapper__extract_structured

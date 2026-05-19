@@ -1,5 +1,6 @@
 ---
 name: gemini-cli-jsx
+version: "1.0.0"
 description: Migre les 414 .tsx Ink/React de gemini-cli vers le runtime JSX natif de Bun — supprime esbuild/vitest-jsx, configure tsconfig + bunfig, gère les pièges Ink (raw mode TTY, useStdin, alt-screen)
 ---
 

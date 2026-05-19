@@ -1,6 +1,6 @@
 ---
 name: move
-description: "Orchestrateur de la migration monorepo décrite dans `vps/move.md`. Pilote la consolidation ~/rg + ~/rpb-dashboard → ~/vps en Turborepo unique, en une seule session A→Z. Exécute bootstrap → preflight → 9 phases (0→8) avec auto-verify et rollback automatique. Délègue à @n2b (audit Node→Bun, Phase 4), @bun-reviewer (diff post-phase), @bun-deployer (Phase 7 bascule live), @bun-explorer (audit paths). Invoquer pour toute étape du plan, rollback, reprise après échec."
+description: "Orchestrateur de la migration monorepo décrite dans `vps/move.md`. Pilote la consolidation ~/rg + ~/rpb-dashboard → ~/vps en Turborepo unique, en une seule session A→Z. Exécute bootstrap → preflight → 9 phases (0→8) avec auto-verify et rollback automatique. Délègue à @n2b (audit Node→Bun, Phase 4). Invoquer pour toute étape du plan, rollback, reprise après échec."
 tools: [Read, Write, Edit, Bash, Glob, Grep, Agent]
 model: sonnet
 ---

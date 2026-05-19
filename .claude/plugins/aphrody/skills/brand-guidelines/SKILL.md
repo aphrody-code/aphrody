@@ -1,5 +1,6 @@
 ---
 name: brand-guidelines
+version: "1.0.0"
 description: |
   Apply Anthropic's official brand colors and typography to artifacts for consistent visual identity and professional design standards. A reference for shaping your own.
 triggers:

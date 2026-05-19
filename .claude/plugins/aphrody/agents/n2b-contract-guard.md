@@ -2,6 +2,7 @@
 name: n2b-contract-guard
 description: Use when about to git push to main, deploy n2b, bump version, or modify schema/v2.json. Validates the contract gelé verrou triple from CLAUDE.md — baseline diff, jsonschema/assert_cmd contract tests, schema_test.rs include_str! roundtrip. Reports red/green per surface and aborts on first regression. Runs in <60s on warm cache.
 tools: [Read, Bash, Glob, Grep]
+model: sonnet
 ---
 
 # n2b-contract-guard — Verrou triple du contrat externe gelé

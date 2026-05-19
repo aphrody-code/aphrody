@@ -1,5 +1,6 @@
 ---
 name: gemini-cli-cli
+version: "1.0.0"
 description: Migre la chaîne CLI de gemini-cli (bin/scripts/lockfile/sandbox docker/SEA) vers Bun — replace npm/cross-env/tsx/vitest, configure bin via bun build --compile, gère workspaces + Artifact Registry
 ---
 
