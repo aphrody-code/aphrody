@@ -1,0 +1,635 @@
+# registry/apis.toml — patterns d'appel API/méthode Node → réécriture Bun.
+#
+# Phase 1 : transcription mécanique des entrées de
+#   crates/n2b-rules/src/bun_apis.rs::RULES
+# Une entrée = un appel `rule(...)` ou `info_rule(...)`. La sévérité Info
+# vient de `info_rule`, sinon c'est `Warn`. Ordre identique à la source.
+
+[[apis]]
+id          = "api/fs-readFileSync"
+pattern     = "\\bfs\\.readFileSync\\s*\\(\\s*([^,)]+?)\\s*,\\s*['\"]utf-?8['\"]\\s*\\)"
+message     = "remplacer fs.readFileSync(path, 'utf8') par await Bun.file(path).text()"
+severity    = "warn"
+replace     = "template"
+replacement = "await Bun.file($1).text()"
+aggressive  = true
+
+[[apis]]
+id          = "api/fs-writeFileSync"
+pattern     = '\bfs\.writeFileSync\s*\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)'
+message     = "remplacer fs.writeFileSync(path, data) par await Bun.write(path, data)"
+severity    = "warn"
+replace     = "template"
+replacement = "await Bun.write($1, $2)"
+aggressive  = true
+
+[[apis]]
+id          = "api/process-env"
+pattern     = '\bprocess\.env\.([A-Z_][A-Z0-9_]*)\b'
+message     = "Bun.env est un alias plus court de process.env (préférence stylistique)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/dirname-esm"
+pattern     = '\b(?:const|let|var)\s+__dirname\s*=\s*(?:path\.)?dirname\s*\(\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)\s*\)'
+message     = "dans un ESM Bun, utiliser directement import.meta.dir (ou import.meta.dirname)"
+severity    = "warn"
+replace     = "static"
+replacement = "const __dirname = import.meta.dir"
+aggressive  = true
+
+[[apis]]
+id          = "api/filename-esm"
+pattern     = '\b(?:const|let|var)\s+__filename\s*=\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)'
+message     = "dans un ESM Bun, utiliser import.meta.path (ou import.meta.filename)"
+severity    = "warn"
+replace     = "static"
+replacement = "const __filename = import.meta.path"
+aggressive  = true
+
+[[apis]]
+id          = "api/express-server"
+import_from = "express"
+pattern     = "\\b(?:const|let|var)\\s+(\\w+)\\s*=\\s*require\\(\\s*['\"]express['\"]\\s*\\)\\s*\\(\\s*\\)"
+message     = "envisager Bun.serve() plutôt qu'Express pour un serveur simple (voir runtime/http)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/child-process-spawn"
+pattern     = '\b(?:child_process\.)?spawn\s*\('
+message     = "Bun.spawn offre une API plus ergonomique (streams Web, ipc, preload)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/crypto-createHash"
+pattern     = "\\bcrypto\\.createHash\\s*\\(\\s*['\"](?:md5|sha1|sha256|sha512|blake2b256)['\"]\\s*\\)"
+message     = "Bun.hash / Bun.CryptoHasher est plus rapide (voir runtime/hashing)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/buffer-from-base64"
+pattern     = "\\bBuffer\\.from\\s*\\(\\s*([^,]+?)\\s*,\\s*['\"]base64['\"]\\s*\\)"
+message     = "utiliser atob() / btoa() ou Uint8Array pour du Web-standard"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/fileURLToPath"
+pattern     = '\bfileURLToPath\s*\('
+message     = "Bun.fileURLToPath() est équivalent (ou utiliser import.meta.dir/path)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/uuid-v4"
+import_from = "uuid"
+pattern     = '\b(?:uuidv4|v4)\s*\(\s*\)'
+message     = "crypto.randomUUID() (global) ou Bun.randomUUIDv7() évite la dépendance uuid"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/fs-readFile-utf8"
+pattern     = "\\bfs\\.readFile\\s*\\(\\s*([^,)]+?)\\s*,\\s*['\"]utf-?8['\"]\\s*,\\s*([^)]+?)\\s*\\)"
+message     = "remplacer fs.readFile(path, 'utf8', cb) par await Bun.file(path).text()"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/fs-readFile-promise"
+pattern     = "\\bfsPromises\\.readFile\\s*\\(\\s*([^,)]+?)\\s*,\\s*['\"]utf-?8['\"]\\s*\\)"
+message     = "remplacer fsPromises.readFile(path, 'utf8') par await Bun.file(path).text()"
+severity    = "warn"
+replace     = "template"
+replacement = "await Bun.file($1).text()"
+aggressive  = true
+
+[[apis]]
+id          = "api/json-parse-readFileSync"
+pattern     = "\\bJSON\\.parse\\s*\\(\\s*fs\\.readFileSync\\s*\\(\\s*([^,)]+?)\\s*,\\s*['\"]utf-?8['\"]\\s*\\)\\s*\\)"
+message     = "remplacer JSON.parse(fs.readFileSync(path,'utf8')) par await Bun.file(path).json()"
+severity    = "warn"
+replace     = "template"
+replacement = "await Bun.file($1).json()"
+aggressive  = true
+
+[[apis]]
+id          = "api/fs-existsSync"
+pattern     = '\bfs\.existsSync\s*\(\s*([^)]+?)\s*\)'
+message     = "remplacer fs.existsSync(path) par await Bun.file(path).exists() (uniquement pour un fichier — pour un dossier, Bun.file().exists() retourne toujours false)"
+severity    = "warn"
+replace     = "template"
+replacement = "await Bun.file($1).exists()"
+aggressive  = true
+
+[[apis]]
+id          = "api/http-createServer"
+pattern     = '\bhttp\.createServer\s*\('
+message     = "envisager Bun.serve() plutôt que http.createServer (API fetch-based, plus simple)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/https-createServer"
+pattern     = '\bhttps\.createServer\s*\('
+message     = "envisager Bun.serve({ tls }) plutôt que https.createServer"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/execSync"
+import_from = "child_process"
+pattern     = '\b(?:child_process\.)?execSync\s*\('
+message     = "utiliser le shell Bun ($`cmd`) ou Bun.spawnSync() à la place de execSync"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/exec"
+import_from = "child_process"
+pattern     = '\b(?:child_process\.)?exec\s*\('
+message     = "utiliser le shell Bun ($`cmd`) ou Bun.spawn() à la place de exec"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/buffer-alloc"
+pattern     = '\bBuffer\.alloc\s*\(\s*([^)]+?)\s*\)'
+message     = "remplacer Buffer.alloc(n) par new Uint8Array(n) (Web-standard)"
+severity    = "warn"
+replace     = "template"
+replacement = "new Uint8Array($1)"
+aggressive  = true
+
+[[apis]]
+id          = "api/buffer-concat"
+pattern     = '\bBuffer\.concat\s*\('
+message     = "utiliser Uint8Array et concaténation Web-standard plutôt que Buffer.concat"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/buffer-from-string"
+pattern     = "\\bBuffer\\.from\\s*\\(\\s*([^,)]+?)\\s*,\\s*['\"]utf-?8['\"]\\s*\\)"
+message     = "remplacer Buffer.from(str, 'utf8') par new TextEncoder().encode(str)"
+severity    = "warn"
+replace     = "template"
+replacement = "new TextEncoder().encode($1)"
+aggressive  = true
+
+[[apis]]
+id          = "api/process-stdout-write"
+pattern     = '\bprocess\.stdout\.write\s*\('
+message     = "Bun.stdout.write() est l'équivalent natif Bun de process.stdout.write"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/process-stderr-write"
+pattern     = '\bprocess\.stderr\.write\s*\('
+message     = "Bun.stderr.write() est l'équivalent natif Bun de process.stderr.write"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/sleep-promise"
+pattern     = '\bnew\s+Promise\s*\(\s*(?:resolve|res)\s*=>\s*setTimeout\s*\(\s*(?:resolve|res)\s*,\s*([^)]+?)\s*\)\s*\)'
+message     = "remplacer new Promise(res => setTimeout(res, ms)) par Bun.sleep(ms)"
+severity    = "warn"
+replace     = "template"
+replacement = "Bun.sleep($1)"
+aggressive  = true
+
+[[apis]]
+id          = "api/util-promisify"
+pattern     = '\butil\.promisify\s*\('
+message     = "préférer les APIs async natives de Bun/Node plutôt que util.promisify"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/util-inspect"
+pattern     = '\butil\.inspect\s*\('
+message     = "Bun.inspect() est l'équivalent natif (pretty-print avec couleurs)"
+severity    = "warn"
+replace     = "static"
+replacement = "Bun.inspect("
+aggressive  = true
+
+[[apis]]
+id          = "api/new-url-import-meta"
+pattern     = "\\bnew\\s+URL\\s*\\(\\s*['\"][^'\"]+['\"]\\s*,\\s*import\\.meta\\.url\\s*\\)"
+message     = "utiliser import.meta.dir ou path.join(import.meta.dir, ...) plutôt que new URL(..., import.meta.url)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/toml-parse"
+pattern     = '\b(?:TOML|toml)\.parse\s*\('
+message     = "Bun.TOML.parse() est disponible nativement — supprimer la dépendance TOML externe"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/semver"
+pattern     = '\b(?:semver\.satisfies|semver\.valid|semver\.gt|semver\.lt|semver\.gte|semver\.lte|semver\.coerce)\s*\('
+message     = "Bun.semver.satisfies() et autres helpers sont disponibles nativement"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/performance-now"
+pattern     = '\bperformance\.now\s*\(\s*\)'
+message     = "Bun.nanoseconds() offre une horloge haute précision (retourne nanosecondes depuis démarrage)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/buffer-byteLength"
+pattern     = "\\bBuffer\\.byteLength\\s*\\(\\s*([^,)]+?)\\s*(?:,\\s*['\"]utf-?8['\"]\\s*)?\\)"
+message     = "remplacer Buffer.byteLength(str) par new TextEncoder().encode(str).length (Web-standard)"
+severity    = "warn"
+replace     = "template"
+replacement = "new TextEncoder().encode($1).length"
+aggressive  = true
+
+[[apis]]
+id          = "api/require-resolve"
+pattern     = '\brequire\.resolve\s*\('
+message     = "Bun.resolveSync() remplace require.resolve() (ESM + CJS, plus rapide)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/set-immediate"
+pattern     = '\bsetImmediate\s*\('
+message     = "setImmediate n'est pas Web-standard — utiliser queueMicrotask() ou setTimeout(fn, 0)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/os-platform"
+pattern     = '\bos\.platform\s*\(\s*\)'
+message     = "process.platform (global) retourne la même chose sans import 'os'"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/os-homedir"
+pattern     = '\bos\.homedir\s*\(\s*\)'
+message     = "Bun expose Bun.env.HOME / process.env.HOME — évite l'import 'os'"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/path-join-dirname"
+pattern     = '\bpath\.join\s*\(\s*__dirname\s*,'
+message     = "dans un ESM Bun, path.join(import.meta.dir, ...) évite __dirname"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/bcrypt-hash"
+import_from = "bcrypt"
+pattern     = '\bbcrypt(?:js)?\.hash\s*\('
+message     = "Bun.password.hash() supporte bcrypt et argon2 nativement (plus rapide, pas de dep native)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/bcrypt-compare"
+import_from = "bcrypt"
+pattern     = '\bbcrypt(?:js)?\.compare\s*\('
+message     = "Bun.password.verify() remplace bcrypt.compare()"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/argon2-hash"
+import_from = "argon2"
+pattern     = '\bargon2\.(?:hash|verify)\s*\('
+message     = "Bun.password.hash({ algorithm: 'argon2id' }) / verify() est natif"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/yaml-parse"
+import_from = "yaml"
+pattern     = '\b(?:yaml|YAML|jsyaml)\.(?:load|parse)\s*\('
+message     = "Bun.YAML.parse() est natif — plus besoin de js-yaml/yaml"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/yaml-stringify"
+import_from = "yaml"
+pattern     = '\b(?:yaml|YAML|jsyaml)\.(?:dump|stringify)\s*\('
+message     = "Bun.YAML.stringify() est natif"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/json5-parse"
+import_from = "json5"
+pattern     = '\bJSON5\.parse\s*\('
+message     = "Bun.JSON5.parse() est natif — plus besoin de la dep json5"
+severity    = "warn"
+replace     = "static"
+replacement = "Bun.JSON5.parse("
+aggressive  = true
+
+[[apis]]
+id          = "api/json5-stringify"
+import_from = "json5"
+pattern     = '\bJSON5\.stringify\s*\('
+message     = "Bun.JSON5.stringify() est natif"
+severity    = "warn"
+replace     = "static"
+replacement = "Bun.JSON5.stringify("
+aggressive  = true
+
+[[apis]]
+id          = "api/marked-call"
+import_from = "marked"
+pattern     = '\bmarked\s*\('
+message     = "Bun.markdown.html() est natif — plus besoin de marked"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/marked-parse"
+import_from = "marked"
+pattern     = '\bmarked\.parse\s*\('
+message     = "Bun.markdown.html() est natif"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/escape-html"
+pattern     = '\b(?:escapeHtml|escape_html|he\.encode)\s*\('
+message     = "Bun.escapeHTML() est natif (UTF-8, ~3× plus rapide que 'he')"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/strip-ansi"
+import_from = "strip-ansi"
+pattern     = '\bstripAnsi\s*\('
+message     = "Bun.stripANSI() est natif"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/string-width"
+import_from = "string-width"
+pattern     = '\bstringWidth\s*\('
+message     = "Bun.stringWidth() est natif (fullwidth + emoji aware)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/slice-ansi"
+import_from = "slice-ansi"
+pattern     = '\bsliceAnsi\s*\('
+message     = "Bun.sliceAnsi() est natif"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/which-call"
+import_from = "which"
+pattern     = "\\b(?:which|sync\\.which)\\s*\\(\\s*['\"][^'\"]+['\"]\\s*\\)"
+message     = "Bun.which() remplace la dep 'which' (natif, zéro allocation)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/cron-schedule"
+import_from = "node-cron"
+pattern     = '\b(?:cron|nodeCron)\.schedule\s*\('
+message     = "Bun.cron remplace node-cron / croner"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/cronjob-new"
+import_from = "cron"
+pattern     = '\bnew\s+CronJob\s*\('
+message     = "Bun.cron est l'API native — plus besoin de node-cron/croner"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/fast-deep-equal"
+import_from = "fast-deep-equal"
+pattern     = '\bfastDeepEqual\s*\('
+message     = "Bun.deepEquals() est natif (WebKit structural compare)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/pako-gzip"
+import_from = "pako"
+pattern     = '\bpako\.(?:gzip|deflate)\s*\('
+message     = "Bun.gzipSync() / Bun.deflateSync() remplacent pako (natif, SIMD)"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/pako-gunzip"
+import_from = "pako"
+pattern     = '\bpako\.(?:ungzip|inflate)\s*\('
+message     = "Bun.gunzipSync() / Bun.inflateSync() remplacent pako"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/express-app"
+import_from = "express"
+pattern     = '\b(?:const|let|var)\s+\w+\s*=\s*express\s*\(\s*\)'
+message     = "Bun.serve() est un serveur HTTP natif zéro-config (fetch-based, routing intégré)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/fastify-app"
+import_from = "fastify"
+pattern     = '\b(?:const|let|var)\s+\w+\s*=\s*fastify\s*\('
+message     = "Bun.serve() + routing natif remplace fastify pour la plupart des cas simples"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/koa-new"
+import_from = "koa"
+pattern     = '\bnew\s+Koa\s*\(\s*\)'
+message     = "Bun.serve() avec middleware chaîné couvre la plupart des usages Koa"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/http-request"
+pattern     = '\b(?:const|let|var)\s+\w+\s*=\s*http\.request\s*\('
+message     = "fetch() (global) remplace http.request avec une API plus simple"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/https-request"
+pattern     = '\b(?:const|let|var)\s+\w+\s*=\s*https\.request\s*\('
+message     = "fetch() (global) remplace https.request"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/crypto-randomBytes"
+pattern     = '\bcrypto\.randomBytes\s*\('
+message     = "crypto.getRandomValues(new Uint8Array(n)) est Web-standard (pas besoin d'import 'crypto')"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/eventsource-new"
+pattern     = '\bnew\s+EventSource\s*\('
+message     = "EventSource est global dans Bun (Bun.EventSource) — plus besoin de la dep 'eventsource'"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/cookie-parse"
+import_from = "cookie"
+pattern     = '\bcookie\.parse\s*\('
+message     = "new Bun.CookieMap(header) remplace cookie.parse()"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/cookie-serialize"
+import_from = "cookie"
+pattern     = '\bcookie\.serialize\s*\('
+message     = "Bun.Cookie.toString() remplace cookie.serialize()"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/aws-sdk-s3-client"
+import_from = "@aws-sdk/client-s3"
+pattern     = '\bnew\s+S3Client\s*\('
+message     = "Bun.s3 / Bun.S3Client est natif (multipart upload, presign) — pas besoin de @aws-sdk"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/file-based-routing"
+pattern     = '\b(?:next-router|next/router|@tanstack/router-vite-plugin)'
+message     = "Bun.FileSystemRouter expose un routeur file-based sans build step"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/chalk-call"
+import_from = "chalk"
+pattern     = '\bchalk\.(?:red|green|yellow|blue|magenta|cyan|white|gray|grey|bold|dim|italic|underline)\b'
+message     = "Bun supporte ANSI nativement ; Bun.color() permet la conversion programmatique"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/zlib-gzipSync"
+pattern     = '\bzlib\.gzipSync\s*\('
+message     = "Bun.gzipSync() est plus rapide que zlib.gzipSync (libdeflate SIMD)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/process-hrtime-bigint"
+pattern     = '\bprocess\.hrtime\.bigint\s*\(\s*\)'
+message     = "Bun.nanoseconds() est l'équivalent natif (retourne un Number plutôt qu'un BigInt)"
+severity    = "info"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "api/execa-call"
+import_from = "execa"
+pattern     = '\bexeca(?:Sync|Command|CommandSync)?\s*\('
+message     = "le shell Bun ($`cmd`) ou Bun.spawn() remplacent execa"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "next/custom-server-next-app"
+pattern     = '\bnext\s*\(\s*\{\s*(?:[^{}]*\b)?dev\s*:'
+message     = "Pattern Next.js custom server détecté (const app = next({ dev }) — Bun.serve({ fetch }) remplace http.createServer + app.getRequestHandler pour de meilleures perfs"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+
+[[apis]]
+id          = "next/request-handler"
+pattern     = '\bapp\.getRequestHandler\s*\(\s*\)'
+message     = "getRequestHandler() retourne un handler (req, res) — pour Bun.serve, wrapper : fetch: (req) => handler(req, Bun.nodeHttpResponse()) ou utiliser un adapter"
+severity    = "warn"
+replace     = "none"
+aggressive  = false
+

@@ -1,0 +1,833 @@
+# registry/packages.toml — deps npm avec leur stratégie de remplacement Bun.
+#
+# Phase 1 : transcription mécanique des entrées de
+#   crates/n2b-rules/src/node_imports.rs::BUN_REPLACEMENTS
+# Toutes partagent le Rule ID `imports/bun-native`. Le `package` est unique.
+# Ordre identique à la source Rust pour faciliter le diff.
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "sqlite3"
+replacement = "bun:sqlite"
+note        = "préférer bun:sqlite (natif, synchrone, rapide)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "better-sqlite3"
+replacement = "bun:sqlite"
+note        = "préférer bun:sqlite (API similaire)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "node-fetch"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — supprimer l'import"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "isomorphic-fetch"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — supprimer l'import"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "cross-fetch"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — supprimer l'import"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "dotenv"
+replacement = "<auto>"
+note        = "Bun charge .env automatiquement, dotenv inutile"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "dotenv/config"
+replacement = "<auto>"
+note        = "Bun charge .env automatiquement, dotenv inutile"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "pg"
+replacement = "Bun.sql"
+note        = "Bun.sql est un client PostgreSQL natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "postgres"
+replacement = "Bun.sql"
+note        = "Bun.sql est un client PostgreSQL natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ioredis"
+replacement = "Bun.redis"
+note        = "Bun.redis est un client Redis/Valkey natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "redis"
+replacement = "Bun.redis"
+note        = "Bun.redis est un client Redis/Valkey natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ws"
+replacement = "WebSocket"
+note        = "WebSocket client/serveur est natif dans Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "uuid"
+replacement = "Bun.randomUUIDv7"
+note        = "utiliser Bun.randomUUIDv7() ou crypto.randomUUID()"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "minimist"
+replacement = "util.parseArgs"
+note        = "Node fournit util.parseArgs"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "chalk"
+replacement = "<natif>"
+note        = "Bun supporte les codes ANSI nativement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "rimraf"
+replacement = "fs.rm"
+note        = "fs.rm({ recursive: true }) suffit"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "mkdirp"
+replacement = "fs.mkdir"
+note        = "fs.mkdir({ recursive: true }) suffit"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "node-cron"
+replacement = "Bun.cron"
+note        = "Bun.cron (API native)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "axios"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — pas besoin d'axios"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "got"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — pas besoin de got"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "node-got"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — pas besoin de node-got"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "superagent"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — pas besoin de superagent"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "undici"
+replacement = "<global fetch>"
+note        = "fetch/WebSocket sont natifs dans Bun — undici inutile"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "make-fetch-happen"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ky"
+replacement = "<global fetch>"
+note        = "fetch est global dans Bun — ky est inutile"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "bcrypt"
+replacement = "Bun.password"
+note        = "Bun.password.hash/verify supporte bcrypt et argon2"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "bcryptjs"
+replacement = "Bun.password"
+note        = "Bun.password.hash/verify supporte bcrypt et argon2"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "argon2"
+replacement = "Bun.password"
+note        = "Bun.password.hash({ algorithm: 'argon2id' })"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "form-data"
+replacement = "FormData"
+note        = "FormData est global dans Bun — supprimer l'import"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "abort-controller"
+replacement = "AbortController"
+note        = "AbortController est global dans Bun — supprimer l'import"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "whatwg-url"
+replacement = "URL"
+note        = "URL/URLSearchParams sont globaux dans Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "node-blob"
+replacement = "Blob"
+note        = "Blob est global dans Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "web-streams-polyfill"
+replacement = "<global>"
+note        = "ReadableStream/WritableStream sont globaux dans Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "jest"
+replacement = "bun:test"
+note        = "bun:test est compatible Jest (describe/test/expect/mock)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "mocha"
+replacement = "bun:test"
+note        = "bun:test remplace mocha avec une API similaire"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "vitest"
+replacement = "bun:test"
+note        = "bun:test offre les mêmes fonctionnalités que vitest"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "chai"
+replacement = "bun:test"
+note        = "bun:test inclut expect() avec assertions Jest/Chai"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@jest/globals"
+replacement = "bun:test"
+note        = "importer depuis bun:test à la place"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ts-jest"
+replacement = "bun:test"
+note        = "bun:test supporte TypeScript nativement"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "jest-circus"
+replacement = "bun:test"
+note        = "bun:test est le runner natif Bun"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ts-node"
+replacement = "bun run"
+note        = "bun exécute TypeScript nativement sans ts-node"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "tsx"
+replacement = "bun run"
+note        = "bun exécute TSX nativement — tsx CLI inutile"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "esm"
+replacement = "<natif>"
+note        = "Bun supporte ESM nativement"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "nodemon"
+replacement = "bun --watch"
+note        = "bun --watch ou bun --hot remplacent nodemon"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "concurrently"
+replacement = "<natif>"
+note        = "Bun.spawn permet de lancer des processus en parallèle"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@types/node"
+replacement = "@types/bun"
+note        = "utiliser @types/bun pour les types Bun (ou bun-types)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@iarna/toml"
+replacement = "Bun.TOML"
+note        = "Bun.TOML.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "toml"
+replacement = "Bun.TOML"
+note        = "Bun.TOML.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "smol-toml"
+replacement = "Bun.TOML"
+note        = "Bun.TOML.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "dns-packet"
+replacement = "bun dns"
+note        = "Bun expose dns.lookup/dns.resolve nativement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "mime"
+replacement = "<natif>"
+note        = "Bun.file().type retourne le MIME type automatiquement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "mime-types"
+replacement = "<natif>"
+note        = "Bun.file().type retourne le MIME type automatiquement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "glob"
+replacement = "bun (Glob)"
+note        = "import { Glob } from 'bun' est natif (pas bun:glob)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "fast-glob"
+replacement = "bun (Glob)"
+note        = "import { Glob } from 'bun' est natif (pas bun:glob)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "globby"
+replacement = "bun (Glob)"
+note        = "import { Glob } from 'bun' est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "tiny-glob"
+replacement = "bun (Glob)"
+note        = "import { Glob } from 'bun' est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "glob-parent"
+replacement = "bun (Glob)"
+note        = "utiliser import { Glob } from 'bun'"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "fast-deep-equal"
+replacement = "Bun.deepEquals"
+note        = "Bun.deepEquals() est natif et plus rapide"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "deep-equal"
+replacement = "Bun.deepEquals"
+note        = "Bun.deepEquals() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "lodash.isequal"
+replacement = "Bun.deepEquals"
+note        = "Bun.deepEquals() remplace lodash.isEqual"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "he"
+replacement = "Bun.escapeHTML"
+note        = "Bun.escapeHTML() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "escape-html"
+replacement = "Bun.escapeHTML"
+note        = "Bun.escapeHTML() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "lodash.escape"
+replacement = "Bun.escapeHTML"
+note        = "Bun.escapeHTML() remplace lodash.escape"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "cookie"
+replacement = "Bun.Cookie"
+note        = "Bun.Cookie / Bun.CookieMap sont natifs"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "cookie-parser"
+replacement = "Bun.CookieMap"
+note        = "Bun.CookieMap est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "csurf"
+replacement = "Bun.CSRF"
+note        = "Bun.CSRF.generate/verify est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "csrf"
+replacement = "Bun.CSRF"
+note        = "Bun.CSRF.generate/verify est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "js-yaml"
+replacement = "Bun.YAML"
+note        = "Bun.YAML.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "yaml"
+replacement = "Bun.YAML"
+note        = "Bun.YAML.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "marked"
+replacement = "Bun.markdown"
+note        = "Bun.markdown.html() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "markdown-it"
+replacement = "Bun.markdown"
+note        = "Bun.markdown.html() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "json5"
+replacement = "Bun.JSON5"
+note        = "Bun.JSON5.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "jsonc-parser"
+replacement = "Bun.JSONC"
+note        = "Bun.JSONC.parse() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "string-width"
+replacement = "Bun.stringWidth"
+note        = "Bun.stringWidth() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "strip-ansi"
+replacement = "Bun.stripANSI"
+note        = "Bun.stripANSI() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "ansi-regex"
+replacement = "Bun.stripANSI"
+note        = "Bun.stripANSI() remplace ansi-regex dans la plupart des cas"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "slice-ansi"
+replacement = "Bun.sliceAnsi"
+note        = "Bun.sliceAnsi() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "kleur"
+replacement = "<natif>"
+note        = "Bun supporte les codes ANSI nativement (Bun.color)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "colorette"
+replacement = "<natif>"
+note        = "Bun supporte les codes ANSI nativement (Bun.color)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "picocolors"
+replacement = "<natif>"
+note        = "Bun supporte les codes ANSI nativement (Bun.color)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "which"
+replacement = "Bun.which"
+note        = "Bun.which() est natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "cross-spawn"
+replacement = "Bun.spawn"
+note        = "Bun.spawn est cross-platform par défaut"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "execa"
+replacement = "Bun.$ / Bun.spawn"
+note        = "le shell Bun ($`cmd`) ou Bun.spawn remplacent execa"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "shelljs"
+replacement = "Bun.$"
+note        = "le shell Bun ($`cmd`) offre la même ergonomie"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "eventsource"
+replacement = "Bun.EventSource"
+note        = "Bun.EventSource est un client SSE natif"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@aws-sdk/client-s3"
+replacement = "Bun.s3 / Bun.S3Client"
+note        = "Bun.s3 est un client S3 natif (multipart, presign)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "aws-sdk"
+replacement = "Bun.s3 / fetch s3://"
+note        = "Bun.s3 et fetch('s3://...') sont natifs"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "pako"
+replacement = "Bun.gzipSync"
+note        = "Bun.gzipSync/gunzipSync/deflateSync/inflateSync natifs"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "keytar"
+replacement = "Bun.secrets"
+note        = "Bun.secrets est un gestionnaire natif (OS keychain)"
+aggressive  = true
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "eslint"
+replacement = "@biomejs/biome"
+note        = "Biome remplace ESLint (linter + formatter Rust, ~100× plus rapide)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "prettier"
+replacement = "@biomejs/biome"
+note        = "Biome remplace Prettier (formatter intégré au linter)"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@typescript-eslint/parser"
+replacement = "@biomejs/biome"
+note        = "Biome comprend TS nativement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "@typescript-eslint/eslint-plugin"
+replacement = "@biomejs/biome"
+note        = "Biome comprend TS nativement"
+aggressive  = false
+
+[[packages]]
+id          = "imports/bun-native"
+package     = "eslint-config-prettier"
+replacement = "@biomejs/biome"
+note        = "plus besoin de désactiver les règles ESLint qui conflictent avec Prettier — Biome unifie"
+aggressive  = false
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section : SDKs agent-to-agent (A2A) + Model Context Protocol (MCP).
+# Mapping informationnel npm → crate Rust pour les projets qui veulent un
+# binaire natif performant ou intégrer A2A/MCP côté serveur sans dep Node.
+# `aggressive = false` : juste de l'info, pas de réécriture automatique.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@a2a-js/sdk"
+replacement = "a2a-rs"
+note        = "SDK Rust officiel pour Agent2Agent. https://github.com/a2aproject/a2a-rs — préférable si tu construis un service standalone natif (gain perf + cdylib via napi-rs / FFI Bun)."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@drew-foxall/a2a-js-sdk"
+replacement = "a2a-rs"
+note        = "Fork Bun-native du SDK A2A — l'équivalent Rust est https://github.com/a2aproject/a2a-rs (workspace, async tokio)."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@modelcontextprotocol/sdk"
+replacement = "rmcp"
+note        = "SDK Rust officiel pour le Model Context Protocol. https://github.com/modelcontextprotocol/rust-sdk — workspace Cargo, transports stdio + HTTP+SSE + WebSocket, idéal pour serveurs MCP performants."
+aggressive  = false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section : écosystème Tokio (https://github.com/tokio-rs) — alternatives
+# Rust natives aux libs async Node les plus communes. Pertinent quand on
+# build un service standalone perf-critical (broker A2A/MCP, gRPC, edge
+# proxy) plutôt que d'empiler du Node sur Bun. `aggressive = false`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "express"
+replacement = "axum"
+note        = "Framework web async basé sur hyper + tower. https://github.com/tokio-rs/axum — extracteurs typés, middleware composable, perf >100k req/s en mono-core."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "fastify"
+replacement = "axum"
+note        = "https://github.com/tokio-rs/axum — équivalent Rust de l'approche perf-first de Fastify (router radix + tower middleware)."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "koa"
+replacement = "axum"
+note        = "https://github.com/tokio-rs/axum — chaîne middleware tower équivalente à l'idiome compose Koa."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@grpc/grpc-js"
+replacement = "tonic"
+note        = "https://github.com/hyperium/tonic — client/serveur gRPC Rust async sur hyper + prost. Compatible proto3, streaming bidi natif."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "protobufjs"
+replacement = "prost"
+note        = "https://github.com/tokio-rs/prost — codegen + runtime protobuf Rust. Sortie idiomatic Rust, derive Serialize/Deserialize."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "ws"
+replacement = "tokio-tungstenite"
+note        = "https://github.com/snapview/tokio-tungstenite — WebSocket client + serveur sur tokio. Compatible RFC 6455, perf comparable."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "axios"
+replacement = "reqwest"
+note        = "https://github.com/seanmonstar/reqwest — client HTTP sur hyper + tokio. JSON helper, cookies, multipart, async + blocking."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "pino"
+replacement = "tracing"
+note        = "https://github.com/tokio-rs/tracing — instrumentation structurée (spans + events) avec subscribers JSON/console. Plus puissant qu'un logger plat type pino."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "winston"
+replacement = "tracing"
+note        = "https://github.com/tokio-rs/tracing — équivalent Rust avec spans hiérarchiques. Subscribers : tracing-subscriber, OpenTelemetry."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "bullmq"
+replacement = "tokio + redis-rs"
+note        = "Pas de drop-in 1:1 — l'équivalent Rust idiomatique est tokio comme runtime + https://github.com/redis-rs/redis-rs pour Redis async + un worker custom (~50 LOC)."
+aggressive  = false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section : Leptos (https://github.com/leptos-rs/leptos) — framework full-stack
+# Rust (signals + hydration SSR + server functions). Alternative à React/Next.js
+# pour projets où on veut un binaire natif compilé, déployable sans Node runtime.
+# Pair idiomatique avec axum côté serveur + hydratation client via WASM.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "react"
+replacement = "leptos"
+note        = "https://github.com/leptos-rs/leptos — framework Rust reactive (signals fine-grained, pas de VDOM). SSR + CSR + hydration intégrés."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "react-dom"
+replacement = "leptos (intégré)"
+note        = "Hydration et rendu DOM gérés nativement par leptos via leptos_dom / wasm-bindgen — pas de package séparé."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "next"
+replacement = "leptos + axum"
+note        = "https://github.com/leptos-rs/leptos + https://github.com/tokio-rs/axum — équivalent Next.js : SSR via integration leptos_axum, server functions typées, file-based routing via leptos_router. Déploiement standalone binary (Fly.io / Shuttle / Cloudflare Workers WASM)."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@tanstack/react-router"
+replacement = "leptos_router"
+note        = "Router fourni par l'écosystème Leptos — composants <Route>, <A>, hooks use_params/use_query, nested layouts. https://docs.rs/leptos_router"
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "@tanstack/react-query"
+replacement = "leptos resources / server functions"
+note        = "Leptos a un primitive natif `create_resource()` (signals async) qui couvre le data-fetching cache pattern de react-query. Combiné avec server functions (#[server]) pour le SSR fetch."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "zod"
+replacement = "serde + validator"
+note        = "https://github.com/serde-rs/serde + https://github.com/Keats/validator — validation déclarative via derive macros. Plus puissant car type-safe à la compile."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "prisma"
+replacement = "sqlx ou diesel ou sea-orm"
+note        = "Pas d'équivalent 1:1 — choix : sqlx (https://github.com/launchbadge/sqlx, async, type-checked SQL à la compile), diesel (sync, mature), ou sea-orm (active-record + migrations). Pour stack tokio + axum + leptos → sqlx idiomatique."
+aggressive  = false
+
+[[packages]]
+id          = "imports/rust-sdk-alt"
+package     = "drizzle-orm"
+replacement = "sqlx"
+note        = "https://github.com/launchbadge/sqlx — query builder + raw SQL type-checked à la compile via macro query!(). Bindings Postgres/MySQL/SQLite. Plus proche philosophiquement de Drizzle (SQL-first) que diesel (DSL)."
+aggressive  = false

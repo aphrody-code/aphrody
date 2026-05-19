@@ -1,0 +1,20 @@
+[package]
+name = "n2b-registry"
+version = "0.6.0"
+workspace = "../n2b-cli"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "n2b_registry"
+path = "src/lib.rs"
+
+[dependencies]
+n2b-types = { path = "../n2b-types" }
+n2b-util = { path = "../n2b-util" }
+serde = { workspace = true }
+toml = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
