@@ -151,7 +151,7 @@
     },
     "google": {
       "type": "local",
-      "command": ["bun", "run", "C:\\src\\aphrody\\packages\\google-mcp\\src\\index.ts"],
+      "command": ["bun", "run", "./packages/google-mcp/src/index.ts"],
       "enabled": true
     }
   },

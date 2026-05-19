@@ -13,5 +13,5 @@
     "cpp_layer": "Use CMake with add_subdirectory. Compile natively.",
     "orchestration": "Use Turborepo (turbo.json) for cross-language dependency graphs and task caching."
   },
-  "docs_path": "C:\\src\\aphrody\\docs\\monorepo"
+  "docs_path": "${CLAUDE_PLUGIN_ROOT}/../../../docs/monorepo"
 }
