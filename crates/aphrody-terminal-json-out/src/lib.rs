@@ -45,6 +45,19 @@ use tokio::{
 mod error;
 pub use error::JsonOutError;
 
+// ── New module-split API (T-5 spec) ──────────────────────────────────────────
+// The newer surface (frame / classifier / passthrough) sits alongside the
+// legacy `Envelope` + `spawn_framed_child` helpers below so existing call
+// sites keep working while new consumers can pull the typed `StdoutFrame`
+// path.
+pub mod classifier;
+pub mod frame;
+pub mod passthrough;
+
+pub use classifier::{classify_bytes, classify_line};
+pub use frame::{FramePayload, FrameSource, StdoutFrame, emit_frame, frame_to_jsonl, monotonic_ts_millis};
+pub use passthrough::passthrough;
+
 // ── Public types ──────────────────────────────────────────────────────────────
 
 /// Which underlying stream a framed line originated from.

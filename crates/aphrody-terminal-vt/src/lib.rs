@@ -32,6 +32,7 @@ use vte::{Params, Perform};
 
 mod alt_screen;
 pub mod envelope;
+pub mod ext;
 pub mod mouse;
 mod osc;
 
