@@ -20,7 +20,8 @@ workspace = true
 clap            = { workspace = true }
 anyhow          = { workspace = true }
 serde           = { workspace = true }
-serde_json      = { workspace = true }
+serde_json      = { workspace = true, features = ["preserve_order"] }
+time            = { workspace = true }
 serde_yaml      = { workspace = true }
 walkdir         = { workspace = true }
 tempfile        = { workspace = true }
