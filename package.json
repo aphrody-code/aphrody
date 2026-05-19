@@ -4,8 +4,7 @@
   "private": true,
   "packageManager": "bun@1.3.14",
   "workspaces": [
-    "packages/*",
-    "packages/gemini-cli/packages/*"
+    "packages/*"
   ],
   "scripts": {
     "start": "cargo run -p aphrody --locked --",
