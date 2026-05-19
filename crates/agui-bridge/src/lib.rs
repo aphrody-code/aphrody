@@ -7,7 +7,7 @@
 //! 1. [`AguiNode`] — a declarative UI-tree enum covering every element kind an agent can emit.
 //! 2. [`parse`] — deserialise the agui wire format (`WireNode` JSON) into an `AguiNode` tree.
 //! 3. [`render`] (wasm32-gated) — mount an `AguiNode` tree into a real browser DOM container by
-//!    calling into `web_sys`; buttons are delegated to `shadcn-bridge::button`.
+//!    calling into `web_sys`; buttons are delegated to `mui-rs-components::button`.
 //!
 //! ## Mapping table (wire tag → custom element / DOM element)
 //!
@@ -15,7 +15,7 @@
 //! |----------------|------------------------------------------------------|
 //! | `"text"`       | `<span class="agui-text">`                           |
 //! | `"container"`  | `<div class="agui-container">` + children            |
-//! | `"button"`     | via `shadcn_bridge::button` → `<md-*-button>`        |
+//! | `"button"`     | via `mui_rs_components::button` → `<md-*-button>`        |
 //! | `"input"`      | `<md-outlined-text-field>` (MWC3)                    |
 //! | `"toolCall"`   | `<div class="agui-tool-call">` card                  |
 //! | `"markdown"`   | `<div class="agui-markdown">` (raw text; host styles)|
@@ -30,7 +30,7 @@
 pub mod wire;
 
 // Re-export props types so consumers only need to import from `agui_bridge`.
-pub use shadcn_bridge::button::ButtonProps;
+pub use mui_rs_components::button::ButtonProps;
 use wire::{WireCode, WireImage, WireInput, WireNode, WireToolCall};
 
 // ---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ pub enum AguiNode {
     Text(String),
     /// A layout wrapper; children are appended in order.
     Container(Vec<AguiNode>),
-    /// A button; delegates to `shadcn-bridge::button` → MWC3.
+    /// A button; delegates to `mui-rs-components::button` → MWC3.
     Button(ButtonProps),
     /// A single-line text input field.
     Input(InputProps),
@@ -177,7 +177,7 @@ fn wire_code_to_props(w: WireCode) -> CodeProps {
 ///
 /// The container element is cleared before the new tree is appended. Each
 /// `AguiNode` variant maps to one or more DOM nodes as described in the crate
-/// doc mapping table.  Button nodes are built via `shadcn_bridge::button` so
+/// doc mapping table.  Button nodes are built via `mui_rs_components::button` so
 /// they emit MWC3 `<md-*-button>` elements and share the same event-routing
 /// contract (`data-on-click-id`).
 ///
@@ -241,8 +241,8 @@ fn build_element(doc: &Document, node: &AguiNode) -> Result<Element, JsValue> {
             Ok(el)
         },
         AguiNode::Button(props) => {
-            // Delegate to shadcn-bridge — produces <md-*-button>.
-            let btn = shadcn_bridge::button::create_button(props)?;
+            // Delegate to mui-rs-components — produces <md-*-button>.
+            let btn = mui_rs_components::button::create_button(props)?;
             btn.class_list().add_1("agui-button")?;
             // dyn_into from HtmlElement to Element via From impl
             Ok(btn.into())
@@ -275,7 +275,7 @@ fn as_html(el: Element) -> Result<HtmlElement, JsValue> {
 fn build_input(doc: &Document, props: &InputProps) -> Result<Element, JsValue> {
     // Use MWC3 md-outlined-text-field when available; fall back to native
     // <input> — the element tag is the same MWC3 custom element the
-    // shadcn-bridge uses for its Input module.
+    // mui-rs-components uses for its Input module.
     let el = create_el(doc, "md-outlined-text-field")?;
     el.class_list().add_1("agui-input")?;
     if !props.label.is_empty() {

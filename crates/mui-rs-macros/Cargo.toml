@@ -1,0 +1,17 @@
+[package]
+name = "mui-rs-macros"
+description = "Proc-macros for m3-rs — #[m3_component], #[m3_token], derive helpers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true

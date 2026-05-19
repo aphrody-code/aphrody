@@ -15,12 +15,8 @@ members = [
     "crates/a2a-server",
     "crates/a2a-grpc",
     "crates/a2a-pb",
-    # mrx — Monorepo Real-time X-platform mapper (migrated 2026-05-17 from vps/packages/mrx)
-    "crates/mrx-core",
-    "crates/mrx-detect",
-    "crates/mrx-audit",
-    "crates/mrx-watch",
-    "crates/mrx-cli",
+    # mrx — Monorepo Real-time X-platform mapper (unified from mrx-{core,detect,audit,watch,cli})
+    "crates/mrx",
     # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
     "crates/aphrody-translate",
     # aphrody-xtask — Rust port of scripts/*.ts via `cargo xtask <op>`.
@@ -32,7 +28,6 @@ members = [
     "crates/ievr-tools", "crates/aphrody-summary",
     # M3 + shadcn pixel-perfect coverage + A2A UI (tick 36 pivot, 2026-05-17)
     "crates/m3-tokens",      # M3 baseline tokens (color/typography/elevation/motion)
-    "crates/shadcn-bridge",  # wasm-bindgen wrappers: shadcn primitives -> MWC3 custom elements
     "crates/a2a-ui",         # WASM channel viewer for .coord JSONL mailbox
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
@@ -84,10 +79,14 @@ members = [
     "crates/aphrody-design-agents",
     "crates/aphrody-design-sidecar",
     "crates/aphrody-design-daemon",
-    "crates/aphrody-design-material",
-    # aphrody-wgpu-material — Material Design 3 component library rendered
-    # on wgpu (WebGPU), native winit host + WASM browser surface.
-    "crates/aphrody-wgpu-material",
+    # mui-rs — Material Design 3 native UI library (wgpu + vello + winit)
+    "crates/mui-rs",
+    "crates/mui-rs-components",
+    "crates/mui-rs-core",
+    "crates/mui-rs-macros",
+    "crates/mui-rs-motion",
+    "crates/mui-rs-renderer",
+    "crates/mui-rs-tokens",
     # bxc rust-bridge
     "crates/bxc-engine",
     "crates/obscura-browser",
@@ -676,14 +675,8 @@ obscura-js = { path = "crates/obscura-js" }
 obscura-mcp = { path = "crates/obscura-mcp" }
 bxc-engine = { path = "crates/bxc-engine" }
 
-# --- mrx integration (migrated 2026-05-17 from vps/packages/mrx) ----------
-# Apache-2.0, 5 crates : core (types) → detect (manifests) → audit (parallel walker)
-# → watch (notify v8 debounced) → cli (clap binary `mrx`).
-# Internal crates exposed as workspace deps for downstream consumers.
-mrx-core            = { path = "crates/mrx-core" }
-mrx-detect          = { path = "crates/mrx-detect" }
-mrx-audit           = { path = "crates/mrx-audit" }
-mrx-watch           = { path = "crates/mrx-watch" }
+# --- mrx (unified monorepo mapper) ----------------------------------------
+mrx                 = { path = "crates/mrx" }
 # External deps required by mrx that aren't already in the workspace above.
 notify-debouncer-full = { version = "0.6" }
 dunce              = { version = "1.0" }
@@ -692,7 +685,31 @@ parking_lot        = { version = "0.12" }
 flume              = { version = "0.11" }
 # serde_yml removed 2026-05-17: archived upstream + RUSTSEC-2025-0068 unsound.
 # If YAML support is needed in the future, prefer `serde_yaml2` or `yaml-peg`.
+# --- mui-rs deps ---
+accesskit        = "0.24.0"
+accesskit-winit  = "0.32.2"
+vello    = "0.8.0"
+parley   = "0.8.0"
+fontique = "0.8.0"
+peniko   = "0.3"
+kurbo    = "0.11"
+tiny-skia = "0.11"
+taffy = "0.10.1"
+dark-light = "2.0.0"
+android-activity = { version = "0.6.1", features = ["game-activity"] }
+wasmtime    = { version = "42.0.2", default-features = false, features = ["cranelift", "component-model", "async"] }
+wit-bindgen = { version = "0.57.1", default-features = false, features = ["macros"] }
+wasmparser  = "0.247.0"
+walrus      = "0.26.1"
+rquickjs    = { version = "0.11.0", features = ["bindgen", "loader", "futures"] }
+half        = { version = "2.7.1", features = ["bytemuck"] }
+insta       = "1.47.2"
+wasm-bindgen-rayon = "1.3.0"
 
+tracing-wasm       = "0.2"
+proc-macro2        = { version = "1" }
+quote              = { version = "1" }
+syn                = { version = "2", features = ["full", "extra-traits"] }
 # ----------------------------------------------------------------------------
 # Workspace-wide lints — RFC 3389. Each crate opts-in with `[lints] workspace = true`.
 # ----------------------------------------------------------------------------

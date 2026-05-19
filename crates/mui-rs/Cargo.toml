@@ -1,0 +1,53 @@
+[package]
+name = "mui-rs"
+description = "Material Design 3 native UI library for Rust — GPU-accelerated, cross-platform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[features]
+default    = ["desktop"]
+desktop    = ["winit", "mui-rs-renderer/desktop", "dark-light"]
+web        = ["mui-rs-renderer/web", "mui-rs-components/wasm"]
+android    = ["mui-rs-renderer/android", "android-activity"]
+plugins    = ["wasmtime", "wit-bindgen", "wasmparser", "walrus"]
+js-runtime = ["rquickjs"]
+
+[dependencies]
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde = { workspace = true }
+serde_json = { workspace = true }
+mimalloc.workspace = true
+
+mui-rs-tokens     = { path = "../mui-rs-tokens" }
+mui-rs-renderer   = { path = "../mui-rs-renderer" }
+mui-rs-motion     = { path = "../mui-rs-motion" }
+mui-rs-components = { path = "../mui-rs-components" }
+mui-rs-macros     = { path = "../mui-rs-macros" }
+
+# desktop
+winit      = { workspace = true, optional = true }
+dark-light = { workspace = true, optional = true }
+pollster   = { workspace = true, optional = true }
+
+# android
+android-activity = { workspace = true, optional = true }
+
+# WASM host / plugins
+wasmtime    = { workspace = true, optional = true }
+wit-bindgen = { workspace = true, optional = true }
+wasmparser  = { workspace = true, optional = true }
+walrus      = { workspace = true, optional = true }
+
+# JS engine
+rquickjs = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion.workspace = true
+insta.workspace = true
