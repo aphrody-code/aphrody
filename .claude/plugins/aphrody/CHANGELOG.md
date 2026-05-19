@@ -5,6 +5,178 @@ All notable changes to the `.claude/plugins/aphrody/` plugin. Format:
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-05-19 — **single-MCP-server architecture**
+
+### Changed (BREAKING)
+- **`plugin.json#mcpServers` is now a single entry (`aphrody`).** The
+  previous `microsoft-learn` HTTP MCP entry was removed. Microsoft
+  Learn coverage is preserved via three native Rust tools fused into
+  the unified `aphrody-mcp` binary.
+- **All references `mcp__microsoft-learn__*` were rewritten to
+  `mcp__aphrody__*`** across the imported skills
+  (`microsoft-docs`, `microsoft-code-reference`, `skill-creator`,
+  `context7-mcp`), the imported agent (`docs-researcher`), and the
+  skill-templates reference.
+
+### Added
+- **Microsoft Learn ported to native Rust inside `aphrody-mcp`.** Three
+  new tools wrap the upstream HTTP MCP at
+  `https://learn.microsoft.com/api/mcp` via stateless JSON-RPC over
+  HTTP with SSE response framing :
+  - `microsoft_docs_search(query)`
+  - `microsoft_docs_fetch(url)`
+  - `microsoft_code_sample_search(query, language?)`
+
+  The proxy unwraps `event: message\ndata: {json}` SSE packets,
+  concatenates every text-typed `result.content[]` entry, and emits a
+  structured-error envelope shape (`MSLEARN_TIMEOUT` /
+  `MSLEARN_UNAVAILABLE` / `MSLEARN_BAD_REQUEST` /
+  `MSLEARN_RPC_ERROR` / `MSLEARN_INVALID_RESPONSE`).
+- **`docs_auto_search` — fanout aggregator.** Single tool call that
+  fires Context7 (resolve + optional deep fetch), Microsoft Learn
+  search, Microsoft code-sample search, and Google web search **in
+  parallel** via `tokio::join!`. Returns a fused markdown report with
+  four sections. Replaces 3-4 sequential round-trips with one
+  max-latency round-trip — saves wall-clock time and saves context-
+  window tool descriptors.
+- **`skills/docs-auto/SKILL.md`** — top-trigger skill that routes any
+  library / framework / SDK / API / cloud-service question to a single
+  `docs_auto_search` call. Documents drill-down patterns for when the
+  fused report identifies a single canonical URL.
+- **`commands/docs.md` extended** : the slash command now uses the
+  fanout aggregator by default ; explicit Context7 IDs (starting with
+  `/`) still take the direct `context7_query_docs` fast path.
+- **`aphrody-mcp-smoke` extended to 24 tools** with fixtures for the
+  three Microsoft Learn tools and `docs_auto_search`. All flagged
+  `network_dependent` (returns structured-error envelope when the
+  upstream is unreachable).
+
+### Notes
+- The previous `0.6.x` series advertised 2 MCP servers (1 stdio + 1
+  HTTP). The new `0.7.x` series advertises **1 MCP server** with 24
+  native tools spanning 7 capability groups : forensics + network
+  recon + bxc scraping + vision + voice + Context7 + Microsoft Learn +
+  reverse-engine.
+- The HTTP MCP transport detection on `learn.microsoft.com/api/mcp` was
+  verified live with `curl -X POST -H "Accept: application/json,
+  text/event-stream"` — stateless `tools/call` works without prior
+  `initialize` or `Mcp-Session-Id` header. The Rust proxy is therefore
+  fire-and-forget per call.
+
+## [0.6.3] — 2026-05-19
+
+### Added
+- **Imported the upstream Context7 Claude plugin** (MIT,
+  `upstash/context7` `plugins/claude/context7/`), rewired onto the
+  native Rust `mcp__aphrody__context7_*` tools :
+  - `agents/docs-researcher.md` — delegation agent that researches a
+    library doc question and returns a focused answer with code
+    examples, avoiding bloat in the parent conversation. Restricted to
+    the 4 documentation MCP tools (Context7 + Microsoft Learn).
+  - `commands/docs.md` — `/docs <library> [query]` slash command. Two
+    invocation modes : plain name (`react hooks`) → auto-resolve, or
+    explicit ID (`/vercel/next.js/v15.1.8 middleware`) → direct fetch.
+
+### Notes
+- The upstream plugin's `.mcp.json` declares
+  `context7 → https://mcp.context7.com/mcp` (HTTP MCP server). We did
+  **not** wire that — the same surface is already covered by the 2
+  native Rust tools (`context7_resolve_library_id`,
+  `context7_query_docs`) shipped in `aphrody-mcp` since 0.6.2. Wiring
+  the HTTP MCP would duplicate the surface.
+- The upstream plugin's `skills/context7-mcp/` is identical to the one
+  imported in 0.6.2 — not re-imported.
+
+## [0.6.2] — 2026-05-19
+
+### Added
+- **Context7 ported to native Rust inside `aphrody-mcp`.** Two new
+  tools — `context7_resolve_library_id` and `context7_query_docs` —
+  fuse the upstream `mcp-bridge.ts` (Bun, MIT, in
+  `packages/mcp/cli/src/mcp-bridge.ts:114-206`) into the unified Rust
+  binary. They hit `https://mcp.context7.com/api/v2/{libs/search,context}`
+  via the shared `reqwest` client, honour `CONTEXT7_API_KEY` (Bearer,
+  optional — public tier works unauthenticated), and emit the same
+  structured-error envelope shape (`CONTEXT7_TIMEOUT` /
+  `CONTEXT7_UNAVAILABLE` / `CONTEXT7_BAD_REQUEST` /
+  `CONTEXT7_INVALID_RESPONSE`) as the bxc tools. Cf.
+  `crates/google_mcp/src/main.rs`.
+- **Smoke runner extended to 20 tools.** `crates/aphrody-mcp-smoke/`
+  fixtures now cover `context7_*` (network-dependent) and `re_triage`
+  (triages the `aphrody-mcp.exe` binary itself). Live verify : 19 pass /
+  0 fail / 1 skip / p95 = 449 ms.
+- **`skills/context7-mcp/SKILL.md`** — imported from upstream
+  `upstash/context7` (MIT, `skills/context7-mcp/SKILL.md`) and rewired
+  onto the native `mcp__aphrody__context7_*` tool names. Documents the
+  2-step resolve → query flow, version-pinning, structured-error
+  handling, and the comparison matrix with the other documentation
+  tools in this plugin.
+
+### Changed
+- `plugin.json#description` updated : aphrody server is now **20 tools**
+  (17 + 2 context7 + 1 re_triage), total surface across both MCPs is
+  **23 tools** (20 + 3 microsoft-learn).
+- `re_triage` is now formally advertised (was previously cfg-gated
+  hidden) — listed in the manifest description and exercised by the
+  smoke runner.
+
+### Notes
+- Upstream `context7-cli/SKILL.md` (npm-based) and `find-docs/SKILL.md`
+  (npm-based) **were not imported** — they recommend
+  `npm install -g ctx7@latest`, incompatible with the aphrody Rust-only
+  policy. The Rust-port + `context7-mcp` skill cover the same use case.
+- Upstream `packages/{cli,mcp,sdk,tools-ai-sdk}/` were **not imported**
+  — they are TypeScript / pnpm packages. The wire spec we needed
+  (`/api/v2/libs/search`, `/api/v2/context`, Bearer auth) was already
+  captured by the in-tree `packages/mcp/cli/src/mcp-bridge.ts` mirror
+  and is now re-implemented in pure Rust.
+
+## [0.6.1] — 2026-05-19
+
+### Added
+- **Second MCP server: `microsoft-learn` (HTTP, MIT)** — wired in
+  `plugin.json#mcpServers.microsoft-learn` pointing at
+  `https://learn.microsoft.com/api/mcp`. Exposes 3 official Microsoft
+  Learn tools: `microsoft_docs_search`, `microsoft_docs_fetch`,
+  `microsoft_code_sample_search`. No auth, no subprocess, no JS
+  runtime (pure HTTP) — consistent with the aphrody Rust-only policy.
+- **3 skills imported from upstream `microsoftdocs/mcp` (MIT)** :
+  `skills/microsoft-docs/`, `skills/microsoft-code-reference/`,
+  `skills/skill-creator/` (generalised from `microsoft-skill-creator`).
+  The `skill-creator` skill gains a 5th template (Rust Crate) and
+  references both MCP servers in its discovery flow. CLI fallback
+  sections that called `bunx @microsoft/learn-cli` were stripped to
+  honor the Rust-only runtime policy.
+- **`plugin.json#interface` block** (inspired by upstream Microsoft
+  manifest) with `displayName`, `brandColor` (#CE422B = Rust orange),
+  `category`, `capabilities`, and a 3-line `defaultPrompt` exposing the
+  plugin's most useful flows (M3 token scrape, DNS recon chain, Azure
+  doc lookup).
+- **`crates/aphrody-mcp-smoke/`** : end-to-end Rust smoke test runner
+  that spawns `aphrody-mcp`, performs the MCP handshake, lists all
+  advertised tools, and exercises each of the 17 with minimal valid
+  arguments. Emits an NDJSON report (1 line per tool + summary line)
+  with p50 / p95 latency. Exit 0 = clean ; exit 1 = unexpected fail.
+
+### Removed
+- `.claude/plugins/aphrody/mcp/` sub-tree (both `mcp/aphrody/` empty
+  dir and `mcp/bxc-scrapper/` orphan README+src). The single MCP server
+  is declared inline in `plugin.json` — no per-server doc tree needed.
+- Legacy `mcp__bxc-scrapper__*` tool references in
+  `skills/pixel-perfect/SKILL.md`, `skills/pixel-perfect/references/validation-checklist.md`,
+  `commands/tokens.md`, `agents/explore.md`, `README.md`,
+  `CHANGELOG.md` — renamed to the actual exposed names
+  (`mcp__aphrody__*`).
+- Stale Bun / `bxc-mcp` install steps in `README.md` quick-start —
+  replaced with the canonical `cargo build --release -p google_mcp` +
+  `bxc-engine-daemon` install sequence.
+
+### Fixed
+- `plugin.json#description` claimed `15 + 2 voice + 1 re_triage = 18`
+  tools, but `tools/list` on the running server returns 17 (no
+  `re_triage` ever shipped). Description now correctly says
+  `17 + 3 (microsoft-learn) = 20` tools across the two MCP servers.
+
 ## [0.6.0] — 2026-05-19
 
 ### Changed

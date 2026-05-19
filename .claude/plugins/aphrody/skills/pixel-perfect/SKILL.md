@@ -3,7 +3,7 @@ name: pixel-perfect
 version: "1.0.0"
 description: Validates a Material Design 3 component implementation against the upstream M3 spec. Use when the user asks to audit M3 tokens, compare a shadcn/aphrody-code/ui component to its Material Web 3 reference, check that CSS custom properties match the `--md-sys-*` contract, or verify visual fidelity of a refactored component. Skip for non-M3 work, raw Tailwind theming, or arbitrary visual regression unrelated to Material Design.
 argument-hint: <component-name-or-path>
-allowed-tools: Read, Edit, Write, Glob, Grep, Bash, mcp__bxc-scrapper__bxc_scrape, mcp__bxc-scrapper__bxc_recon, mcp__bxc-scrapper__vision_analyze, mcp__bxc-scrapper__extract_structured
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash, mcp__aphrody__bxc_scrape, mcp__aphrody__bxc_recon, mcp__aphrody__vision_analyze, mcp__aphrody__extract_structured
 ---
 
 # pixel-perfect — Material Design 3 component auditor
@@ -73,9 +73,9 @@ Skip if:
      tokens are P0 — invoke `/tokens` to refresh the bundle.
 
 4. **Visual diff (optional but recommended for HIGH-priority components)**
-   - Call `mcp__bxc-scrapper__bxc_recon` on the canonical M3 reference
+   - Call `mcp__aphrody__bxc_recon` on the canonical M3 reference
      URL listed in `references/m3-spec.md` for the family.
-   - Call `mcp__bxc-scrapper__vision_analyze` on the resulting
+   - Call `mcp__aphrody__vision_analyze` on the resulting
      `screenshot_path` to extract elements/colors/fonts.
    - Compare extracted colors against the component's declared tokens.
      Any delta-E > 5 in primary/secondary/error is a P1 violation.

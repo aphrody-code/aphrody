@@ -184,6 +184,24 @@ members = [
     # boost, snippet highlighting, atomic JSON persistence). Backs the
     # marketplace / memory / skill discovery UIs.
     "crates/aphrody-search",
+    # aphrody-chat — unified turn-loop REPL composing every other aphrody
+    # building block (gemini-runtime + tools + memory + session + permissions
+    # + hooks + prompts + router + cost + context + events + cache +
+    # rateguard + retry + secrets + skills-runtime + mcp). Replaces the
+    # packaged TypeScript gemini-cli dependency with a native Rust agent.
+    "crates/aphrody-chat",
+    # aphrody-sdk — public Rust SDK for embedding aphrody in third-party
+    # programs (Agent + Session + ToolRegistry + Skills + FS + Shell).
+    # Port of packages/gemini-cli/packages/sdk (TS, ~300 LoC).
+    "crates/aphrody-sdk",
+    # notebooklm — pure-Rust client for the Google NotebookLM Boq RPC
+    # surface (ported from icebear0828/notebooklm-client + teng-lin/notebooklm-py
+    # + jacob-bd/notebooklm-mcp-cli, all MIT). No browser automation in-crate.
+    "crates/notebooklm",
+    # aphrody-mcp-smoke — end-to-end smoke test for the unified aphrody-mcp
+    # stdio server (handshake + tools/list + tools/call sweep + p50/p95 +
+    # NDJSON report). Replaces the ad-hoc bash/pwsh probes.
+    "crates/aphrody-mcp-smoke",
 ]
 exclude = [
     "crates/coreutils",
@@ -372,6 +390,9 @@ url                = { version = "2" }
 
 # --- aphrody-providers (single-source-of-truth Provider enum) -------------
 aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canary" }
+
+# --- notebooklm (Google NotebookLM Boq RPC client) ------------------------
+notebooklm         = { path = "crates/notebooklm", version = "1.0.0-canary" }
 
 # --- aphrody-voice family (TTS + STT) ------------------------------------
 aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
