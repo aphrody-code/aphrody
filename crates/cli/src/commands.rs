@@ -597,6 +597,14 @@ impl TerminalCommand for GeminiCommand {
 
         let mut cmd = std::process::Command::new(&bin_path);
         cmd.args(&self.args);
+        // Gemini CLI refuse de tourner en headless si le cwd n'est pas un
+        // "trusted directory". Pour `aphrody a2a` / `aphrody gemini` invoqués
+        // par l'autopilot ou tout autre scénario non-interactif, on opt-in au
+        // trust par défaut. L'opérateur peut override en exportant
+        // GEMINI_CLI_TRUST_WORKSPACE=false avant l'appel.
+        if std::env::var_os("GEMINI_CLI_TRUST_WORKSPACE").is_none() {
+            cmd.env("GEMINI_CLI_TRUST_WORKSPACE", "true");
+        }
 
         let status = cmd.status().map_err(|e| {
             miette::miette!("Failed to spawn `{}`: {e}", bin_path.display())
