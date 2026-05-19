@@ -92,6 +92,7 @@ fn merge_precedence_terminal_wins() {
         permissions: PermissionsConfig::default(),
         keymap: BTreeMap::new(),
         mcp_servers: BTreeMap::new(),
+        ..TerminalConfig::default()
     };
     let claude = ClaudeShim { theme: Some("dark".to_owned()), keymap: Default::default() };
     let merged = merge(base, vec![Shim::Claude(claude)]);

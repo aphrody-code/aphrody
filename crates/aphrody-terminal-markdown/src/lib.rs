@@ -13,8 +13,11 @@
 
 #![forbid(unsafe_code)]
 
-mod code;
-mod heading;
+pub(crate) mod code;
+pub(crate) mod heading;
+pub mod osc;
+pub mod render;
+pub mod theme;
 
 use aphrody_terminal_vt::strip_osc_envelope_str;
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
@@ -25,6 +28,9 @@ use comrak::{
     parse_document,
 };
 pub use heading::heading_ansi_prefix;
+pub use osc::{MdEvent, emit_md_event};
+pub use render::render;
+pub use theme::{MdTheme, Rgb, bg_sgr, fg_sgr};
 
 /// ANSI SGR helpers.
 const SGR_RESET: &str = "\x1b[0m";

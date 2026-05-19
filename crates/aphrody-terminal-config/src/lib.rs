@@ -40,10 +40,16 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod error;
+pub mod loader;
 pub mod merge;
+pub mod profile;
+pub mod schema;
 pub mod shims;
 
 pub use error::{ConfigError, Result};
+pub use loader::{import_claude_json_as_config, import_mcp_json_as_config, load_terminal_config};
+pub use profile::{CursorShape, M3_BASELINE_DARK_PRIMARY, PaletteM3, Profile, default_profile};
+pub use schema::{BrowserConfig, LlmConfig, LlmProvider, McpServerSpec, McpTransport};
 
 use crate::shims::McpServerEntry;
 
@@ -122,7 +128,7 @@ pub struct PermissionsConfig {
 ///
 /// Unknown root-level keys are rejected; sub-structs accept unknown keys
 /// silently where appropriate.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TerminalConfig {
     /// LLM panes toggles.
@@ -144,6 +150,26 @@ pub struct TerminalConfig {
     /// MCP server registry imported from `.mcp.json` (logical name → entry).
     #[serde(default, rename = "mcpServers")]
     pub mcp_servers: BTreeMap<String, McpServerEntry>,
+    /// Named profiles (font + cursor + M3 palette).  Empty by default; the
+    /// terminal then synthesises a single `"default"` profile via
+    /// [`profile::default_profile`].
+    #[serde(default)]
+    pub profiles: Vec<Profile>,
+    /// Name of the active profile (must be present in [`Self::profiles`] when
+    /// non-empty; otherwise the terminal falls back to
+    /// [`profile::default_profile`]).
+    #[serde(default = "default_profile_name")]
+    pub default_profile: String,
+    /// LLM provider configuration (whitelist enforced at deserialise time).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm_config: Option<LlmConfig>,
+    /// Browser-bridge configuration (bxc / agent-browser / Edge fallback).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser: Option<BrowserConfig>,
+}
+
+fn default_profile_name() -> String {
+    "default".to_owned()
 }
 
 // ── Loaders ───────────────────────────────────────────────────────────────────
