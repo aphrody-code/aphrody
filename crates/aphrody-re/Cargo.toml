@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-re"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Reverse engineering primitives for aphrody — PE/ELF/Mach-O triage, sections + entropy + hash, ASCII/UTF-16 strings extraction. Pure Rust, no C bindings, no GPL."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+# Cross-platform binary parser (Apache-2.0/MIT). Features pe32+pe64+elf32+elf64
+# already enabled in [workspace.dependencies], with std + endian_fd.
+goblin     = { workspace = true }
+# SHA-256 for binary fingerprinting + per-section integrity.
+sha2       = { workspace = true }
+# Hex encoding for hashes in the JSON report.
+hex        = { workspace = true }
+# JSON serialization of the TriageReport (consumed by CLI + future MCP tools).
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# Structured errors for the public API.
+thiserror  = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
