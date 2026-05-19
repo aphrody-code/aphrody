@@ -1,0 +1,8 @@
+[package]
+name = "aphrody-icons"
+version = "1.0.0"
+edition = "2024"
+description = "Material Design Icons & Symbols (Web Fonts, CSS, JSON) as a workspace crate"
+publish = false
+
+[dependencies]
