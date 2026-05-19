@@ -18927,6 +18927,133 @@ Exemples de Tokens Typographiques MD3 :
 *   `--md-sys-typescale-label-small-weight`
 
 
+## File: docs/migrations/01-gemini-ui-to-wasm.md
+
+# Migration 01 : `packages/gemini` vers `crates/aphrody-wgpu-material`
+
+**Priorité :** 1 (Critique)
+**Statut :** Planifié
+**Cible :** `wasm32-unknown-unknown` + WebGPU
+
+## 1. État des Lieux (TS/Next.js)
+Le package `packages/gemini` contient ~4 500 lignes de code React (TSX) reproduisant l'interface web Gemini au pixel près.
+- **Routage :** App Router Next.js (`app/api/*`, `app/page.tsx`).
+- **Composants :** 41 composants UI (`MessageBubble`, `VoiceWaveform`, `PromptBar`).
+- **Core Logic :** Intégration Whisper, MCP, Gateway asynchrone (`core/`).
+- **Assets :** Polices Google Sans Flex (~41k lignes binaire), M3 Tokens.
+
+## 2. Problématique
+Ce package contrevient à la politique 100% Rust (`CLAUDE.md §2`). L'exécution dépend de Node.js/Next.js et embarque un runtime JS lourd qui est incompatible avec la distribution via un binaire CLI natif cross-platform.
+
+## 3. Plan de Migration Rust
+Le portage s'appuiera sur `crates/aphrody-react-reconciler` (déjà implémenté) et `crates/aphrody-wgpu-material`.
+
+### Étape A : Core & API (Backend)
+- Migrer `core/auth.ts`, `core/mcp.ts` vers des handlers HTTP dans `crates/backend/src/routes/`.
+- Migrer la logique Whisper (`core/whisper.ts`) vers `crates/aphrody-voice-stt`.
+- Remplacer les routes API Next.js par des endpoints Axum ou un canal WebSocket direct.
+
+### Étape B : Composants & Rendu (Frontend WASM)
+- Transcrire les hooks `useChat.ts`, `useVoiceInput.ts` en structs Rust gérant leur state interne (via `yew` ou le reconciler maison `aphrody-react-reconciler`).
+- Convertir la surcouche CSS complexe (`globals.css`) et les dégradés WebGPU (`lib/webgpu-gradient.ts`) en shaders WGSL natifs dans `crates/aphrody-wgpu-material`.
+- Remplacer les primitives UI React (`PromptBar.tsx`, `MessageBubble.tsx`) par des composants Rust générant du DOM via `web-sys` et `wasm-bindgen`.
+
+### Étape C : Intégration
+- Compiler le client en `aphrody-terminal-wasm.wasm`.
+- L'injecter via le daemon HTTP Rust.
+
+## 4. Critères de Succès
+- [ ] L'interface s'affiche dans un navigateur sans charger un seul script `.js` (hormis le glue code `wasm-bindgen`).
+- [ ] La communication se fait en WebSocket vers le binaire Rust local, sans serveur Node.
+- [ ] Suppression complète du dossier `packages/gemini/`.
+
+
+## File: docs/migrations/02-ui-shadcn-to-tui.md
+
+# Migration 02 : `packages/ui` vers Terminal UI et Natif
+
+**Priorité :** 2 (Modérée)
+**Statut :** Suppression / Remplacement
+**Cible :** `crates/aphrody-tui` / `crates/shadcn-bridge`
+
+## 1. État des Lieux
+Le package `packages/ui` contient 127 fichiers répartis entre des composants React Shadcn (`components/`, `src/components/`), des variables de design (`tokens/`), et d'énormes collections de sprites et d'assets PWA (`assets/`).
+- Aucun consommateur actif dans l'application CLI principale.
+- Code mort accumulé suite à des tests d'interface disparates.
+
+## 2. Problématique
+Ce dossier TS/CSS viole la directive "Rust Only". De plus, Shadcn est conçu pour le DOM web, alors que l'expérience Aphrody cible avant tout le Terminal (TUI) et des overlays natifs. Garder cette bibliothèque de composants React locale est redondant.
+
+## 3. Plan de Migration Rust
+
+### Étape A : Extraction des Design Tokens
+- Convertir `tokens/colors.json`, `tokens/spacing.json`, `tokens/typography.json` vers un format chargé nativement par `crates/aphrody-tui/src/theme.rs`.
+- Les tokens Material Design (M3) seront gérés par `crates/m3-tokens`.
+
+### Étape B : Assets & Sprites
+- Déplacer `assets/sprites/` et `assets/thumbnails/` vers le dossier racine `/assets/` qui est scanné lors du build `build.rs` du CLI pour l'inclusion dans le binaire ou le bundle d'installation.
+- PWA manifest et icones web-specific : suppression pure et simple, Aphrody n'est plus distribué en PWA.
+
+### Étape C : Composants UI
+- Purger tous les fichiers `.tsx` et `.ts` (`button.tsx`, etc.).
+- Le paradigme de composants sera remplacé par `ratatui` dans `crates/aphrody-tui` pour l'interface en ligne de commande.
+- S'il faut une interface GUI riche desktop, elle s'appuiera sur `crates/gui` (TAO/WRY) et WebGPU.
+
+## 4. Critères de Succès
+- [ ] Les design tokens sont parsés dynamiquement par le code Rust.
+- [ ] Le répertoire `packages/ui` est totalement supprimé.
+- [ ] Le binaire CLI n'a perdu aucune fonctionnalité visuelle et arbore un TUI pixel-perfect via `ratatui`.
+
+
+## File: docs/migrations/03-nextjs-rust-extraction.md
+
+# Migration 03 : Isolation des Crates Vercel (`packages/next.js`)
+
+**Priorité :** 3 (Basse - Maintenance)
+**Statut :** Partiellement Fait (JS ignoré)
+**Cible :** `[workspace.dependencies]`
+
+## 1. État des Lieux
+L'énorme dossier `packages/next.js` (~336 000 lignes) est un sous-module ou fork du projet amont Vercel. Il contient à la fois l'implémentation JS historique de Next.js (`packages/`, `apps/`, `bench/`) et le nouvel outillage Rust Turbopack (`turbopack-*`, `next-core`, etc.).
+
+## 2. Problématique
+Aphrody n'a aucune intention de devenir ou de forker Next.js au sens Node.js du terme. L'objectif unique de ce dossier est d'extraire les puissantes bibliothèques de compilation Rust (`swc`, `turbopack`, `lightningcss`, `oxc`) pour le tooling de build interne (ex: transpiler du JSX en Rust, optimiser du CSS natif). Le volume de JS pollue le monorepo et viole symboliquement la charte 100% Rust.
+
+## 3. Plan de Migration Rust
+
+### Étape A : Filtrage Git (Git Sparse Checkout / Submodule)
+- Plutôt que d'héberger le code JS mort, configurer un Sparse Checkout ou récupérer les crates Rust via des `git = "https://github.com/vercel/next.js"` dans le `Cargo.toml` racine.
+- Alternative : Extraire manuellement les dossiers `crates/` de `packages/next.js` et les placer directement sous `crates/vercel-tools/` pour couper le lien TS/JS amont.
+
+### Étape B : Suppression du Bruit
+- Supprimer les dossiers `apps/`, `bench/`, `test/`, `packages/` internes au dossier `next.js` qui contiennent du code JS.
+- Supprimer le fichier `bun.lock` (qui tente de résoudre l'arbre Node de Next.js) et les multiples `package.json` imbriqués.
+
+### Étape C : Finalisation Cargo
+- Assurer que `Cargo.toml` (`[workspace] members` ou `workspace.dependencies`) pointent exclusivement vers les crates Turbopack purs.
+- Éradiquer `packages/next.js` et libérer 300 Mo de la base de code git locale.
+
+## 4. Critères de Succès
+- [ ] Le code JS de Vercel/Next.js n'existe plus dans le repository local Aphrody.
+- [ ] La compilation `cargo build -p aphrody` réussit toujours et parvient à linker `turbopack`.
+- [ ] Le répertoire racine `packages/` peut être définitivement supprimé.
+
+
+## File: docs/migrations/INDEX.md
+
+# Plans de Migration Détaillés (TypeScript vers Rust)
+
+Ce dossier documente les plans de refactoring avancés ("part-by-part") pour les packages historiques Bun/TypeScript du projet Aphrody qui nécessitent une attention particulière.
+
+| Fichier | Cible d'Origine | Cible Rust | Priorité |
+|---|---|---|---|
+| [`01-gemini-ui-to-wasm.md`](01-gemini-ui-to-wasm.md) | `packages/gemini` | `crates/aphrody-wgpu-material` | 1 (Haute) |
+| [`02-ui-shadcn-to-tui.md`](02-ui-shadcn-to-tui.md) | `packages/ui` | `crates/aphrody-tui` | 2 (Moyenne) |
+| [`03-nextjs-rust-extraction.md`](03-nextjs-rust-extraction.md) | `packages/next.js` | `[workspace.dependencies]` purs | 3 (Basse) |
+
+*Les autres packages (`mrx`, `bxc`, `n2b`, `aphrody-skills`, `aphrody-jsx`) ont déjà été migrés avec succès et les dossiers TS supprimés de l'arbre.*
+
+
 ## File: docs/monorepo/bun-workspaces.md
 
 <!-- SPDX-License-Identifier: Apache-2.0 -->
