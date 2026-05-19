@@ -42,14 +42,13 @@ members = [
     "crates/aphrody-mcp",
     # aphrody-voice — TTS + STT provider traits + ElevenLabs/Whisper adapters + Discord shim
     "crates/aphrody-voice",
+    "crates/aphrody-icons",
     # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
     "crates/gemini-runtime",
     # agui-bridge — AG-UI protocol Rust binding (wire parser + wasm-bindgen renderer)
     # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
     # "crates/agui-bridge",
-    # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
-    "crates/aphrody-channels",
-    # aphrody-messaging — Tier-1 outbound connectors (Telegram, Slack, native SMTP)
+    # aphrody-messaging — unified messaging (outbound connectors + bidirectional channels)
     "crates/aphrody-messaging",
     # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
     # + LLM event bus + browser bridge). Spec: docs/design/aphrody-terminal-spec.md.
@@ -63,8 +62,8 @@ members = [
     "crates/aphrody-terminal-config",
     # aphrody-tui — pure-Rust ratatui-style DSL (canonical long-term native TUI, 60fps target)
     "crates/aphrody-tui",
-    # aphrody-skills-runtime — SKILL.md aggregator (Rust port of packages/aphrody-skills, Phase 4.1)
-    "crates/aphrody-skills-runtime",
+    # aphrody-skills — unified skills infrastructure (runtime + hooks + permissions)
+    "crates/aphrody-skills",
     # aphrody-react-reconciler — host-side React reconciler primitives
     # (Rust port of packages/aphrody-jsx, Phase 4.2).
     "crates/aphrody-react-reconciler",
@@ -76,8 +75,8 @@ members = [
     #   * daemon   : SQLite-backed project store + design-systems registry.
     #   * material : M3 (HCT tonal palettes, schemes, motion, typography).
     "crates/aphrody-design-agents",
-    "crates/aphrody-design-sidecar",
-    "crates/aphrody-design-daemon",
+    # aphrody-design — unified design infra (sidecar + daemon, merged from aphrody-design-{sidecar,daemon})
+    "crates/aphrody-design",
     # mui-rs — Material Design 3 native UI library (wgpu + vello + winit)
     # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
     # "crates/mui-rs",
@@ -109,13 +108,7 @@ members = [
     # (Sprint F / hermes-agent : embedded + file + http loaders, semver +
     # tag queries, SHA-256 integrity verification).
     "crates/aphrody-marketplace",
-    # aphrody-permissions — tool-level permission engine (allow/ask/deny + glob
-    # matchers + settings.json compatibility) shared with hooks, MCP and skills.
-    "crates/aphrody-permissions",
-    # aphrody-hooks — runtime hook dispatcher (settings.json hook block
-    # parser + globset matcher + tokio::process spawner with timeout +
-    # JSON block/allow decision parsing on stdout).
-    "crates/aphrody-hooks",
+
     # aphrody-providers — single-source-of-truth `Provider` enum + ProviderError
     # for the three-only LLM whitelist (anthropic / gemini / antigravity).
     # Cf. memory project_aphrody_providers_3only + project_no_duplication_max_cohesion.
@@ -127,9 +120,8 @@ members = [
     # required-variable validation, reusable `{% include %}` partials, and a
     # configurable PII scrubber (email, phone, IBAN, IPv4, API-key markers).
     "crates/aphrody-prompts",
-    # aphrody-cost — per-provider USD cost + token usage tracker (Anthropic +
-    # Gemini + Antigravity whitelist), pricing table, budget guard, NDJSON log.
-    "crates/aphrody-cost",
+    # aphrody-llm-infra — unified LLM runtime infrastructure (cost + rateguard + retry + cache)
+    "crates/aphrody-llm-infra",
     # aphrody-context — LLM context-window manager: heuristic token counting,
     # sliding-window trim with pinned-message preservation, summarization
     # triggers, JSON snapshot/restore.
@@ -141,18 +133,7 @@ members = [
     # input/output) with cross-vendor exporters/importers for Anthropic
     # tool-use, Gemini function declarations and MCP `tools/list` shapes.
     "crates/aphrody-tools",
-    # aphrody-retry — reusable retry primitives (exponential backoff + jitter
-    # modes + classifier trait + Retry-After honoring) for HTTP API calls.
-    # Consumed by aphrody-router / aphrody-messaging / aphrody-cron.
-    "crates/aphrody-retry",
-    # aphrody-rateguard — async token-bucket RPM + TPM rate limiter for the
-    # three-only LLM provider whitelist (Anthropic + Gemini + Antigravity),
-    # per-model overrides, blocking acquire with configurable wait ceiling.
-    "crates/aphrody-rateguard",
-    # aphrody-cache — two-tier cache (in-memory LRU + TTL + disk-backed
-    # persistent store with atomic writes and SHA-256 keyed filenames).
-    # Backs HTTP response cache, prompt-completion memoization, scrape cache.
-    "crates/aphrody-cache",
+
     # aphrody-events — in-process async pub-sub event bus with topic filtering,
     # NDJSON audit sink, memory ring buffer and counter subscribers. No external
     # broker; complements aphrody-session (cold archive) + aphrody-hooks
