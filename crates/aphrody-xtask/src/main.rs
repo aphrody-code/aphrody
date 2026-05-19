@@ -10,9 +10,11 @@ use clap::{Parser, Subcommand};
 mod audit_openclaw;
 mod audit_openclaw_ext;
 mod bxc_mass_scrape;
+mod deploy;
 mod design_google;
 mod design_import;
 mod edge_scrape;
+mod install_mcp;
 mod m3_audit;
 mod optimize_assets;
 mod plugin_port;
@@ -113,6 +115,19 @@ enum Op {
     /// Audit CSS/HTML files for Material Design 3 token coverage.
     /// Replaces scripts/m3-coverage-audit.ts.
     M3Audit(m3_audit::Args),
+
+    /// Build every workspace binary in release and install it into
+    /// `~/.local/bin/` (cross-platform). Mirrors what every contributor
+    /// otherwise does manually after touching a binary crate. Alias
+    /// `cargo deploy` runs this with no arguments.
+    Deploy(deploy::Args),
+
+    /// Idempotent install of the unified `aphrody-mcp` Rust MCP binary.
+    /// Rebuilds + redeploys to `~/.local/bin/` only when sources under
+    /// `crates/google_mcp/` are newer than the installed binary. Designed
+    /// for hook invocation (SessionStart, PostToolUse) — sub-millisecond
+    /// no-op when up-to-date, zero shell dependency.
+    InstallMcp(install_mcp::Args),
 }
 
 fn main() -> Result<()> {
@@ -144,5 +159,7 @@ fn main() -> Result<()> {
         Op::SkillsWatch(args) => skills_watch::run(args),
         Op::ScrapeM3Tokens(args) => scrape_m3_tokens::run(args),
         Op::M3Audit(args) => m3_audit::run(args),
+        Op::Deploy(args) => deploy::run(args),
+        Op::InstallMcp(args) => install_mcp::run(args),
     }
 }
