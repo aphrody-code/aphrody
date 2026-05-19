@@ -1,7 +1,8 @@
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
 
-const OBSCURA: &str = env!("CARGO_BIN_EXE_obscura");
+// Bin renamed from `obscura` → `bxc-engine` (see Cargo.toml [[bin]]).
+const OBSCURA: &str = env!("CARGO_BIN_EXE_bxc-engine");
 
 // ── minimal MCP client ────────────────────────────────────────────────────────
 
