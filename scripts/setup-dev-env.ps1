@@ -19,10 +19,15 @@ param(
 # Each entry : Name = canonical value. The script reads current User scope,
 # compares, applies only if different. Reset removes the entry.
 # ---------------------------------------------------------------------------
+# Resolve user-specific paths via $env:USERPROFILE so the script is portable
+# across machines (any Windows user, any home-dir layout). Falls back to
+# `$HOME` on PowerShell-Core on non-Windows hosts.
+$userHome = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+
 $envTable = @{
     # Build cache + parallelism
     'CARGO_INCREMENTAL'                = '0'                                            # required for sccache
-    'SCCACHE_DIR'                      = 'C:\sccache'                                   # cache dir
+    'SCCACHE_DIR'                      = 'C:\sccache'                                   # cache dir (machine-wide, fast NVMe)
     'SCCACHE_CACHE_SIZE'               = '10G'                                          # bound size
     'CARGO_BUILD_JOBS'                 = '7'                                            # 8 cores - 1 linker
 
@@ -31,8 +36,8 @@ $envTable = @{
     'CARGO_TERM_COLOR'                 = 'always'                                       # color output in CI logs
     'RUST_BACKTRACE'                   = '1'                                            # backtraces by default
 
-    # Bun caching
-    'BUN_RUNTIME_TRANSPILER_CACHE_PATH'= 'C:\Users\yohan\.bun-transpile-cache'          # ts transpile cache
+    # Bun caching (per-user, resolved via $env:USERPROFILE — see $userHome above)
+    'BUN_RUNTIME_TRANSPILER_CACHE_PATH'= (Join-Path $userHome '.bun-transpile-cache')
 
     # Project-specific (aphrody)
     'APHRODY_A2A_ENDPOINT'             = 'http://localhost:8788/jsonrpc'                # A2A coord listener
@@ -73,8 +78,8 @@ function Apply-Diff {
             Write-Host ("OK       {0}" -f $name)
         }
     }
-    # Ensure cache dirs exist
-    foreach ($d in @('C:\sccache', 'C:\Users\yohan\.bun-transpile-cache')) {
+    # Ensure cache dirs exist (sccache is machine-wide, bun-transpile-cache is per-user)
+    foreach ($d in @('C:\sccache', (Join-Path $userHome '.bun-transpile-cache'))) {
         if (-not (Test-Path $d)) {
             New-Item -ItemType Directory -Force -Path $d | Out-Null
             Write-Host ("MKDIR    {0}" -f $d)

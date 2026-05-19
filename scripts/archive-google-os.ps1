@@ -1,7 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Move the legacy crates/google_os/ tree to C:\google-os-archive\<stamp>\.
+# Resolves the repo root via `git rev-parse --show-toplevel` so the script is
+# portable across clone locations (previously hard-coded to `C:\src\aphrody`).
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
-$src   = 'C:\src\aphrody\crates\google_os'
+$scriptDir = Split-Path -Parent $PSCommandPath
+$repoRoot  = (git -C $scriptDir rev-parse --show-toplevel).Trim()
+if (-not $repoRoot) {
+    throw "Cannot resolve repo root from $scriptDir (not in a git repo?)"
+}
+$src   = Join-Path $repoRoot 'crates\google_os'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $root  = 'C:\google-os-archive'
 $dst   = Join-Path $root $stamp
