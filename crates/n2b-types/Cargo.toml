@@ -1,0 +1,14 @@
+[package]
+name = "n2b-types"
+version = "0.6.0"
+workspace = "../n2b-cli"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = "0.8"
+ts-rs = { version = "8.0", features = ["serde-compat"] }

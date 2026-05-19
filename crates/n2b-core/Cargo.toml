@@ -1,0 +1,49 @@
+[package]
+name = "n2b-core"
+version = "0.6.0"
+workspace = "../n2b-cli"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "n2b_core"
+path = "src/lib.rs"
+
+[dependencies]
+n2b-types = { path = "../n2b-types" }
+n2b-util = { path = "../n2b-util" }
+n2b-ai = { path = "../n2b-ai" }
+n2b-github = { path = "../n2b-github" }
+n2b-report = { path = "../n2b-report" }
+n2b-rules = { path = "../n2b-rules" }
+n2b-scanners = { path = "../n2b-scanners" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+anyhow = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
+memchr = { workspace = true }
+crossbeam-channel = { workspace = true }
+ignore = "0.4"
+globset = "0.4"
+colored = "2"
+oxc_allocator = "0.126"
+oxc_parser = "0.126"
+oxc_ast = "0.126"
+oxc_ast_visit = "0.126"
+oxc_span = "0.126"
+url = "2"
+walkdir = "2"
+which = "6"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "blocking"] }
+octocrab = "0.49"
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+
+[dev-dependencies]
+proptest = "1"
+serde_json = { workspace = true }
+
+[features]
+default = []

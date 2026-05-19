@@ -1,0 +1,296 @@
+# registry/cli.toml — commandes npm/pnpm/yarn → bun.
+#
+# Phase 1 : transcription mécanique des 47 mappings de
+#   crates/n2b-rules/src/cli_commands.rs::MAPPINGS
+# Ordre identique à la source — cli_commands.rs applique les règles en
+# séquence et l'ordre influence le résultat (ex. `npm install --save-dev`
+# avant `npm install`).
+
+# --- npm ---
+
+[[cli]]
+id      = "cli/npm-install-dev"
+pattern = '\bnpm\s+install\s+--save-dev\b'
+replace = "bun add --dev"
+message = "npm install --save-dev → bun add --dev"
+
+[[cli]]
+id      = "cli/npm-install-D"
+pattern = '\bnpm\s+install\s+-D\b'
+replace = "bun add --dev"
+message = "npm install -D → bun add --dev"
+
+[[cli]]
+id      = "cli/npm-install-save"
+pattern = '\bnpm\s+install\s+--save\b'
+replace = "bun add"
+message = "npm install --save → bun add"
+
+[[cli]]
+id      = "cli/npm-i-dev"
+pattern = '\bnpm\s+i\s+--save-dev\b'
+replace = "bun add --dev"
+message = "npm i --save-dev → bun add --dev"
+
+[[cli]]
+id      = "cli/npm-i-D"
+pattern = '\bnpm\s+i\s+-D\b'
+replace = "bun add --dev"
+message = "npm i -D → bun add --dev"
+
+[[cli]]
+id      = "cli/npm-install"
+pattern = '\bnpm\s+install\b(?:\s+-g)?'
+replace = "bun install"
+message = "npm install → bun install"
+
+[[cli]]
+id      = "cli/npm-i"
+pattern = '\bnpm\s+i\b'
+replace = "bun install"
+message = "npm i → bun install"
+
+[[cli]]
+id      = "cli/npm-ci"
+pattern = '\bnpm\s+ci\b'
+replace = "bun install --frozen-lockfile"
+message = "npm ci → bun install --frozen-lockfile"
+
+[[cli]]
+id      = "cli/npm-run"
+pattern = '\bnpm\s+run\s+'
+replace = "bun run "
+message = "npm run → bun run"
+
+[[cli]]
+id      = "cli/npm-test"
+pattern = '\bnpm\s+test\b'
+replace = "bun test"
+message = "npm test → bun test"
+
+[[cli]]
+id      = "cli/npm-start"
+pattern = '\bnpm\s+start\b'
+replace = "bun start"
+message = "npm start → bun start"
+
+[[cli]]
+id      = "cli/npm-uninstall"
+pattern = '\bnpm\s+uninstall\b'
+replace = "bun remove"
+message = "npm uninstall → bun remove"
+
+[[cli]]
+id      = "cli/npm-rm"
+pattern = '\bnpm\s+rm\b'
+replace = "bun remove"
+message = "npm rm → bun remove"
+
+[[cli]]
+id      = "cli/npm-update"
+pattern = '\bnpm\s+update\b'
+replace = "bun update"
+message = "npm update → bun update"
+
+[[cli]]
+id      = "cli/npm-outdated"
+pattern = '\bnpm\s+outdated\b'
+replace = "bun outdated"
+message = "npm outdated → bun outdated"
+
+[[cli]]
+id      = "cli/npm-pack"
+pattern = '\bnpm\s+pack\b'
+replace = "bun pm pack"
+message = "npm pack → bun pm pack"
+
+[[cli]]
+id      = "cli/npm-publish"
+pattern = '\bnpm\s+publish\b'
+replace = "bun publish"
+message = "npm publish → bun publish"
+
+[[cli]]
+id      = "cli/npm-link"
+pattern = '\bnpm\s+link\b'
+replace = "bun link"
+message = "npm link → bun link"
+
+[[cli]]
+id      = "cli/npm-init-y"
+pattern = '\bnpm\s+init\s+-y\b'
+replace = "bun init -y"
+message = "npm init -y → bun init -y"
+
+[[cli]]
+id      = "cli/npm-init"
+pattern = '\bnpm\s+init\b'
+replace = "bun init"
+message = "npm init → bun init"
+
+[[cli]]
+id      = "cli/npm-exec"
+pattern = '\bnpm\s+exec\s+'
+replace = "bunx "
+message = "npm exec → bunx"
+
+[[cli]]
+id      = "cli/npx"
+pattern = '\bnpx\s+'
+replace = "bunx "
+message = "npx → bunx"
+
+# --- pnpm ---
+
+[[cli]]
+id      = "cli/pnpm-install-dev"
+pattern = '\bpnpm\s+install\s+--save-dev\b'
+replace = "bun add --dev"
+message = "pnpm install --save-dev → bun add --dev"
+
+[[cli]]
+id      = "cli/pnpm-add-dev"
+pattern = '\bpnpm\s+add\s+--save-dev\b'
+replace = "bun add --dev"
+message = "pnpm add --save-dev → bun add --dev"
+
+[[cli]]
+id      = "cli/pnpm-add-D"
+pattern = '\bpnpm\s+add\s+-D\b'
+replace = "bun add --dev"
+message = "pnpm add -D → bun add --dev"
+
+[[cli]]
+id      = "cli/pnpm-install"
+pattern = '\bpnpm\s+install\b'
+replace = "bun install"
+message = "pnpm install → bun install"
+
+[[cli]]
+id      = "cli/pnpm-i"
+pattern = '\bpnpm\s+i\b'
+replace = "bun install"
+message = "pnpm i → bun install"
+
+[[cli]]
+id      = "cli/pnpm-add"
+pattern = '\bpnpm\s+add\b'
+replace = "bun add"
+message = "pnpm add → bun add"
+
+[[cli]]
+id      = "cli/pnpm-remove"
+pattern = '\bpnpm\s+remove\b'
+replace = "bun remove"
+message = "pnpm remove → bun remove"
+
+[[cli]]
+id      = "cli/pnpm-rm"
+pattern = '\bpnpm\s+rm\b'
+replace = "bun remove"
+message = "pnpm rm → bun remove"
+
+[[cli]]
+id      = "cli/pnpm-run"
+pattern = '\bpnpm\s+run\s+'
+replace = "bun run "
+message = "pnpm run → bun run"
+
+[[cli]]
+id      = "cli/pnpm-test"
+pattern = '\bpnpm\s+test\b'
+replace = "bun test"
+message = "pnpm test → bun test"
+
+[[cli]]
+id      = "cli/pnpm-start"
+pattern = '\bpnpm\s+start\b'
+replace = "bun start"
+message = "pnpm start → bun start"
+
+[[cli]]
+id      = "cli/pnpm-update"
+pattern = '\bpnpm\s+update\b'
+replace = "bun update"
+message = "pnpm update → bun update"
+
+[[cli]]
+id      = "cli/pnpm-dlx"
+pattern = '\bpnpm\s+dlx\s+'
+replace = "bunx "
+message = "pnpm dlx → bunx"
+
+[[cli]]
+id      = "cli/pnpm-exec"
+pattern = '\bpnpm\s+exec\s+'
+replace = "bunx "
+message = "pnpm exec → bunx"
+
+# --- yarn ---
+
+[[cli]]
+id      = "cli/yarn-install-frozen"
+pattern = '\byarn\s+install\s+--frozen-lockfile\b'
+replace = "bun install --frozen-lockfile"
+message = "yarn install --frozen-lockfile → bun install --frozen-lockfile"
+
+[[cli]]
+id      = "cli/yarn-add-dev"
+pattern = '\byarn\s+add\s+--dev\b'
+replace = "bun add --dev"
+message = "yarn add --dev → bun add --dev"
+
+[[cli]]
+id      = "cli/yarn-add-D"
+pattern = '\byarn\s+add\s+-D\b'
+replace = "bun add --dev"
+message = "yarn add -D → bun add --dev"
+
+[[cli]]
+id      = "cli/yarn-add"
+pattern = '\byarn\s+add\b'
+replace = "bun add"
+message = "yarn add → bun add"
+
+[[cli]]
+id      = "cli/yarn-remove"
+pattern = '\byarn\s+remove\b'
+replace = "bun remove"
+message = "yarn remove → bun remove"
+
+[[cli]]
+id      = "cli/yarn-install"
+pattern = '\byarn\s+install\b'
+replace = "bun install"
+message = "yarn install → bun install"
+
+[[cli]]
+id      = "cli/yarn-run"
+pattern = '\byarn\s+run\s+'
+replace = "bun run "
+message = "yarn run → bun run"
+
+[[cli]]
+id      = "cli/yarn-test"
+pattern = '\byarn\s+test\b'
+replace = "bun test"
+message = "yarn test → bun test"
+
+[[cli]]
+id      = "cli/yarn-start"
+pattern = '\byarn\s+start\b'
+replace = "bun start"
+message = "yarn start → bun start"
+
+[[cli]]
+id      = "cli/yarn-dlx"
+pattern = '\byarn\s+dlx\s+'
+replace = "bunx "
+message = "yarn dlx → bunx"
+
+# bare yarn at start of line → bun install (preserve leading ws)
+[[cli]]
+id      = "cli/yarn-bare"
+pattern = '(?m)^(\s*)yarn(\s|$)'
+replace = "${1}bun install${2}"
+message = "bare `yarn` → bun install"
