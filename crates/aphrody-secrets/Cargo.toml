@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-secrets"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Secret store abstraction (env + plaintext file + AES-256-GCM/Argon2id encrypted file) with redacted Display/Debug, constant-time equality, and Zeroize-on-drop SecretValue newtype."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+async-trait = { workspace = true }
+tokio       = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync"] }
+aes-gcm     = { workspace = true }
+argon2      = { workspace = true }
+base64      = { workspace = true }
+rand        = { workspace = true }
+zeroize     = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["fs", "macros", "rt", "rt-multi-thread", "sync", "io-util"] }
+
+[package.metadata.cargo-machete]
+# tracing is consumed only via macros; argon2 transitive features are referenced
+# from the file-store cipher path but `cargo machete` mis-detects them.
+ignored = ["tracing"]

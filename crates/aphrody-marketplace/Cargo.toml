@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-marketplace"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Skill / MCP / hook / theme extension marketplace index — loaders (file, HTTP, embedded), semver queries, SHA-256 integrity verification."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+serde_yaml  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+chrono      = { workspace = true, features = ["serde"] }
+reqwest     = { workspace = true }
+tokio       = { workspace = true, features = ["macros", "rt"] }
+semver      = { workspace = true, features = ["serde"] }
+sha2        = { workspace = true }
+hex         = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+
+[package.metadata.cargo-machete]
+# `tracing` is consumed via macros (debug! / warn!) only; `hex` and `serde_yaml`
+# surface through optional ingestion paths the linter under-counts.
+ignored = ["tracing", "hex", "serde_yaml"]

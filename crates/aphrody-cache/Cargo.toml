@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-cache"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Two-tier cache for the aphrody runtime: in-memory LRU with TTL + disk-backed persistent cache (atomic writes, SHA-256 keyed filenames)."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+async-trait = { workspace = true }
+tokio       = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync"] }
+chrono      = { workspace = true, features = ["serde"] }
+sha2        = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
+
+[package.metadata.cargo-machete]
+# `tracing` is consumed via macros only.
+ignored = ["tracing"]
