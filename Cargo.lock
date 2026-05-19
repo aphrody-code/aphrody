@@ -360,6 +360,7 @@ dependencies = [
  "a2a-lf",
  "anyhow",
  "aphrody-channels",
+ "aphrody-re",
  "aphrody-terminal-backend",
  "assert_cmd",
  "async-trait",
@@ -407,6 +408,43 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "aphrody-context"
+version = "1.0.0-canary"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-cost"
+version = "1.0.0-canary"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-cron"
+version = "1.0.0-canary"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -497,6 +535,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-hooks"
+version = "1.0.0-canary"
+dependencies = [
+ "globset",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-marketplace"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "hex",
+ "reqwest 0.13.3",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "aphrody-mcp"
 version = "1.0.0-canary"
 dependencies = [
@@ -521,17 +591,85 @@ dependencies = [
  "arrow-array",
  "arrow-schema",
  "async-trait",
+ "axum",
+ "base64",
  "chrono",
  "futures",
  "lancedb",
+ "reqwest 0.13.3",
  "rusqlite",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "aphrody-messaging"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64",
+ "bytes",
+ "chrono",
+ "gethostname",
+ "hyper",
+ "hyper-util",
+ "reqwest 0.13.3",
+ "rustls",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-rustls",
+ "tower",
  "tracing",
+ "url",
  "uuid",
+ "webpki-roots",
+]
+
+[[package]]
+name = "aphrody-permissions"
+version = "1.0.0-canary"
+dependencies = [
+ "glob",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-prompts"
+version = "1.0.0-canary"
+dependencies = [
+ "minijinja",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-re"
+version = "1.0.0-canary"
+dependencies = [
+ "goblin",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -544,6 +682,40 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "aphrody-router"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "axum",
+ "bytes",
+ "futures-util",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-skills-forge"
+version = "1.0.0-canary"
+dependencies = [
+ "comrak",
+ "once_cell",
+ "regex",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "walkdir",
 ]
 
 [[package]]
@@ -652,7 +824,10 @@ dependencies = [
  "aphrody-terminal-vt",
  "base64",
  "comrak",
+ "m3-tokens",
  "once_cell",
+ "serde",
+ "serde_json",
  "syntect",
  "thiserror 2.0.18",
 ]
@@ -762,6 +937,7 @@ dependencies = [
  "console_log",
  "js-sys",
  "log",
+ "m3-tokens",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
@@ -4734,8 +4910,13 @@ name = "google_mcp"
 version = "1.0.0-canary"
 dependencies = [
  "anyhow",
+ "aphrody-voice",
+ "aphrody-voice-stt",
  "axum",
  "backend",
+ "base64",
+ "clap",
+ "gemini-runtime",
  "reqwest 0.13.3",
  "rmcp",
  "rustls",
@@ -4743,6 +4924,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sysinfo",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -6966,6 +7148,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a64a92489e2744ce060c349162be1c5f33c6969234104dbd99ddb5feb08b8c15"
 
 [[package]]
+name = "memo-map"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374c335b2df19e62d4cb323103473cbc6510980253119180de862d89184f6a83"
+
+[[package]]
 name = "memoffset"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7046,6 +7234,17 @@ checksum = "4869b6a491569605d66d3952bcdf03df789e5b536e5f0cf7758a7f08a55ae24d"
 dependencies = [
  "cc",
  "walkdir",
+]
+
+[[package]]
+name = "minijinja"
+version = "2.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c54f3bcc034dd74496b5ca929fd0b710186672d5ff0b0f255a9ceb259042ece"
+dependencies = [
+ "memo-map",
+ "self_cell",
+ "serde",
 ]
 
 [[package]]
@@ -10012,6 +10211,10 @@ name = "semver"
 version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
+dependencies = [
+ "serde",
+ "serde_core",
+]
 
 [[package]]
 name = "seq-macro"

@@ -65,6 +65,9 @@ ignore                    = { workspace = true }
 rayon                     = { workspace = true }
 # `aphrody mcp {list, call}` — MCP client + tool registry.
 gemini-runtime            = { path = "../gemini-runtime" }
+# `aphrody re triage` — reverse engineering primitives (pure Rust, goblin-based,
+# zero GPL). Native-only because it reads binaries from disk (std::fs::read).
+aphrody-re                = { path = "../aphrody-re" }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
