@@ -134,18 +134,26 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 
 #### R5 — Reverse engineering
 
-| # | Tâche | Verify |
-|---|---|---|
-| R5.1 | `crates/aphrody-re/` NEW : Cargo.toml + lib.rs + 4 modules `pe.rs/elf.rs/macho.rs/wasm.rs` | `cargo build -p aphrody-re --locked` exit 0 |
-| R5.2 | Dep `goblin = "0.10"` (ELF/PE/Mach-O parser, MSRV 1.85) + `iced-x86 = "1.21"` (x64 disasm, MSRV 1.57) + `capstone = "0.14"` (multi-arch disasm fallback, `capstone-sys = "0.18"`, MSRV 1.70, bundles Capstone C 5.0) | `cargo add` dans `aphrody-re` |
-| R5.3 | Sub-cmd `aphrody re triage <binary>` → JSON `{format, arch, entry_point, sections[], imports[], exports[], strings_sample[], suspicious_apis[]}` | `aphrody re triage /bin/ls` exit 0 + valid JSON |
-| R5.4 | Sub-cmd `aphrody re disasm <binary> --addr 0x401000 --count 50` → instructions list | smoke sur petit binaire test |
-| R5.5 | Sub-cmd `aphrody re strings <binary> --min-len 4 --encoding utf8,utf16` | smoke sur `/bin/ls` returns ≥ 100 strings |
-| R5.6 | Sub-cmd `aphrody re sections <binary>` → table `name/vaddr/size/flags/entropy` (entropy per-section via Shannon) | smoke high-entropy detection sur upx-packed binary |
-| R5.7 | MCP tools mirror : `re_triage`, `re_disasm`, `re_strings`, `re_sections` (4 nouveaux dans `aphrody-mcp`) | `aphrody-mcp --list-tools` → 21 tools |
-| R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API attendue `R2Pipe::spawn(path, opts)` + `cmd/cmdj` — **non surfacée dans context7** côté Rust ; smoke test crates.io requis avant pin de version) | `cargo build -p aphrody-re --features radare2` + smoke `aphrody re r2-analyze` |
-| R5.9 | `yara-x` (Rust-native YARA engine) integration : `aphrody re yara --rules rules.yara <binary>` | smoke avec règles publiques YARA |
-| R5.10 | `unicorn-engine` (CPU emulator) bindings — feature `emu` — `aphrody re emulate --start 0x... --steps 1000` | research spike, scope-decision après |
+**Statut Sprint R-E Phase 1 (2026-05-19)** : ✅ **lib shipped** — crate
+`aphrody-re` (≈530 L incl. tests) ship `pub fn triage(bytes) -> TriageReport`
+qui détecte PE32/PE64/ELF32/ELF64 via magic + goblin parsing, extrait sections
+avec Shannon entropy + SHA-256 fingerprint + sample ASCII/UTF-16LE strings.
+10/10 tests pass (`cargo nextest run -p aphrody-re` < 30 ms). Pas de GPL
+(unicorn-engine R5.10 dropped pour cause licence virale). CLI wire + MCP
+tools = Phase 2.
+
+| # | Tâche | Statut | Verify |
+|---|---|---|---|
+| R5.1 | `crates/aphrody-re/` lib (Cargo.toml + lib.rs unique avec modules inline `triage / entropy / strings`) | ✅ **DONE** | `cargo check -p aphrody-re --locked` exit 0 |
+| R5.2 | Deps `goblin = "0.10"` (PE/ELF, déjà workspace pin avec features pe32+pe64+elf32+elf64) + `sha2` + `hex` + `serde` + `thiserror`. `iced-x86`/`capstone` reportés Phase 2 | ✅ **DONE** (subset minimal viable) | `cargo tree -p aphrody-re` |
+| R5.3 | Lib API `triage(bytes) -> TriageReport { format, size, sha256, arch, entry_point, sections[], imports[], exports[], strings_sample[] }`. Sub-cmd CLI `aphrody re triage <binary>` reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test -p aphrody-re` 10/10 pass |
+| R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ⏳ Phase 2 | smoke sur petit binaire test |
+| R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test extract_strings_*` 3/3 pass |
+| R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test shannon_entropy_*` 2/2 pass |
+| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ⏳ Phase 2 | `aphrody-mcp --list-tools` → 19 tools (15 + 4 new) |
+| R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | ⏳ backlog | `cargo build -p aphrody-re --features radare2` |
+| R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ⏳ Phase 2 | smoke avec règles publiques YARA |
+| R5.10 | ~~`unicorn-engine` (CPU emulator)~~ | 🚨 **DROPPED — GPL-2.0 viral incompatible avec Apache-2.0** | n/a |
 
 ### Anti-portée (drop explicite)
 
