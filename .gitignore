@@ -329,6 +329,9 @@ test_type_info.rs
 .claude/statsig/
 .claude/scheduled_tasks.lock
 .claude/ide/
+# Skill eval workspaces — regenerable artifacts (grade.py + benchmark.py outputs).
+# Each skill keeps its own `<name>-workspace/iteration-N/` next to the skill dir.
+.claude/plugins/aphrody/skills/*-workspace/
 .opencode/projects/
 .gemini/
 CRUSH.md

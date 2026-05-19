@@ -37,6 +37,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod awesome;
+
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 

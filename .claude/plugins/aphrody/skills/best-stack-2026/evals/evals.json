@@ -1,0 +1,58 @@
+{
+  "skill_name": "best-stack-2026",
+  "evals": [
+    {
+      "id": 1,
+      "name": "rest-api-greenfield",
+      "prompt": "salut, je démarre un nouveau service en Rust qui doit exposer une API REST (JSON in/out), avec auth par JWT, postgres derrière, et qui tournera en prod sur Linux dans un container distroless. C'est un greenfield, j'ai zéro contrainte de lib héritée. Je veux du moderne, 2026, qui va vivre 3-4 ans. Tu me recommandes quoi comme stack ? Donne-moi un Cargo.toml de départ et un main.rs minimal qui fait juste GET /health -> {\"ok\":true}.",
+      "expected_output": "Recommends axum 0.8 + tokio 1.x + serde + sqlx 0.8 + jsonwebtoken 9 + rustls (no openssl). Provides minimal Cargo.toml + main.rs with /health. Mentions WHY axum over actix in one line. Mentions rustls-tls feature for distroless. License-clean Apache-2.0 / MIT.",
+      "assertions": [
+        "recommends axum",
+        "recommends tokio",
+        "recommends sqlx (or tokio-postgres)",
+        "recommends jsonwebtoken",
+        "recommends rustls (not openssl)",
+        "Cargo.toml snippet present",
+        "main.rs /health snippet present",
+        "does not recommend actix-web for greenfield",
+        "does not recommend openssl",
+        "explains WHY (at least one rationale sentence)"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "elf-binary-analyzer",
+      "prompt": "j'ai besoin d'écrire un petit outil Rust qui prend un binaire Linux ELF en entrée, liste ses sections (nom, taille, permissions), calcule un hash de chaque section, et détecte si une section a une entropie suspecte (> 7.5 bits/byte = compressé/chiffré probable). C'est pour un job de reverse engineering sur des malwares. Quelle stack tu prends ? Je suis allergique aux deps GPL parce que l'outil sera distribué Apache-2.0.",
+      "expected_output": "Picks goblin 0.9 for ELF parsing, blake3 1.5 (or sha2 0.10) for hashing, explains how to compute Shannon entropy from byte histogram. REFUSES unicorn-engine and radare2-rs by name due to GPL. Mentions iced-x86 or capstone if user later wants disasm. Apache-2.0/MIT-only deps. Possibly references existing crates/aphrody-re/ in workspace.",
+      "assertions": [
+        "recommends goblin",
+        "recommends blake3 or sha2",
+        "explains Shannon entropy calculation",
+        "refuses GPL crate by name (unicorn-engine or radare2-rs)",
+        "no GPL crate in proposed stack",
+        "Cargo.toml snippet present",
+        "shows iteration over ELF sections",
+        "answer in French"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "anti-pattern-openssl-actix-trap",
+      "prompt": "j'ai trouvé ce tuto sur dev.to de 2022, il dit de faire un serveur Rust avec actix-web 4 + openssl pour TLS + diesel synchrone pour postgres. Ça a l'air solide, je vais partir là-dessus, mais avant tu peux juste relire et me dire si y'a un truc à savoir ?",
+      "expected_output": "Flags ALL THREE choices as anti-patterns. actix-web -> axum 0.8 (maintenance velocity, tower ecosystem). openssl -> rustls 0.23 (system dep drift, OpenSSL CVE surface, no Windows). diesel sync -> sqlx 0.8 async (blocking workers, compile-time SQL check). Does NOT block; explains the why for each; offers a corrected Cargo.toml. Polite, not preachy.",
+      "assertions": [
+        "flags actix-web concern + recommends axum",
+        "flags openssl concern + recommends rustls",
+        "flags diesel sync concern + recommends sqlx async",
+        "addresses all 3 user choices (not just 1 or 2)",
+        "advisory tone (does not block)",
+        "explains WHY for each flag",
+        "proposes concrete corrected stack with named crate versions",
+        "answer in French"
+      ],
+      "files": []
+    }
+  ]
+}
