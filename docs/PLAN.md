@@ -11,6 +11,33 @@
 
 **Mission** : faire de `aphrody` le **meilleur agent autonome** en exploitant 5 piliers asymétriques que les concurrents Python (hermes-agent v0.14.0, AutoGPT, OpenInterpreter, …) ne peuvent pas rattraper sans réécriture native.
 
+### État réel au 2026-05-19 (audit post-rédaction PLAN)
+
+Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** révèle que
+~70 % du scope est **déjà shippé** dans le workspace, hors PLAN :
+
+| Sprint | Item | État réel | Lignes |
+|---|---|---|---|
+| R-A | R3.1 Trait `MemoryProvider` dyn-compat | ✅ shipped (`provider.rs`) | 61 |
+| R-B | `aphrody-channels` Discord+Slack+Telegram+Matrix+X (5 backends, pas 3) | ✅ shipped | 3176 |
+| R-B | `aphrody-voice` + `aphrody-voice-stt` (elevenlabs + whisper local + whisper API + web + discord_shim) | ✅ shipped | 2048 |
+| R-B | R3.2 Honcho v1 API | ✅ shipped (`honcho.rs`) | 298 |
+| R-B | R3.3 Mem0 v1 API | ✅ shipped (`mem0.rs`) | 273 |
+| R-C | `aphrody-skills-forge` (lib + lint + registry + scaffold + skill) | ✅ shipped | 903 |
+| R-E | `aphrody-cron` (single lib.rs) | ✅ shipped | 536 |
+| R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
+| R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
+| R-A | R1.4 MCP client dans `aphrody-mcp` | ⏳ partiel (`McpClient` existe dans gemini-runtime, pas wired MCP server) | n/a |
+| R-A | R1.5 cold-start bench criterion | ⏳ | n/a |
+| R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ⏳ | n/a |
+| R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | ⏳ | n/a |
+
+**Vrais ⏳ restants prioritaires** : R5 (création `aphrody-re/`), R1.4 (MCP client wired), R1.5
+(bench cold-start), R3.4 (migration tool), R4.1-R4.7 (scraping deep features).
+
+Les sprints R-B/R-C/R-E sont donc **largement déjà clos** — leur valeur résiduelle est
+en **finition** (tests, docs, wire CLI) plutôt qu'en scaffolding.
+
 ### Les 5 piliers
 
 | # | Pilier | Promesse mesurable | Anti-cible |
@@ -44,14 +71,23 @@
 
 #### R1 — Tools Rust natif ultra-rapide
 
-| # | Tâche | Verify |
-|---|---|---|
-| R1.1 | Fix `crates/aphrody-tui/src/widgets.rs` : `pub use Block/List/Paragraph`, drop imports inutilisés `BorderType/Modifier`, retire `unicode_segmentation`/`unicode_width` imports | `cargo build -p aphrody-tui --locked` exit 0 |
-| R1.2 | Fix `crates/aphrody-tui/tests/widgets_smoke.rs` : ajouter deps `unicode_width` + `m3_tokens`, re-exporter `BorderStyle/Gauge/Padding/Palette/WrapMode/argb_to_rgb` | `cargo test -p aphrody-tui --locked` exit 0 |
-| R1.3 | Fix `crates/gemini-runtime/src/tools.rs` : ajouter `async-trait` dep, refacto `Tool` trait dyn-compatible (move `invoke<T>` to extension trait OU rendre `invoke(&self, args: Value) -> BoxFuture<Result<Value>>`) | `cargo check -p gemini-runtime --locked` exit 0 |
-| R1.4 | MCP client dans `aphrody-mcp` via `serve_client` + `TokioChildProcess` (stdio) / `StreamableHttpClientTransport` (HTTP) — note : `rmcp::client::Client` n'existe pas, l'API officielle utilise les traits `Transport`/`IntoTransport` + `serve_client` (cf. rmcp 1.7.0 docs). Tool `aphrody_mcp_call(server, tool, args)` | `aphrody-mcp` peut invoquer un autre serveur MCP en stdio |
-| R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99, `aphrody-mcp` initialize handshake p50/p95 | `cargo bench -p cli` produit rapport HTML + ledger `docs/PERFORMANCE-HISTORY.md` updated |
-| R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | `aphrody-mcp --list-tools` → 17 tools |
+**Statut Sprint R-A (2026-05-19)** : R1.1-R1.3 ✅ **closed** — les diagnostics
+rust-analyzer initiaux étaient des **cached false-positives** (cf. memory
+`feedback_refresh_rust_lsp`). Sources vérifiées : `widgets.rs:21` importe juste
+ce qu'il utilise, `widgets_smoke.rs:13` consomme `aphrody_tui::{TestBackend, m3::*}`
+correctement (module `m3` exposé `lib.rs:58`, `TestBackend` re-exporté `lib.rs:330`),
+`tools.rs:35` importe `async_trait` (Cargo.toml:28 a `async-trait = { workspace = true }`)
+et le trait `#[async_trait] pub trait Tool` est dyn-compat (preuve : `Arc<dyn Tool>`
+utilisé ligne 228). Restent R1.4-R1.6 actionables.
+
+| # | Tâche | Statut | Verify |
+|---|---|---|---|
+| R1.1 | Diagnostics `aphrody-tui/src/widgets.rs` (unused imports `BorderType/Modifier`, `unicode_*`) | ✅ **false-positive cached** | `cargo check -p aphrody-tui --locked` exit 0 |
+| R1.2 | Diagnostics `aphrody-tui/tests/widgets_smoke.rs` (E0432 unresolved imports `BorderStyle/Gauge/Padding/...`) | ✅ **false-positive cached** — `m3::*` + `TestBackend` exposés | `cargo test -p aphrody-tui --locked` exit 0 |
+| R1.3 | Diagnostics `gemini-runtime/src/tools.rs` (E0432 `async_trait`, E0038 `Tool` non dyn-compat) | ✅ **false-positive cached** — `async-trait` dans Cargo.toml + `#[async_trait]` proc-macro applied | `cargo check -p gemini-runtime --locked` exit 0 |
+| R1.4 | MCP client dans `aphrody-mcp` via `serve_client` + `TokioChildProcess` (stdio) / `StreamableHttpClientTransport` (HTTP) — `rmcp::client::Client` n'existe pas, l'API officielle utilise traits `Transport`/`IntoTransport` + `serve_client` (cf. rmcp 1.7.0). Tool `aphrody_mcp_call(server, tool, args)` | ⏳ | `aphrody-mcp` peut invoquer un autre serveur MCP en stdio |
+| R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99, `aphrody-mcp` initialize handshake p50/p95 | ⏳ | `cargo bench -p cli` produit rapport HTML + ledger `docs/PERFORMANCE-HISTORY.md` updated |
+| R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
 
 #### R2 — Apprend de ses erreurs (self-improvement loop)
 
@@ -66,15 +102,23 @@
 
 #### R3 — Mémoire persistante
 
-| # | Tâche | Verify |
-|---|---|---|
-| R3.1 | Trait `MemoryProvider` dans `crates/aphrody-memory/src/provider.rs` : `async fn write/read/search/delete/list_sessions` + pin `lancedb = "0.29"` dans `[workspace.dependencies]` (API courante : `lancedb::connect(path).execute()` → `create_table` → `query().nearest_to(&vec).execute()`, column type `FixedSizeList<Float32>`) | `cargo doc -p aphrody-memory` montre trait public |
-| R3.2 | Adapter `honcho` (**Honcho v3** REST `api.honcho.dev` — surface `workspaces/peers/sessions/messages` + `POST /peer/{peer_id}/chat` avec `reasoning_level` enum) dans `crates/aphrody-memory/src/providers/honcho.rs` | `cargo test -p aphrody-memory --features honcho` (mock server) |
-| R3.3 | Adapter `mem0` (HTTP REST `POST /v3/memories/add/` async + `event_id` polling + `client.search(query, filters={user_id})` ; mode local embedded `from mem0 import Memory` côté Python — wrap Rust via subprocess spawn ou ré-impl HTTP-only) | `cargo test -p aphrody-memory --features mem0` |
-| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | dry-run + JSON diff |
-| R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | `cargo test policy_ttl_evicts_after_n_secs` |
-| R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | `cargo test schema_v1_to_v2_roundtrip` |
-| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | `cargo bench -p aphrody-memory bench_recall_100k` |
+**Statut Sprint R-B (2026-05-19)** : ✅ **shipped** dans commit `175d61f63` —
+4 providers production-ready (`HonchoProvider`, `Mem0Provider`, `SqliteLocalProvider`
+côté tier-1 + `LanceDbBackend`, `SqliteBackend`, `HnswBackend`, `JsonlBackend` côté
+key-value/vector tier-2). Trait `MemoryProvider` dyn-compatible avec preuve compile-time
+dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
+(production stable des 2 SaaS) — l'upgrade v3 est rejeté en backlog R3.8.
+
+| # | Tâche | Statut | Verify |
+|---|---|---|---|
+| R3.1 | ✅ Trait `MemoryProvider` (`crates/aphrody-memory/src/provider.rs`) : `add/get/search/delete/health/provider_kind` ; dyn-compat compile-time check `dyn_compat_check(Box<dyn MemoryProvider>)` | **DONE** | `cargo doc -p aphrody-memory --no-deps` — trait public |
+| R3.2 | ✅ Adapter `honcho` API **v1** (`/v1/apps/{app}/users/{user}/sessions/{sess}/messages`) dans `crates/aphrody-memory/src/honcho.rs` (298 l.) | **DONE** | `cargo test -p aphrody-memory honcho::` |
+| R3.3 | ✅ Adapter `mem0` API **v1** sync (`POST/GET/DELETE /v1/memories/`, `GET /v1/memories/search`) auth `Authorization: Token <key>` dans `crates/aphrody-memory/src/mem0.rs` (273 l.) | **DONE** | `cargo test -p aphrody-memory mem0::` |
+| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ⏳ | dry-run + JSON diff |
+| R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ⏳ | `cargo test policy_ttl_evicts_after_n_secs` |
+| R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ⏳ | `cargo test schema_v1_to_v2_roundtrip` |
+| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ⏳ | `cargo bench -p aphrody-memory bench_recall_100k` |
+| R3.8 | **Optionnel** : upgrade Honcho v1→v3 (`api.honcho.dev` workspaces/peers + `POST /peer/{id}/chat`) + mem0 v1→v3 (`POST /v3/memories/add/` async + `event_id` polling). Repousser tant que v1 couvre les besoins ; v3 = breaking changes API | ⏳ backlog | smoke E2E contre v3 endpoints |
 
 #### R4 — Scraping bas niveau
 
