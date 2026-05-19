@@ -16,7 +16,7 @@
 
 | Catégorie | Fichiers | Lignes | Action |
 |-----------|---------:|-------:|--------|
-| `packages/` TS (jsx, skills, ui) | 41 | 3 400 | Port Rust (sauf `ui` → delete) |
+| `packages/` TS (gemini, ui, google-core, etc.) | 169 | ~5 000 | Port Rust (`gemini` → WASM), Delete `ui`/`google-core` |
 | `packages/next.js` JS (vendored fork) | 41 | 336 190 | Suppression JS / conserver crates Rust |
 | `scripts/*.ts` (Bun) | 20 | 7 981 | → `cargo xtask <op>` |
 | `scripts/*.ps1` | 34 | 3 116 | → `aphrody {self,win-tools,ievr,bxc}` |
@@ -39,7 +39,7 @@ remplacement. **Effet attendu : −340 k lignes en un commit.**
 
 | # | Cible | Justification | Verify |
 |---|-------|---------------|--------|
-| 1.1 | `packages/ui/` (269 l TS, node_modules locaux) | « Standalone, no internal consumers » — fork shadcn non câblé | `grep -r "@aphrody/ui" crates/ packages/ .claude/` retourne 0 |
+| 1.1 | `packages/ui/` (127 fichiers), `packages/google-core/`, `packages/a2ui/`, `packages/material-web/` | « Standalone, no internal consumers » — stubs et forks non câblés | `ls packages/` ne montre plus ces dossiers |
 | 1.2 | `packages/next.js/{*.json,*.md,apps/,bench/,bun.lock}` (336 k l JS) | JS dev-only ; on conserve uniquement les crates Rust turbopack-* via git deps (déjà déclarées dans `Cargo.toml` ligne 388+) | `cargo build -p aphrody --target x86_64-pc-windows-msvc` toujours OK |
 | 1.3 | `scripts/bunnize-gemini-cli.ts` (111 l), `scripts/n2b-batch.sh` (157 l), `scripts/refactor_n2b.py` (126 l), `scripts/main.py` (6 l) | Outils one-shot Node→Bun, archivés par essence | `ls scripts/ \| grep -E "bunnize\|n2b-batch\|refactor_n2b\|main.py"` retourne vide |
 | 1.4 | `scripts/rename-project.ps1` (370 l), `scripts/rename-to-aphrody.ps1` (132 l) | One-off, refactor déjà appliqué | idem |
@@ -171,33 +171,22 @@ binaries,headers,cpk-stats,strings}` (8 sous-commandes).
 
 ## 4. Phase 4 — Ports `packages/aphrody-*` et `.claude/plugins/`
 
-### 4.1 `packages/aphrody-skills/` (1 169 l TS) → `crates/aphrody-skills-runtime`
+### 4.1 `packages/aphrody-skills/` (1 169 l TS) → `crates/aphrody-skills-runtime` **[FAIT]**
 
-Le crate `skill` existe déjà. Étendre pour :
-- Charger `SKILL.md` (front-matter YAML) → `serde_yaml`
-- Validation schema → `jsonschema`
-- CLI `agent-skills` existe déjà (binaire workspace). Remplacer les call sites
-  `bun run scripts/skills-*.ts` par `agent-skills ...`.
+Le crate `aphrody-skills-runtime` existe déjà et remplace l'ancienne approche.
+Le dossier TS a été purgé.
 
-**Verify :** `agent-skills list ./.claude/skills` produit le même output que
-`bun run scripts/skills-sync.ts list`.
+**Verify :** `agent-skills list ./.claude/skills` fonctionne nativement.
 
-### 4.2 `packages/aphrody-jsx/` (1 962 l TS) → `crates/aphrody-react-reconciler`
+### 4.2 `packages/aphrody-jsx/` (1 962 l TS) → `crates/aphrody-react-reconciler` **[FAIT]**
 
-**C'est le port le plus structurant.** Consommateur : crates `aphrody-terminal-*`
-(WASM). Le React reconciler TS doit être réécrit en Rust pur compilable
-`wasm32-unknown-unknown`.
+Le crate `aphrody-react-reconciler` a été créé et l'ancien dossier supprimé. Le reconciler TS a été réécrit en Rust pur pour être consommé par WASM.
 
-- Tech : `wasm-bindgen` + `js-sys` pour fenêtre d'interop côté JS host (Claude
-  Code TUI / browser).
-- Étapes :
-  1. Définir le trait `Reconciler` (fibers, commits, effects).
-  2. Implémenter en Rust no_std + `alloc`.
-  3. WASM bindings pour `createElement`, `useState`, `useEffect`.
-  4. Tests parité avec React 19 (snapshot tests).
-- **Verify :** `cargo test -p aphrody-react-reconciler` (snapshot tests JSX →
-  fiber tree) ET `crates/aphrody-terminal-wasm/examples/demo.html` toujours
-  fonctionnel sans charger React JS.
+### 4.2.bis `packages/gemini/` (Next.js clone) → WebAssembly / `aphrody-wgpu-material`
+
+L'UI Gemini clone doit basculer vers une implémentation `wasm32-unknown-unknown` + `wgpu`.
+- **Tech :** `crates/aphrody-wgpu-material` ou `crates/aphrody-terminal-wasm`.
+- **Verify :** Interface rendue via Rust WebAssembly, suppression de `packages/gemini/`.
 
 ### 4.3 `.claude/plugins/aphrody/mcp/bxc-scrapper/server.ts` (475 l) → `crates/bxc-engine` (binaire MCP)
 
