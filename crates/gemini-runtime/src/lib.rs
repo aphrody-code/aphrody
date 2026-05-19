@@ -396,22 +396,88 @@ impl GeminiRuntime {
 }
 
 // ---------------------------------------------------------------------------
-// detect()
+// detect() — resolution chain
 // ---------------------------------------------------------------------------
 
-/// Locate the `gemini` binary on `PATH` and query its version.
+/// Environment override : when set to a non-empty path, takes precedence over
+/// every other resolution step. Mirrors `aphrody-gateway::gemini_cli::ENV_GEMINI_BIN`.
+pub const ENV_GEMINI_BIN: &str = "APHRODY_GEMINI_BIN";
+
+/// Resolve the Gemini binary path **without** invoking it.
+///
+/// Resolution order (first match wins) :
+/// 1. `$APHRODY_GEMINI_BIN` env (must point to an existing file).
+/// 2. Sibling of `std::env::current_exe()` named `gemini[.exe]` — picks up the
+///    binary that `aphrody self bootstrap` installs next to `aphrody.exe`.
+/// 3. Walk up from `$CWD` looking for the in-tree fork bundle at
+///    `packages/gemini-cli/bundle/gemini[.exe|.js]` — the canonical aphrody-owned
+///    Gemini source (cf. `project_aphrody_owned_tools` + CLAUDE.md §0.45).
+/// 4. `which("gemini")` — PATH lookup (upstream global install).
+///
+/// Returns the resolved path. The caller is responsible for spawning it.
+///
+/// # Errors
+///
+/// [`RuntimeError::NotFound`] when no step yields a path.
+pub fn resolve_bin() -> Result<PathBuf, RuntimeError> {
+    // Step 1 : explicit env override.
+    if let Ok(explicit) = std::env::var(ENV_GEMINI_BIN) {
+        let trimmed = explicit.trim();
+        if !trimmed.is_empty() {
+            let p = PathBuf::from(trimmed);
+            if p.exists() {
+                return Ok(p);
+            }
+        }
+    }
+
+    // Step 2 : sibling of the running aphrody binary.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            for cand in ["gemini.exe", "gemini"] {
+                let p = dir.join(cand);
+                if p.exists() {
+                    return Ok(p);
+                }
+            }
+        }
+    }
+
+    // Step 3 : walk up from CWD looking for the in-tree fork bundle.
+    if let Ok(cwd) = std::env::current_dir() {
+        let mut here: Option<&std::path::Path> = Some(cwd.as_path());
+        while let Some(dir) = here {
+            for cand in [
+                "packages/gemini-cli/bundle/gemini.exe",
+                "packages/gemini-cli/bundle/gemini",
+                "packages/gemini-cli/bundle/gemini.js",
+            ] {
+                let p = dir.join(cand);
+                if p.exists() {
+                    return Ok(p);
+                }
+            }
+            here = dir.parent();
+        }
+    }
+
+    // Step 4 : PATH lookup.
+    Ok(which::which("gemini")?)
+}
+
+/// Locate the `gemini` binary via [`resolve_bin`] and query its version.
 ///
 /// Returns a [`GeminiRuntime`] on success or a [`RuntimeError`] when the
 /// binary is absent or when `gemini --version` fails.
 ///
 /// # Errors
 ///
-/// - [`RuntimeError::NotFound`] — `gemini` is not on `PATH`.
+/// - [`RuntimeError::NotFound`] — no resolution step yielded a binary.
 /// - [`RuntimeError::Io`] — spawning or reading from the version subprocess failed.
 /// - [`RuntimeError::VersionParse`] — the subprocess produced no usable version string.
 /// - [`RuntimeError::ChildFailed`] — the subprocess exited non-zero.
 pub async fn detect() -> Result<GeminiRuntime, RuntimeError> {
-    let bin = which::which("gemini")?;
+    let bin = resolve_bin()?;
 
     let output = Command::new(&bin)
         .arg("--version")
