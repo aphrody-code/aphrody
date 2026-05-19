@@ -36,8 +36,8 @@ use crate::client_cmd::{ClientArgs, run as run_client};
 #[command(
     name = "aphrody-mcp",
     version,
-    about = "Unified Rust MCP server + client. Bare invocation starts the stdio server (15 tools); \
-             `client` subcommand connects to third-party MCP servers."
+    about = "Unified Rust MCP server + client. Bare invocation starts the stdio server (15 \
+             tools); `client` subcommand connects to third-party MCP servers."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -153,6 +153,66 @@ pub struct ReTriageRequest {
     pub path: String,
 }
 
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct Context7ResolveRequest {
+    #[schemars(description = "The task you need help with. Used to rank library results by \
+                              relevance (e.g. 'streaming SSR with App Router').")]
+    pub query: String,
+    #[schemars(description = "Official library name to search for (e.g. 'Next.js', 'tokio', \
+                              'wgpu'). Required.")]
+    pub library_name: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct Context7DocsRequest {
+    #[schemars(description = "Exact Context7-compatible library ID returned by \
+                              `context7_resolve_library_id` (e.g. '/vercel/next.js').")]
+    pub library_id: String,
+    #[schemars(description = "The specific question or task you need documentation for.")]
+    pub query: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct MsLearnSearchRequest {
+    #[schemars(description = "Search query — concepts, services, configuration, limits, best \
+                              practices (e.g. 'Azure Functions Python v2 timeout limits').")]
+    pub query: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct MsLearnFetchRequest {
+    #[schemars(
+        description = "Absolute URL of a Microsoft Learn documentation page to fetch as markdown."
+    )]
+    pub url: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct MsLearnCodeSampleRequest {
+    #[schemars(description = "Search query for Microsoft / Azure code samples (e.g. 'upload \
+                              blob managed identity').")]
+    pub query: String,
+    #[schemars(description = "Optional programming language filter (e.g. 'csharp', 'python', \
+                              'javascript', 'typescript', 'rust').")]
+    pub language: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct DocsAutoSearchRequest {
+    #[schemars(description = "Free-form natural-language question (e.g. 'How do I configure \
+                              Next.js middleware for app router', 'Azure Functions Python v2 \
+                              timeout limits', 'tokio JoinSet vs spawn'). Passed verbatim to \
+                              every backend so each can rank on relevance.")]
+    pub query: String,
+    #[schemars(description = "Optional library / framework / SDK name (e.g. 'Next.js', 'tokio', \
+                              'Azure Storage'). When set, Context7 does a two-step \
+                              resolve→fetch chain; when unset, Context7 only resolves.")]
+    pub library_name: Option<String>,
+    #[schemars(description = "Optional programming language filter for the Microsoft \
+                              code-sample backend (e.g. 'csharp', 'python', 'rust').")]
+    pub language: Option<String>,
+}
+
 // ---------------------------------------------------------------------------
 // bxc daemon HTTP helper (shared reqwest client, OnceLock-cached)
 // ---------------------------------------------------------------------------
@@ -184,6 +244,202 @@ fn bxc_client() -> &'static reqwest::Client {
     })
 }
 
+// ---------------------------------------------------------------------------
+// context7 HTTP helper — same pattern as bxc_call but for the public
+// Context7 docs API (https://mcp.context7.com/api/v2/{libs/search,context}).
+// CONTEXT7_API_KEY is OPTIONAL: the public tier works unauthenticated,
+// a Bearer key unlocks larger quotas.
+// ---------------------------------------------------------------------------
+
+static CONTEXT7_CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+
+fn context7_base_url() -> String {
+    std::env::var("CONTEXT7_API_BASE")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "https://mcp.context7.com/api".to_string())
+}
+
+fn context7_client() -> &'static reqwest::Client {
+    CONTEXT7_CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent(format!("aphrody-mcp/{}", env!("CARGO_PKG_VERSION")))
+            .build()
+            .expect("context7 reqwest client build")
+    })
+}
+
+async fn context7_get(path: &str, params: &[(&str, &str)]) -> String {
+    let url = format!("{}/{}", context7_base_url(), path.trim_start_matches('/'));
+    let mut req = context7_client().get(&url).query(params);
+    if let Ok(key) = std::env::var("CONTEXT7_API_KEY") {
+        if !key.is_empty() {
+            req = req.bearer_auth(key);
+        }
+    }
+    match req.send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            match resp.text().await {
+                Ok(body) => {
+                    if !status.is_success() {
+                        let snippet: String = body.chars().take(512).collect();
+                        let env = json!({
+                            "error": "CONTEXT7_BAD_REQUEST",
+                            "reason": format!("HTTP {status}: {snippet}"),
+                            "endpoint": url,
+                        });
+                        return serde_json::to_string_pretty(&env).unwrap_or_else(|_| body.clone());
+                    }
+                    body
+                },
+                Err(e) => {
+                    let env = json!({
+                        "error": "CONTEXT7_INVALID_RESPONSE",
+                        "reason": format!("read body: {e}"),
+                        "endpoint": url,
+                    });
+                    serde_json::to_string_pretty(&env).unwrap_or_default()
+                },
+            }
+        },
+        Err(e) => {
+            let kind = if e.is_timeout() { "CONTEXT7_TIMEOUT" } else { "CONTEXT7_UNAVAILABLE" };
+            let env = json!({
+                "error": kind,
+                "reason": format!("{url}: {e}"),
+                "endpoint": url,
+            });
+            serde_json::to_string_pretty(&env).unwrap_or_default()
+        },
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Microsoft Learn HTTP MCP proxy — calls the upstream MCP server at
+// learn.microsoft.com/api/mcp via stateless JSON-RPC tools/call. The
+// upstream responds in `text/event-stream` (SSE) framing: a single
+// `event: message\ndata: {json}\n\n` packet per response. We unwrap
+// the `data:` line and parse the inner JSON-RPC envelope.
+// ---------------------------------------------------------------------------
+
+const MSLEARN_ENDPOINT: &str = "https://learn.microsoft.com/api/mcp";
+
+static MSLEARN_CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+
+fn mslearn_client() -> &'static reqwest::Client {
+    MSLEARN_CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent(format!("aphrody-mcp/{}", env!("CARGO_PKG_VERSION")))
+            .build()
+            .expect("mslearn reqwest client build")
+    })
+}
+
+fn unwrap_sse(body: &str) -> &str {
+    // Microsoft Learn ships exactly one SSE packet: `event: message\ndata: {json}\n\n`.
+    // We tolerate (a) the bare JSON form, (b) trailing whitespace, (c) missing
+    // event line. Return the first non-empty `data:` payload, or the body as-is.
+    for line in body.lines() {
+        if let Some(rest) = line.strip_prefix("data:") {
+            let trimmed = rest.trim_start();
+            if !trimmed.is_empty() {
+                return trimmed;
+            }
+        }
+    }
+    body.trim()
+}
+
+async fn mslearn_call(tool: &str, args: serde_json::Value) -> String {
+    let env_body = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": { "name": tool, "arguments": args }
+    });
+    let req = mslearn_client()
+        .post(MSLEARN_ENDPOINT)
+        .header("Accept", "application/json, text/event-stream")
+        .json(&env_body);
+    match req.send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            match resp.text().await {
+                Ok(body) => {
+                    if !status.is_success() {
+                        let snippet: String = body.chars().take(512).collect();
+                        return serde_json::to_string_pretty(&json!({
+                            "error": "MSLEARN_BAD_REQUEST",
+                            "reason": format!("upstream HTTP {status}: {snippet}"),
+                            "endpoint": MSLEARN_ENDPOINT,
+                        }))
+                        .unwrap_or_default();
+                    }
+                    let inner = unwrap_sse(&body);
+                    // Inner is the JSON-RPC envelope { "result": { "content": [...] } }
+                    match serde_json::from_str::<serde_json::Value>(inner) {
+                        Ok(env) => {
+                            if let Some(err) = env.get("error") {
+                                return serde_json::to_string_pretty(&json!({
+                                    "error": "MSLEARN_RPC_ERROR",
+                                    "reason": err,
+                                    "endpoint": MSLEARN_ENDPOINT,
+                                }))
+                                .unwrap_or_default();
+                            }
+                            // Concatenate every text-typed content entry — the
+                            // upstream may chunk into N pieces.
+                            if let Some(arr) =
+                                env.pointer("/result/content").and_then(|v| v.as_array())
+                            {
+                                let mut buf = String::new();
+                                for c in arr {
+                                    if let Some(t) = c.get("text").and_then(|v| v.as_str()) {
+                                        if !buf.is_empty() {
+                                            buf.push_str("\n\n---\n\n");
+                                        }
+                                        buf.push_str(t);
+                                    }
+                                }
+                                if !buf.is_empty() {
+                                    return buf;
+                                }
+                            }
+                            // Fall back to the raw envelope as JSON text.
+                            serde_json::to_string_pretty(&env).unwrap_or_else(|_| inner.to_string())
+                        },
+                        Err(e) => serde_json::to_string_pretty(&json!({
+                            "error": "MSLEARN_INVALID_RESPONSE",
+                            "reason": format!("parse JSON-RPC envelope: {e}"),
+                            "endpoint": MSLEARN_ENDPOINT,
+                            "body_preview": body.chars().take(256).collect::<String>(),
+                        }))
+                        .unwrap_or_default(),
+                    }
+                },
+                Err(e) => serde_json::to_string_pretty(&json!({
+                    "error": "MSLEARN_INVALID_RESPONSE",
+                    "reason": format!("read body: {e}"),
+                    "endpoint": MSLEARN_ENDPOINT,
+                }))
+                .unwrap_or_default(),
+            }
+        },
+        Err(e) => {
+            let kind = if e.is_timeout() { "MSLEARN_TIMEOUT" } else { "MSLEARN_UNAVAILABLE" };
+            serde_json::to_string_pretty(&json!({
+                "error": kind,
+                "reason": format!("{MSLEARN_ENDPOINT}: {e}"),
+                "endpoint": MSLEARN_ENDPOINT,
+            }))
+            .unwrap_or_default()
+        },
+    }
+}
+
 async fn bxc_call(tool: &str, args: serde_json::Value) -> String {
     let base = bxc_daemon_url();
     let url = format!("{base}/v1/{tool}");
@@ -200,11 +456,10 @@ async fn bxc_call(tool: &str, args: serde_json::Value) -> String {
                             "reason": format!("daemon HTTP {status}: {snippet}"),
                             "daemon_attempt": url,
                         });
-                        return serde_json::to_string_pretty(&env)
-                            .unwrap_or_else(|_| body.clone());
+                        return serde_json::to_string_pretty(&env).unwrap_or_else(|_| body.clone());
                     }
                     body
-                }
+                },
                 Err(e) => {
                     let env = json!({
                         "error": "BXC_INVALID_RESPONSE",
@@ -212,9 +467,9 @@ async fn bxc_call(tool: &str, args: serde_json::Value) -> String {
                         "daemon_attempt": url,
                     });
                     serde_json::to_string_pretty(&env).unwrap_or_default()
-                }
+                },
             }
-        }
+        },
         Err(e) => {
             let kind = if e.is_timeout() { "BXC_TIMEOUT" } else { "BXC_UNAVAILABLE" };
             let env = json!({
@@ -223,7 +478,7 @@ async fn bxc_call(tool: &str, args: serde_json::Value) -> String {
                 "daemon_attempt": url,
             });
             serde_json::to_string_pretty(&env).unwrap_or_default()
-        }
+        },
     }
 }
 
@@ -720,8 +975,8 @@ impl GoogleMcpServer {
     // 9. bxc_scrape — fused from ex-bxc-mcp.
     // -----------------------------------------------------------------------
     #[tool(description = "Extract text content from <url> matching <selector> (default `body`). \
-                          Uses the bxc static profile when JS is not needed. Returns \
-                          { extractions: string[] }.")]
+                          Uses the bxc static profile when JS is not needed. Returns { \
+                          extractions: string[] }.")]
     async fn bxc_scrape(
         &self,
         Parameters(BxcScrapeRequest { url, selector }): Parameters<BxcScrapeRequest>,
@@ -734,8 +989,8 @@ impl GoogleMcpServer {
     // 10. bxc_recon
     // -----------------------------------------------------------------------
     #[tool(description = "First-touch reconnaissance: HTTP headers, CDN, framework fingerprints, \
-                          asset inventory (js/css/img/font), embedded CSS, and a screenshot saved \
-                          by the daemon. Returns { headers, cdn, frameworks, assets, css, \
+                          asset inventory (js/css/img/font), embedded CSS, and a screenshot \
+                          saved by the daemon. Returns { headers, cdn, frameworks, assets, css, \
                           screenshot_path }.")]
     async fn bxc_recon(
         &self,
@@ -748,8 +1003,8 @@ impl GoogleMcpServer {
     // 11. bxc_detect
     // -----------------------------------------------------------------------
     #[tool(description = "Framework / CMS / library fingerprinting via wappalyzergo, IP-range \
-                          matching, header heuristics, and CSP analysis. Returns \
-                          { tech: DetectedTech[] }.")]
+                          matching, header heuristics, and CSP analysis. Returns { tech: \
+                          DetectedTech[] }.")]
     async fn bxc_detect(
         &self,
         Parameters(BxcUrlOnlyRequest { url }): Parameters<BxcUrlOnlyRequest>,
@@ -819,11 +1074,7 @@ impl GoogleMcpServer {
             }))
             .unwrap_or_default();
         }
-        bxc_call(
-            "extract_structured",
-            json!({ "html": html, "schema": zod_schema_json }),
-        )
-        .await
+        bxc_call("extract_structured", json!({ "html": html, "schema": zod_schema_json })).await
     }
 
     // -----------------------------------------------------------------------
@@ -845,7 +1096,7 @@ impl GoogleMcpServer {
                     "reason": format!("unable to stat screenshot_path '{screenshot_path}': {e}"),
                 }))
                 .unwrap_or_default();
-            }
+            },
         };
         let size = meta.len();
         let min = std::env::var("BXC_VISION_MIN_BYTES")
@@ -862,17 +1113,13 @@ impl GoogleMcpServer {
             }))
             .unwrap_or_default();
         }
-        bxc_call(
-            "vision_analyze",
-            json!({ "screenshot_path": screenshot_path }),
-        )
-        .await
+        bxc_call("vision_analyze", json!({ "screenshot_path": screenshot_path })).await
     }
 
     // -----------------------------------------------------------------------
-    // 16. voice_synthesize — text-to-speech via aphrody-voice (ElevenLabs).
-    //     Native-only (`cfg(not(wasm32))`): the browser path lives in
-    //     `aphrody_voice::web::WebSpeechSynth` and is not exposed over stdio.
+    // 16. voice_synthesize — text-to-speech via aphrody-voice (ElevenLabs). Native-only
+    //     (`cfg(not(wasm32))`): the browser path lives in `aphrody_voice::web::WebSpeechSynth` and
+    //     is not exposed over stdio.
     // -----------------------------------------------------------------------
     #[cfg(not(target_arch = "wasm32"))]
     #[tool(description = "Synthesise speech from text via the aphrody-voice ElevenLabs adapter. \
@@ -886,16 +1133,15 @@ impl GoogleMcpServer {
     }
 
     // -----------------------------------------------------------------------
-    // 17. voice_transcribe — speech-to-text via aphrody-voice-stt.
-    //     Prefers offline LocalWhisperBackend (APHRODY_WHISPER_MODEL=<ggml.bin>);
-    //     falls back to the OpenAI Whisper REST API on NotImplemented or any
-    //     other provider error.
+    // 17. voice_transcribe — speech-to-text via aphrody-voice-stt. Prefers offline
+    //     LocalWhisperBackend (APHRODY_WHISPER_MODEL=<ggml.bin>); falls back to the OpenAI Whisper
+    //     REST API on NotImplemented or any other provider error.
     // -----------------------------------------------------------------------
     #[cfg(not(target_arch = "wasm32"))]
     #[tool(description = "Transcribe base64-encoded audio via aphrody-voice-stt. Prefers offline \
-                          whisper.cpp (set APHRODY_WHISPER_MODEL to a GGML model path); falls back \
-                          to the OpenAI Whisper REST API (OPENAI_API_KEY). Returns \
-                          { text, confidence, language, duration_s, backend, mime_type }.")]
+                          whisper.cpp (set APHRODY_WHISPER_MODEL to a GGML model path); falls \
+                          back to the OpenAI Whisper REST API (OPENAI_API_KEY). Returns { text, \
+                          confidence, language, duration_s, backend, mime_type }.")]
     async fn voice_transcribe(
         &self,
         Parameters(req): Parameters<voice_tools::VoiceTranscribeRequest>,
@@ -904,13 +1150,11 @@ impl GoogleMcpServer {
     }
 
     // -----------------------------------------------------------------------
-    // 18. re_triage — reverse engineering triage via aphrody-re.
-    //     Single MCP tool covers the full PE/ELF triage surface (format,
-    //     entry_point, sections + per-section Shannon entropy, imports,
-    //     exports, ASCII/UTF-16LE strings sample, SHA-256). Separate
-    //     re_disasm / re_strings / re_sections MCP tools (R5.7) are
-    //     intentionally not split — every consumer that needs sections or
-    //     strings already gets them in re_triage's response.
+    // 18. re_triage — reverse engineering triage via aphrody-re. Single MCP tool covers the full
+    //     PE/ELF triage surface (format, entry_point, sections + per-section Shannon entropy,
+    //     imports, exports, ASCII/UTF-16LE strings sample, SHA-256). Separate re_disasm /
+    //     re_strings / re_sections MCP tools (R5.7) are intentionally not split — every consumer
+    //     that needs sections or strings already gets them in re_triage's response.
     // -----------------------------------------------------------------------
     #[cfg(not(target_arch = "wasm32"))]
     #[tool(description = "Triage a binary file (PE32/PE64/ELF32/ELF64): detect format via magic, \
@@ -965,6 +1209,185 @@ impl GoogleMcpServer {
             }))
             .unwrap_or_default(),
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // 19. context7_resolve_library_id — Context7 library catalog search. Ported from
+    //     packages/mcp/cli/src/mcp-bridge.ts (winclean peer, MIT) to native Rust on 2026-05-19. The
+    //     public Context7 API tolerates unauthenticated requests; CONTEXT7_API_KEY (Bearer) unlocks
+    //     larger quotas.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Resolve a package or product name to a Context7-compatible library ID \
+                          (e.g. '/vercel/next.js') and return matching libraries with \
+                          descriptions and source reputation. First step before \
+                          `context7_query_docs`.")]
+    async fn context7_resolve_library_id(
+        &self,
+        Parameters(Context7ResolveRequest { query, library_name }): Parameters<
+            Context7ResolveRequest,
+        >,
+    ) -> String {
+        context7_get("v2/libs/search", &[
+            ("query", query.as_str()),
+            ("libraryName", library_name.as_str()),
+        ])
+        .await
+    }
+
+    // -----------------------------------------------------------------------
+    // 20. context7_query_docs — pulls up-to-date documentation slices for a previously-resolved
+    //     library ID. Returns raw markdown (the Context7 API returns text/markdown directly, not
+    //     wrapped JSON).
+    // -----------------------------------------------------------------------
+    #[tool(description = "Retrieve up-to-date documentation and code examples from Context7 for \
+                          a specific library and topic. Pass a libraryId resolved via \
+                          `context7_resolve_library_id`. Returns raw markdown.")]
+    async fn context7_query_docs(
+        &self,
+        Parameters(Context7DocsRequest { library_id, query }): Parameters<Context7DocsRequest>,
+    ) -> String {
+        context7_get("v2/context", &[("query", query.as_str()), ("libraryId", library_id.as_str())])
+            .await
+    }
+
+    // -----------------------------------------------------------------------
+    // 21. microsoft_docs_search — proxy to the upstream Microsoft Learn HTTP MCP server
+    //     (`learn.microsoft.com/api/mcp`). Single binary, no separate `mcpServers.microsoft-learn`
+    //     entry needed.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Search official Microsoft documentation and return up to 10 concise, \
+                          high-quality content chunks (max 500 tokens each), including title, \
+                          URL and excerpt. Use first to get a quick, reliable overview of any \
+                          Microsoft / Azure / .NET / Windows / M365 / Power Platform technology.")]
+    async fn microsoft_docs_search(
+        &self,
+        Parameters(MsLearnSearchRequest { query }): Parameters<MsLearnSearchRequest>,
+    ) -> String {
+        mslearn_call("microsoft_docs_search", json!({ "query": query })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 22. microsoft_docs_fetch — full-page fetch on a Microsoft Learn URL, converted to markdown by
+    //     the upstream server.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Fetch and convert a Microsoft documentation page into markdown format. \
+                          Use after `microsoft_docs_search` when an excerpt is cut off or you \
+                          need the full tutorial / configuration guide / API reference page.")]
+    async fn microsoft_docs_fetch(
+        &self,
+        Parameters(MsLearnFetchRequest { url }): Parameters<MsLearnFetchRequest>,
+    ) -> String {
+        mslearn_call("microsoft_docs_fetch", json!({ "url": url })).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 23. microsoft_code_sample_search — official Microsoft / Azure code snippet search, optionally
+    //     filtered by language.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Search for official Microsoft / Azure code snippets and examples. Use \
+                          before writing code (find a working pattern to follow) or after errors \
+                          (compare your code against a known-good sample). Optional language \
+                          filter narrows results to a single SDK ecosystem.")]
+    async fn microsoft_code_sample_search(
+        &self,
+        Parameters(MsLearnCodeSampleRequest { query, language }): Parameters<
+            MsLearnCodeSampleRequest,
+        >,
+    ) -> String {
+        let mut args = serde_json::Map::new();
+        args.insert("query".into(), json!(query));
+        if let Some(lang) = language {
+            if !lang.is_empty() {
+                args.insert("language".into(), json!(lang));
+            }
+        }
+        mslearn_call("microsoft_code_sample_search", serde_json::Value::Object(args)).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 24. docs_auto_search — fanout aggregator. Runs Context7 (resolve → optional fetch), Microsoft
+    //     Learn search, Microsoft code-sample search, and Google web search **in parallel** via
+    //     `tokio::join!`. Aggregates the four streams into one markdown report. Single tool call
+    //     instead of 3-4 round-trips from the model — saves wall-clock time, saves context-window
+    //     tool descriptions.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Single-shot documentation lookup that queries Context7, Microsoft \
+                          Learn, Microsoft code samples, and Google in parallel and returns a \
+                          fused markdown report. Use FIRST when the user asks about any library, \
+                          framework, SDK, CLI tool, or cloud service — Rust crates, JS \
+                          frameworks, Azure services, .NET APIs, Windows internals, all covered. \
+                          Provide `library_name` when known to unlock Context7 two-step deep \
+                          fetch; provide `language` to narrow the Microsoft code samples.")]
+    async fn docs_auto_search(
+        &self,
+        Parameters(DocsAutoSearchRequest { query, library_name, language }): Parameters<
+            DocsAutoSearchRequest,
+        >,
+    ) -> String {
+        let google_query = format!("{query} documentation API reference");
+        let google_args = json!({ "query": google_query, "hl": "en" });
+
+        let mut ms_code_args = serde_json::Map::new();
+        ms_code_args.insert("query".into(), json!(&query));
+        if let Some(ref lang) = language {
+            if !lang.is_empty() {
+                ms_code_args.insert("language".into(), json!(lang));
+            }
+        }
+
+        let ctx7_future = async {
+            if let Some(name) = library_name.as_deref().filter(|s| !s.is_empty()) {
+                let resolved = context7_get("v2/libs/search", &[
+                    ("query", query.as_str()),
+                    ("libraryName", name),
+                ])
+                .await;
+                let lib_id =
+                    serde_json::from_str::<serde_json::Value>(&resolved).ok().and_then(|v| {
+                        v.pointer("/results/0/id").and_then(|x| x.as_str()).map(str::to_owned)
+                    });
+                if let Some(id) = lib_id {
+                    let docs = context7_get("v2/context", &[
+                        ("query", query.as_str()),
+                        ("libraryId", id.as_str()),
+                    ])
+                    .await;
+                    format!("### resolved library_id: `{id}`\n\n{resolved}\n\n### docs\n\n{docs}")
+                } else {
+                    resolved
+                }
+            } else {
+                context7_get("v2/libs/search", &[("query", query.as_str())]).await
+            }
+        };
+
+        let (ctx7, ms_search, ms_code, google) = tokio::join!(
+            ctx7_future,
+            mslearn_call("microsoft_docs_search", json!({ "query": query })),
+            mslearn_call("microsoft_code_sample_search", serde_json::Value::Object(ms_code_args),),
+            bxc_call("google_search", google_args),
+        );
+
+        let mut out = String::with_capacity(8192);
+        out.push_str("# docs_auto_search — aggregated documentation report\n\n");
+        out.push_str(&format!("**Query** : {query}\n"));
+        if let Some(ref name) = library_name {
+            out.push_str(&format!("**Library** : {name}\n"));
+        }
+        if let Some(ref lang) = language {
+            out.push_str(&format!("**Language filter** : {lang}\n"));
+        }
+        out.push('\n');
+
+        out.push_str("## 1. Context7 (community docs catalog)\n\n");
+        out.push_str(&ctx7);
+        out.push_str("\n\n## 2. Microsoft Learn — concept / API search\n\n");
+        out.push_str(&ms_search);
+        out.push_str("\n\n## 3. Microsoft Learn — code samples\n\n");
+        out.push_str(&ms_code);
+        out.push_str("\n\n## 4. Google — web search (stealth Lightpanda profile)\n\n");
+        out.push_str(&google);
+        out
     }
 }
 
@@ -1049,14 +1472,9 @@ mod cli_tests {
 
     #[test]
     fn cli_parses_client_probe_subcommand() {
-        let cli = Cli::try_parse_from([
-            "aphrody-mcp",
-            "client",
-            "probe",
-            "--stdio",
-            "/bin/echo hello",
-        ])
-        .expect("client probe must parse");
+        let cli =
+            Cli::try_parse_from(["aphrody-mcp", "client", "probe", "--stdio", "/bin/echo hello"])
+                .expect("client probe must parse");
         match cli.command {
             Some(TopCommand::Client(args)) => match args.op {
                 crate::client_cmd::ClientOp::Probe { stdio } => {

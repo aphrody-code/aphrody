@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schema/plugin.json",
   "name": "aphrody",
-  "version": "0.6.0",
-  "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (6.5 MB, sub-millisecond cold-start) fuses 15 tools — 8 from ex-google_mcp (coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard) + 7 from ex-bxc-mcp (bxc_scrape, bxc_recon, bxc_detect, google_search, google_atlas_route, extract_structured, vision_analyze). Zero JS runtime, zero subprocess relay. 3 slash commands (/scrape, /tokens, /status). 27 agents, 35+ skills. PostToolUse hooks. Cross-platform: Linux #1, Windows #2, WASM #3.",
+  "version": "0.7.0",
+  "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (~7 MB, sub-millisecond cold-start) exposes 23 tools across 6 capability groups — 8 ex-google_mcp (coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard) + 7 ex-bxc-mcp (bxc_scrape, bxc_recon, bxc_detect, google_search, google_atlas_route, extract_structured, vision_analyze) + 2 voice (voice_synthesize, voice_transcribe) + 2 Context7 (context7_resolve_library_id, context7_query_docs, native Rust port of the upstream Bun bridge) + 3 Microsoft Learn (microsoft_docs_search, microsoft_docs_fetch, microsoft_code_sample_search — native Rust HTTP MCP proxy onto learn.microsoft.com/api/mcp) + 1 re_triage (PE/ELF binary triage via aphrody-re). Zero JS runtime, zero subprocess relay, zero secondary MCP server. 4 slash commands (/scrape, /tokens, /status, /docs). 28 agents, 41 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
   "author": {
     "name": "aphrody-code",
     "email": "37252373+aphrody-code@users.noreply.github.com",
@@ -18,50 +18,12 @@
     "bxc",
     "scraping",
     "n2b",
-    "bun",
-    "oxlint",
     "rust",
     "cross-platform",
     "wasm",
     "claude-code"
   ],
   "category": "productivity",
-  "skills": "./skills/",
-  "commands": [
-    "./commands/scrape.md",
-    "./commands/tokens.md",
-    "./commands/status.md"
-  ],
-  "agents": [
-    "./agents/aphrody-cli.md",
-    "./agents/build.md",
-    "./agents/cargo-auditor.md",
-    "./agents/code-review.md",
-    "./agents/cpp-engineer.md",
-    "./agents/cross-platform-validator.md",
-    "./agents/deployment-engineer.md",
-    "./agents/design-google-curator.md",
-    "./agents/devops-engineer.md",
-    "./agents/discord-bot.md",
-    "./agents/explore.md",
-    "./agents/ffi-architect.md",
-    "./agents/incident-responder.md",
-    "./agents/m3-spec-auditor.md",
-    "./agents/material.md",
-    "./agents/move.md",
-    "./agents/n2b-contract-guard.md",
-    "./agents/n2b-ultra.md",
-    "./agents/n2b.md",
-    "./agents/performance-engineer.md",
-    "./agents/postgres-pro.md",
-    "./agents/rust-architect.md",
-    "./agents/rust-engineer.md",
-    "./agents/security-engineer.md",
-    "./agents/sre-engineer.md",
-    "./agents/yolo-prod-ready.md",
-    "./agents/zig-engineer.md"
-  ],
-  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "aphrody": {
       "type": "stdio",
@@ -73,5 +35,18 @@
         "BXC_VISION_MIN_BYTES": "1024"
       }
     }
+  },
+  "interface": {
+    "displayName": "Aphrody",
+    "shortDescription": "One Rust binary, 23 tools: desktop automation, scraping, vision, voice, Context7 docs, Microsoft Learn docs.",
+    "longDescription": "Single-binary Rust MCP surface fusing 23 tools (forensics, network recon, bxc Chromium-DevTools scraping, Material Design 3 vision, ElevenLabs voice, Context7 docs lookup, Microsoft Learn docs lookup, PE/ELF reverse-engine triage). Zero JS runtime, zero secondary MCP server. 28 agents, 41 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+    "brandColor": "#CE422B",
+    "category": "Productivity",
+    "capabilities": ["Automation", "Research", "Scraping", "Reference"],
+    "defaultPrompt": [
+      "Scrape https://m3.material.io/styles/color/static and write the token bundle to packages/ui/tokens/m3.json.",
+      "DNS-recon google.com, then advanced-recon the top-3 hosts on ports 80 and 443.",
+      "Find official Azure Functions Python v2 timeout / quota limits via the Microsoft Learn MCP."
+    ]
   }
 }

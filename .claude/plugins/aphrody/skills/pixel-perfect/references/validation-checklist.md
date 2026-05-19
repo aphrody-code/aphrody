@@ -101,8 +101,8 @@ For every CSS rule in the component:
 
 ## J. Optional visual diff (P1)
 
-- [ ] `mcp__bxc-scrapper__bxc_recon` returned a screenshot.
-- [ ] `mcp__bxc-scrapper__vision_analyze` returned at least one of
+- [ ] `mcp__aphrody__bxc_recon` returned a screenshot.
+- [ ] `mcp__aphrody__vision_analyze` returned at least one of
       `{elements, text, colors, fonts, hierarchy}`.
 - [ ] For each top-3 color extracted, the closest token in the
       component is within ΔE2000 ≤ 5.

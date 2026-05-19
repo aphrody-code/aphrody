@@ -9,14 +9,14 @@
 //!
 //! # Subcommands
 //!
-//! - `aphrody-mcp client list <server-name>` — load the configured `mcp.json`,
-//!   connect to `<server-name>`, run the handshake + `tools/list`, print
-//!   newline-delimited JSON (one object per tool).
-//! - `aphrody-mcp client call <server-name> <tool-name> --args '<json>'` —
-//!   connect, run `tools/call`, print the JSON-RPC `result` payload.
-//! - `aphrody-mcp client probe --stdio "<cmd args>"` — one-shot connect an
-//!   arbitrary stdio MCP server (without touching `mcp.json`) and print a
-//!   single JSON object: `{ "server": ServerInfo, "tools": [McpTool, …] }`.
+//! - `aphrody-mcp client list <server-name>` — load the configured `mcp.json`, connect to
+//!   `<server-name>`, run the handshake + `tools/list`, print newline-delimited JSON (one object
+//!   per tool).
+//! - `aphrody-mcp client call <server-name> <tool-name> --args '<json>'` — connect, run
+//!   `tools/call`, print the JSON-RPC `result` payload.
+//! - `aphrody-mcp client probe --stdio "<cmd args>"` — one-shot connect an arbitrary stdio MCP
+//!   server (without touching `mcp.json`) and print a single JSON object: `{ "server": ServerInfo,
+//!   "tools": [McpTool, …] }`.
 //!
 //! # Wire reuse
 //!
@@ -211,10 +211,8 @@ async fn run_probe(stdio_cmdline: &str) -> Result<()> {
         .initialize()
         .await
         .with_context(|| format!("MCP initialize handshake against `{command}`"))?;
-    let tools = client
-        .list_tools()
-        .await
-        .with_context(|| format!("MCP tools/list against `{command}`"))?;
+    let tools =
+        client.list_tools().await.with_context(|| format!("MCP tools/list against `{command}`"))?;
 
     let tool_entries: Vec<JsonValue> = tools
         .into_iter()
@@ -264,7 +262,10 @@ pub(crate) fn load_config(override_path: Option<&std::path::Path>) -> Result<Mcp
 
 /// Locate `server_name` in `cfg.servers`, returning a descriptive error when
 /// the entry is missing.
-pub(crate) fn find_server<'a>(cfg: &'a McpConfig, server_name: &str) -> Result<&'a McpServerConfig> {
+pub(crate) fn find_server<'a>(
+    cfg: &'a McpConfig,
+    server_name: &str,
+) -> Result<&'a McpServerConfig> {
     cfg.servers.iter().find(|s| s.name == server_name).ok_or_else(|| {
         let known: Vec<&str> = cfg.servers.iter().map(|s| s.name.as_str()).collect();
         anyhow!(
@@ -284,13 +285,11 @@ pub(crate) async fn connect_from_config(entry: &McpServerConfig) -> Result<McpCl
                 .await
                 .map_err(|e| anyhow!("stdio connect to `{command}`: {e}"))
         },
-        McpTransportConfig::Http { url, headers } | McpTransportConfig::StreamableHttp {
-            url,
-            headers,
-        } => {
-            let bearer = headers.get("Authorization").and_then(|v| {
-                v.strip_prefix("Bearer ").map(str::to_owned)
-            });
+        McpTransportConfig::Http { url, headers }
+        | McpTransportConfig::StreamableHttp { url, headers } => {
+            let bearer = headers
+                .get("Authorization")
+                .and_then(|v| v.strip_prefix("Bearer ").map(str::to_owned));
             McpClient::from_http(url.clone(), bearer)
                 .map_err(|e| anyhow!("http client for `{url}`: {e}"))
         },
@@ -313,13 +312,13 @@ pub(crate) fn split_stdio_command(cmdline: &str) -> Result<(String, Vec<String>)
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use gemini_runtime::parse_mcp_config;
+
+    use super::*;
 
     #[test]
     fn split_stdio_command_parses_program_and_args() {
-        let (cmd, args) =
-            split_stdio_command("/usr/bin/aphrody-mcp serve --stdio").expect("ok");
+        let (cmd, args) = split_stdio_command("/usr/bin/aphrody-mcp serve --stdio").expect("ok");
         assert_eq!(cmd, "/usr/bin/aphrody-mcp");
         assert_eq!(args, vec!["serve".to_owned(), "--stdio".to_owned()]);
     }

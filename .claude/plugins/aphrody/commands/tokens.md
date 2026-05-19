@@ -44,8 +44,8 @@ Scrape the canonical M3 design tokens from `$ARGUMENTS` (default:
      and the naïve `:root` scrape didn't capture them. Fall back to:
 
      ```bash
-     # Use the bxc Bun MCP `extract_structured` tool (richer) via the
-     # bxc-scrapper MCP server.
+     # Use the aphrody MCP `extract_structured` tool (richer) via the
+     # aphrody MCP server.
      # Or invoke pixel-perfect skill on a component first to seed tokens.
      ```
 

@@ -20,7 +20,7 @@ Locates code, traces references, and answers structural questions about the aphr
 - **Type** : cross-platform Rust CLI (cible #1 Linux Ubuntu 26.04, #2 Windows 11 Insider Canary, #3 wasm32)
 - **Workspace** : 54 members (`cli`, `base`, `backend`, `a2a-*`, `aphrody-*`, `mrx-*`, …)
 - **Languages** : 100 % Rust (exception explicite `packages/bxc/` Bun pour le sous-projet bxc fusionné)
-- **MCP server** : `aphrody-mcp` (15 tools, ex-`google_mcp` + ex-`bxc-mcp` fusionnés)
+- **MCP server** : `aphrody-mcp` (24 tools, ex-`google_mcp` + ex-`bxc-mcp` + 2 voice + 2 Context7 + 3 Microsoft Learn + 1 fanout `docs_auto_search` + 1 `re_triage`, single stdio server)
 
 ## Guidelines
 - Be thorough — combine multiple search strategies (Glob for filenames, Grep for symbols, Read for context).
