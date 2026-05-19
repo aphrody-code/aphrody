@@ -34,7 +34,7 @@ workspace = true
 serde         = { workspace = true, features = ["derive"] }
 serde_json    = { workspace = true }
 thiserror     = { workspace = true }
-shadcn-bridge = { path = "../shadcn-bridge" }
+mui-rs-components = { path = "../mui-rs-components" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true }

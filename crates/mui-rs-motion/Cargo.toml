@@ -1,0 +1,16 @@
+[package]
+name = "mui-rs-motion"
+description = "M3 motion — spring physics, easings, transitions (M3 Expressive)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+mui-rs-tokens = { path = "../mui-rs-tokens" }
+
+[dev-dependencies]
+proptest.workspace = true
+criterion.workspace = true

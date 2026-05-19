@@ -18,7 +18,7 @@
 //!   - `m3-tokens::color`                  — canonical M3 ARGB palette
 //!   - `crate::ansi`                       — unicode handling pattern
 //!   - `crate::layout`                     — Rect / Constraint dependency
-//!   - `aphrody-design-material::*`        — sister M3 system on wgpu
+//!   - `mui-rs::*`                         — sister M3 system on wgpu
 //!   - `unicode-width` + `unicode-segmentation` — grapheme-aware wrap
 
 use ratatui::{
