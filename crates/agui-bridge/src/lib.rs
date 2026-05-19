@@ -30,7 +30,7 @@
 pub mod wire;
 
 // Re-export props types so consumers only need to import from `agui_bridge`.
-pub use mui_rs_components::button::ButtonProps;
+pub use mui_rs_components::actions::{Button as ButtonProps, ButtonVariant};
 use wire::{WireCode, WireImage, WireInput, WireNode, WireToolCall};
 
 // ---------------------------------------------------------------------------
@@ -135,9 +135,16 @@ fn convert_wire(w: WireNode) -> AguiNode {
         },
         WireNode::Button { props } => AguiNode::Button(ButtonProps {
             label: props.label,
-            variant: props.variant,
+            variant: match props.variant.as_str() {
+                "filled" => ButtonVariant::Filled,
+                "filledTonal" => ButtonVariant::FilledTonal,
+                "outlined" => ButtonVariant::Outlined,
+                "elevated" => ButtonVariant::Elevated,
+                _ => ButtonVariant::Text,
+            },
             disabled: props.disabled,
             on_click_id: props.on_click_id,
+            icon: None, // Wire format doesn't currently specify an icon
         }),
         WireNode::Input { props } => AguiNode::Input(wire_input_to_props(props)),
         WireNode::ToolCall { props } => AguiNode::ToolCall(wire_tool_call_to_props(props)),
