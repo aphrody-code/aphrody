@@ -40,14 +40,13 @@ members = [
     "crates/aphrody-gateway",
     # aphrody-mcp — Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728/8414/7591/7636)
     "crates/aphrody-mcp",
-    # aphrody-voice — TTS provider trait + ElevenLabs adapter + Discord shim
+    # aphrody-voice — TTS + STT provider traits + ElevenLabs/Whisper adapters + Discord shim
     "crates/aphrody-voice",
-    # aphrody-voice-stt — STT provider trait + OpenAI Whisper + ElevenLabs STT
-    "crates/aphrody-voice-stt",
     # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
     "crates/gemini-runtime",
     # agui-bridge — AG-UI protocol Rust binding (wire parser + wasm-bindgen renderer)
-    "crates/agui-bridge",
+    # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
+    # "crates/agui-bridge",
     # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
     "crates/aphrody-channels",
     # aphrody-messaging — Tier-1 outbound connectors (Telegram, Slack, native SMTP)
@@ -80,13 +79,14 @@ members = [
     "crates/aphrody-design-sidecar",
     "crates/aphrody-design-daemon",
     # mui-rs — Material Design 3 native UI library (wgpu + vello + winit)
-    "crates/mui-rs",
-    "crates/mui-rs-components",
-    "crates/mui-rs-core",
-    "crates/mui-rs-macros",
-    "crates/mui-rs-motion",
-    "crates/mui-rs-renderer",
-    "crates/mui-rs-tokens",
+    # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
+    # "crates/mui-rs",
+    # "crates/mui-rs-components",
+    # "crates/mui-rs-core",
+    # "crates/mui-rs-macros",
+    # "crates/mui-rs-motion",
+    # "crates/mui-rs-renderer",
+
     # bxc rust-bridge
     "crates/bxc-engine",
     "crates/obscura-browser",
@@ -206,6 +206,14 @@ exclude = [
     "crates/coreutils",
     "crates/util-linux",
     "crates/a2a-slimrpc",
+    # agui-bridge + mui-rs : temporarily excluded (mui-rs-tokens in progress)
+    "crates/agui-bridge",
+    "crates/mui-rs",
+    "crates/mui-rs-components",
+    "crates/mui-rs-core",
+    "crates/mui-rs-macros",
+    "crates/mui-rs-motion",
+    "crates/mui-rs-renderer",
     # aphrody-x-client : self-rooted workspace (intégrera root workspace
     # plus tard quand agent-twitter-client 0.1.x stabilisé).
     "crates/aphrody-x-client",
@@ -395,7 +403,6 @@ notebooklm         = { path = "crates/notebooklm", version = "1.0.0-canary" }
 
 # --- aphrody-voice family (TTS + STT) ------------------------------------
 aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
-aphrody-voice-stt  = { path = "crates/aphrody-voice-stt", version = "1.0.0-canary" }
 
 # --- A2A protocol family --------------------------------------------------
 a2a                = { package = "a2a-lf",        path = "crates/a2a",        version = "0.3" }
