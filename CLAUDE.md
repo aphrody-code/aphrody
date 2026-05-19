@@ -24,43 +24,49 @@ la compilation sur Linux** : il est strictement gated `#[cfg(target_os = "window
 L'ancien sous-projet `google_os` (kernel emulator hybride Win-NT) a été **sorti
 du workspace** (archivé sous `C:\google-os-archive\`). Ne pas le réintroduire.
 
-## 0.3. Exception Rust-only : fusion bxc (2026-05-19)
+## 0.3. Unification bxc Rust-only (2026-05-19 v2)
 
-`packages/bxc/` est la **fusion in-tree du projet `aphrody-code/bxc`** (browser
-engine Bun + Lightpanda + curl-impersonate Chrome 131 + CDP-compat). Décision
-utilisateur 2026-05-19 : on importe le projet bxc *tel quel*, **TS/Bun/Zig
-inclus**, suspendant temporairement la règle [[feedback_aphrody_rust_only]]
-pour ce sous-arbre uniquement.
+**Décision finale (révoque la suspension du même jour)** : `aphrody bxc`
+est désormais **100 % Rust**, plus de driver Bun runtime. Conformité totale
+avec [[feedback_aphrody_rust_only]].
 
-Layout en place :
+Stack runtime :
 
-- `packages/bxc/` — mirror complet du repo `aphrody-code/bxc` (12 MB) : sous-workspace
-  Bun avec `packages/{api,bxc-extension,llm-extract,omnistack}`, `src/` (cdp,
-  ffi, mirror, profiles, scrapers, …), `rust-bridge/` (sous-workspace Rust FFI),
-  `bin/bxc`, `Makefile`, `package.json`, `bun.lock` (excluded), `tsconfig.json`,
-  `turbo.json`. Exclus du mirror : `.git`, `node_modules`, `target`, `dist`,
-  `build`.
-- `scripts/bxc/` — 20 scripts utilitaires bxc (`build-windows.{ps1,ts}`,
-  `build-standalone.ts`, `cron-scheduler.ts`, `god-mode-executor.ts`,
-  `apply-bxc-rebrand.ts`, `backup-bxc.sh`, …) exposés au niveau scripts/ pour
-  découvrabilité.
-- `docs/bxc/` — `docs/` complet de bxc + tous les .md racine (`CLAUDE.md`,
-  `GEMINI.md`, `MEGA-PLAN.md`, `SKILLS.md`, `README.md`, `CHANGELOG.md`,
-  `PUBLISHING.md`, `CONTRIBUTING.md`, `AGENTS-ARCHITECTURE.json`).
+- **Daemon HTTP** : `bxc-engine-daemon` (binaire Rust dans `crates/bxc-engine`,
+  4.9 MB). Sert `/healthz` + `/api/{recon,scrape,detect,tokens}` — parité
+  exacte avec l'ancien Bun driver (`packages/bxc/src/cli/api.ts`), drop-in
+  pour `crates/cli/src/scrape.rs::ScrapeClient`.
+- **Spawn par aphrody** : `aphrody bxc daemon --port N` détecte
+  `bxc-engine-daemon` via (1) `APHRODY_BXC_DAEMON_BIN`, (2)
+  `APHRODY_BXC_ENGINE_BIN` (alias legacy), (3) `PATH`, (4) `<exe_dir>/`,
+  (5) `<repo_root>/target/release/`. Voir `crates/cli/src/commands.rs::resolve_bxc_daemon_bin`.
+- **Logs** : `var/run/bxc.log` (stdout + stderr du daemon) — plus de redirect
+  silencieux vers `/dev/null`.
+- **`APHRODY_BXC_DRIVER`** : déprécié (warn one-line si défini ≠ `"rust"`).
 
-Conséquences :
+`packages/bxc/` (sous-arbre Bun/TS) reste in-tree comme **référence amont
+read-only** : tracking du source upstream `aphrody-code/bxc` pour porter de
+nouvelles features vers `crates/bxc-engine`. Le runtime aphrody n'invoque
+plus `bun run packages/bxc/src/cli/index.ts api`. Bun/Zig/Node ne sont
+plus des deps de runtime pour `aphrody bxc {daemon, recon, scrape, detect, tokens}`.
 
-- Le CLI `aphrody {tokens, scrape, bxc detect, bxc daemon}` peut désormais
-  être branché soit sur `crates/bxc-engine/` (Rust workspace), soit sur
-  `packages/bxc/bin/bxc` (Bun binary), au choix du runtime ; pas de duplication
-  fonctionnelle — `crates/bxc-engine` reste l'implémentation Rust canonique
-  (cf. memory [[project_aphrody_owned_tools]]), `packages/bxc/` est la
-  référence amont avec features TS bleeding-edge (MCP server, GraphQL,
-  extension VSCode).
-- Toolchain ajouté requis pour build : `bun >= 1.3.14`, `zig` (pour
-  `packages/omnistack/src/native/omni.zig`). N'affecte pas le build Rust
-  workspace (les deux sont indépendants).
-- `node_modules/` reste gitignored globalement (`.gitignore:21`).
+Install bxc-engine-daemon (post-bootstrap) :
+
+```bash
+cargo build --release --locked -p bxc-engine --bin bxc-engine-daemon
+cp target/x86_64-pc-windows-msvc/release/bxc-engine-daemon.exe ~/.local/bin/
+# ou : cargo install --locked --path crates/bxc-engine --bin bxc-engine-daemon
+```
+
+Smoke-test (2026-05-19) :
+
+```text
+$ bxc-engine-daemon --port 8765 &
+[bxc-engine-daemon] http://127.0.0.1:8765
+$ curl http://127.0.0.1:8765/healthz                      # 200 OK
+$ curl 'http://127.0.0.1:8765/api/recon?url=https://rust-lang.org/'
+{"$schema":"bxc-recon-v1","httpStatus":200,"bytes":18686,"gotoMs":1284,...}
+```
 
 ## 0.4. État binaire installé (snapshot 2026-05-19)
 
@@ -73,10 +79,11 @@ Smoke matrix complète des 27 sous-commandes dans
 
 Gaps critiques à clore avant publish-ladder :
 
-- **`bxc-engine` dep manquante** dans `aphrody self bootstrap` — sans ça,
-  `aphrody {tokens, scrape, bxc detect, bxc daemon}` échouent out-of-the-box.
-  Fix : `cargo install --locked --path crates/bxc-engine` automatisé dans
-  bootstrap, ou copie `target/release/bxc-engine[.exe]` → `~/.local/bin/`.
+- **`bxc-engine-daemon` dep manquante** dans `aphrody self bootstrap` — sans
+  ça, `aphrody {tokens, scrape, bxc detect, bxc daemon}` échouent out-of-the-box.
+  Fix : ajouter step `cargo install --locked --path crates/bxc-engine --bin
+  bxc-engine-daemon` dans bootstrap (cf. §0.3), ou copie
+  `target/release/bxc-engine-daemon[.exe]` → `~/.local/bin/`.
 - **`coreutils` / `util-linux` orphans** — `crates/coreutils/` et
   `crates/util-linux/` sont *hors workspace* (cf. §4 "Hors workspace") mais
   les commandes `aphrody coreutils|util-linux` restent wired dans
@@ -97,6 +104,22 @@ sur google.com), `a2a "ping"` → **"pong"** via fallback Gemini CLI,
 `chromium sync` (7 profils + master key déchiffrée),
 `term` (WS server `ws://127.0.0.1:18799` prêt), `gemini --version` (0.42.0),
 `n2b scan` (0.6.0).
+
+## 0.45. Crates livrés 2026-05-19 (post-Bun, full Rust)
+
+Sept crates ajoutés au workspace pour fermer la migration **gemini-cli + bxc + n2b → Rust natif** :
+
+| Crate | Rôle | Tests | Wiring |
+|---|---|---:|---|
+| `aphrody-chat` | Orchestrator turn-loop (14 étapes : hooks UserPromptSubmit/PreToolUse/PostToolUse/Stop + session JSONL + memory recall + permissions + context budget + events). 17 building blocks intégrés (gemini-runtime, aphrody-tools, aphrody-session, aphrody-memory, aphrody-permissions, aphrody-hooks, aphrody-prompts, aphrody-router, aphrody-cost, aphrody-context, aphrody-events, aphrody-cache, aphrody-rateguard, aphrody-retry, aphrody-secrets, aphrody-skills-runtime, aphrody-mcp). Backend trait `ModelBackend` : `StubBackend` (déterministe), `GeminiBackend` (live), `AnthropicBackend`/`AntigravityBackend` (`NotYetImplemented` structuré). | 24 (14 unit + 8 integ + 2 doctest) | `aphrody chat --stub --prompt "X"` (smoke OK) |
+| `aphrody-sdk` | Façade publique programmatique stable v1.0 (8 modules, ~2200 LoC) — entrée pour intégrations tiers. | 36 | declared workspace.dependencies |
+| `aphrody-tools` | Port des 9 builtin tools gemini-cli (read_file, write_file, edit, glob, grep, ls, run_shell, web_fetch, web_search). Registry + schema validation. | n/a (descriptors) | utilisé par aphrody-chat |
+| `aphrody-shell` | Cross-platform shell exec (Unix exec + Windows CreateProcessW + capture stdout/stderr structuré). | n/a | utilisé par aphrody-tools::run_shell |
+| `aphrody-sandbox` | Multi-backend isolated exec (seccomp Linux + Job objects Win + WASI). | n/a | utilisé par aphrody-tools |
+| `a2a-server` | Server gemini-cli unifié dans `crates/a2a-server`. | n/a | declared dans `crates/cli/src/a2a.rs` |
+| `bxc-engine::google` | **14 fichiers Rust** unifiant tout le module Google de bxc (dns, detector, client, search, serp_parser, verticals + cache, rate_limit, mandate_guard, strategy, style, fetch, atlas, mass_scanner). ~4500 LOC Rust pour ~1600 LOC TS. | 70 unit tests | wired via `aphrody bxc daemon` |
+
+**Gotcha déploiement** : `cargo build -p aphrody --bin aphrody` met à jour `target/x86_64-pc-windows-msvc/release/aphrody.exe` mais **PAS** `~/.local/bin/aphrody.exe`. Toujours `cp` post-build (cf. `project_aphrody_install_convention`).
 
 ## 0.5. MISSION DU JOUR — clore PLAN.md ⏳ items (2026-05-18+)
 
@@ -251,6 +274,12 @@ est destinée à être éradiquée (plan : `docs/PLAN.md`).
   (Monorepo Real-time X-platform mapper — migré 2026-05-17 depuis vps/packages/mrx).
 - **Outils dev** : `aphrody-translate` (CLI traduction commentaires EN→FR + scrub AI
   + style Aphrody).
+- **Marketplace + awesome curator** : `aphrody-marketplace` (registry semver+SHA256
+  skills/MCP/hooks/themes) ; module `awesome` (feature `github`, optional octocrab)
+  ingère `topic:awesome-rust` via `octocrab` (workspace.dependencies:503), rank
+  multi-critères (stars log + recency + license OSI + active), émet `StackPolicy`
+  v1 → `.claude/policies/stack-whitelist.json`. Consommé par hook
+  `UserPromptSubmit` (à câbler).
 
 ### Hors workspace (`exclude` du root)
 
@@ -394,6 +423,11 @@ Toute la surface skills est centralisée et documentée :
 - **Inventaire + spec** → `docs/cargo/SKILLS.md` (format SKILL.md, runtime, ajout).
 - **Index local** → `.claude/skills/README.md`.
 - **Skills projet** : `start` (autonomous mode), `vps-commander` (SSH tunnel).
+- **Skills Rust 2026 (paire orthogonale)** : `rust-best-practices-2026`
+  (toolchain + langage + breakage 1.95 / 1.96 WASM / CVE-2026-33056 /
+  Edition 2024) couvre *comment* écrire ; `best-stack-2026` (table canonique
+  de crates par domaine + 30 anti-patterns + intégration
+  `aphrody-marketplace::awesome::StackPolicy`) couvre *quoi* dépendre.
 - **Agents projet** : `cargo-auditor`, `cpp-engineer`, `ffi-architect`,
   `rust-architect`, `rust-engineer`.
 - **Runtime** : `skill` crate (workspace dep, lib) + binaires `skill-cli` /
@@ -466,6 +500,23 @@ Toute la surface skills est centralisée et documentée :
   `Ã©` au lieu de `é`, `â€"` au lieu de `—`, BOM `﻿` invisible en début de fichier).
   Origine : Windows codepage conversion. Le `Write` tool produit UTF-8 propre sans
   BOM — préférer à `Edit` quand on touche l'encoding d'un fichier suspect.
+- **`task-notification` exit code 0 ment** quand un command shell est piped via
+  `tail` / `head` — le 0 reflète l'exit du `tail`, pas du command upstream.
+  Toujours `Read` le `<output-file>` réel pour vérifier l'état (cas vécu :
+  `cargo check --features github` "exit 0" alors qu'il avait 2 erreurs
+  E0277/E0308). Pattern fiable : ajouter `; echo "===EXIT=$?==="` après la
+  commande critique pour exposer le code réel.
+- **`skill-creator` validator frontmatter** : refuse `source:` et `version:` au
+  top-level (déplacer dans `metadata:`), refuse caractères `<` / `>` dans la
+  `description:` (XML-unsafe). Sur Windows, `PYTHONIOENCODING=utf-8` requis pour
+  `package_skill.py` (cp1252 default crashe sur les emoji Python 3.14). Lancer
+  les scripts via `python -m scripts.<name>` depuis le dir `skill-creator/`
+  (imports relatifs).
+- **`octocrab` Search API sort** : `.sort("stars")` accepte `&str`, PAS l'enum
+  `octocrab::params::repos::Sort` (autre endpoint REST). `repo.license.spdx_id`
+  est `String` pur (pas `Option<String>`) — utiliser `.map()`, pas `.and_then()`.
+  Feature-gate l'ingestion réseau (`[features] github = ["dep:octocrab"]`) pour
+  garder les CI hermétiques sans crédentiels GitHub.
 
 ## 7.5. aphrody-terminal — LLM-first terminal (pivot 2026-05-18)
 

@@ -28,6 +28,18 @@ sha2        = { workspace = true }
 hex         = { workspace = true }
 async-trait = { workspace = true }
 
+# Optional GitHub ingestion (feature `github`). Always-available primitives
+# (AwesomeRepo, rank, StackPolicy) live outside this cfg so tests and
+# downstream tooling stay deterministic.
+octocrab    = { workspace = true, optional = true }
+
+[features]
+default = []
+# Enables `aphrody_marketplace::awesome::fetch::*` — pulls octocrab and reqwest
+# transitively. Kept opt-in so hermetic CI builds without GitHub access do not
+# need network mocking.
+github  = ["dep:octocrab"]
+
 [dev-dependencies]
 tempfile = { workspace = true }
 tokio    = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
@@ -35,4 +47,4 @@ tokio    = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 [package.metadata.cargo-machete]
 # `tracing` is consumed via macros (debug! / warn!) only; `hex` and `serde_yaml`
 # surface through optional ingestion paths the linter under-counts.
-ignored = ["tracing", "hex", "serde_yaml"]
+ignored = ["tracing", "hex", "serde_yaml", "octocrab"]
