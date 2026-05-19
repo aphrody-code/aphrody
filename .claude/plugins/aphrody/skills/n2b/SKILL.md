@@ -1,5 +1,6 @@
 ---
 name: bun-n2b
+version: "1.0.0"
 description: "Audit ou migrate Node.js → Bun natif via le CLI n2b. TRIGGER when: user says 'migrate to bun', 'node to bun', 'bun-native', 'n2b audit', 'check for node patterns', 'rewrite to bun-native APIs', or asks about replacing fs/child_process/node-fetch with Bun equivalents. Also triggers after a major refactor where Node APIs are used."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: inherit

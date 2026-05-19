@@ -1,7 +1,7 @@
 ---
 name: m3-spec-auditor
-description: Audits a Material Design 3 component implementation in packages/ui/components/* for full spec compliance. Composes the pixel-perfect skill, the bxc-scrapper MCP (recon + extract_structured), and the playwright MCP (screenshot + DOM eval) to verify CSS tokens, M3 tag usage, motion durations, elevation, and shape corners against the canonical m3.material.io reference. Use after a component is scaffolded (via m3-component skill) or after a refactor touched the UI package.
-tools: Read, Edit, Grep, Glob, Bash, mcp__bxc-scrapper__bxc_scrape, mcp__bxc-scrapper__bxc_recon, mcp__bxc-scrapper__extract_structured, mcp__bxc-scrapper__vision_analyze, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_evaluate
+description: Audits a Material Design 3 component implementation in packages/ui/components/* for full spec compliance. Composes the pixel-perfect skill, the aphrody MCP server (recon + extract_structured + vision_analyze fused from ex-bxc-mcp), and the playwright MCP (screenshot + DOM eval, when enabled) to verify CSS tokens, M3 tag usage, motion durations, elevation, and shape corners against the canonical m3.material.io reference. Use after a component is scaffolded (via m3-component skill) or after a refactor touched the UI package.
+tools: Read, Edit, Grep, Glob, Bash, mcp__aphrody__bxc_scrape, mcp__aphrody__bxc_recon, mcp__aphrody__extract_structured, mcp__aphrody__vision_analyze, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_evaluate
 model: opus
 color: purple
 ---
@@ -14,7 +14,7 @@ against the **Material Design 3** contract published at
 
 1. **Static analysis** of the component source (CSS custom properties,
    `<md-*>` tag usage, variant table)
-2. **bxc-scrapper MCP** — fetches the canonical M3 spec page and extracts
+2. **aphrody MCP** — fetches the canonical M3 spec page and extracts
    the expected tokens (color, typescale, shape, motion, elevation)
 3. **Playwright MCP** — renders the component in a real browser, takes a
    screenshot, dumps the resolved CSS variables, and diffs against the M3
@@ -105,9 +105,8 @@ For each component, check the following axes:
 
 - Never edit the component. You are read-only.
 - Never mark `pass` without a real verification step. No "looks fine" — show the comparison.
-- If the `bxc-scrapper` MCP is unavailable, fall back to Playwright only;
-  if both are unavailable, exit with a clear "no audit possible — start
-  bxc-engine + ensure Playwright MCP is configured".
+- If the `aphrody` MCP server is unavailable (e.g. `aphrody-mcp.exe` not on PATH), fall back to Playwright only;
+  if both are unavailable, exit with a clear "no audit possible — install `aphrody-mcp` + ensure Playwright MCP is configured".
 - If `@material/web` doesn't ship the reference element, report **shipping
   blocker** and recommend custom impl.
 - Don't fabricate token names; only assert against tokens that actually

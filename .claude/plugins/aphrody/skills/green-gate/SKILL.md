@@ -1,5 +1,6 @@
 ---
 name: green-gate
+version: "1.0.0"
 description: Run the full n2b verification pipeline — cargo build/test/clippy/fmt + baseline diff + codegen drift check. Returns red/green per stage and aborts on first failure. Mirrors the contract gelé verrou triple from CLAUDE.md.
 disable-model-invocation: true
 ---

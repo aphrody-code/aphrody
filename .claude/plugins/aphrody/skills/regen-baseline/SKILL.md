@@ -1,5 +1,6 @@
 ---
 name: regen-baseline
+version: "1.0.0"
 description: Regenerate the 7 tracked baseline snapshots (5 fixture formats + 2 rules formats) after a legitimate output change. Required after version bumps, schema additions, or new rule registrations. Refuses to run if `n2b --version` differs from the version in package.json/Cargo.toml.
 disable-model-invocation: true
 ---

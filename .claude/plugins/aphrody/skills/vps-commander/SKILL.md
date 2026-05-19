@@ -1,5 +1,6 @@
 ---
 name: vps-commander
+version: "1.0.0"
 description: Operates the God Mode bidirectional SSH tunnel to the VPS — local port forwards (Chrome 9226, Postgres 5432, Bun 3001) and SOCKS5 (127.0.0.1:1080).
 when_to_use: User asks to "start the tunnel", "connect to the vps", or just says "tunnel".
 ---

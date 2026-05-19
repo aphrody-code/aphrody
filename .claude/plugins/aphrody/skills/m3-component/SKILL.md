@@ -1,5 +1,6 @@
 ---
 name: m3-component
+version: "1.0.0"
 description: Scaffolds a new Material Design 3 component wrapper under packages/ui/components/<name>/ — generates the .tsx wrapper around the matching `<md-*>` Material Web element, the .css custom-property bridge, the bun:test test suite, and updates components/index.ts. Mirrors the Button POC exactly. Use whenever the user asks to "add a new M3 component", "scaffold Input", "wrap md-card", "create the dialog wrapper", or when refactoring a shadcn primitive into its M3 equivalent. Skip for non-M3 / non-UI work.
 argument-hint: <component-name>
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash

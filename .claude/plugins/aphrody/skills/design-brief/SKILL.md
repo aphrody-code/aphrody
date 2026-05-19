@@ -1,5 +1,6 @@
 ---
 name: design-brief
+version: "1.0.0"
 description: |
   Parse a structured design brief written in I-Lang protocol format into a
   concrete design spec. Eliminates ambiguity from vague requests like
