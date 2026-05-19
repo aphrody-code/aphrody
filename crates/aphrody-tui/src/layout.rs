@@ -5,7 +5,58 @@
 //! All helpers operate on the same [`ratatui::layout::Rect`] / [`Constraint`]
 //! types as ratatui itself, so they compose with stock widgets.
 
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::{Constraint, Direction, Layout as RtLayout, Rect};
+
+// Re-export ratatui primitives so callers can do `use aphrody_tui::layout::*`
+// and never need to add `ratatui` to their own Cargo.toml.
+pub use ratatui::layout::{Constraint as RatatuiConstraint, Direction as RatatuiDirection};
+
+/// Typed layout DSL — a thin facade over [`ratatui::layout::Layout`] matching
+/// the API spec in CLAUDE.md §0.5 T-10 (`Layout::split(rect, &[Constraint])`).
+///
+/// ```
+/// use aphrody_tui::layout::{Layout, RatatuiConstraint, RatatuiDirection};
+/// use ratatui::layout::Rect;
+///
+/// let area = Rect::new(0, 0, 100, 30);
+/// let rows = Layout::new(RatatuiDirection::Vertical)
+///     .split(area, &[RatatuiConstraint::Length(3), RatatuiConstraint::Min(0)]);
+/// assert_eq!(rows.len(), 2);
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Layout {
+    direction: Direction,
+}
+
+impl Layout {
+    /// New layout with the supplied direction.
+    #[must_use]
+    pub const fn new(direction: Direction) -> Self {
+        Self { direction }
+    }
+
+    /// Vertical convenience constructor.
+    #[must_use]
+    pub const fn vertical() -> Self {
+        Self::new(Direction::Vertical)
+    }
+
+    /// Horizontal convenience constructor.
+    #[must_use]
+    pub const fn horizontal() -> Self {
+        Self::new(Direction::Horizontal)
+    }
+
+    /// Split `area` into one rect per `constraint`.
+    #[must_use]
+    pub fn split(self, area: Rect, constraints: &[Constraint]) -> Vec<Rect> {
+        RtLayout::default()
+            .direction(self.direction)
+            .constraints(constraints.to_vec())
+            .split(area)
+            .to_vec()
+    }
+}
 
 /// Split `area` vertically using the supplied constraints.
 ///
@@ -21,7 +72,7 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 /// ```
 #[must_use]
 pub fn vsplit(area: Rect, constraints: &[Constraint]) -> Vec<Rect> {
-    Layout::default()
+    RtLayout::default()
         .direction(Direction::Vertical)
         .constraints(constraints.to_vec())
         .split(area)
@@ -40,7 +91,7 @@ pub fn vsplit(area: Rect, constraints: &[Constraint]) -> Vec<Rect> {
 /// ```
 #[must_use]
 pub fn hsplit(area: Rect, constraints: &[Constraint]) -> Vec<Rect> {
-    Layout::default()
+    RtLayout::default()
         .direction(Direction::Horizontal)
         .constraints(constraints.to_vec())
         .split(area)

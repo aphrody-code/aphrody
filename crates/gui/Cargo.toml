@@ -13,14 +13,38 @@ description           = "Aphrody — UI surface (Rust Native)."
 [lints]
 workspace = true
 
+# Explicit lib + bin entries so we can hide the binary on wasm32 (the
+# binary needs a real `fn main`, which would require pulling
+# wry/tao/mimalloc back in — not what we want for the lib-only browser
+# path).
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name             = "gui"
+path             = "src/main.rs"
+required-features = []
+
 [dependencies]
-wry        = { workspace = true }
-tao        = { workspace = true }
-tokio      = { workspace = true }
-anyhow     = { workspace = true }
+# Cross-target deps (compile everywhere — pure Rust).
 serde      = { workspace = true }
 serde_json = { workspace = true }
-tracing            = { workspace = true }
+tracing    = { workspace = true }
+# Material Design 3 tokens — feeds the runtime-injected CSS in index.html
+# AND the JSON returned by the `cmd: "tokens"` IPC handler, so the desktop
+# surface and the TUI surface share one palette source.
+m3-tokens  = { path = "../m3-tokens" }
+
+# Native-only deps. Gated off wasm32 — wry/tao/mimalloc all pull native
+# window handles / C source incompatible with `wasm32-unknown-unknown`,
+# so the lib carries a `#![cfg(not(target_arch = "wasm32"))]` gate AND
+# the dep graph is kept clean here so a stray `cargo check -p gui
+# --target wasm32-unknown-unknown` doesn't drag mimalloc.h into wasm-ld.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wry                = { workspace = true }
+tao                = { workspace = true }
+tokio              = { workspace = true }
+anyhow             = { workspace = true }
 tracing-subscriber = { workspace = true }
 mimalloc           = { workspace = true }
-backend    = { path = "../backend" }
+backend            = { path = "../backend" }
