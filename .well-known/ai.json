@@ -21,11 +21,13 @@
 
   "workspace": {
     "primary_root": "C:/src/aphrody",
+    "primary_root_note": "Canonical clone location per `feedback_clone_path_c_src` (always `C:/src/<repo>`). Override locally by exporting `APHRODY_ROOT`; no Rust code reads `primary_root` directly.",
+    "additional_roots_note": "Per-user toolchain caches (cargo, bun, dotnet, nuget) live under the user's home dir. The previous explicit list was a snapshot of the maintainer's machine; resolve at runtime via `$CARGO_HOME` / `$BUN_INSTALL` / `$DOTNET_ROOT` / `$NUGET_PACKAGES`, falling back to `$HOME` / `$USERPROFILE`.",
     "additional_roots": [
-      "C:/Users/yohan/.cargo",
-      "C:/Users/yohan/.bun",
-      "C:/Users/yohan/.dotnet",
-      "C:/Users/yohan/.nuget"
+      "${CARGO_HOME:-${HOME}/.cargo}",
+      "${BUN_INSTALL:-${HOME}/.bun}",
+      "${DOTNET_ROOT:-${HOME}/.dotnet}",
+      "${NUGET_PACKAGES:-${HOME}/.nuget}"
     ],
     "denied_paths": [
       "**/.ssh/**",

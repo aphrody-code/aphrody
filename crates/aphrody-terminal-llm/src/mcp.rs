@@ -595,6 +595,57 @@ fn resolve_google_mcp_binary() -> Option<String> {
     which::which(binary_name).ok().and_then(|p| p.to_str().map(str::to_owned))
 }
 
+/// Resolve the aphrody workspace root for default MCP server config.
+///
+/// Lookup order:
+/// 1. `APHRODY_ROOT` env var (explicit override).
+/// 2. `CARGO_MANIFEST_DIR` walk-up looking for the workspace `Cargo.toml`
+///    (works when called from a binary built inside this workspace).
+/// 3. `C:/src/aphrody` as a last-resort developer-machine fallback (matches
+///    the canonical clone path documented in CLAUDE.md and the
+///    `feedback_clone_path_c_src` user convention).
+#[cfg(feature = "mcp-default-servers")]
+fn resolve_aphrody_root() -> String {
+    if let Ok(explicit) = env::var("APHRODY_ROOT") {
+        return explicit;
+    }
+    // CARGO_MANIFEST_DIR points to crates/aphrody-terminal-llm/; walk two
+    // dirs up (../..) to reach the workspace root.
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let candidate = std::path::PathBuf::from(manifest_dir)
+        .parent()
+        .and_then(std::path::Path::parent)
+        .map(std::path::Path::to_path_buf);
+    if let Some(p) = candidate {
+        if p.join("Cargo.toml").is_file() {
+            return p.to_string_lossy().replace('\\', "/");
+        }
+    }
+    // Last-resort: documented dev-machine snapshot path.
+    "C:/src/aphrody".to_owned()
+}
+
+/// Resolve the bxc extension server entry point for the default MCP spec.
+///
+/// Lookup order:
+/// 1. `BXC_EXTENSION_SERVER` env var (explicit override path to `server.ts`).
+/// 2. `<APHRODY_ROOT>/packages/bxc/packages/bxc-extension/server.ts` (in-tree
+///    mirror per CLAUDE.md §0.3).
+/// 3. `C:/worktree/bxc/packages/bxc-extension/server.ts` last-resort fallback
+///    matching the historical worktree layout documented in `.mcp.json`.
+#[cfg(feature = "mcp-default-servers")]
+fn resolve_bxc_extension_server() -> String {
+    if let Ok(explicit) = env::var("BXC_EXTENSION_SERVER") {
+        return explicit;
+    }
+    let in_tree = std::path::PathBuf::from(resolve_aphrody_root())
+        .join("packages/bxc/packages/bxc-extension/server.ts");
+    if in_tree.is_file() {
+        return in_tree.to_string_lossy().replace('\\', "/");
+    }
+    "C:/worktree/bxc/packages/bxc-extension/server.ts".to_owned()
+}
+
 /// Return the default [`McpServerSpec`]s registered by the `aphrody` terminal.
 ///
 /// Only available when the `mcp-default-servers` feature is enabled (the
@@ -603,19 +654,18 @@ fn resolve_google_mcp_binary() -> Option<String> {
 /// 1. **google_mcp** — stdio via the resolved binary path (see [`resolve_google_mcp_binary`]).  If
 ///    the binary cannot be found the spec uses the string `"google_mcp"` as the command (relying on
 ///    `$PATH`).
-/// 2. **bxc** — stdio via `bun run C:/worktree/bxc/packages/bxc-extension/server.ts`, matching the
-///    entry in the repository `.mcp.json`.
+/// 2. **bxc** — stdio via `bun run <bxc-extension>/server.ts`, resolved via
+///    [`resolve_bxc_extension_server`]. Defaults match the entry in the
+///    repository `.mcp.json` but are overridable via env vars.
 #[cfg(feature = "mcp-default-servers")]
 pub fn default_server_specs() -> Vec<McpServerSpec> {
     let google_mcp_cmd = resolve_google_mcp_binary().unwrap_or_else(|| "google_mcp".to_owned());
+    let aphrody_root = resolve_aphrody_root();
+    let bxc_server = resolve_bxc_extension_server();
 
     let bxc_env: HashMap<String, String> = [(
         "BXC_MEMORY_DB".to_owned(),
-        // Default path: prefer APHRODY_ROOT env var, fall back to the hard-coded
-        // Windows worktree path from .mcp.json.
-        env::var("APHRODY_ROOT")
-            .map(|r| format!("{r}/var/data/bxc-memory.sqlite"))
-            .unwrap_or_else(|_| "C:/src/aphrody/var/data/bxc-memory.sqlite".to_owned()),
+        format!("{aphrody_root}/var/data/bxc-memory.sqlite"),
     )]
     .into_iter()
     .collect();
@@ -633,10 +683,7 @@ pub fn default_server_specs() -> Vec<McpServerSpec> {
             name: "bxc".to_owned(),
             transport: McpTransport::Stdio {
                 command: "bun".to_owned(),
-                args: vec![
-                    "run".to_owned(),
-                    "C:/worktree/bxc/packages/bxc-extension/server.ts".to_owned(),
-                ],
+                args: vec!["run".to_owned(), bxc_server],
                 env: bxc_env,
             },
         },

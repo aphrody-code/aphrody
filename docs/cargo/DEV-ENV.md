@@ -34,7 +34,7 @@ After apply : restart your shell, then verify with `cargo dev-fast`.
 | `CARGO_NET_GIT_FETCH_WITH_CLI`        | `true`                                            | `true`                                    | Use system git for fetch (faster on Win)               |
 | `CARGO_TERM_COLOR`                    | `always`                                          | `always`                                  | Color output in CI logs                                |
 | `RUST_BACKTRACE`                      | `1`                                               | `1`                                       | Backtraces by default                                  |
-| `BUN_RUNTIME_TRANSPILER_CACHE_PATH`   | `C:\Users\yohan\.bun-transpile-cache`             | `~/.cache/bun-transpile`                  | Bun TS transpile cache                                 |
+| `BUN_RUNTIME_TRANSPILER_CACHE_PATH`   | `%USERPROFILE%\.bun-transpile-cache`              | `~/.cache/bun-transpile`                  | Bun TS transpile cache (resolved per-user by `scripts/setup-dev-env.ps1`) |
 | `APHRODY_A2A_ENDPOINT`                | `http://localhost:8788/jsonrpc`                   | (same)                                    | Default A2A coord JSON-RPC endpoint                    |
 | `APHRODY_LIVE_BACKEND`                | `gemini-oauth`                                    | (same)                                    | Default gemini-live backend                            |
 
