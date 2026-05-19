@@ -128,6 +128,18 @@ Gaps critiques à clore avant publish-ladder :
 - **`aphrody version --json`** absent (parity manquante avec
   `aphrody doctor --json` qui marche déjà).
 
+**Résolution Gemini binary (chain unifiée, 2026-05-19)** : tout le workspace
+utilise `gemini_runtime::resolve_bin()` qui suit cet ordre (premier match) :
+1. `$APHRODY_GEMINI_BIN` env (override explicite) ;
+2. sibling de `current_exe()` (= `~/.local/bin/gemini[.exe]` après bootstrap) ;
+3. fork in-tree `packages/gemini-cli/bundle/gemini[.exe|.js]` (walk up depuis
+   CWD — c'est l'outil maison canonique, cf. memory `project_aphrody_owned_tools`) ;
+4. PATH `which("gemini")` (upstream global).
+
+Conséquence : `aphrody a2a "ping"` marche dès qu'**un** de ces 4 chemins est
+résolvable. Pas besoin d'install global upstream si le fork in-tree est
+bundlé ; pas besoin de bundle si `APHRODY_GEMINI_BIN` pointe ailleurs.
+
 Outputs validés OK : `version`, `doctor` (+`--json`), `self bootstrap --check`,
 `completions {5 shells}`, `scan {tree, manifests}`, `dns` (287 sous-domaines
 sur google.com), `a2a "ping"` → **"pong"** via fallback Gemini CLI,
