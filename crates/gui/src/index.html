@@ -1,5 +1,29 @@
 <!DOCTYPE html>
-<html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Gemini (Native Rust Clone)</title><script type="module" src="https://esm.run/@material/web/all.js"></script><link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..1000&family=Google+Sans+Mono:wght@400..700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,-25..0" rel="stylesheet"><style>
+<html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>aphrody</title><!--APHRODY_M3_CSS--><script type="module" src="https://esm.run/@material/web/all.js"></script><link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..1000&family=Google+Sans+Mono:wght@400..700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,-25..0" rel="stylesheet"><script>
+        // Host -> WebView reply hook. The native host calls
+        // window.__aphrodyReply(payload) via evaluate_script after handling a
+        // {type:"cmd", content:"…"} IPC. UI can override this to render a
+        // toast / panel; the default just stashes the last reply on window.
+        window.__aphrodyReply = function (payload) {
+          window.__lastReply = payload;
+          // Tokens replies refresh the live :root variables so the surface
+          // re-themes without a page reload.
+          if (payload && payload.kind === 'tokens' && payload.css) {
+            var existing = document.getElementById('aphrody-m3-runtime');
+            if (existing) { existing.remove(); }
+            var style = document.createElement('style');
+            style.id = 'aphrody-m3-runtime';
+            style.textContent = payload.css;
+            document.head.appendChild(style);
+          }
+        };
+        // Ask the host for the current M3 tokens as soon as the page loads.
+        window.addEventListener('DOMContentLoaded', function () {
+          if (window.ipc && window.ipc.postMessage) {
+            window.ipc.postMessage(JSON.stringify({ type: 'cmd', content: 'tokens' }));
+          }
+        });
+      </script><style>
           :root {
             --md-sys-color-background: #0F0F0F;
             --md-sys-color-on-background: #FFFFFF;
