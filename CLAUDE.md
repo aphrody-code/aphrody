@@ -305,6 +305,36 @@ Wrappers `aphrody n2b` / `aphrody bxc` parity bash↔pwsh (NDJSON streamable, p5
 - `a2a-slimrpc` n'est pas dans `workspace.members` — ne pas l'y remettre tant
   qu'`agntcy-slim-mls` n'est pas fixé upstream.
 
+## 6.0. Relation aphrody ↔ winclean
+
+**`C:\src\winclean\`** est la **spécialisation Windows-only** d'aphrody —
+même projet, même org `aphrody-code`, deux scopes orthogonaux par OS :
+
+| Axe | aphrody (`C:\src\aphrody\`) | winclean (`C:\src\winclean\`) |
+|---|---|---|
+| Cible primaire | **Linux #1** (Ubuntu 26.04), Windows #2, WASM #3 | **Windows-only** (Win11 24H2+, NativeAOT C#) |
+| Langage cœur | 100 % Rust (exception `packages/bxc/` Bun) | C# NativeAOT + C++20 + Rust portions |
+| Binaire principal | `aphrody.exe` (8.3 MB), `aphrody-mcp.exe` (6.5 MB, 18 tools) | `Winclean.Mcp.exe` (21 MB, 146 outils Win32) |
+| Mission spécifique | CLI agent autonome cross-platform | Inazuma Eleven Victory Road (`nie.exe` → `nie.rs` Safe Rust port) |
+| MCP server | `aphrody-mcp` (15 + 2 voice + 1 re_triage) | `winclean` (146 tools P/Invoke Win32) |
+| A2A coord | `aphrody/ai/` (in-tree depuis 2026-05-19) | `C:\src\winclean\.coord\` |
+
+**Conséquences opérationnelles** :
+- **Skills/agents génériques** (reverse engineering, deep analysis, protocol RE)
+  vivent dans aphrody (cross-platform). Le peer winclean en a un cache local
+  pour son usage propre (cf. `winclean/.agents/skills/`).
+- **Skills/tools Windows-only** (Winclean.Mcp 146 outils, IEVR pipeline,
+  port-c-to-rust IEVR-specific) restent côté winclean.
+- **Pas de duplication de logique** : si une feature peut être pure Rust
+  cross-platform, elle vit dans aphrody (et winclean la consomme via `path` dep
+  ou via le binaire `aphrody.exe`). Si elle nécessite P/Invoke Win32 sur des
+  surfaces non-Rust friendly (DWM, RAMMap, ConPTY profond), elle reste côté
+  winclean.
+- **Mailbox A2A bidirectionnelle** : `aphrody/ai/outbox.jsonl` ↔
+  `winclean/.coord/inbox-from-aphrody.jsonl` (mirror back-compat).
+  Le peer winclean reste indépendant — pas d'écriture cross-repo
+  sans accord (cf. ai.json `peers[0].notes`).
+
 ## 6.1. A2A coordination cross-Claude (`ai.json` v1, in-tree depuis 2026-05-19)
 
 Ce repo expose un manifest A2A AGNTCY a2a v1.0 (`lf.a2a.v1`, `ai.json` à la racine)
