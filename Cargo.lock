@@ -685,6 +685,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-retry"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "rand 0.8.6",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "aphrody-router"
 version = "1.0.0-canary"
 dependencies = [
@@ -696,6 +709,19 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-session"
+version = "1.0.0-canary"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -853,6 +879,18 @@ dependencies = [
  "serde_json",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "aphrody-tools"
+version = "1.0.0-canary"
+dependencies = [
+ "regex",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]
@@ -4910,6 +4948,7 @@ name = "google_mcp"
 version = "1.0.0-canary"
 dependencies = [
  "anyhow",
+ "aphrody-re",
  "aphrody-voice",
  "aphrody-voice-stt",
  "axum",
