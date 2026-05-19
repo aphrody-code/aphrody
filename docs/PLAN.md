@@ -27,13 +27,13 @@ Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** rév
 | R-E | `aphrody-cron` (single lib.rs) | ✅ shipped | 536 |
 | R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
 | R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
-| R-A | R1.4 MCP client dans `aphrody-mcp` | ⏳ partiel (`McpClient` existe dans gemini-runtime, pas wired MCP server) | n/a |
+| R-A | R1.4 MCP client dans `aphrody-mcp` | ✅ shipped — tool `aphrody_mcp_call(server, tool, args, config?)` wired sur McpClient stdio/HTTP, 5 unit tests | n/a |
 | R-A | R1.5 cold-start bench criterion | ⏳ | n/a |
 | R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ⏳ | n/a |
 | R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | ⏳ | n/a |
 
-**Vrais ⏳ restants prioritaires** : R5 (création `aphrody-re/`), R1.4 (MCP client wired), R1.5
-(bench cold-start), R3.4 (migration tool), R4.1-R4.7 (scraping deep features).
+**Vrais ⏳ restants prioritaires** : R1.5 (bench cold-start), R3.4 (migration tool),
+R4.1-R4.7 (scraping deep features). R1.4 ✅ closed 2026-05-19 (commit suivant).
 
 Les sprints R-B/R-C/R-E sont donc **largement déjà clos** — leur valeur résiduelle est
 en **finition** (tests, docs, wire CLI) plutôt qu'en scaffolding.
@@ -85,7 +85,7 @@ utilisé ligne 228). Restent R1.4-R1.6 actionables.
 | R1.1 | Diagnostics `aphrody-tui/src/widgets.rs` (unused imports `BorderType/Modifier`, `unicode_*`) | ✅ **false-positive cached** | `cargo check -p aphrody-tui --locked` exit 0 |
 | R1.2 | Diagnostics `aphrody-tui/tests/widgets_smoke.rs` (E0432 unresolved imports `BorderStyle/Gauge/Padding/...`) | ✅ **false-positive cached** — `m3::*` + `TestBackend` exposés | `cargo test -p aphrody-tui --locked` exit 0 |
 | R1.3 | Diagnostics `gemini-runtime/src/tools.rs` (E0432 `async_trait`, E0038 `Tool` non dyn-compat) | ✅ **false-positive cached** — `async-trait` dans Cargo.toml + `#[async_trait]` proc-macro applied | `cargo check -p gemini-runtime --locked` exit 0 |
-| R1.4 | MCP client dans `aphrody-mcp` via `serve_client` + `TokioChildProcess` (stdio) / `StreamableHttpClientTransport` (HTTP) — `rmcp::client::Client` n'existe pas, l'API officielle utilise traits `Transport`/`IntoTransport` + `serve_client` (cf. rmcp 1.7.0). Tool `aphrody_mcp_call(server, tool, args)` | ⏳ | `aphrody-mcp` peut invoquer un autre serveur MCP en stdio |
+| R1.4 | MCP client dans `aphrody-mcp` via `gemini_runtime::McpClient` (stdio + HTTP, cf. `crates/gemini-runtime/src/mcp_client.rs:275`). Tool `aphrody_mcp_call(server, tool, args, config?)` shipped dans `crates/google_mcp/src/main.rs` — structured error envelopes `MCP_BAD_REQUEST / MCP_CONFIG / MCP_UNKNOWN_SERVER / MCP_CONNECT / MCP_INITIALIZE / MCP_CALL / MCP_ENCODE` | ✅ | `cargo test -p google_mcp aphrody_mcp_call_tests` 5/5 green |
 | R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99, `aphrody-mcp` initialize handshake p50/p95 | ⏳ | `cargo bench -p cli` produit rapport HTML + ledger `docs/PERFORMANCE-HISTORY.md` updated |
 | R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
 
