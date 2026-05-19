@@ -13,8 +13,15 @@
     "json_schema": "docs/schemas/ai.json.v1.schema.json",
     "license": "Apache-2.0",
     "this_mirror_path": "C:\\src\\aphrody\\ai.json",
+    "coord_dir": "ai/",
+    "coord_dir_absolute": "C:\\src\\aphrody\\ai\\",
+    "heartbeat_path": "ai/heartbeat.txt",
+    "inbox_path": "ai/inbox.jsonl",
+    "outbox_path": "ai/outbox.jsonl",
+    "peers_dir": "ai/peers/",
     "created": "2026-05-17",
-    "last_updated": "2026-05-17T16:00:00+02:00"
+    "last_updated": "2026-05-19T03:00:00+02:00",
+    "$coord_internalization_note": "On 2026-05-19, A2A coordination state was migrated in-tree from the external C:\\winclean\\.coord\\ directory (peer-owned) to this repo's own ai/ folder. The peer winclean retains its own C:\\winclean\\.coord\\ as ITS source of truth; aphrody's source of truth is now ai/ here. Mirror writes to the peer's coord dir are best-effort back-compat only."
   },
 
   "agent_card": {
@@ -49,13 +56,15 @@
       "extensions": [
         {
           "uri": "https://aphrody.dev/a2a-extensions/file-transport/v1",
-          "description": "File-based async transport. Each agent maintains its own ai.json mirror plus ai/inbox/, ai/outbox/, ai/peers/ directories. Peers exchange Messages by writing .msg.json files into the target agent's inbox/ (when write access is mutual) or by polling each other's outbox/ (when only read access is mutual).",
+          "description": "File-based async transport. Each agent maintains its own ai.json mirror plus an in-tree ai/ directory containing heartbeat.txt + inbox.jsonl (NDJSON, peers append here) + outbox.jsonl (NDJSON, this agent appends here) + peers/<name>.ai.json snapshots. The .jsonl single-file convention supersedes the older per-message .msg.json pattern for simplicity and append-only durability — both remain compliant with this extension.",
           "required": true,
           "params": {
-            "inbox_dir": "ai/inbox/",
-            "outbox_dir": "ai/outbox/",
+            "coord_dir": "ai/",
+            "heartbeat_path": "ai/heartbeat.txt",
+            "inbox_path": "ai/inbox.jsonl",
+            "outbox_path": "ai/outbox.jsonl",
             "peers_dir": "ai/peers/",
-            "message_file_pattern": "{iso8601_utc}_{sender}_{message_id}.msg.json",
+            "message_envelope_keys": ["id", "ts", "from", "to", "type", "re", "subject", "body", "channel_hint"],
             "polling_hint": "on_session_start, on_user_prompt, on_outbox_write"
           }
         },
@@ -135,9 +144,14 @@
         "protocol_version": "1.0",
         "tenant": "winclean"
       },
-      "verified": false,
-      "last_seen": null,
-      "notes": "Peer mirror not yet created by the winclean instance. Aphrody has read access to C:\\winclean\\** but cannot write there (cf. winclean memory feedback_never-touch-aphrody.md applies symmetrically)."
+      "peer_coord_dir": "C:\\winclean\\.coord\\",
+      "peer_inbox_path": "C:\\winclean\\.coord\\inbox-from-aphrody.jsonl",
+      "peer_outbox_path": "C:\\winclean\\.coord\\inbox-from-winclean.jsonl",
+      "peer_heartbeat_path": "C:\\winclean\\.coord\\heartbeat-winclean.txt",
+      "local_mirror": "ai/peers/winclean.ai.json",
+      "verified": true,
+      "last_seen": "2026-05-19T03:00:00+02:00",
+      "notes": "Peer mirror present and synced. Aphrody has read access to C:\\winclean\\** but cannot write there directly (cf. winclean memory feedback_never-touch-aphrody.md applies symmetrically). Aphrody writes to its own ai/outbox.jsonl as the canonical source; a best-effort copy is appended to the peer's inbox-from-aphrody.jsonl for back-compat — the peer is now expected to ALSO read aphrody's ai/outbox.jsonl directly."
     }
   ],
 
