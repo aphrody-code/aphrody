@@ -49,6 +49,22 @@ fn wasi_resolves_to_unsupported() {
     assert_eq!(default_transport_kind(), TransportKind::Unsupported);
 }
 
+// Compile-time-only contract for wasm32-unknown-unknown: assert the public
+// `JsonRpcTransport` constructor signature is reachable via the public
+// `reqwest::Client` re-export when the target is the browser. We cannot
+// actually run wasm tests here (no wasm-bindgen-test runner wired), but
+// `cargo check --target wasm32-unknown-unknown --tests` flips this into a
+// type-check that catches any regression that hides the constructor behind
+// a feature gate that's off by default on wasm.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+#[allow(dead_code)]
+fn browser_jsonrpc_transport_compiles() {
+    use a2a_client::jsonrpc::JsonRpcTransport;
+    let client = reqwest::Client::new();
+    let _transport: Box<dyn Transport> =
+        Box::new(JsonRpcTransport::new(client, "https://example.invalid/jsonrpc".to_string()));
+}
+
 #[cfg(all(not(target_family = "wasm"), feature = "rustls-tls"))]
 #[test]
 fn jsonrpc_transport_advertises_protocol_name() {
