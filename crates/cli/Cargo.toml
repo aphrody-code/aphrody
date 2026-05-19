@@ -63,6 +63,8 @@ aphrody-channels          = { path = "../aphrody-channels" }
 walkdir                   = { workspace = true }
 ignore                    = { workspace = true }
 rayon                     = { workspace = true }
+# `aphrody mcp {list, call}` — MCP client + tool registry.
+gemini-runtime            = { path = "../gemini-runtime" }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]

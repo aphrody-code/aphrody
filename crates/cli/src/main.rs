@@ -12,6 +12,7 @@
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
+#[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
@@ -188,6 +189,12 @@ enum Commands {
     Bxc {
         #[command(subcommand)]
         action: BxcAction,
+    },
+    /// Model Context Protocol — list servers, call tools (~/.config/aphrody/mcp.json).
+    #[cfg(not(target_arch = "wasm32"))]
+    Mcp {
+        #[command(subcommand)]
+        action: McpAction,
     },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
@@ -431,6 +438,39 @@ pub(crate) enum BxcAction {
     },
 }
 
+/// Actions for the `mcp` kernel subcommand (Model Context Protocol).
+///
+/// Backed by `gemini-runtime` MCP client. Output is NDJSON on stdout — one
+/// line per server / one result envelope — so it can be piped into `jq`.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum McpAction {
+    /// List configured MCP servers + (by default) probe `tools/list` for each.
+    List {
+        /// Override the default config path (`~/.config/aphrody/mcp.json`).
+        #[arg(long)]
+        config: Option<PathBuf>,
+        /// Skip the live probe; emit only the static config.
+        #[arg(long)]
+        no_probe: bool,
+    },
+    /// Invoke a single tool on a configured MCP server.
+    ///
+    /// Example: aphrody mcp call google_mcp search --args '{"q":"rust"}'
+    Call {
+        /// Override the default config path (`~/.config/aphrody/mcp.json`).
+        #[arg(long)]
+        config: Option<PathBuf>,
+        /// Server name (key in `mcpServers`).
+        server: String,
+        /// Tool name to invoke.
+        tool: String,
+        /// JSON-encoded `arguments` object passed to `tools/call`.
+        #[arg(long, default_value = "{}")]
+        args: String,
+    },
+}
+
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
 // canonical token inventory and the detector are shared with
 // `commands::AutoCommand::execute` to guarantee both call sites agree.
@@ -502,6 +542,14 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Bxc { action }) => {
             commands::BxcCommand { action }.execute(ctx).await?;
+        },
+        Some(Commands::Mcp { action }) => match action {
+            McpAction::List { config, no_probe } => {
+                mcp_cmd::McpListCommand { config, no_probe }.execute(ctx).await?;
+            },
+            McpAction::Call { config, server, tool, args } => {
+                mcp_cmd::McpCallCommand { config, server, tool, args }.execute(ctx).await?;
+            },
         },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
@@ -660,6 +708,7 @@ fn main() {
                 Commands::Term { .. } => "term",
                 Commands::N2b { .. } => "n2b",
                 Commands::Bxc { .. } => "bxc",
+                Commands::Mcp { .. } => "mcp",
                 Commands::Notify { .. } => "notify",
                 Commands::Completions { .. } => "completions",
                 Commands::SelfCmd { .. } => "self",
