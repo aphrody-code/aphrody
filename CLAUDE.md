@@ -185,7 +185,11 @@ API non trivial, ou de prendre une décision basée sur la doc d'une lib :
 
 - Utiliser le MCP **`context7`** (`resolve-library-id` puis `query-docs`)
   pour vérifier la version courante et l'API actuelle.
-- Préférer context7 à la mémoire ou à WebSearch pour la doc des libs.
+- **Combo recommandé** : `context7` pour **API surface / usage patterns** (méthodes,
+  traits, signatures) + `WebSearch crates.io` pour **version numbers exacts** —
+  context7 indexe les docs, pas toujours le dernier publish manifest. Validé sur
+  capstone (0.13→0.14), quiche (0.24→0.28), curl-impersonate (chrome131→chrome146).
+  Voir `docs/audits/2026-05-19-hermes-agent-vs-aphrody.md` pour exemples.
 - Skip pour : refactoring local, scripts from scratch, debug business logic,
   concepts généraux.
 
@@ -226,15 +230,15 @@ cargo audit-udeps          # nightly unused deps
 Monorepo **100% Rust** (cf. §2 et memory [[feedback_aphrody_rust_only]]).
 Toute trace de Bun/Node/TS/Python/turbo dans `packages/`, `node_modules/`,
 `scripts/*.ts`, `bun.lock`, `package.json`, `tsconfig.json`, `turbo.json`
-est destinée à être éradiquée (plan : `docs/PLAN_RUST_ONLY.md`).
+est destinée à être éradiquée (plan : `docs/PLAN.md`).
 
-### Workspace (`Cargo.toml` root, 17 members)
+### Workspace (`Cargo.toml` root, 54 members)
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).
 - **Kernel subcommands** (depuis 2026-05-18) :
   - `aphrody n2b [args]` — sous-commande Rust native (refactor en cours, ex-façade
-    bun `packages/n2b/src/cli.ts` à supprimer). Cf. `docs/PLAN_RUST_ONLY.md`.
+    bun `packages/n2b/src/cli.ts` à supprimer). Cf. `docs/PLAN.md`.
   - `aphrody n2b watch --interval N --path P` — boucle infinie tokio (Ctrl-C trap).
   - `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine `:8765` via `crates/cli/src/scrape.rs::ScrapeClient`.
   - Install PATH : `aphrody self install-path` (binaire Rust natif, ex-`scripts/Install-AphrodyToPath.ps1` / `scripts/install-aphrody-path.sh`).
@@ -303,7 +307,7 @@ Wrappers `aphrody n2b` / `aphrody bxc` parity bash↔pwsh (NDJSON streamable, p5
 
 ## 6.1. A2A coordination cross-Claude (`ai.json` v1)
 
-Ce repo expose un manifest A2A AGNTCY a2a/v0.4 (`ai.json` à la racine) et un
+Ce repo expose un manifest A2A AGNTCY a2a v1.0 (`lf.a2a.v1`, `ai.json` à la racine) et un
 schéma channel-extension (`schemas/ai.json/v1.json`). Discovery thin via
 `.well-known/ai.json` (HTTP-friendly).
 
@@ -325,7 +329,7 @@ d'un `fact` via `/msg` (cf. apx-fact-move-script comme template).
   Script `.claude/skills/a2a-duel-loop/scripts/duel-cycle.ts` (flags `--iteration --side --type --re --dry-run`).
 - **Ievr ops aphrody-side** : ~~`scripts/ievr-serve.ps1`~~ / ~~`scripts/ievr-verify.ps1`~~
   (ps1 + bun) → à porter vers `aphrody ievr {serve,verify}` (sous-commande
-  Rust native, voir `docs/PLAN_RUST_ONLY.md`).
+  Rust native, voir `docs/PLAN.md`).
 - **Concurrent peer Claude** dans le même repo : `git status` avant chaque edit ;
   ne jamais modifier les fichiers en cours d'édition uncommitted du peer
   (catastrophe garantie sur `Cargo.lock` et workspace `Cargo.toml`).
@@ -344,7 +348,7 @@ Toute la surface skills est centralisée et documentée :
 - **Sync catalogue externe** : `aphrody xtask skills-sync vercel-labs/agent-skills`
   ou `aphrody xtask skills-sync anthropics/skills` (sous-commande Rust native ;
   l'ancien `scripts/skills-sync.ts` est en cours de port — cf.
-  `docs/PLAN_RUST_ONLY.md`).
+  `docs/PLAN.md`).
 
 ## 7. Pièges connus (mémoire institutionnelle)
 
@@ -385,6 +389,30 @@ Toute la surface skills est centralisée et documentée :
   reste pending au moment du screenshot. Gates 3-5 du 5-point UI gate exigent
   Playwright/chromedp CDP-driven ; `bxc` (peer côté winclean) est `gpu_capable=false`
   (HTML/DOM only via Lightpanda).
+- **`npx` plante avec `EDUPLICATEWORKSPACE`** dans ce repo car `package.json` racine
+  liste 2 fois `@google/gemini-cli` (`packages/gemini-cli/` + `packages/gemini-cli/packages/cli`).
+  Tout MCP server stdio configuré en `command: "npx"` échoue silencieusement avec MCP
+  error -32000 (`ConnectionClosed: initialize request`). Workaround validé : utiliser
+  `bunx` (bun ignore les workspace package.json parents). Concerne `context7`,
+  `playwright`, et tout futur MCP stdio npm-based. Fix permanent : dédoublonner les
+  workspaces du `package.json` racine.
+- **License GPL viral** : `unicorn-engine 2.x` (CPU emulator Rust) est **GPL-2.0**.
+  aphrody est Apache-2.0 — tout `cargo add` d'un crate GPL contamine le binaire entier
+  (linking-time viral). Vérifier license avant pin via `cargo info <crate>` ou
+  `cargo deny check` (le `[licenses]` block dans `deny.toml` doit bloquer GPL/AGPL).
+  Concerne surtout les crates reverse engineering, emu, crypto, vidéo.
+- **context7 MCP — limite 3 query-docs par question** (documenté dans le tool description).
+  Pour fact-check massif (audit de N libs), déléguer à un sub-agent général-purpose qui
+  peut faire N questions séquentielles, pas appeler le tool N fois directement. Combo
+  méthodologique : voir §2.5.
+- **Sub-agents Explore peuvent halluciner sur le filesystem** : ils déclarent parfois
+  des dossiers vides alors qu'ils contiennent des fichiers, ou des frontmatters
+  "malformés" qui sont juste mojibake. Toujours `Bash ls` / `Read` direct pour verify
+  avant action destructive (`rm`, `Write` overwrite, `git rm`).
+- **BOM UTF-8 + mojibake double-encoding** dans certains `.md` legacy (caractères
+  `Ã©` au lieu de `é`, `â€"` au lieu de `—`, BOM `﻿` invisible en début de fichier).
+  Origine : Windows codepage conversion. Le `Write` tool produit UTF-8 propre sans
+  BOM — préférer à `Edit` quand on touche l'encoding d'un fichier suspect.
 
 ## 7.5. aphrody-terminal — LLM-first terminal (pivot 2026-05-18)
 
