@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Voice synthesis (TTS) abstractions for the aphrody CLI.
+//! Voice I/O abstractions for the aphrody CLI (TTS + STT).
 //!
 //! # Overview
 //!
@@ -9,8 +9,13 @@
 //! - [`DiscordVoiceShim`] — thin HTTP forwarder that delegates synthesised audio to the openclaw
 //!   Gateway endpoint (`OPENCLAW_GATEWAY_URL`) (native only).
 //! - [`web::WebSpeechSynth`] — browser-native TTS via `window.speechSynthesis` (wasm32 only).
+//! - [`stt`] — speech-to-text (STT) module: [`stt::SttProvider`] trait, OpenAI Whisper, ElevenLabs
+//!   STT, optional local Whisper backend, and browser-native `SpeechRecognition`.
 //!
-//! Voice *input* (STT) is out of scope for this crate.
+//! # Module layout
+//!
+//! The `stt` submodule was formerly published as `aphrody-voice-stt`. It is now
+//! unified here so consumers depend on a single crate for all voice I/O.
 
 #![forbid(unsafe_code)]
 
@@ -20,6 +25,9 @@
 
 // Browser-native module: only compiled when targeting wasm32.
 #[cfg(target_arch = "wasm32")] pub mod web;
+
+// Speech-to-text (STT) — unified from the former `aphrody-voice-stt` crate.
+pub mod stt;
 
 // ── Native-only: trait + error types ─────────────────────────────────────────
 //

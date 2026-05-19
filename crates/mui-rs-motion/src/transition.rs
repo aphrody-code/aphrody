@@ -1,6 +1,6 @@
 //! M3 transition types — Forward/Backward, Enter/Exit, Shared element.
 
-use mui_rs_tokens::motion::{Easing, duration};
+use m3_tokens::motion::{Easing, DURATION_LONG2, DURATION_LONG1, DURATION_MEDIUM2, EASING_EMPHASIZED, EASING_STANDARD};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransitionPattern {
@@ -25,14 +25,14 @@ pub struct Transition {
 
 impl Transition {
     pub fn container_transform() -> Self {
-        Self { pattern: TransitionPattern::ContainerTransform, duration_ms: duration::MEDIUM4, easing: Easing::EMPHASIZED }
+        Self { pattern: TransitionPattern::ContainerTransform, duration_ms: DURATION_LONG2.ms as u32, easing: EASING_EMPHASIZED }
     }
 
     pub fn shared_axis_x() -> Self {
-        Self { pattern: TransitionPattern::SharedAxisX, duration_ms: duration::MEDIUM3, easing: Easing::EMPHASIZED }
+        Self { pattern: TransitionPattern::SharedAxisX, duration_ms: DURATION_LONG1.ms as u32, easing: EASING_EMPHASIZED }
     }
 
     pub fn fade_through() -> Self {
-        Self { pattern: TransitionPattern::FadeThrough, duration_ms: duration::MEDIUM2, easing: Easing::STANDARD }
+        Self { pattern: TransitionPattern::FadeThrough, duration_ms: DURATION_MEDIUM2.ms as u32, easing: EASING_STANDARD }
     }
 }

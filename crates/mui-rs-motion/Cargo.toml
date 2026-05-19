@@ -9,7 +9,7 @@ authors.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-mui-rs-tokens = { path = "../mui-rs-tokens" }
+m3-tokens = { path = "../m3-tokens" }
 
 [dev-dependencies]
 proptest.workspace = true

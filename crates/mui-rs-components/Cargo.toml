@@ -19,7 +19,7 @@ parley.workspace = true
 fontique.workspace = true
 accesskit.workspace = true
 tracing.workspace = true
-mui-rs-tokens     = { path = "../mui-rs-tokens" }
+m3-tokens     = { path = "../m3-tokens" }
 mui-rs-renderer   = { path = "../mui-rs-renderer" }
 mui-rs-motion     = { path = "../mui-rs-motion" }
 
