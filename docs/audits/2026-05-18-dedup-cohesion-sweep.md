@@ -283,7 +283,7 @@ grep -rn "fn load_mcp_json" crates/ | wc -l  # attendu: 0 après P0-7
 grep -rn "known_engine_tokens" crates/cli/src/ | wc -l  # attendu: 1 après P0-2
 
 # Crates check (par lot)
-CARGO_HOME=C:/Users/yohan/.cargo RUSTUP_HOME=C:/Users/yohan/.rustup \
+CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}" \
   cargo check -p aphrody -p aphrody-terminal-llm -p aphrody-terminal-config
 
 # Workspace lints
