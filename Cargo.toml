@@ -38,7 +38,8 @@ members = [
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
     #   + Ninja generator validated). Tracking: upstream agntcy/agp issue queue.
-    # aphrody-memory — async MemoryBackend trait + JSONL + brute-force HNSW backends
+    # aphrody-memory — async MemoryBackend (JSONL/HNSW/SQLite/LanceDB) +
+    # Tier-1 MemoryProvider trait (Mem0 HTTP / Honcho HTTP / SqliteLocal).
     "crates/aphrody-memory",
     # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
     "crates/aphrody-gateway",
@@ -54,6 +55,8 @@ members = [
     "crates/agui-bridge",
     # aphrody-channels — unified messaging-channel trait + Slack / Telegram / Matrix adapters
     "crates/aphrody-channels",
+    # aphrody-messaging — Tier-1 outbound connectors (Telegram, Slack, native SMTP)
+    "crates/aphrody-messaging",
     # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
     # + LLM event bus + browser bridge). Spec: docs/design/aphrody-terminal-spec.md.
     "crates/aphrody-terminal-vt",
@@ -93,6 +96,34 @@ members = [
     "crates/obscura-js",
     "crates/obscura-mcp",
     "crates/obscura-net",
+    # aphrody-skills-forge — programmatic SKILL.md scaffolding + registry +
+    # lint engine (Sprint D / skills-forge).
+    "crates/aphrody-skills-forge",
+    # aphrody-cron — async-friendly interval/daily/cron scheduler with
+    # pluggable JSON-backed job store (Sprint E / hermes-agent).
+    "crates/aphrody-cron",
+    # aphrody-re — reverse engineering primitives: PE/ELF triage via goblin,
+    # sections + Shannon entropy + SHA-256, ASCII/UTF-16 strings sample.
+    # Pure Rust, no GPL deps. Apex Cap R5 (Sprint R-E).
+    "crates/aphrody-re",
+    # aphrody-marketplace — skill / MCP / hook / theme extension index
+    # (Sprint F / hermes-agent : embedded + file + http loaders, semver +
+    # tag queries, SHA-256 integrity verification).
+    "crates/aphrody-marketplace",
+    # aphrody-permissions — tool-level permission engine (allow/ask/deny + glob
+    # matchers + settings.json compatibility) shared with hooks, MCP and skills.
+    "crates/aphrody-permissions",
+    # aphrody-hooks — runtime hook dispatcher (settings.json hook block
+    # parser + globset matcher + tokio::process spawner with timeout +
+    # JSON block/allow decision parsing on stdout).
+    "crates/aphrody-hooks",
+    # aphrody-router — LLM provider router with strict 3-only whitelist
+    # (anthropic / gemini / antigravity). Cf. memory project_aphrody_providers_3only.
+    "crates/aphrody-router",
+    # aphrody-prompts — minijinja-backed prompt template registry with typed
+    # required-variable validation, reusable `{% include %}` partials, and a
+    # configurable PII scrubber (email, phone, IBAN, IPv4, API-key markers).
+    "crates/aphrody-prompts",
 ]
 exclude = [
     "crates/coreutils",
@@ -242,6 +273,7 @@ phf                = { version = "0.11", features = ["macros"] }
 walkdir            = { version = "2" }
 fs_extra           = { version = "1" }
 globset            = { version = "0.4" }
+glob               = { version = "0.3" }
 ignore             = { version = "0.4" }
 tempfile           = { version = "3" }
 filetime           = { version = "0.2" }
@@ -276,6 +308,10 @@ tower-http         = { version = "0.6", features = ["cors"] }
 dns-lookup         = { version = "2" }
 hostname           = { version = "0.4" }
 url                = { version = "2" }
+
+# --- aphrody-voice family (TTS + STT) ------------------------------------
+aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
+aphrody-voice-stt  = { path = "crates/aphrody-voice-stt", version = "1.0.0-canary" }
 
 # --- A2A protocol family --------------------------------------------------
 a2a                = { package = "a2a-lf",        path = "crates/a2a",        version = "0.3" }
@@ -327,6 +363,12 @@ pyo3               = { version = "0.24", features = ["auto-initialize", "abi3-py
 # at the consumer level so each crate opts into the syntect bridge explicitly.
 comrak             = { version = "0.52", default-features = false }
 syntect            = { version = "5.3", default-features = false, features = ["default-fancy"] }
+
+# --- Templating -----------------------------------------------------------
+# `minijinja` powers aphrody-prompts: Jinja-compatible template engine, zero
+# unsafe, no_std-friendly. Used to render LLM prompts with typed variables
+# and reusable partials (`{% include 'name' %}`).
+minijinja          = { version = "2", default-features = false, features = ["loader", "builtins", "macros", "deserialization", "serde"] }
 
 # --- XML pull parser ------------------------------------------------------
 # `quick-xml` powers the streaming <artifact> block parser in
