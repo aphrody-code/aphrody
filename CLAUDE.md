@@ -305,25 +305,48 @@ Wrappers `aphrody n2b` / `aphrody bxc` parity bash↔pwsh (NDJSON streamable, p5
 - `a2a-slimrpc` n'est pas dans `workspace.members` — ne pas l'y remettre tant
   qu'`agntcy-slim-mls` n'est pas fixé upstream.
 
-## 6.1. A2A coordination cross-Claude (`ai.json` v1)
+## 6.1. A2A coordination cross-Claude (`ai.json` v1, in-tree depuis 2026-05-19)
 
-Ce repo expose un manifest A2A AGNTCY a2a v1.0 (`lf.a2a.v1`, `ai.json` à la racine) et un
-schéma channel-extension (`schemas/ai.json/v1.json`). Discovery thin via
+Ce repo expose un manifest A2A AGNTCY a2a v1.0 (`lf.a2a.v1`, `ai.json` à la racine)
+et un schéma channel-extension (`schemas/ai.json/v1.json`). Discovery thin via
 `.well-known/ai.json` (HTTP-friendly).
 
-Une instance peer Claude opère dans `C:\winclean\` (publie son propre
-`C:\winclean\ai.json`). Coord centralisée dans `C:\winclean\.coord\` :
+**Source de vérité A2A in-tree** : `aphrody/ai/` (canonical depuis 2026-05-19,
+ex-`C:\winclean\.coord\` qui reste la source de vérité côté peer winclean
+uniquement). Déclarée par `ai.json` racine → `spec.coord_dir` + extension
+`file-transport/v1.params`.
 
-- **`inbox-from-aphrody.jsonl`** / **`inbox-from-winclean.jsonl`** — mailbox JSONL durable.
+- **`ai/heartbeat.txt`** — proof-of-life ISO-8601 + résumé de session courante (écriture exclusive aphrody).
+- **`ai/outbox.jsonl`** — NDJSON append-only des messages **émis** par aphrody (canonical sortant).
+- **`ai/inbox.jsonl`** — NDJSON append-only des messages **reçus** par aphrody (canonical entrant).
+- **`ai/peers/<name>.ai.json`** — snapshot local de chaque peer (refresh manuel via `cp` ou auto via futur `aphrody a2a sync-peers`).
+- **`ai/README.md`** — documentation du protocole + convention envelope.
+
+**Compatibilité legacy** : pendant la transition, aphrody continue d'écrire
+ses messages sortants en **miroir** dans `C:\winclean\.coord\inbox-from-aphrody.jsonl`
+pour back-compat avec le peer winclean. Le peer winclean est désormais
+**attendu de lire `ai/outbox.jsonl`** comme canonical (cf. `peers[0].peer_outbox_path` et
+`peers[0].local_mirror` dans `ai.json`).
+
+**Channels secondaires** (toujours valides) :
 - **HTTP listener** sur `:8788` (`bun run C:/winclean/.coord/listener.ts`)
-  expose `/ping`, `/msg`, `/inbox`, `/ai.json`.
-- **`heartbeat-{aphrody,winclean}.txt`** — proof-of-life ISO-8601.
+  expose `/ping`, `/msg`, `/inbox`, `/ai.json` — côté winclean uniquement, pas in-tree aphrody.
 - **Git tags** `aphrody-*` dans winclean repo pour signaux out-of-band.
 - **`process_inspect`** (`ps -ef`) pour détecter activité live de l'autre.
 
-Avant un push qui touche du code partagé : vérifier `inbox-from-winclean.jsonl`
-+ bumper `heartbeat-aphrody.txt`. Toute écriture cross-repo doit être précédée
-d'un `fact` via `/msg` (cf. apx-fact-move-script comme template).
+**Workflow par tick** :
+1. Lire `ai/peers/winclean.ai.json` (peer state) + `ai/inbox.jsonl` (peer asks).
+2. Faire le travail.
+3. Append fact/reply envelope à `ai/outbox.jsonl` (canonical).
+4. Append mirror copy à `C:\winclean\.coord\inbox-from-aphrody.jsonl` (back-compat).
+5. Bump `ai/heartbeat.txt` (ISO-8601 + 1-line summary).
+6. Bump `C:\winclean\.coord\heartbeat-aphrody.txt` (back-compat mirror).
+
+Toute écriture cross-repo doit être précédée d'un `fact` via `outbox.jsonl`.
+
+**Politique gitignore** : la **structure** in-tree (`ai/README.md`, `ai/peers/.gitkeep`)
+est trackée ; le **contenu transient** (`heartbeat.txt`, `inbox.jsonl`, `outbox.jsonl`,
+`peers/*.ai.json`) est gitignored (cf. `.gitignore` §22).
 
 - **`/a2a-duel-loop`** : 1 tick A2A par invocation, paire avec `/loop 60s /a2a-duel-loop`.
   Script `.claude/skills/a2a-duel-loop/scripts/duel-cycle.ts` (flags `--iteration --side --type --re --dry-run`).
