@@ -530,6 +530,9 @@ sysinfo            = { version = "0.39", default-features = false, features = ["
 # --- Misc -----------------------------------------------------------------
 itertools          = { version = "0.14" }
 nix                = { version = "0.31" }
+# Unicode helpers (consumed by aphrody-tui dev-deps + future TUI layout).
+unicode-width        = { version = "0.2" }
+unicode-segmentation = { version = "1" }
 
 # --- bxc dependencies ---
 html5ever = "0.39"
