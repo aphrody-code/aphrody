@@ -140,6 +140,28 @@ Conséquence : `aphrody a2a "ping"` marche dès qu'**un** de ces 4 chemins est
 résolvable. Pas besoin d'install global upstream si le fork in-tree est
 bundlé ; pas besoin de bundle si `APHRODY_GEMINI_BIN` pointe ailleurs.
 
+**Auth Gemini end-to-end (validé 2026-05-19, réponse `pong` live)** : trois
+fichiers + un env var suffisent pour que `aphrody a2a "..."` produise une
+vraie inférence Gemini :
+
+1. **`~/.gemini/oauth_creds.json`** — `access_token, scope, token_type,
+   id_token, expiry_date, refresh_token`. Source pratique : copier depuis
+   `C:\src\antigravity\oauth_creds.json` (Antigravity = 3e provider whitelisté,
+   memory `project_aphrody_providers_3only`, share le même OAuth Google).
+2. **`~/.gemini/settings.json`** : `{ "security": { "auth": { "selectedType": "oauth-personal" } } }`
+   (clé nested, **pas** top-level `selectedAuthType` — confirmed via
+   `packages/gemini-cli/packages/cli/src/config/settings.ts:639`).
+3. **`GEMINI_CLI_TRUST_WORKSPACE=true`** — auto-set par `aphrody a2a` /
+   `aphrody gemini` quand absent (cf. `crates/cli/src/commands.rs`).
+   Override possible : `GEMINI_CLI_TRUST_WORKSPACE=false aphrody a2a …`.
+4. **Bundle/fork EDUPLICATEWORKSPACE** : le fork in-tree
+   `packages/gemini-cli/` est gitignored (cf. `.gitignore` §22, L372/443).
+   Pour le builder localement : (a) renommer son root `package.json` en
+   `@google/gemini-cli-workspace` (sinon collision avec son sous-package
+   `packages/cli/`), (b) créer placeholder `packages/next.js/patches/
+   @types__node@20.17.6.patch` (patch hérité du root workspace). Ces deux
+   fixes sont locaux, non-commit car gitignored.
+
 Outputs validés OK : `version`, `doctor` (+`--json`), `self bootstrap --check`,
 `completions {5 shells}`, `scan {tree, manifests}`, `dns` (287 sous-domaines
 sur google.com), `a2a "ping"` → **"pong"** via fallback Gemini CLI,
