@@ -1,8 +1,138 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # PLAN — aphrody
 
-> Plan d'exécution stratégique. Révision : **2026-05-19 (post end-to-end binary validation)**.
+> Plan d'exécution stratégique. Révision : **2026-05-19 (refresh Apex Autonomous Agent — 5 piliers)**.
 > Voir [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) pour le contexte d'ensemble.
+> Audit comparatif amont : [`audits/2026-05-19-hermes-agent-vs-aphrody.md`](audits/2026-05-19-hermes-agent-vs-aphrody.md).
+
+---
+
+## ⭐ Cap 2026-05-19+ : Apex Autonomous Agent
+
+**Mission** : faire de `aphrody` le **meilleur agent autonome** en exploitant 5 piliers asymétriques que les concurrents Python (hermes-agent v0.14.0, AutoGPT, OpenInterpreter, …) ne peuvent pas rattraper sans réécriture native.
+
+### Les 5 piliers
+
+| # | Pilier | Promesse mesurable | Anti-cible |
+|---|---|---|---|
+| **R1** | **Tools Rust natif ultra-rapide** | Cold-start `aphrody <tool>` < 5 ms ; tool MCP roundtrip < 20 ms p50 (vs ~300 ms hermes Python) | Pas de runtime interprété (Python/Node banned per memory `feedback_aphrody_rust_only`) |
+| **R2** | **Apprend de ses erreurs** | Chaque échec (exit ≠ 0, tool err, retry) → `aphrody-memory` event indexé + skill candidate auto-extraite après N=3 répétitions | Pas de prompt-injection skill creation (gate humain ou flag `--auto-skills`) |
+| **R3** | **Mémoire persistante** | `aphrody-memory` LanceDB + SQLite + 3 providers externes (Honcho, Mem0, lancedb) ; recall cross-session p95 < 100 ms ; pas de perte sur upgrade | Pas de cloud-locked memory (provider local = défaut) |
+| **R4** | **Scraping bas niveau** | bxc-engine + curl-impersonate Chrome 131 + Lightpanda CDP — DOM-only < 200 ms p50 ; bypass Cloudflare/Akamai/PerimeterX sans fingerprint custom ; concurrency native via tokio | Pas de Playwright/Puppeteer fallback (sauf cible JS-only explicite) |
+| **R5** | **Reverse engineering** | Bindings natifs `goblin` (ELF/PE/Mach-O/WASM parsing) + `iced-x86` (x64 disasm) + `radare2` FFI + `iaito` Qt frontend driver + `ghidra-headless` orchestration ; PE/ELF triage < 1 s | Pas de réimplémentation Ghidra/IDA (orchestration only) |
+
+### Implications structurelles
+
+- **Tout nouveau crate** doit servir ≥1 des 5 piliers, sinon refusé (cf. memory [[feedback_no_scaffold]]).
+- **Tout nouveau MCP tool** dans `aphrody-mcp` doit être annoté `#[tool(pillar = "R1|R2|R3|R4|R5")]` dans la description (convention doc).
+- **Tout commit feat:** doit citer le pilier dans le footer (`Pillar: R4`).
+- Les 5 piliers sont **non-négociables** — pas d'ajout de pilier R6+ sans révision PR + memory update.
+
+### Roadmap sprints (semaines 21 → 26, deadline 2026-08-31)
+
+| Sprint | Semaine | Focus pilier | Livrables clés |
+|---|---|---|---|
+| **R-A** | S21 (2026-05-19 → 25) | R1 + R3 (fondations) | Fix diagnostics actuels (`aphrody-tui/widgets.rs`, `gemini-runtime/tools.rs`), trait `MemoryProvider` workspace-wide, MCP client dans `aphrody-mcp` (rmcp client) |
+| **R-B** | S22 (2026-05-26 → 06-01) | R3 (memory providers) | Adapter `honcho` + `mem0` + tests cross-provider, eviction policies, schema migration tool |
+| **R-C** | S23 (2026-06-02 → 08) | R2 (learn-from-errors) | `crates/aphrody-skills-forge/` (NEW), hook PostSessionEnd, extraction patterns répétés, dry-run + diff + auto-merge gated |
+| **R-D** | S24 (2026-06-09 → 15) | R4 (scraping deep) | `bxc-engine` upgrade Chrome 132+ impersonate, residential proxy pool integration (BrightData/IPRoyal stubs), `aphrody scrape --concurrent N --rate-limit ms` |
+| **R-E** | S25 (2026-06-16 → 22) | R5 (reverse) | `crates/aphrody-re/` (NEW) — goblin + iced-x86 + capstone bindings + `aphrody re {triage,disasm,strings,sections}` + 4 tools MCP |
+| **R-F** | S26 (2026-06-23 → 29) | R1 + R2 (polish) | Bench harness `criterion` p50/p95 par pilier, regression gate CI, dashboard live `aphrody dashboard` (axum + SSE) |
+| **R-G** | S27 → S35 | R4 + R5 (deepen) | Plugins reverse (`yara-x` matching, `unicorn-rs` emulation), scraping (HTTP/3 ja3 spoofing via `quiche`), Ollama local backend pour skills-forge sans cloud |
+
+### Détails par pilier — items ⏳ actionables sans humain
+
+#### R1 — Tools Rust natif ultra-rapide
+
+| # | Tâche | Verify |
+|---|---|---|
+| R1.1 | Fix `crates/aphrody-tui/src/widgets.rs` : `pub use Block/List/Paragraph`, drop imports inutilisés `BorderType/Modifier`, retire `unicode_segmentation`/`unicode_width` imports | `cargo build -p aphrody-tui --locked` exit 0 |
+| R1.2 | Fix `crates/aphrody-tui/tests/widgets_smoke.rs` : ajouter deps `unicode_width` + `m3_tokens`, re-exporter `BorderStyle/Gauge/Padding/Palette/WrapMode/argb_to_rgb` | `cargo test -p aphrody-tui --locked` exit 0 |
+| R1.3 | Fix `crates/gemini-runtime/src/tools.rs` : ajouter `async-trait` dep, refacto `Tool` trait dyn-compatible (move `invoke<T>` to extension trait OU rendre `invoke(&self, args: Value) -> BoxFuture<Result<Value>>`) | `cargo check -p gemini-runtime --locked` exit 0 |
+| R1.4 | MCP client dans `aphrody-mcp` via `serve_client` + `TokioChildProcess` (stdio) / `StreamableHttpClientTransport` (HTTP) — note : `rmcp::client::Client` n'existe pas, l'API officielle utilise les traits `Transport`/`IntoTransport` + `serve_client` (cf. rmcp 1.7.0 docs). Tool `aphrody_mcp_call(server, tool, args)` | `aphrody-mcp` peut invoquer un autre serveur MCP en stdio |
+| R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99, `aphrody-mcp` initialize handshake p50/p95 | `cargo bench -p cli` produit rapport HTML + ledger `docs/PERFORMANCE-HISTORY.md` updated |
+| R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | `aphrody-mcp --list-tools` → 17 tools |
+
+#### R2 — Apprend de ses erreurs (self-improvement loop)
+
+| # | Tâche | Verify |
+|---|---|---|
+| R2.1 | `crates/aphrody-skills-forge/` NEW : fusion `skill` runtime existant + pattern extraction `aphrody-memory` queries + format SKILL.md aphrody | `cargo new -p aphrody-skills-forge` + module `extractor.rs` + `candidate.rs` + tests |
+| R2.2 | Schema `ErrorEvent` dans `aphrody-memory` : `{ts, cmd, exit_code, stderr_head, retry_n, context_hash}` indexé via LanceDB embedding | `cargo test -p aphrody-memory test_error_event_recall` |
+| R2.3 | Hook `PostToolUse` (.claude/plugins/aphrody/hooks/hooks.json) qui appelle `aphrody skills forge --from-stderr` quand exit ≠ 0 ET retry_n ≥ 3 | manual : trigger 3 fails de la même cmd, voir skill candidate générée |
+| R2.4 | CLI `aphrody skills {forge, refine, review, list, delete}` | `aphrody skills list` → JSON array |
+| R2.5 | Auto-merge gate : `--auto-skills` flag ou prompt humain par défaut ; jamais d'écriture skill sans validation explicite (gate sécurité) | `aphrody skills forge --auto-skills` write, sinon prompt |
+| R2.6 | Sync agentskills.io catalog one-way → `aphrody xtask skills-sync agentskills.io` | catalog JSON cached + diff vs in-tree |
+
+#### R3 — Mémoire persistante
+
+| # | Tâche | Verify |
+|---|---|---|
+| R3.1 | Trait `MemoryProvider` dans `crates/aphrody-memory/src/provider.rs` : `async fn write/read/search/delete/list_sessions` + pin `lancedb = "0.29"` dans `[workspace.dependencies]` (API courante : `lancedb::connect(path).execute()` → `create_table` → `query().nearest_to(&vec).execute()`, column type `FixedSizeList<Float32>`) | `cargo doc -p aphrody-memory` montre trait public |
+| R3.2 | Adapter `honcho` (**Honcho v3** REST `api.honcho.dev` — surface `workspaces/peers/sessions/messages` + `POST /peer/{peer_id}/chat` avec `reasoning_level` enum) dans `crates/aphrody-memory/src/providers/honcho.rs` | `cargo test -p aphrody-memory --features honcho` (mock server) |
+| R3.3 | Adapter `mem0` (HTTP REST `POST /v3/memories/add/` async + `event_id` polling + `client.search(query, filters={user_id})` ; mode local embedded `from mem0 import Memory` côté Python — wrap Rust via subprocess spawn ou ré-impl HTTP-only) | `cargo test -p aphrody-memory --features mem0` |
+| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | dry-run + JSON diff |
+| R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | `cargo test policy_ttl_evicts_after_n_secs` |
+| R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | `cargo test schema_v1_to_v2_roundtrip` |
+| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | `cargo bench -p aphrody-memory bench_recall_100k` |
+
+#### R4 — Scraping bas niveau
+
+| # | Tâche | Verify |
+|---|---|---|
+| R4.1 | bxc-engine : pin `curl-impersonate` profil **`chrome146`** (stable courant lexiforest/curl-impersonate fork, macOS Tahoe) + **`chrome145`** pour spoofing **HTTP/3** (premier profil avec fingerprint HTTP/3 ; chrome131 prédate cette feature) + monitoring JA4 drift via `mitmproxy` (audit trimestriel quand Chrome stable release) | `bxc-engine fetch --impersonate chrome146 https://tls.peet.ws` → JA4 hash stable |
+| R4.2 | `aphrody scrape --concurrent N --rate-limit-ms K` flags (currently single URL) | `aphrody scrape --concurrent 10 --rate-limit-ms 500 urls.txt` |
+| R4.3 | Residential proxy pool trait `ProxyProvider` + stubs BrightData/IPRoyal/Soax (lecture seule, pas de creds par défaut) | trait public + 3 stub providers compilent |
+| R4.4 | **HTTP/3 transport** via `tokio-quiche` (Cloudflare, OSS 2025-12, wrap `quiche >= "0.24"` MSRV 1.82 dans event loop tokio — API : `tokio_quiche::quic::connect(socket, host)` → `(QuicConnection, ClientH3Controller)`, `controller.request_sender()` pour `NewClientRequest`). **Important : tokio-quiche NE fait PAS de JA4 spoofing** — il utilise la TLS BoringSSL par défaut de quiche. Le spoofing fingerprint est délégué à `curl-impersonate` (R4.1, profil `chrome145` HTTP/3). Vérifier latest `quiche` à integration (peut avoir progressé vers 0.28+ depuis 2026-05) | document research outcome dans `docs/research/http3-transport.md` |
+| R4.5 | Tool MCP `bxc_batch_scrape(urls: Vec<String>, selector: String, concurrent: u32)` | `aphrody-mcp` exposes + smoke 10 urls |
+| R4.6 | Bench bxc vs Playwright vs raw curl sur 100 URLs Cloudflare-protected | `docs/PERFORMANCE.md` updated + numbers |
+| R4.7 | Anti-detect : random User-Agent rotation depuis `bxc/profiles/*.json` (already exists) wired dans `aphrody scrape` | `aphrody scrape --random-profile https://...` |
+
+#### R5 — Reverse engineering
+
+| # | Tâche | Verify |
+|---|---|---|
+| R5.1 | `crates/aphrody-re/` NEW : Cargo.toml + lib.rs + 4 modules `pe.rs/elf.rs/macho.rs/wasm.rs` | `cargo build -p aphrody-re --locked` exit 0 |
+| R5.2 | Dep `goblin = "0.10"` (ELF/PE/Mach-O parser, MSRV 1.85) + `iced-x86 = "1.21"` (x64 disasm, MSRV 1.57) + `capstone = "0.14"` (multi-arch disasm fallback, `capstone-sys = "0.18"`, MSRV 1.70, bundles Capstone C 5.0) | `cargo add` dans `aphrody-re` |
+| R5.3 | Sub-cmd `aphrody re triage <binary>` → JSON `{format, arch, entry_point, sections[], imports[], exports[], strings_sample[], suspicious_apis[]}` | `aphrody re triage /bin/ls` exit 0 + valid JSON |
+| R5.4 | Sub-cmd `aphrody re disasm <binary> --addr 0x401000 --count 50` → instructions list | smoke sur petit binaire test |
+| R5.5 | Sub-cmd `aphrody re strings <binary> --min-len 4 --encoding utf8,utf16` | smoke sur `/bin/ls` returns ≥ 100 strings |
+| R5.6 | Sub-cmd `aphrody re sections <binary>` → table `name/vaddr/size/flags/entropy` (entropy per-section via Shannon) | smoke high-entropy detection sur upx-packed binary |
+| R5.7 | MCP tools mirror : `re_triage`, `re_disasm`, `re_strings`, `re_sections` (4 nouveaux dans `aphrody-mcp`) | `aphrody-mcp --list-tools` → 21 tools |
+| R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API attendue `R2Pipe::spawn(path, opts)` + `cmd/cmdj` — **non surfacée dans context7** côté Rust ; smoke test crates.io requis avant pin de version) | `cargo build -p aphrody-re --features radare2` + smoke `aphrody re r2-analyze` |
+| R5.9 | `yara-x` (Rust-native YARA engine) integration : `aphrody re yara --rules rules.yara <binary>` | smoke avec règles publiques YARA |
+| R5.10 | `unicorn-engine` (CPU emulator) bindings — feature `emu` — `aphrody re emulate --start 0x... --steps 1000` | research spike, scope-decision après |
+
+### Anti-portée (drop explicite)
+
+- **Image generation** (FAL/Stable Diffusion) — hors scope CLI ultra-rapide.
+- **Modal/Daytona/Vercel terminals SaaS** — couplage cloud, drop.
+- **Android Termux** — niche, post-1.0 si demande.
+- **Matrix E2EE** (python-olm pain) — drop sauf demande contributeur avec PR.
+- **WhatsApp/Signal/Telegram bots multi-cloud** — limité à Telegram tier-1 + Discord (déjà) + Slack tier-2.
+
+### Garde-fous (rouge)
+
+- **Auto-skill creation sans gate** : interdit par défaut. Toujours `--auto-skills` opt-in explicite ou prompt humain.
+- **Memory write d'output LLM brut** : interdit (toujours sanitize via `aphrody-memory::redactor::scrub` avant write).
+- **Reverse engineering de binaires non-autorisés** : `aphrody re` warning + `--accept-tos` flag obligatoire au premier run (audit local-only, jamais d'upload).
+- **Scraping respectant robots.txt** : flag `--respect-robots` par défaut TRUE ; bypass nécessite `--ignore-robots` explicite + log warning.
+
+### Métriques de succès (gate v2.0.0)
+
+| Pilier | Métrique | Cible v2.0.0 | Mesure actuelle (2026-05-19) |
+|---|---|---|---|
+| R1 | `aphrody version` cold-start p50 | < 5 ms | non mesuré (à benchmark sprint R-A) |
+| R1 | `aphrody-mcp initialize` p50 | < 20 ms | ~590 ms observé sur 1er handshake (warm-up tokio dominant) |
+| R2 | Skills auto-forgées / mois actif | ≥ 5 | 0 (feature absente) |
+| R3 | `aphrody-memory` recall p95 (100k events) | < 100 ms | non mesuré |
+| R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 1 (lancedb only) |
+| R4 | bxc DOM-only scrape p50 | < 200 ms | non mesuré (mais bxc `example.com` < 1s end-to-end mesuré 2026-05-19) |
+| R4 | Cloudflare bypass success rate | ≥ 95 % | non mesuré (CF identifié sur example.com mais pas testé contre protection active) |
+| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | feature absente |
+| R5 | MCP tools reverse | 4 | 0 |
+
+---
 
 ---
 
