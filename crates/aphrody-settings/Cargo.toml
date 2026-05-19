@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-settings"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Hierarchical settings loader (user / project / local / env) with deep JSON merge, dotted-path access, and minimum JSON-Schema validation."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+tokio      = { workspace = true, features = ["fs", "io-util", "macros", "rt"] }
+schemars   = { workspace = true }
+
+[dev-dependencies]
+tempfile   = { workspace = true }
+tokio      = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "fs"] }
+
+[package.metadata.cargo-machete]
+# `tracing` is consumed only via debug! / trace! macros at the loader edges.
+# `schemars` is exposed publicly through the validate_against_schema surface
+# (callers compile their own #[derive(JsonSchema)] structs against it).
+ignored = ["tracing", "schemars"]

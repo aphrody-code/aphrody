@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-session"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Conversation session tracker for aphrody — turns + tool calls + token usage + cost, persisted as JSONL with atomic writes and deterministic replay."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+chrono     = { workspace = true }
+tokio      = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync", "test-util"] }
+
+[package.metadata.cargo-machete]
+# tracing is consumed via macros (debug!/info!) only; keep it explicit so
+# machete does not misfire when the crate is built without log capture.
+ignored = ["tracing"]

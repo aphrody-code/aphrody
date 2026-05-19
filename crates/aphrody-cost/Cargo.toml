@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-cost"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Per-provider USD cost + token usage tracker for aphrody (Anthropic + Gemini + Antigravity only) — pricing table, budget guard, NDJSON append-only log."
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-providers = { workspace = true }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+chrono     = { workspace = true, features = ["serde"] }
+tokio      = { workspace = true, features = ["sync", "fs", "io-util", "macros", "rt"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "fs", "io-util", "sync"] }
+
+[package.metadata.cargo-machete]
+# `tracing` is consumed via macros only (warn! / debug!) when budget guard
+# crosses thresholds; keep it explicit so machete doesn't misfire.
+ignored = ["tracing"]

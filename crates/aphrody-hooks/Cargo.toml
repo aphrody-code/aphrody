@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-hooks"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Runtime hook dispatcher for the aphrody agent stack: parses settings.json hook blocks, matches tool events via glob, spawns user commands with timeout + JSON stdin payload, parses block/allow decisions from stdout."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+tokio      = { workspace = true, features = ["macros", "rt", "process", "io-util", "time", "sync", "fs"] }
+globset    = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "process", "io-util", "time", "sync", "fs", "test-util"] }
+
+[package.metadata.cargo-machete]
+# tracing is invoked through macros only; keep it explicit so machete does
+# not misfire when the crate is consumed without log capture wired up.
+ignored = ["tracing"]

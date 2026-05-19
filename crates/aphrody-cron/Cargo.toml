@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-cron"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Lightweight async cron / interval / daily-time scheduler with pluggable JSON-backed job store for aphrody background tasks."
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio      = { workspace = true, features = ["macros", "time", "sync", "rt"] }
+chrono     = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "time", "sync", "rt", "test-util"] }
+
+[package.metadata.cargo-machete]
+# tracing is used through macros only; keep it explicit so machete doesn't
+# misfire when the crate is consumed without log capture.
+ignored = ["tracing"]
