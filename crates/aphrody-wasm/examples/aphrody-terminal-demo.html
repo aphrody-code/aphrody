@@ -118,6 +118,43 @@
   --aphrody-corner-card:   16px;
   --aphrody-corner-pill:   9999px;
   --aphrody-corner-chip:   12px;
+
+  /* -------------------------------------------------------------------
+     M3 BASELINE_DARK tokens (crates/m3-tokens/src/color.rs::BASELINE_DARK)
+     Exposed alongside the light baseline so the demo can preview
+     dark-mode contrast for any sub-pane that opts in via `data-theme="dark"`.
+     ------------------------------------------------------------------- */
+  --md-sys-color-dark-primary:                #D0BCFF;
+  --md-sys-color-dark-on-primary:             #381E72;
+  --md-sys-color-dark-primary-container:      #4F378B;
+  --md-sys-color-dark-on-primary-container:   #EADDFF;
+  --md-sys-color-dark-secondary:              #CCC2DC;
+  --md-sys-color-dark-on-secondary:           #332D41;
+  --md-sys-color-dark-tertiary:               #EFB8C8;
+  --md-sys-color-dark-on-tertiary:            #492532;
+  --md-sys-color-dark-surface:                #141218;
+  --md-sys-color-dark-on-surface:             #E6E0E9;
+  --md-sys-color-dark-surface-variant:        #49454F;
+  --md-sys-color-dark-on-surface-variant:     #CAC4D0;
+  --md-sys-color-dark-outline:                #938F99;
+  --md-sys-color-dark-outline-variant:        #49454F;
+}
+
+[data-theme="dark"] {
+  --md-sys-color-primary:               var(--md-sys-color-dark-primary);
+  --md-sys-color-on-primary:            var(--md-sys-color-dark-on-primary);
+  --md-sys-color-primary-container:     var(--md-sys-color-dark-primary-container);
+  --md-sys-color-on-primary-container:  var(--md-sys-color-dark-on-primary-container);
+  --md-sys-color-secondary:             var(--md-sys-color-dark-secondary);
+  --md-sys-color-on-secondary:          var(--md-sys-color-dark-on-secondary);
+  --md-sys-color-tertiary:              var(--md-sys-color-dark-tertiary);
+  --md-sys-color-on-tertiary:           var(--md-sys-color-dark-on-tertiary);
+  --md-sys-color-surface:               var(--md-sys-color-dark-surface);
+  --md-sys-color-on-surface:            var(--md-sys-color-dark-on-surface);
+  --md-sys-color-surface-variant:       var(--md-sys-color-dark-surface-variant);
+  --md-sys-color-on-surface-variant:    var(--md-sys-color-dark-on-surface-variant);
+  --md-sys-color-outline:               var(--md-sys-color-dark-outline);
+  --md-sys-color-outline-variant:       var(--md-sys-color-dark-outline-variant);
 }
 
 * { box-sizing: border-box; }
@@ -963,7 +1000,7 @@ body {
           <div class="subagent__body">
             <span class="subagent__name">
               rust-engineer
-              <span class="subagent__model">opus-4.7</span>
+              <span class="subagent__model">gemini-2.5-pro</span>
             </span>
             <div class="subagent__progress" role="progressbar"
                  aria-valuenow="62" aria-valuemin="0" aria-valuemax="100">
@@ -1001,7 +1038,7 @@ body {
           <div class="subagent__body">
             <span class="subagent__name">
               yolo-prod-ready
-              <span class="subagent__model">opus-4.7</span>
+              <span class="subagent__model">gemini-2.5-pro</span>
             </span>
             <div class="subagent__progress" role="progressbar"
                  aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
@@ -1205,12 +1242,52 @@ body {
           <li>VT parser : <code>aphrody-terminal-vt</code></li>
           <li>WASM front : <code>aphrody-terminal-wasm</code></li>
           <li>LLM bridge : <code>aphrody-terminal-llm</code></li>
+          <li>Native backend : <code>aphrody-terminal-backend</code></li>
+          <li>Browser bridge : <code>aphrody-terminal-browser</code></li>
+          <li>Markdown renderer : <code>aphrody-terminal-markdown</code></li>
+          <li>JSON output pipe : <code>aphrody-terminal-json-out</code></li>
+          <li>Config loader : <code>aphrody-terminal-config</code></li>
         </ul>
 <pre><code><span class="tok-cm">// SPDX-License-Identifier: Apache-2.0</span>
 <span class="tok-kw">pub fn</span> <span class="tok-fn">render_block</span>(src: <span class="tok-kw">&amp;str</span>) -&gt; <span class="tok-kw">String</span> {
     <span class="tok-kw">let</span> ast = comrak::parse_document(src, <span class="tok-num">0</span>);
     comrak::format_html(ast, <span class="tok-str">"safe"</span>)
 }</code></pre>
+      </div>
+    </article>
+
+    <!-- =================== OSC namespace pane ======================= -->
+    <article class="pane pane--md" aria-label="aphrody-* OSC namespace">
+      <div class="pane__header">
+        <h2 class="pane__title">
+          <span class="pane__title-icon">O</span>
+          OSC <code>aphrody-*</code> namespace
+        </h2>
+        <span class="pane__title-meta">14 reserved sequences &middot; spec &sect;LLM-extension</span>
+      </div>
+      <div class="md-surface">
+        <p>
+          Single OSC namespace reserved by
+          <code>docs/design/aphrody-terminal-spec.md</code>
+          for LLM-aware extensions. All sequences follow the form
+          <code>\e]aphrody-&lt;name&gt;;&lt;payload&gt;\a</code>.
+        </p>
+        <ul>
+          <li><code>aphrody-md</code> &mdash; render markdown block inline</li>
+          <li><code>aphrody-json</code> &mdash; surface JSON in inspect panel</li>
+          <li><code>aphrody-sub-agent</code> &mdash; sub-agent status update</li>
+          <li><code>aphrody-mcp</code> &mdash; MCP server activity</li>
+          <li><code>aphrody-hook</code> &mdash; hook firing log entry</li>
+          <li><code>aphrody-skill</code> &mdash; skill invocation log</li>
+          <li><code>aphrody-task</code> &mdash; task tree update</li>
+          <li><code>aphrody-browser-nav</code> &mdash; navigate active browser to URL</li>
+          <li><code>aphrody-browser-eval</code> &mdash; eval JS in browser, response via JSON pane</li>
+          <li><code>aphrody-browser-dom</code> &mdash; query DOM (CSS selector), surface result tree</li>
+          <li><code>aphrody-browser-screenshot</code> &mdash; capture viewport / element / full-page</li>
+          <li><code>aphrody-browser-intercept</code> &mdash; install request interception rule</li>
+          <li><code>aphrody-browser-extract</code> &mdash; structured extraction (schema-driven)</li>
+          <li><code>aphrody-browser-perf</code> &mdash; perf timing emission for the active page</li>
+        </ul>
       </div>
     </article>
 
@@ -1233,7 +1310,7 @@ body {
       </div>
 
 <pre class="json-out" id="json-surface">{<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:01.204Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stdout"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"build"</span><span class="j-punc">,</span> <span class="j-key">"crate"</span><span class="j-punc">:</span> <span class="j-str">"aphrody-terminal-vt"</span><span class="j-punc">,</span> <span class="j-key">"target"</span><span class="j-punc">:</span> <span class="j-str">"x86_64-unknown-linux-gnu"</span><span class="j-punc">,</span> <span class="j-key">"ok"</span><span class="j-punc">:</span> <span class="j-bool">true</span><span class="j-punc">,</span> <span class="j-key">"warnings"</span><span class="j-punc">:</span> <span class="j-num">0</span>}}
-{<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:02.418Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stdout"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"agent.spawn"</span><span class="j-punc">,</span> <span class="j-key">"name"</span><span class="j-punc">:</span> <span class="j-str">"rust-engineer"</span><span class="j-punc">,</span> <span class="j-key">"model"</span><span class="j-punc">:</span> <span class="j-str">"claude-opus-4-7"</span><span class="j-punc">,</span> <span class="j-key">"pid"</span><span class="j-punc">:</span> <span class="j-num">48312</span>}}
+{<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:02.418Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stdout"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"agent.spawn"</span><span class="j-punc">,</span> <span class="j-key">"name"</span><span class="j-punc">:</span> <span class="j-str">"rust-engineer"</span><span class="j-punc">,</span> <span class="j-key">"model"</span><span class="j-punc">:</span> <span class="j-str">"gemini-2.5-pro"</span><span class="j-punc">,</span> <span class="j-key">"pid"</span><span class="j-punc">:</span> <span class="j-num">48312</span>}}
 {<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:05.991Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stderr"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"hook.block"</span><span class="j-punc">,</span> <span class="j-key">"hook"</span><span class="j-punc">:</span> <span class="j-str">"PreToolUse"</span><span class="j-punc">,</span> <span class="j-key">"target"</span><span class="j-punc">:</span> <span class="j-str">".env.local"</span><span class="j-punc">,</span> <span class="j-key">"reason"</span><span class="j-punc">:</span> <span class="j-str">"secret-file-pattern"</span>}}
 {<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:08.871Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stdout"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"mcp.tool"</span><span class="j-punc">,</span> <span class="j-key">"server"</span><span class="j-punc">:</span> <span class="j-str">"bxc"</span><span class="j-punc">,</span> <span class="j-key">"tool"</span><span class="j-punc">:</span> <span class="j-str">"bxc_cdp_snapshot"</span><span class="j-punc">,</span> <span class="j-key">"latency_ms"</span><span class="j-punc">:</span> <span class="j-num">412</span><span class="j-punc">,</span> <span class="j-key">"cached"</span><span class="j-punc">:</span> <span class="j-bool">false</span>}}
 {<span class="j-key">"ts"</span><span class="j-punc">:</span> <span class="j-ts">"2026-05-18T14:23:14.553Z"</span><span class="j-punc">,</span> <span class="j-key">"stream"</span><span class="j-punc">:</span> <span class="j-str">"stdout"</span><span class="j-punc">,</span> <span class="j-key">"line"</span><span class="j-punc">:</span> {<span class="j-key">"event"</span><span class="j-punc">:</span> <span class="j-str">"build"</span><span class="j-punc">,</span> <span class="j-key">"crate"</span><span class="j-punc">:</span> <span class="j-str">"aphrody-terminal-wasm"</span><span class="j-punc">,</span> <span class="j-key">"target"</span><span class="j-punc">:</span> <span class="j-str">"wasm32-unknown-unknown"</span><span class="j-punc">,</span> <span class="j-key">"ok"</span><span class="j-punc">:</span> <span class="j-bool">true</span><span class="j-punc">,</span> <span class="j-key">"size_kb"</span><span class="j-punc">:</span> <span class="j-num">187</span>}}</pre>
