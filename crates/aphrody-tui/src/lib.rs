@@ -55,6 +55,7 @@
 pub mod ansi;
 pub mod error;
 pub mod layout;
+pub mod m3;
 pub mod widgets;
 
 use std::{

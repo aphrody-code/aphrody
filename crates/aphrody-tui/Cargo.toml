@@ -29,6 +29,15 @@ thiserror                 = { workspace = true }
 # ANSI SGR output via the in-crate `ansi` module so colours/bold/italic/etc.
 # survive the trip into ratatui's Buffer.
 aphrody-terminal-markdown = { path = "../aphrody-terminal-markdown" }
+# Material Design 3 tokens — pulled by `m3::Palette` so the TUI palette is
+# in lock-step with the wgpu / web surfaces.
+m3-tokens                 = { path = "../m3-tokens" }
+# Grapheme-aware text width + word-break for `m3::Paragraph` / `m3::List`.
+unicode-width             = { workspace = true }
+unicode-segmentation      = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "macros", "time", "sync", "test-util"] }
+tokio                = { workspace = true, features = ["rt", "macros", "time", "sync", "test-util"] }
+m3-tokens            = { path = "../m3-tokens" }
+unicode-width        = { workspace = true }
+unicode-segmentation = { workspace = true }
