@@ -394,82 +394,6 @@ cc_wrapper = "sccache"
     }
 }
 
-pub(crate) struct CoreutilsCommand {
-    pub action: String,
-}
-
-#[async_trait]
-impl TerminalCommand for CoreutilsCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!("🧰 Uutils Coreutils Manager");
-        match self.action.as_str() {
-            "build" => {
-                println!("🔨 Compilation du multicall binary Coreutils (Rust)...");
-                let status = std::process::Command::new("cargo")
-                    .current_dir("crates/coreutils")
-                    .env("RUSTFLAGS", "-C target-cpu=native -C opt-level=3")
-                    .args(["build", "--release", "--features", "windows"])
-                    .status()
-                    .map_err(|e| miette::miette!("Erreur d'exécution de cargo: {}", e))?;
-
-                if status.success() {
-                    println!(
-                        "✅ Coreutils compilé avec succès \
-                         (crates/coreutils/target/release/coreutils)."
-                    );
-                } else {
-                    println!("❌ Échec de la compilation de Coreutils.");
-                }
-            },
-            "run" => {
-                println!("🚀 Exécution de Coreutils...");
-                let status = std::process::Command::new("cargo")
-                    .current_dir("crates/coreutils")
-                    .args(["run", "--release", "--"])
-                    .status()
-                    .map_err(|e| miette::miette!("Erreur d'exécution de cargo: {}", e))?;
-
-                if !status.success() {
-                    println!("❌ Échec de l'exécution de Coreutils.");
-                }
-            },
-            _ => println!("[-] Action inconnue : {}", self.action),
-        }
-        Ok(())
-    }
-}
-
-pub(crate) struct UtilLinuxCommand {
-    pub action: String,
-}
-
-#[async_trait]
-impl TerminalCommand for UtilLinuxCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!("🐧 Uutils Util-linux Manager");
-        match self.action.as_str() {
-            "build" => {
-                println!("🔨 Compilation des utilitaires Linux (Rust)...");
-                let status = std::process::Command::new("cargo")
-                    .current_dir("crates/util-linux")
-                    .args(["build", "--release"])
-                    .status()
-                    .map_err(|e| miette::miette!("Erreur d'exécution de cargo: {}", e))?;
-
-                if status.success() {
-                    println!(
-                        "✅ Util-linux compilé avec succès (crates/util-linux/target/release/)."
-                    );
-                } else {
-                    println!("❌ Échec de la compilation de Util-linux.");
-                }
-            },
-            _ => println!("[-] Action inconnue : {}", self.action),
-        }
-        Ok(())
-    }
-}
-
 pub(crate) struct AutoCommand {
     pub args: Vec<String>,
 }
@@ -653,30 +577,23 @@ pub(crate) struct GeminiCommand {
 #[async_trait]
 impl TerminalCommand for GeminiCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        // Invoque le binaire `gemini` (CLI Google natif, installable via
-        // `npm install -g @google/gemini-cli` côté user OU déjà détecté
-        // sur PATH par crates/gemini-runtime). La policy 100% Rust (memory
-        // feedback_aphrody_rust_only) interdit `bun run packages/...` :
-        // on délègue ici au binaire système comme on le fait pour n2b.
-        //
-        // Sur Windows, `Command::new("gemini")` ne consulte pas PATHEXT —
-        // npm shippe le shim en `.cmd`. On utilise donc `which` pour
-        // résoudre le chemin absolu cross-platform, avec override possible
-        // via `APHRODY_GEMINI_BIN`.
-        let bin_path = if let Some(p) =
-            std::env::var("APHRODY_GEMINI_BIN").ok().filter(|s| !s.is_empty())
-        {
-            std::path::PathBuf::from(p)
-        } else {
-            which::which("gemini").map_err(|e| {
-                miette::miette!(
-                    "Failed to locate `gemini` on PATH: {e}. Install with: \
-                     npm install -g @google/gemini-cli (le binaire Google \
-                     n'a pas encore d'équivalent Rust upstream) — ou \
-                     override via APHRODY_GEMINI_BIN."
-                )
-            })?
-        };
+        // Délègue à la chain unifiée `gemini_runtime::resolve_bin()` :
+        // 1. $APHRODY_GEMINI_BIN  2. sibling exe (post-bootstrap)
+        // 3. packages/gemini-cli/bundle/gemini[.exe|.js] (fork in-tree)
+        // 4. which("gemini") (upstream PATH). Cf. CLAUDE.md §0.4 et memory
+        // project_aphrody_owned_tools : on préfère toujours l'outil maison.
+        let bin_path = gemini_runtime::resolve_bin().map_err(|e| {
+            miette::miette!(
+                "Failed to resolve `gemini` binary via aphrody chain: {e}.\n\n\
+                 Alternatives :\n\
+                 • `aphrody chat --stub --prompt \"…\"` — réponse stub locale, aucun binaire requis.\n\
+                 • `aphrody chat --model anthropic/claude-opus-4-7 --prompt \"…\"` \
+                   (requiert `ANTHROPIC_API_KEY`).\n\
+                 • Build fork in-tree : `cd packages/gemini-cli && bun run bundle` puis re-run.\n\
+                 • Installer le CLI Google : `bun add -g @google/gemini-cli`.\n\
+                 • Override binaire : `APHRODY_GEMINI_BIN=/abs/path aphrody gemini …`."
+            )
+        })?;
 
         let mut cmd = std::process::Command::new(&bin_path);
         cmd.args(&self.args);
@@ -700,7 +617,7 @@ pub(crate) struct SearchCommand {
 impl TerminalCommand for SearchCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         let q = self.query.join(" ");
-        println!("{}", format!("🔍 Recherche Google : {}", q).bold().blue());
+        println!("{}", format!("🔍 Recherche : {}", q).bold().blue());
 
         let client = reqwest::Client::builder()
             .user_agent(
@@ -710,10 +627,9 @@ impl TerminalCommand for SearchCommand {
             .build()
             .map_err(|e| miette::miette!("Erreur client HTTP: {}", e))?;
 
-        // Requête POST vers DuckDuckGo Lite (très fiable pour les CLI)
         let res = client
-            .post("https://lite.duckduckgo.com/lite/")
-            .form(&[("q", &q)])
+            .get("https://html.duckduckgo.com/html/")
+            .query(&[("q", q.as_str())])
             .send()
             .await
             .map_err(|e| miette::miette!("Erreur réseau: {}", e))?;
@@ -721,38 +637,65 @@ impl TerminalCommand for SearchCommand {
         let text = res.text().await.map_err(|e| miette::miette!("Erreur lecture: {}", e))?;
 
         let document = scraper::Html::parse_document(&text);
-        let title_selector =
-            scraper::Selector::parse(".result-link").expect("Invalid title selector");
+        let result_selector =
+            scraper::Selector::parse("div.result.results_links").expect("static selector");
+        let title_selector = scraper::Selector::parse("a.result__a").expect("static selector");
         let snippet_selector =
-            scraper::Selector::parse(".result-snippet").expect("Invalid snippet selector");
-
-        let titles: Vec<_> = document.select(&title_selector).collect();
-        let snippets: Vec<_> = document.select(&snippet_selector).collect();
+            scraper::Selector::parse("a.result__snippet").expect("static selector");
 
         let mut count = 0;
-        for (title_elem, snippet_elem) in titles.iter().zip(snippets.iter()) {
-            let title = title_elem.text().collect::<Vec<_>>().join("").trim().to_string();
-            let link = title_elem.value().attr("href").unwrap_or("").to_string();
-            let snippet = snippet_elem.text().collect::<Vec<_>>().join("").trim().to_string();
-
-            if !title.is_empty() {
-                println!("\n{}", title.bold().green());
-                println!("{}", link.cyan().underline());
-                println!("{}", snippet);
-                count += 1;
+        for result in document.select(&result_selector) {
+            let Some(title_elem) = result.select(&title_selector).next() else { continue };
+            let title = title_elem.text().collect::<String>().trim().to_string();
+            if title.is_empty() {
+                continue;
             }
+            let raw_href = title_elem.value().attr("href").unwrap_or("");
+            let link = unwrap_ddg_redirect(raw_href).unwrap_or_else(|| raw_href.to_string());
+            let snippet = result
+                .select(&snippet_selector)
+                .next()
+                .map(|el| el.text().collect::<String>().trim().to_string())
+                .unwrap_or_default();
 
+            println!("\n{}", title.bold().green());
+            println!("{}", link.cyan().underline());
+            if !snippet.is_empty() {
+                println!("{}", snippet);
+            }
+            count += 1;
             if count >= 5 {
                 break;
             }
         }
 
         if count == 0 {
-            println!("{}", "Aucun résultat trouvé ou requête bloquée.".red());
+            println!(
+                "{}",
+                "Aucun résultat trouvé (DuckDuckGo a renvoyé une page vide — réessayer plus tard \
+                 ou utiliser `aphrody bxc recon` pour une URL précise)."
+                    .red()
+            );
         }
 
         Ok(())
     }
+}
+
+/// Decode the `uddg` query parameter from a DuckDuckGo redirect URL.
+/// DDG wraps result links as `//duckduckgo.com/l/?uddg=<percent-encoded>&rut=…`;
+/// we want the raw target URL.
+fn unwrap_ddg_redirect(href: &str) -> Option<String> {
+    let normalised = if let Some(rest) = href.strip_prefix("//") {
+        format!("https://{rest}")
+    } else {
+        href.to_string()
+    };
+    let parsed = reqwest::Url::parse(&normalised).ok()?;
+    if parsed.host_str()? != "duckduckgo.com" {
+        return None;
+    }
+    parsed.query_pairs().find(|(k, _)| k == "uddg").map(|(_, v)| v.into_owned())
 }
 
 // ── aphrody scrape ────────────────────────────────────────────────────────────
@@ -1625,114 +1568,100 @@ fn var_run_dir() -> anyhow::Result<std::path::PathBuf> {
     Ok(dir)
 }
 
-/// Locate the `packages/bxc/` sources expected by the Bun driver.
+/// Which engine drives `aphrody bxc daemon`.
+///
+/// Unified 2026-05-19: only the **Rust daemon** (`bxc-engine-daemon`, built
+/// from `crates/bxc-engine`) is supported. The previous Bun driver
+/// (`packages/bxc/src/cli/index.ts` via `bun run`) and the CDP-only
+/// `bxc-engine launch` fallback are retired per `feedback_aphrody_rust_only`
+/// — see CLAUDE.md §0.3 (bxc unification).
+#[derive(Debug, Clone, Copy)]
+enum BxcDriver {
+    /// `bxc-engine-daemon` — pure-Rust HTTP API binary serving the
+    /// `/api/{recon,scrape,detect,tokens}` + `/healthz` contract consumed
+    /// by [`crate::scrape::ScrapeClient`].
+    RustDaemon,
+}
+
+/// Resolve the `bxc-engine-daemon` Rust binary and build a spawn command.
 ///
 /// Resolution order:
-///   1. `APHRODY_BXC_ROOT` env var (explicit path).
-///   2. `<repo_root>/packages/bxc/` (dev layout).
-///   3. `<exe_dir>/../packages/bxc/` (installed-alongside layout).
-fn resolve_bxc_root() -> Option<std::path::PathBuf> {
-    if let Some(p) =
-        std::env::var("APHRODY_BXC_ROOT").ok().filter(|s| !s.is_empty())
-    {
-        let cand = std::path::PathBuf::from(p);
-        if cand.join("src/cli/index.ts").exists() {
-            return Some(cand);
+///   1. `APHRODY_BXC_DAEMON_BIN` env var (explicit path).
+///   2. `APHRODY_BXC_ENGINE_BIN` env var (legacy alias, treated as the daemon).
+///   3. `bxc-engine-daemon` on `PATH`.
+///   4. `<exe_dir>/bxc-engine-daemon[.exe]` (installed-alongside layout).
+///   5. `<repo_root>/target/release/bxc-engine-daemon[.exe]` (dev layout).
+///
+/// `APHRODY_BXC_DRIVER` is parsed for back-compat warnings only; any value
+/// other than `"rust"` (the new default) logs a one-line notice and
+/// proceeds with the Rust daemon.
+fn select_bxc_driver() -> miette::Result<(BxcDriver, std::process::Command)> {
+    if let Ok(legacy) = std::env::var("APHRODY_BXC_DRIVER") {
+        if !legacy.is_empty() && legacy != "rust" {
+            eprintln!(
+                "[bxc] APHRODY_BXC_DRIVER={legacy:?} is deprecated — only the Rust \
+                 daemon is supported since the 2026-05-19 unification. Ignoring."
+            );
         }
     }
-    if let Some(root) = repo_root() {
-        let cand = root.join("packages").join("bxc");
-        if cand.join("src/cli/index.ts").exists() {
-            return Some(cand);
-        }
-    }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let cand = dir.join("..").join("packages").join("bxc");
-            if cand.join("src/cli/index.ts").exists() {
+
+    let bin_path = resolve_bxc_daemon_bin().ok_or_else(|| {
+        miette::miette!(
+            "bxc-engine-daemon binary not found. Install via:\n  \
+             cargo install --locked --path crates/bxc-engine --bin bxc-engine-daemon\n\
+             or override with `APHRODY_BXC_DAEMON_BIN=<path>`."
+        )
+    })?;
+
+    let cmd = std::process::Command::new(bin_path);
+    Ok((BxcDriver::RustDaemon, cmd))
+}
+
+/// Probe the host for a usable `bxc-engine-daemon` binary.
+fn resolve_bxc_daemon_bin() -> Option<std::path::PathBuf> {
+    let exe_name = if cfg!(windows) { "bxc-engine-daemon.exe" } else { "bxc-engine-daemon" };
+
+    for var in ["APHRODY_BXC_DAEMON_BIN", "APHRODY_BXC_ENGINE_BIN"] {
+        if let Some(p) = std::env::var(var).ok().filter(|s| !s.is_empty()) {
+            let cand = std::path::PathBuf::from(p);
+            if cand.exists() {
                 return Some(cand);
             }
         }
     }
-    None
-}
 
-/// Which engine drives `aphrody bxc daemon`.
-///
-/// `Bun` is the default: full HTTP API (`/api/recon`, `/api/detect`,
-/// `/api/scrape`) consumed by `crates/cli/src/scrape.rs`.
-/// `Rust` falls back to `crates/bxc-engine` which exposes CDP only
-/// (`launch` subcommand) — useful when bun is absent but the HTTP API
-/// won't be available.
-#[derive(Debug, Clone, Copy)]
-enum BxcDriver {
-    Bun,
-    Rust,
-}
+    if let Ok(p) = which::which("bxc-engine-daemon") {
+        return Some(p);
+    }
 
-/// Auto-detect which driver to use:
-///   - explicit override via `APHRODY_BXC_DRIVER=bun|rust`,
-///   - else prefer `Bun` if `bun` + `packages/bxc/` are available,
-///   - else `Rust` if `bxc-engine` is on PATH (or `APHRODY_BXC_ENGINE_BIN` set).
-fn select_bxc_driver() -> miette::Result<(BxcDriver, std::process::Command)> {
-    let override_val = std::env::var("APHRODY_BXC_DRIVER").ok();
-    let want_bun = matches!(override_val.as_deref(), Some("bun")) || override_val.is_none();
-    let want_rust = matches!(override_val.as_deref(), Some("rust"));
-
-    if want_bun {
-        if let (Ok(bun), Some(bxc_root)) = (which::which("bun"), resolve_bxc_root()) {
-            let entry = bxc_root.join("src/cli/index.ts");
-            let mut cmd = std::process::Command::new(bun);
-            // `bun run <script> api --port <port>` (port wiring added by caller).
-            cmd.args(["run", entry.to_string_lossy().as_ref(), "api"]);
-            // bxc reads its workspace root from cwd, not from import.meta.dir for
-            // some paths (e.g. patches/, vendor/), so chdir before spawn.
-            cmd.current_dir(&bxc_root);
-            return Ok((BxcDriver::Bun, cmd));
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cand = dir.join(exe_name);
+            if cand.exists() {
+                return Some(cand);
+            }
         }
     }
 
-    if want_rust || want_bun {
-        let bin_path = if let Some(p) =
-            std::env::var("APHRODY_BXC_ENGINE_BIN").ok().filter(|s| !s.is_empty())
-        {
-            std::path::PathBuf::from(p)
-        } else {
-            which::which("bxc-engine").map_err(|e| {
-                miette::miette!(
-                    "No bxc driver found. Tried bun+packages/bxc/ (set `APHRODY_BXC_ROOT` \
-                     if non-standard layout), then `bxc-engine` on PATH (cargo install \
-                     --locked --path crates/bxc-engine): {e}"
-                )
-            })?
-        };
-        let mut cmd = std::process::Command::new(bin_path);
-        // crates/bxc-engine exposes `launch` (CDP server) — NOT a `/api/*`
-        // HTTP server. `aphrody scrape` will still fail to reach
-        // `/api/recon` etc. with this driver. Use only when bun is missing.
-        cmd.arg("launch");
-        return Ok((BxcDriver::Rust, cmd));
+    if let Some(root) = repo_root() {
+        let cand = root.join("target").join("release").join(exe_name);
+        if cand.exists() {
+            return Some(cand);
+        }
     }
 
-    Err(miette::miette!(
-        "APHRODY_BXC_DRIVER={:?} not recognised. Use `bun` or `rust`.",
-        override_val.unwrap_or_default()
-    ))
+    None
 }
 
 /// Start the bxc daemon as a detached background process.
 ///
 /// The daemon PID is written to `var/run/bxc.pid` so subsequent commands
-/// (and the user) can check whether the engine is alive.
+/// (and the user) can check whether the engine is alive. The spawn
+/// stderr is redirected to `var/run/bxc.log` so post-mortem diagnosis
+/// remains possible when the detached child exits early.
 ///
-/// Driver auto-selection (see [`select_bxc_driver`]):
-///   - default: Bun driver from `packages/bxc/` (full HTTP API at
-///     `/api/recon`, `/api/detect`, `/api/scrape`, `/healthz`).
-///   - fallback: `crates/bxc-engine` Rust binary (CDP only).
-///
-/// Both drivers honour `--port <port>`. The Bun driver is what
-/// `crates/cli/src/scrape.rs` expects; the Rust binary is left as an
-/// escape hatch when bun isn't installed.
+/// Driver: always `bxc-engine-daemon` (pure Rust, full `/api/*` HTTP API
+/// parity with the retired Bun driver — see [`select_bxc_driver`]).
 async fn bxc_daemon(port: u16) -> miette::Result<()> {
     let pid_dir = var_run_dir().map_err(|e| miette::miette!("{e}"))?;
     let pid_file = pid_dir.join("bxc.pid");
@@ -1767,15 +1696,25 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         cmd.creation_flags(DETACHED_PROCESS);
     }
 
+    let log_file = pid_dir.join("bxc.log");
+    let log_handle = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file)
+        .map_err(|e| miette::miette!("Cannot open log {}: {e}", log_file.display()))?;
+    let log_handle_err = log_handle
+        .try_clone()
+        .map_err(|e| miette::miette!("Cannot dup log handle: {e}"))?;
+
     let child = cmd
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
+        .stdout(std::process::Stdio::from(log_handle))
+        .stderr(std::process::Stdio::from(log_handle_err))
         .spawn()
         .map_err(|e| {
             miette::miette!(
                 "Failed to spawn bxc daemon ({:?} driver): {e}. \
-                 Install bun + run from a checkout of the workspace, \
-                 or `cargo install --locked --path crates/bxc-engine`.",
+                 Install via: cargo install --locked --path crates/bxc-engine \
+                 --bin bxc-engine-daemon",
                 driver
             )
         })?;
@@ -1785,8 +1724,10 @@ async fn bxc_daemon(port: u16) -> miette::Result<()> {
         .map_err(|e| miette::miette!("Cannot write PID file {}: {e}", pid_file.display()))?;
 
     println!(
-        "[bxc daemon] started pid={pid} port={port} driver={driver:?}. PID file: {}",
-        pid_file.display()
+        "[bxc daemon] started pid={pid} port={port} driver={driver:?}. PID file: {} \
+         Log file: {}",
+        pid_file.display(),
+        log_file.display()
     );
     Ok(())
 }
@@ -1969,4 +1910,284 @@ impl TerminalCommand for NotifyCommand {
         println!("{} {} {}", msg_ref.channel_id, msg_ref.id, msg_ref.room);
         Ok(())
     }
+}
+
+// ===========================================================================
+// `aphrody chat` — unified turn-loop REPL (one-shot mode in Phase 1).
+// ===========================================================================
+
+/// Implementation of `aphrody chat`.
+///
+/// Composes the building blocks via [`aphrody_chat::ChatLoop`]. In Phase 1
+/// we only support `--prompt <text>` one-shot mode; invocation without a
+/// prompt returns a structured error instead of opening an interactive REPL
+/// (ratatui + slash-commands land in Phase 2).
+pub(crate) struct ChatCommand {
+    pub prompt: Option<String>,
+    pub model: Option<String>,
+    pub system: Option<String>,
+    pub stub: bool,
+}
+
+#[async_trait]
+impl TerminalCommand for ChatCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        use aphrody_chat::backend::{GeminiBackend, ModelBackend, StubBackend};
+        use aphrody_chat::{ChatConfig, ChatLoop};
+
+        let Some(prompt) = self.prompt.clone() else {
+            return Err(miette::miette!(
+                "interactive REPL not yet wired — Phase 1 requires `aphrody chat \
+                 --prompt <text>` for one-shot mode (ratatui REPL + slash-commands \
+                 land in Phase 2)"
+            ));
+        };
+
+        let mut config = ChatConfig::default();
+        if let Some(m) = self.model.clone() {
+            config.model = m;
+        }
+        if let Some(sys) = self.system.clone() {
+            config.system_prompt = sys;
+        }
+
+        // Backend selection: --stub → always StubBackend; otherwise try
+        // GeminiBackend first and degrade gracefully to StubBackend with a
+        // tracing diagnostic when the `gemini` binary is missing from PATH.
+        let backend: Box<dyn ModelBackend> = if self.stub {
+            Box::new(StubBackend::with_reply(
+                "(stub backend reply — `aphrody chat --stub` mode, no live LLM call)",
+            ))
+        } else {
+            match GeminiBackend::detect().await {
+                Ok(gemini) => Box::new(gemini.with_model(Some(config.model.clone()))),
+                Err(e) => {
+                    eprintln!(
+                        "[chat] gemini-runtime detect failed ({e}); falling back to \
+                         stub backend. Re-run with `aphrody chat --stub` to \
+                         silence this warning, or install `gemini` on PATH."
+                    );
+                    Box::new(StubBackend::with_reply(
+                        "(stub backend reply — gemini binary not found on PATH)",
+                    ))
+                },
+            }
+        };
+
+        let mut chat = ChatLoop::builder(config)
+            .with_boxed_backend(backend)
+            .build()
+            .map_err(|e| miette::miette!("ChatLoop build failed: {e}"))?;
+
+        let turn = chat
+            .single_turn(&prompt)
+            .await
+            .map_err(|e| miette::miette!("chat turn failed: {e}"))?;
+
+        // Print the assistant reply on stdout (machine-friendly: a single
+        // contiguous blob, no decoration).
+        println!("{}", turn.assistant_response);
+        Ok(())
+    }
+}
+
+// ── aphrody notebooklm ──────────────────────────────────────────────────────
+
+/// Façade dispatching every `aphrody notebooklm <sub>` invocation onto the
+/// in-tree `notebooklm` crate.  Honours `NOTEBOOKLM_OAUTH_TOKEN` /
+/// `NOTEBOOKLM_COOKIES` for credentials and `NOTEBOOKLM_AT_TOKEN` /
+/// `NOTEBOOKLM_BL_TOKEN` / `NOTEBOOKLM_FSID_TOKEN` for the per-session
+/// XSRF + bootstrap tokens (the upstream web UI exports these on page load;
+/// they must be ferried into the CLI environment by the caller).
+pub(crate) struct NotebooklmCommand {
+    pub action: crate::NotebooklmActions,
+}
+
+#[async_trait]
+impl TerminalCommand for NotebooklmCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        use crate::NotebooklmActions;
+        match &self.action {
+            NotebooklmActions::List => notebooklm_list().await,
+            NotebooklmActions::Create { title } => notebooklm_create(title.as_deref()).await,
+            NotebooklmActions::Delete { notebook_id } => notebooklm_delete(notebook_id).await,
+            NotebooklmActions::Upload { notebook_id, source } => {
+                notebooklm_upload(notebook_id, source).await
+            },
+            NotebooklmActions::Chat { notebook_id, prompt } => {
+                notebooklm_chat(notebook_id, prompt).await
+            },
+            NotebooklmActions::Generate { notebook_id, kind, prompt } => {
+                notebooklm_generate(notebook_id, kind, prompt.as_deref()).await
+            },
+            NotebooklmActions::Download { notebook_id, artifact_id, output } => {
+                notebooklm_download(notebook_id, artifact_id, output).await
+            },
+        }
+    }
+}
+
+fn notebooklm_session_tokens() -> miette::Result<::notebooklm::SessionTokens> {
+    let at = std::env::var("NOTEBOOKLM_AT_TOKEN").map_err(|_| {
+        miette::miette!(
+            "NOTEBOOKLM_AT_TOKEN must be set (extract `WIZ_global_data.SNlM0e` from \
+             a logged-in notebooklm.google.com page)"
+        )
+    })?;
+    let bl = std::env::var("NOTEBOOKLM_BL_TOKEN").map_err(|_| {
+        miette::miette!(
+            "NOTEBOOKLM_BL_TOKEN must be set (extract the `cfb2h` / `bl` field \
+             from the same bootstrap blob)"
+        )
+    })?;
+    let fsid = std::env::var("NOTEBOOKLM_FSID_TOKEN").ok().filter(|s| !s.is_empty());
+    let language = std::env::var("NOTEBOOKLM_HL").ok().filter(|s| !s.is_empty());
+    Ok(::notebooklm::SessionTokens { at, bl, fsid, language })
+}
+
+fn notebooklm_client() -> miette::Result<::notebooklm::NotebookClient> {
+    let tokens = notebooklm_session_tokens()?;
+    ::notebooklm::NotebookClient::from_env(tokens)
+        .map_err(|e| miette::miette!("notebooklm auth setup failed: {e}"))
+}
+
+async fn notebooklm_list() -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    let notebooks = client
+        .list_notebooks()
+        .await
+        .map_err(|e| miette::miette!("list_notebooks failed: {e}"))?;
+    let json = serde_json::to_string_pretty(&notebooks)
+        .map_err(|e| miette::miette!("json encode: {e}"))?;
+    println!("{json}");
+    Ok(())
+}
+
+async fn notebooklm_create(title: Option<&str>) -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    let (notebook_id, thread_id) = client
+        .create_notebook()
+        .await
+        .map_err(|e| miette::miette!("create_notebook failed: {e}"))?;
+    if let Some(new_title) = title {
+        client
+            .rename_notebook(&notebook_id, new_title)
+            .await
+            .map_err(|e| miette::miette!("rename_notebook failed: {e}"))?;
+    }
+    let payload = serde_json::json!({
+        "notebook_id": notebook_id,
+        "thread_id": thread_id,
+        "title": title.unwrap_or(""),
+    });
+    println!("{payload:#}");
+    Ok(())
+}
+
+async fn notebooklm_delete(notebook_id: &str) -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    client
+        .delete_notebook(notebook_id)
+        .await
+        .map_err(|e| miette::miette!("delete_notebook failed: {e}"))?;
+    println!(r#"{{"deleted":"{notebook_id}"}}"#);
+    Ok(())
+}
+
+async fn notebooklm_upload(notebook_id: &str, source: &str) -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    let result = if source.starts_with("http://") || source.starts_with("https://") {
+        client.add_url(notebook_id, source).await
+    } else {
+        client.add_file(notebook_id, source).await
+    };
+    let (source_id, title) =
+        result.map_err(|e| miette::miette!("add source failed: {e}"))?;
+    let payload = serde_json::json!({
+        "source_id": source_id,
+        "title": title,
+    });
+    println!("{payload:#}");
+    Ok(())
+}
+
+async fn notebooklm_chat(notebook_id: &str, prompt: &str) -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    let threads = client
+        .list_chat_threads(notebook_id)
+        .await
+        .map_err(|e| miette::miette!("list_chat_threads failed: {e}"))?;
+    let thread = threads.first().map(String::as_str);
+    let (_nb, sources) = client
+        .get_notebook(notebook_id)
+        .await
+        .map_err(|e| miette::miette!("get_notebook failed: {e}"))?;
+    let source_ids: Vec<String> = sources.into_iter().map(|s| s.id).collect();
+    let reply = client
+        .send_message(notebook_id, prompt, &source_ids, thread)
+        .await
+        .map_err(|e| miette::miette!("send_message failed: {e}"))?;
+    println!("{}", reply.text);
+    Ok(())
+}
+
+async fn notebooklm_generate(
+    notebook_id: &str,
+    kind: &str,
+    prompt: Option<&str>,
+) -> miette::Result<()> {
+    use std::str::FromStr;
+    let client = notebooklm_client()?;
+    let kind = ::notebooklm::ArtifactKind::from_str(kind)
+        .map_err(|e| miette::miette!("invalid artifact kind: {e}"))?;
+    let (_nb, sources) = client
+        .get_notebook(notebook_id)
+        .await
+        .map_err(|e| miette::miette!("get_notebook failed: {e}"))?;
+    let source_ids: Vec<String> = sources.into_iter().map(|s| s.id).collect();
+    let (artifact_id, title) = client
+        .generate(notebook_id, &source_ids, kind, prompt)
+        .await
+        .map_err(|e| miette::miette!("generate failed: {e}"))?;
+    let payload = serde_json::json!({
+        "artifact_id": artifact_id,
+        "title": title,
+        "kind": format!("{kind:?}"),
+    });
+    println!("{payload:#}");
+    Ok(())
+}
+
+async fn notebooklm_download(
+    notebook_id: &str,
+    artifact_id: &str,
+    output: &std::path::Path,
+) -> miette::Result<()> {
+    let client = notebooklm_client()?;
+    let artifact = client
+        .poll(
+            notebook_id,
+            artifact_id,
+            std::time::Duration::from_secs(600),
+        )
+        .await
+        .map_err(|e| miette::miette!("artifact poll failed: {e}"))?;
+    let url = artifact
+        .download_url
+        .ok_or_else(|| miette::miette!("artifact has no download_url after poll"))?;
+    let bytes = reqwest::get(&url)
+        .await
+        .map_err(|e| miette::miette!("download GET {url}: {e}"))?
+        .bytes()
+        .await
+        .map_err(|e| miette::miette!("download read {url}: {e}"))?;
+    std::fs::write(output, &bytes)
+        .map_err(|e| miette::miette!("write {}: {e}", output.display()))?;
+    let payload = serde_json::json!({
+        "artifact_id": artifact_id,
+        "bytes": bytes.len(),
+        "output": output.display().to_string(),
+    });
+    println!("{payload:#}");
+    Ok(())
 }
