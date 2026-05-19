@@ -429,3 +429,16 @@ ai/peers/*.ai.json
 # Negation: explicitly keep the placeholder + docs.
 !ai/README.md
 !ai/peers/.gitkeep
+
+# ----------------------------------------------------------------------------
+# 23. Heavy upstream mirrors (kept locally for read-only reference)
+# ----------------------------------------------------------------------------
+# These directories are 100s of MB / multiple GB of upstream source code.
+# Cloning them into the repo is convenient for local cross-reference but
+# they're never modified in-tree and re-clones produce the same content.
+# CI doesn't need them either. Re-clone command in each dir's README.
+packages/gemini-cli/*
+packages/next.js/*
+# Negation: explicitly keep any per-mirror README we drop in.
+!packages/gemini-cli/README.aphrody.md
+!packages/next.js/README.aphrody.md
