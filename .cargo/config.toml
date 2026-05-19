@@ -179,6 +179,11 @@ ci             = ["clippy", "--workspace", "--all-targets", "--all-features", "-
 # aphrody-xtask — Rust port of scripts/*.ts. Adds sub-commands progressively
 # (cf. docs/PLAN_RUST_ONLY.md Phase 2). `cargo xtask skills-sync <owner>/<repo>`.
 xtask          = ["run", "--quiet", "-p", "aphrody-xtask", "--release", "--"]
+# Build every aphrody-* / bxc-* / mrx-* / notebooklm-* binary in release and
+# install them to ~/.local/bin/ in a single shot. Replaces the manual
+# `cargo build --release && cp target/*/release/aphrody*.exe ~/.local/bin/`
+# ritual documented in CLAUDE.md §0.45 ("Gotcha déploiement").
+deploy         = ["xtask", "deploy"]
 ci-offline     = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--offline", "--", "-D", "warnings"]
 ci-frozen      = ["clippy", "--workspace", "--all-targets", "--all-features", "--frozen",  "--", "-D", "warnings"]
 xt             = ["nextest", "run", "--workspace", "--all-features", "--locked"]

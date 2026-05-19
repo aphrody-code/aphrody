@@ -82,7 +82,9 @@ async fn cdp(
 
 #[tokio::test(flavor = "current_thread")]
 async fn runtime_click_submit_prevent_default_navigation_updates_page() {
-    std::env::set_var("OBSCURA_ALLOW_PRIVATE_NETWORK", "1");
+    // SAFETY: single-threaded test (`flavor = "current_thread"`), env var set
+    // before any concurrent work. Edition 2024 requires `unsafe`.
+    unsafe { std::env::set_var("OBSCURA_ALLOW_PRIVATE_NETWORK", "1"); }
     let url = serve_once().await;
     let mut ctx = CdpContext::new();
     let page_id = ctx.create_page();

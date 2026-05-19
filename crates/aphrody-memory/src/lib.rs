@@ -35,16 +35,23 @@ pub mod sqlite;
 // an agent-id + tags + keyword surface, while `MemoryBackend` exposes a
 // key-value + vector surface. Different consumers, different shapes.
 // ─────────────────────────────────────────────────────────────────────────────
+pub mod eviction;
 pub mod honcho;
 pub mod mem0;
+pub mod migrate;
 pub mod provider;
+pub mod schema;
 pub mod sqlite_local;
 pub mod types;
 
+pub use crate::eviction::EvictionPolicy;
+pub use crate::hnsw::HnswBackend;
 pub use crate::honcho::HonchoProvider;
 pub use crate::lancedb::LanceDbBackend;
 pub use crate::mem0::Mem0Provider;
+pub use crate::migrate::{MAX_ID_PREVIEW, MigrationDiff, migrate as migrate_provider};
 pub use crate::provider::MemoryProvider;
+pub use crate::schema::{AnyMemoryRecord, MemoryRecordV1, MemoryRecordV2, MigrationReport, SchemaVersion, upgrade_jsonl};
 pub use crate::sqlite::SqliteBackend;
 pub use crate::sqlite_local::SqliteLocalProvider;
 // Tier-1 provider DTOs: re-exported under disambiguated names so they don't

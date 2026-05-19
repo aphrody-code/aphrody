@@ -1,7 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "Aphrody — Claude Code config optimisé pour speed/smart/autonome. Aucun hook bloquant (pas de PostToolUse cargo check, etc.). Allowlist large pour minimiser les prompts sur les actions reversibles. Denylist resserrée sur ce qui est vraiment destructif/secret.",
-
+  "env": {
+    "_comment_env": "Generous timeouts/output for autonomous long-running tasks. Disable telemetry on user request.",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "BASH_MAX_OUTPUT_LENGTH": "60000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "0",
+    "DISABLE_TELEMETRY": "0"
+  },
   "permissions": {
     "allow": [
       "Bash(cargo build:*)",
@@ -35,7 +41,6 @@
       "Bash(rustup:*)",
       "Bash(rustfmt:*)",
       "Bash(rustc --print:*)",
-
       "Bash(bun:*)",
       "Bash(bunx:*)",
       "Bash(wasm-pack:*)",
@@ -43,12 +48,10 @@
       "Bash(wasm-tools:*)",
       "Bash(wasmtime:*)",
       "Bash(npx:*)",
-
       "Bash(cmake:*)",
       "Bash(clang-format:*)",
       "Bash(clang-tidy:*)",
       "Bash(ninja:*)",
-
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -79,7 +82,6 @@
       "Bash(git shortlog:*)",
       "Bash(git config --get:*)",
       "Bash(git config --list:*)",
-
       "Bash(gh repo view:*)",
       "Bash(gh repo edit:*)",
       "Bash(gh repo list:*)",
@@ -115,12 +117,10 @@
       "Bash(gh auth token:*)",
       "Bash(gh label list:*)",
       "Bash(gh secret list:*)",
-
       "Bash(curl:*)",
       "Bash(wget:*)",
       "Bash(jq:*)",
       "Bash(yq:*)",
-
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(head:*)",
@@ -153,21 +153,17 @@
       "Bash(sha256sum:*)",
       "Bash(md5sum:*)",
       "Bash(file:*)",
-
       "Bash(rg:*)",
       "Bash(fd:*)",
       "Bash(bat:*)",
-
       "Bash(./target/release/aphrody:*)",
       "Bash(./target/x86_64-pc-windows-msvc/release/aphrody.exe:*)",
       "Bash(./target/release/mrx:*)",
       "Bash(./target/x86_64-pc-windows-msvc/release/mrx.exe:*)",
       "Bash(./target/debug/*)",
-
       "Bash(npm view:*)",
       "Bash(npm pack:*)",
       "Bash(npm publish --dry-run:*)",
-
       "PowerShell(Get-*:*)",
       "PowerShell(Test-Path:*)",
       "PowerShell(Select-*:*)",
@@ -177,7 +173,27 @@
       "PowerShell(Format-*:*)",
       "PowerShell(Where-Object:*)",
       "PowerShell(ForEach-Object:*)",
-      "PowerShell(Sort-Object:*)"
+      "PowerShell(Sort-Object:*)",
+      "Bash(aphrody bxc:*)",
+      "Bash(aphrody scan:*)",
+      "Bash(aphrody self:*)",
+      "Bash(aphrody n2b:*)",
+      "Bash(aphrody oc-pairing:*)",
+      "Bash(aphrody oc-docs:*)",
+      "Bash(aphrody completions:*)",
+      "Bash(aphrody scrape:*)",
+      "Bash(aphrody tokens:*)",
+      "Bash(aphrody version:*)",
+      "Bash(aphrody doctor:*)",
+      "Bash(aphrody chromium:*)",
+      "Bash(aphrody gemini:*)",
+      "Bash(tasklist:*)",
+      "Bash(gh search:*)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__plugin_winclean_winclean__list_directory",
+      "mcp__plugin_winclean_docs__winclean_universal_web_fetch",
+      "mcp__plugin_winclean_docs__microsoft_docs_search"
     ],
     "deny": [
       "Read(./.env)",
@@ -193,7 +209,6 @@
       "Read(./**/.aws/**)",
       "Read(./**/.ssh/**)",
       "Read(./**/.gnupg/**)",
-
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~*)",
       "Bash(rm -rf $HOME*)",
@@ -223,23 +238,15 @@
       "Bash(format:*)"
     ]
   },
-
-  "env": {
-    "_comment_env": "Generous timeouts/output for autonomous long-running tasks. Disable telemetry on user request.",
-    "BASH_DEFAULT_TIMEOUT_MS": "300000",
-    "BASH_MAX_TIMEOUT_MS": "600000",
-    "BASH_MAX_OUTPUT_LENGTH": "60000",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "0",
-    "DISABLE_TELEMETRY": "0"
-  },
-
   "enabledPlugins": {
+    "aphrody": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": false,
     "claude-code-setup@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
-    "mcp-server-dev@claude-plugins-official": false,
-    "plugin-dev@claude-plugins-official": false
-  }
+    "mcp-server-dev@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true
+  },
+  "_comment": "Aphrody — Claude Code config optimisé pour speed/smart/autonome. Aucun hook bloquant (pas de PostToolUse cargo check, etc.). Allowlist large pour minimiser les prompts sur les actions reversibles. Denylist resserrée sur ce qui est vraiment destructif/secret."
 }

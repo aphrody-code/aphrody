@@ -67,6 +67,8 @@ tempfile     = { workspace = true }
 # Local axum mock server for Mem0/Honcho HTTP provider smoke tests (offline-clean).
 axum         = { workspace = true }
 rustls       = { workspace = true }
+# R3.7 recall benchmark — criterion HTML reports, p50/p95/p99 over 100k records.
+criterion    = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # cargo-machete: arrow-array + arrow-schema are consumed only inside async
@@ -76,3 +78,12 @@ rustls       = { workspace = true }
 # ---------------------------------------------------------------------------
 [package.metadata.cargo-machete]
 ignored = ["arrow-array", "arrow-schema", "time"]
+
+# ---------------------------------------------------------------------------
+# Bench harness — R3.7 recall benchmark over 100k records.
+# `harness = false` opts out of the default libtest harness so criterion's
+# `criterion_main!` macro owns the entry point.
+# ---------------------------------------------------------------------------
+[[bench]]
+name    = "recall_100k"
+harness = false

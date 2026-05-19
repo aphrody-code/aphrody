@@ -490,34 +490,190 @@ pub async fn scrape(
 // M3 design tokens harvester
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Walk every `<style>` block + `:root { ... }` declaration and harvest
-/// `--md-*` CSS custom properties. Returns a `(name -> value)` map.
-/// This is the canonical Rust replacement for the heuristic
-/// `aphrody tokens` flow in `crates/cli/src/scrape.rs`.
+/// Collect every absolute external stylesheet URL referenced by the
+/// document.  Skips `data:` / `chrome-extension:` / `blob:` schemes and
+/// any `href` that fails to resolve against `base`. Protocol-relative
+/// (`//cdn…/…`) and absolute paths (`/static/app.css`) are resolved via
+/// [`url::Url::join`].
+fn extract_stylesheet_urls(html: &Html, base: &url::Url) -> Vec<url::Url> {
+    let Ok(sel) = Selector::parse("link[rel~=\"stylesheet\"][href]") else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for el in html.select(&sel) {
+        let Some(raw) = el.value().attr("href") else { continue };
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let Ok(absolute) = base.join(trimmed) else { continue };
+        match absolute.scheme() {
+            "http" | "https" => out.push(absolute),
+            _ => continue,
+        }
+    }
+    out
+}
+
+/// In-place harvest of every `--md-sys-…` CSS custom property from `css`.
+///
+/// Keys are preserved with the full `--md-sys-` prefix to stay
+/// drop-in-compatible with the existing daemon smoke test and the
+/// CLI consumer in `crates/cli/src/scrape.rs`. The algorithm mirrors
+/// `crate::google::style::extract_m3_tokens` (single-pass, depth-aware
+/// for paren-balanced values) but without prefix stripping.
+fn harvest_md_sys_tokens(css: &str, out: &mut HashMap<String, String>) {
+    const PREFIX: &str = "--md-sys-";
+    let bytes = css.as_bytes();
+    let mut i = 0_usize;
+    while i + PREFIX.len() < bytes.len() {
+        if &bytes[i..i + PREFIX.len()] != PREFIX.as_bytes() {
+            i += 1;
+            continue;
+        }
+        // Walk the identifier: letters, digits, `-`, `_`, `.`.
+        let name_start = i;
+        let mut name_end = i + PREFIX.len();
+        while name_end < bytes.len() {
+            let b = bytes[name_end];
+            if b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'.' {
+                name_end += 1;
+            } else {
+                break;
+            }
+        }
+        if name_end == name_start + PREFIX.len() {
+            i = name_end;
+            continue;
+        }
+        // Skip horizontal whitespace, expect ':'.
+        let mut j = name_end;
+        while j < bytes.len() && (bytes[j] == b' ' || bytes[j] == b'\t') {
+            j += 1;
+        }
+        if j >= bytes.len() || bytes[j] != b':' {
+            i = name_end;
+            continue;
+        }
+        j += 1;
+        while j < bytes.len() && (bytes[j] == b' ' || bytes[j] == b'\t') {
+            j += 1;
+        }
+        let value_start = j;
+        let mut depth = 0_i32;
+        let mut value_end = j;
+        while value_end < bytes.len() {
+            let b = bytes[value_end];
+            if depth == 0 && (b == b';' || b == b'}') {
+                break;
+            }
+            if b == b'(' {
+                depth += 1;
+            } else if b == b')' {
+                depth = depth.saturating_sub(1);
+            }
+            value_end += 1;
+        }
+        let mut trimmed_end = value_end;
+        while trimmed_end > value_start
+            && matches!(bytes[trimmed_end - 1], b' ' | b'\t' | b'\n' | b'\r')
+        {
+            trimmed_end -= 1;
+        }
+        // We only ever slice at boundaries we located via ASCII-byte
+        // checks (alphanumeric, `:`, `;`, `}`, whitespace, parens) so
+        // UTF-8 multibyte sequences inside the value are preserved
+        // intact — they can only appear strictly between the markers.
+        let name = std::str::from_utf8(&bytes[name_start..name_end]).unwrap_or("");
+        let value = std::str::from_utf8(&bytes[value_start..trimmed_end]).unwrap_or("");
+        if !name.is_empty() {
+            out.insert(name.to_string(), value.to_string());
+        }
+        i = value_end;
+    }
+}
+
+/// Harvest Material Design 3 system tokens (`--md-sys-…`) from a page,
+/// including stylesheets loaded via `<link rel="stylesheet">`.
+///
+/// Pipeline:
+///
+/// 1. Fetch the page HTML at `url_str`.
+/// 2. Parse the DOM, concatenate every inline `<style>` body.
+/// 3. Collect every external `<link rel="stylesheet" href="…">`, resolve
+///    against the final URL, fetch each stylesheet via the shared client
+///    (sequential — token pages reference <10 sheets), and append.
+///    Failed fetches are logged via `tracing::warn!` and skipped — the
+///    call never fails because one CDN sheet is unreachable.
+/// 4. Run [`harvest_md_sys_tokens`] over the combined CSS buffer.
+///
+/// Keys keep their full `--md-sys-…` prefix (drop-in compatible with the
+/// daemon smoke test + CLI consumer).
 pub async fn tokens_m3(client: &reqwest::Client, url_str: &str) -> anyhow::Result<M3TokenMap> {
     let resp = client
         .get(url_str)
         .send()
         .await
         .map_err(|e| anyhow::anyhow!("HTTP fetch failed for {url_str}: {e}"))?;
-    let html = resp.text().await.map_err(|e| anyhow::anyhow!("Body read failed: {e}"))?;
-    let dom = Html::parse_document(&html);
-    let sel = Selector::parse("style").expect("static selector");
-    let mut tokens = HashMap::new();
-    for style_el in dom.select(&sel) {
-        let body: String = style_el.text().collect();
-        // Split on `{`, `}`, `;`, newlines to isolate individual declarations.
-        // `--md-…: …` lives between `:root{` and `}` separated by `;`.
-        for raw in body.split(['{', '}', ';', '\n']) {
-            let line = raw.trim();
-            if let Some((k, v)) = line.split_once(':') {
-                let key = k.trim();
-                if key.starts_with("--md-") {
-                    tokens.insert(key.to_string(), v.trim().to_string());
-                }
+    let final_url = resp.url().clone();
+    let html_text = resp.text().await.map_err(|e| anyhow::anyhow!("Body read failed: {e}"))?;
+
+    // Parse the DOM, extract every CSS-bearing artefact, then drop the
+    // DOM. `scraper::Html` holds `Rc`s and is therefore `!Send`, so it
+    // must not be alive across any subsequent `.await` (the stylesheet
+    // fetch loop below) — otherwise the handler future stops being
+    // `Send` and axum's `Handler` trait bound breaks.
+    let (mut buf, stylesheet_urls) = {
+        let dom = Html::parse_document(&html_text);
+        let mut buf = String::new();
+        if let Ok(sel) = Selector::parse("style") {
+            for style_el in dom.select(&sel) {
+                let body: String = style_el.text().collect();
+                buf.push_str(&body);
+                buf.push('\n');
             }
         }
+        let urls = extract_stylesheet_urls(&dom, &final_url);
+        (buf, urls)
+    };
+
+    // External <link rel="stylesheet" href="…"> resources.
+    for sheet_url in stylesheet_urls {
+        match client.get(sheet_url.clone()).send().await {
+            Ok(sheet_resp) => {
+                if !sheet_resp.status().is_success() {
+                    tracing::warn!(
+                        target: "bxc::tokens_m3",
+                        status = sheet_resp.status().as_u16(),
+                        url = %sheet_url,
+                        "stylesheet returned non-2xx, skipping"
+                    );
+                    continue;
+                }
+                match sheet_resp.text().await {
+                    Ok(css) => {
+                        buf.push_str(&css);
+                        buf.push('\n');
+                    }
+                    Err(e) => tracing::warn!(
+                        target: "bxc::tokens_m3",
+                        error = %e,
+                        url = %sheet_url,
+                        "stylesheet body read failed, skipping"
+                    ),
+                }
+            }
+            Err(e) => tracing::warn!(
+                target: "bxc::tokens_m3",
+                error = %e,
+                url = %sheet_url,
+                "stylesheet fetch failed, skipping"
+            ),
+        }
     }
+
+    let mut tokens = HashMap::new();
+    harvest_md_sys_tokens(&buf, &mut tokens);
     Ok(M3TokenMap { source_url: url_str.to_string(), tokens })
 }
 
@@ -570,5 +726,90 @@ mod tests {
         let hosts = extract_csp_hosts(csp);
         assert!(hosts.contains(&"cdn.example.com".to_string()));
         assert!(hosts.contains(&"js.stripe.com".to_string()));
+    }
+
+    #[test]
+    fn tokens_m3_extracts_external_link_hrefs() {
+        let html = r#"<!doctype html><html><head>
+            <link rel="stylesheet" href="/static/app.css">
+            <link rel="stylesheet" href="https://cdn.example.com/m3.css">
+            <link rel="stylesheet" href="//cdn.example.com/proto-relative.css">
+            <link rel="stylesheet" href="data:text/css,body{}">
+            <link rel="icon" href="/favicon.ico">
+            <link rel="stylesheet">
+            <style>:root{--md-sys-color-primary:#000;}</style>
+        </head><body></body></html>"#;
+        let dom = Html::parse_document(html);
+        let base = url::Url::parse("https://m3.material.io/foundations/design-tokens").unwrap();
+        let urls = extract_stylesheet_urls(&dom, &base);
+        let strs: Vec<String> = urls.iter().map(ToString::to_string).collect();
+        assert!(
+            strs.contains(&"https://m3.material.io/static/app.css".to_string()),
+            "relative href must resolve against base: {strs:?}"
+        );
+        assert!(
+            strs.contains(&"https://cdn.example.com/m3.css".to_string()),
+            "absolute https href must be kept: {strs:?}"
+        );
+        assert!(
+            strs.contains(&"https://cdn.example.com/proto-relative.css".to_string()),
+            "protocol-relative href must inherit scheme: {strs:?}"
+        );
+        assert!(
+            !strs.iter().any(|s| s.starts_with("data:")),
+            "data: scheme must be filtered out: {strs:?}"
+        );
+        assert!(
+            !strs.iter().any(|s| s.ends_with("/favicon.ico")),
+            "non-stylesheet rels must be ignored: {strs:?}"
+        );
+    }
+
+    #[test]
+    fn tokens_m3_harvest_preserves_full_md_sys_prefix() {
+        let css = r#":root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-typescale-body-large-size: 16px;
+            --md-sys-color-surface-tint: rgba(103, 80, 164, 0.05);
+            --other-token: ignored;
+        }"#;
+        let mut tokens = HashMap::new();
+        harvest_md_sys_tokens(css, &mut tokens);
+        assert_eq!(
+            tokens.get("--md-sys-color-primary").map(String::as_str),
+            Some("#6750A4")
+        );
+        assert_eq!(
+            tokens.get("--md-sys-color-on-primary").map(String::as_str),
+            Some("#ffffff")
+        );
+        assert_eq!(
+            tokens.get("--md-sys-typescale-body-large-size").map(String::as_str),
+            Some("16px")
+        );
+        // Paren-balanced values must survive without truncation at the
+        // commas inside `rgba(...)`.
+        assert_eq!(
+            tokens.get("--md-sys-color-surface-tint").map(String::as_str),
+            Some("rgba(103, 80, 164, 0.05)")
+        );
+        assert!(!tokens.contains_key("--other-token"));
+        assert!(!tokens.contains_key("--md-sys-"));
+    }
+
+    #[test]
+    fn tokens_m3_harvest_handles_concatenated_inline_and_external_buffers() {
+        // Simulate the concatenated buffer produced by tokens_m3 when
+        // inline <style> and external CSS are appended back-to-back.
+        let combined = "\
+            :root{--md-sys-color-primary:#6750A4;}\n\
+            /* external sheet starts here */\n\
+            .surface{--md-sys-color-surface:#fff;color:red;}\n";
+        let mut tokens = HashMap::new();
+        harvest_md_sys_tokens(combined, &mut tokens);
+        assert_eq!(tokens.len(), 2, "expected exactly 2 tokens, got {tokens:?}");
+        assert!(tokens.contains_key("--md-sys-color-primary"));
+        assert!(tokens.contains_key("--md-sys-color-surface"));
     }
 }

@@ -28,7 +28,7 @@ Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** rév
 | R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
 | R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
 | R-A | R1.4 MCP client dans `aphrody-mcp` | ✅ shipped — tool `aphrody_mcp_call(server, tool, args, config?)` wired sur McpClient stdio/HTTP, 5 unit tests | n/a |
-| R-A | R1.5 cold-start bench criterion | ⏳ | n/a |
+| R-A | R1.5 cold-start bench criterion | ✅ shipped (`benches/cold_start.rs` + `benches/initialize_handshake.rs` + ledger §4.2/§4.3) | 179 |
 | R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ⏳ | n/a |
 | R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | ⏳ | n/a |
 
@@ -86,7 +86,7 @@ utilisé ligne 228). Restent R1.4-R1.6 actionables.
 | R1.2 | Diagnostics `aphrody-tui/tests/widgets_smoke.rs` (E0432 unresolved imports `BorderStyle/Gauge/Padding/...`) | ✅ **false-positive cached** — `m3::*` + `TestBackend` exposés | `cargo test -p aphrody-tui --locked` exit 0 |
 | R1.3 | Diagnostics `gemini-runtime/src/tools.rs` (E0432 `async_trait`, E0038 `Tool` non dyn-compat) | ✅ **false-positive cached** — `async-trait` dans Cargo.toml + `#[async_trait]` proc-macro applied | `cargo check -p gemini-runtime --locked` exit 0 |
 | R1.4 | MCP client dans `aphrody-mcp` via `gemini_runtime::McpClient` (stdio + HTTP, cf. `crates/gemini-runtime/src/mcp_client.rs:275`). Tool `aphrody_mcp_call(server, tool, args, config?)` shipped dans `crates/google_mcp/src/main.rs` — structured error envelopes `MCP_BAD_REQUEST / MCP_CONFIG / MCP_UNKNOWN_SERVER / MCP_CONNECT / MCP_INITIALIZE / MCP_CALL / MCP_ENCODE` | ✅ | `cargo test -p google_mcp aphrody_mcp_call_tests` 5/5 green |
-| R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99, `aphrody-mcp` initialize handshake p50/p95 | ⏳ | `cargo bench -p cli` produit rapport HTML + ledger `docs/PERFORMANCE-HISTORY.md` updated |
+| R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99 (`crates/cli/benches/cold_start.rs`), `aphrody-mcp` initialize handshake p50/p95 (`crates/google_mcp/benches/initialize_handshake.rs`). Both use `iter_custom` over freshly-built `CARGO_BIN_EXE_*` for true wall-clock cold-start latency. Ledger `docs/PERFORMANCE-HISTORY.md` expanded with §4.2 (cold-start) + §4.3 (MCP handshake) ; first measurement captured at v0.1.0 tag | ✅ **DONE** 2026-05-19 | `cargo check --benches -p aphrody -p google_mcp --locked` exit 0 |
 | R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
 
 #### R2 — Apprend de ses erreurs (self-improvement loop)

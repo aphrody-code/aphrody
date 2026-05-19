@@ -36,6 +36,7 @@ base          = { path = "../base" }
 serde         = { workspace = true }
 serde_json    = { workspace = true }
 anyhow        = { workspace = true }
+chrono        = { workspace = true, features = ["serde"] }
 
 # --- Native targets (Linux/Windows/macOS) ----------------------------------
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -68,6 +69,21 @@ gemini-runtime            = { path = "../gemini-runtime" }
 # `aphrody re triage` — reverse engineering primitives (pure Rust, goblin-based,
 # zero GPL). Native-only because it reads binaries from disk (std::fs::read).
 aphrody-re                = { path = "../aphrody-re" }
+# `aphrody chat` — unified turn-loop REPL composing every aphrody building
+# block (gemini-runtime + tools + memory + session + permissions + hooks +
+# prompts + router + cost + context + events). Phase 1 wires --prompt
+# one-shot mode; ratatui REPL + slash-commands land in Phase 2.
+aphrody-chat              = { path = "../aphrody-chat" }
+# `aphrody memory migrate` — provider-to-provider migration (R3.4). Native-only
+# because the SqliteLocal provider uses rusqlite (libsqlite3 bundled C lib) and
+# the Mem0/Honcho providers use reqwest, neither of which compile on wasm32.
+aphrody-memory            = { path = "../aphrody-memory" }
+# Default sqlite path `$HOME/.aphrody/memory.sqlite` for `aphrody memory migrate`
+# resolution. `dirs` is portable across Linux/Windows/macOS.
+dirs                      = { workspace = true }
+# `aphrody notebooklm {...}` — Google NotebookLM Boq RPC client (native HTTP,
+# no browser automation in-process).
+notebooklm                = { workspace = true }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -89,3 +105,15 @@ predicates    = { workspace = true }
 serde_json    = { workspace = true }
 tempfile      = { workspace = true }
 tokio         = { workspace = true, features = ["macros", "rt"] }
+# `cold_start` bench — measures `aphrody version` p50/p95/p99 (PLAN R-A R1.5).
+criterion     = { workspace = true }
+
+# --- Cold-start benchmarks (native targets only) ---------------------------
+# The bench harness spawns the freshly-built binary, so it cannot run on
+# wasm32 (no Command::output) and is gated to native targets via the
+# dev-dependencies block above. `harness = false` disables libtest so
+# criterion can install its own main() — same convention as
+# `crates/backend/benches/backend_bench.rs`.
+[[bench]]
+name    = "cold_start"
+harness = false

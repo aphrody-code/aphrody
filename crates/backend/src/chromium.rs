@@ -14,6 +14,27 @@ pub struct ChromiumProfile {
     pub path: PathBuf,
 }
 
+/// Decrypted cookie row with full metadata, suitable for re-injection into
+/// another browser context (WebView2, headless Chromium, …) or for
+/// downstream HTTP clients that need to compose a `Cookie:` header.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Cookie {
+    pub host_key: String,
+    pub name: String,
+    pub value: String,
+    pub path: String,
+    /// Chromium-format expiry: microseconds since 1601-01-01 UTC.
+    /// `0` for session cookies. Convert to UNIX epoch with
+    /// `(expires_utc - 11_644_473_600_000_000) / 1_000_000`.
+    pub expires_utc: i64,
+    pub is_secure: bool,
+    pub is_httponly: bool,
+    /// `true` when [`expires_utc`] is `0` — cookie disappears at browser close.
+    pub is_session: bool,
+    /// Best-effort SameSite policy: `0 = none`, `1 = lax`, `2 = strict`.
+    pub samesite: i64,
+}
+
 pub struct ChromiumParser {
     user_data_path: PathBuf,
     master_key: Option<Vec<u8>>,
@@ -106,6 +127,72 @@ impl ChromiumParser {
                 && let Ok(value) = String::from_utf8(decrypted)
             {
                 results.push((name, value));
+            }
+        }
+
+        let _ = fs::remove_file(temp_cookies);
+        Ok(results)
+    }
+
+    /// Like [`Self::get_cookies`] but returns the full per-row metadata.
+    ///
+    /// `host_key_like` is matched as `host_key LIKE %pattern%` so `"google.com"`
+    /// captures `.google.com`, `accounts.google.com`, `.youtube.com` (when
+    /// passed `"google"`), etc. Pass `""` to dump every cookie.
+    pub fn get_cookies_full(
+        &self,
+        profile: &str,
+        host_key_like: &str,
+    ) -> Result<Vec<Cookie>> {
+        let master_key =
+            self.master_key.as_ref().ok_or_else(|| anyhow!("Master Key non chargée"))?;
+
+        let cookies_path = self.user_data_path.join(profile).join("Network/Cookies");
+        if !cookies_path.exists() {
+            return Err(anyhow!("Fichier Cookies introuvable : {}", cookies_path.display()));
+        }
+
+        let temp_cookies = std::env::temp_dir().join("aphrody_chromium_cookies.db");
+        fs::copy(&cookies_path, &temp_cookies)?;
+
+        let conn = rusqlite::Connection::open(&temp_cookies)?;
+        let mut stmt = conn.prepare(
+            "SELECT host_key, name, encrypted_value, path, expires_utc, is_secure, \
+             is_httponly, samesite FROM cookies WHERE host_key LIKE ?",
+        )?;
+
+        let pattern = format!("%{}%", host_key_like);
+        let row_iter = stmt.query_map([pattern], |row| {
+            Ok((
+                row.get::<_, String>(0)?,        // host_key
+                row.get::<_, String>(1)?,        // name
+                row.get::<_, Vec<u8>>(2)?,       // encrypted_value
+                row.get::<_, String>(3)?,        // path
+                row.get::<_, i64>(4)?,           // expires_utc
+                row.get::<_, i64>(5)? != 0,      // is_secure
+                row.get::<_, i64>(6)? != 0,      // is_httponly
+                row.get::<_, i64>(7).unwrap_or(0),// samesite (optional in older schemas)
+            ))
+        })?;
+
+        let mut results = Vec::new();
+        for row in row_iter {
+            let (host_key, name, encrypted, path, expires_utc, is_secure, is_httponly, samesite) =
+                row?;
+            if let Ok(decrypted) = Crypto::decrypt_aes_gcm(&encrypted, master_key)
+                && let Ok(value) = String::from_utf8(decrypted)
+            {
+                results.push(Cookie {
+                    host_key,
+                    name,
+                    value,
+                    path,
+                    expires_utc,
+                    is_secure,
+                    is_httponly,
+                    is_session: expires_utc == 0,
+                    samesite,
+                });
             }
         }
 
