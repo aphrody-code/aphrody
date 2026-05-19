@@ -117,6 +117,10 @@ members = [
     # parser + globset matcher + tokio::process spawner with timeout +
     # JSON block/allow decision parsing on stdout).
     "crates/aphrody-hooks",
+    # aphrody-providers — single-source-of-truth `Provider` enum + ProviderError
+    # for the three-only LLM whitelist (anthropic / gemini / antigravity).
+    # Cf. memory project_aphrody_providers_3only + project_no_duplication_max_cohesion.
+    "crates/aphrody-providers",
     # aphrody-router — LLM provider router with strict 3-only whitelist
     # (anthropic / gemini / antigravity). Cf. memory project_aphrody_providers_3only.
     "crates/aphrody-router",
@@ -124,6 +128,62 @@ members = [
     # required-variable validation, reusable `{% include %}` partials, and a
     # configurable PII scrubber (email, phone, IBAN, IPv4, API-key markers).
     "crates/aphrody-prompts",
+    # aphrody-cost — per-provider USD cost + token usage tracker (Anthropic +
+    # Gemini + Antigravity whitelist), pricing table, budget guard, NDJSON log.
+    "crates/aphrody-cost",
+    # aphrody-context — LLM context-window manager: heuristic token counting,
+    # sliding-window trim with pinned-message preservation, summarization
+    # triggers, JSON snapshot/restore.
+    "crates/aphrody-context",
+    # aphrody-session — conversation session tracker (turns + tool calls +
+    # token usage + cost, persistent JSONL log with atomic writes + replay).
+    "crates/aphrody-session",
+    # aphrody-tools — vendor-neutral tool descriptor registry (JSON Schema
+    # input/output) with cross-vendor exporters/importers for Anthropic
+    # tool-use, Gemini function declarations and MCP `tools/list` shapes.
+    "crates/aphrody-tools",
+    # aphrody-retry — reusable retry primitives (exponential backoff + jitter
+    # modes + classifier trait + Retry-After honoring) for HTTP API calls.
+    # Consumed by aphrody-router / aphrody-messaging / aphrody-cron.
+    "crates/aphrody-retry",
+    # aphrody-rateguard — async token-bucket RPM + TPM rate limiter for the
+    # three-only LLM provider whitelist (Anthropic + Gemini + Antigravity),
+    # per-model overrides, blocking acquire with configurable wait ceiling.
+    "crates/aphrody-rateguard",
+    # aphrody-cache — two-tier cache (in-memory LRU + TTL + disk-backed
+    # persistent store with atomic writes and SHA-256 keyed filenames).
+    # Backs HTTP response cache, prompt-completion memoization, scrape cache.
+    "crates/aphrody-cache",
+    # aphrody-events — in-process async pub-sub event bus with topic filtering,
+    # NDJSON audit sink, memory ring buffer and counter subscribers. No external
+    # broker; complements aphrody-session (cold archive) + aphrody-hooks
+    # (external commands) with a live in-process fan-out surface.
+    "crates/aphrody-events",
+    # aphrody-secrets — secret-store abstraction (env + plaintext file +
+    # AES-256-GCM/Argon2id encrypted file + composite) with redacted Display/
+    # Debug, constant-time equality, Zeroize-on-drop SecretValue.
+    "crates/aphrody-secrets",
+    # aphrody-settings — hierarchical JSON settings loader (user / project /
+    # local / env) with deep-merge precedence, dotted-path navigation, env
+    # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
+    # validation (type / required / additionalProperties / properties / items).
+    "crates/aphrody-settings",
+    # aphrody-telemetry — in-process observability primitives: hierarchical
+    # spans (RAII-finalized handles), monotonic atomic counters, bucketed
+    # histograms, NDJSON file exporter. OpenTelemetry-inspired data model
+    # without OTLP / gRPC / protobuf weight.
+    "crates/aphrody-telemetry",
+    # aphrody-task-runner — parallel DAG executor (topological sort + per-task
+    # timeout/retry + Semaphore-bounded concurrency + NDJSON-friendly event
+    # stream) for background pipelines that need explicit read-after-write
+    # ordering. Complements aphrody-cron (when) and aphrody-hooks (single-shot
+    # commands) with a typed multi-step orchestrator.
+    "crates/aphrody-task-runner",
+    # aphrody-search — in-memory full-text search (regex-free tokenizer with
+    # EN+FR stop words, inverted index, BM25-lite scoring with title 2x
+    # boost, snippet highlighting, atomic JSON persistence). Backs the
+    # marketplace / memory / skill discovery UIs.
+    "crates/aphrody-search",
 ]
 exclude = [
     "crates/coreutils",
@@ -284,6 +344,7 @@ rustix             = { version = "1.0", default-features = false, features = ["s
 
 # --- Crypto / security ----------------------------------------------------
 aes-gcm            = { version = "0.10" }
+argon2             = { version = "0.5" }
 sha2               = { version = "0.10" }
 sha3               = { version = "0.10" }
 md-5               = { version = "0.10" }
@@ -308,6 +369,9 @@ tower-http         = { version = "0.6", features = ["cors"] }
 dns-lookup         = { version = "2" }
 hostname           = { version = "0.4" }
 url                = { version = "2" }
+
+# --- aphrody-providers (single-source-of-truth Provider enum) -------------
+aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canary" }
 
 # --- aphrody-voice family (TTS + STT) ------------------------------------
 aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
@@ -368,7 +432,7 @@ syntect            = { version = "5.3", default-features = false, features = ["d
 # `minijinja` powers aphrody-prompts: Jinja-compatible template engine, zero
 # unsafe, no_std-friendly. Used to render LLM prompts with typed variables
 # and reusable partials (`{% include 'name' %}`).
-minijinja          = { version = "2", default-features = false, features = ["loader", "builtins", "macros", "deserialization", "serde"] }
+minijinja          = { version = "2", default-features = false, features = ["loader", "builtins", "macros", "multi_template", "deserialization", "serde"] }
 
 # --- XML pull parser ------------------------------------------------------
 # `quick-xml` powers the streaming <artifact> block parser in

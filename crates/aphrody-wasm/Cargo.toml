@@ -64,3 +64,12 @@ ignored = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys", "console
 # (they are sub-crates of the same release and must match byte-for-byte).
 [dev-dependencies]
 wasm-bindgen-test = "=0.3.71"
+m3-tokens         = { path = "../m3-tokens" }
+
+# Native-only example: tiny `std::net` HTTP server serving the demo HTML on
+# 127.0.0.1:18800. Built only when targeting non-wasm hosts so wasm-pack
+# does not try to compile a `TcpListener`-based binary into wasm32.
+[[example]]
+name              = "serve"
+path              = "examples/serve.rs"
+required-features = []

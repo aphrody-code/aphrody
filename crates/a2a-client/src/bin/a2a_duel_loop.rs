@@ -7,8 +7,25 @@
 // bumps the matching heartbeat file.
 //
 // Pure-Rust port of `.claude/plugins/aphrody/skills/a2a-duel-loop/scripts/duel-cycle.ts`.
+//
+// Native-only: the binary uses std::fs blocking I/O + tokio multi-thread runtime
+// + reqwest. On wasm32 targets the corresponding deps (chrono, clap, getrandom,
+// hex, tokio, reqwest) are stripped from Cargo.toml — only a no-op `main` is
+// emitted there so `cargo check --target wasm32-*` still produces an artifact
+// without dragging native syscalls into the wasm linker.
 
 #![doc = "a2a-duel-loop binary — single tick driver for the file-based A2A duel."]
+#![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
+
+#[cfg(target_family = "wasm")]
+fn main() {
+    // a2a-duel-loop is native-only — std::fs + tokio multi-thread runtime are
+    // both required and neither is portable to wasm32 today. Keep a noop main
+    // so the binary target builds clean on wasm checks.
+}
+
+#[cfg(not(target_family = "wasm"))]
+mod native_impl {
 
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
@@ -327,6 +344,12 @@ fn run() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn main() -> ExitCode {
+pub(super) fn entry() -> ExitCode {
     run()
+}
+} // mod native_impl
+
+#[cfg(not(target_family = "wasm"))]
+fn main() -> std::process::ExitCode {
+    native_impl::entry()
 }

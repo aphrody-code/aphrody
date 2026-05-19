@@ -18,8 +18,9 @@ name = "a2a_client"
 
 # Pure-Rust port of `.claude/plugins/aphrody/skills/a2a-duel-loop/scripts/duel-cycle.ts`
 # (PLAN_RUST_ONLY.md Phase 4.5). Native-only — depends on tokio + reqwest for
-# the optional POST /msg mirror, which excludes wasm32 (already cfg-gated in the
-# library deps below).
+# the optional POST /msg mirror plus chrono/clap/getrandom/hex (all native-only
+# in the cfg-gated target block below). The binary is excluded on wasm targets
+# via #![cfg(not(target_family = "wasm"))] in src/bin/a2a_duel_loop.rs.
 [[bin]]
 name = "a2a-duel-loop"
 path = "src/bin/a2a_duel_loop.rs"
@@ -39,19 +40,20 @@ auto_impl = { workspace = true }
 bytes = "1"
 tracing = { workspace = true }
 uuid = { workspace = true }
-# `a2a-duel-loop` binary deps (native-only consumers; cfg-gated transitively via
-# the [target.'cfg(not(target_family = "wasm"))'.dependencies] tokio+reqwest).
-clap = { workspace = true }
-chrono = { workspace = true }
-getrandom = { workspace = true }
-hex = { workspace = true }
 
 # Native (Linux / Windows / macOS): full tokio + reqwest with TLS.
 # reqwest uses OS networking (mio, hyper, rustls) — not available on wasm32.
+# The `a2a-duel-loop` binary lives here too — its deps (chrono, clap, getrandom,
+# hex) are pulled in only on native because the binary is native-only (uses the
+# tokio-multi-thread runtime + native file APIs via std::fs).
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio = { workspace = true }
 reqwest = { workspace = true }
 rustls = { workspace = true, optional = true, features = ["ring"] }
+clap = { workspace = true }
+chrono = { workspace = true }
+getrandom = { workspace = true }
+hex = { workspace = true }
 
 # wasm32-unknown-unknown (browser): minimal tokio + reqwest in browser-fetch mode.
 # reqwest 0.13 uses the `fetch` API only when target_os = "unknown" (not WASI).
@@ -69,7 +71,11 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "str
 [target.'cfg(target_os = "wasi")'.dependencies]
 tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
 
-[dev-dependencies]
+# Native-only dev deps: rcgen pulls ring + getrandom without the `js` feature
+# (it's a self-signed-cert helper that has no meaning in a browser, where TLS is
+# delegated to the host). Keep it native-only so `cargo check --tests
+# --target wasm32-unknown-unknown` stays green.
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rcgen = { workspace = true }
 
 [features]
