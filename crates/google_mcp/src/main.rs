@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
+mod client_cmd;
+// Voice MCP tools (TTS via aphrody-voice + STT via aphrody-voice-stt).
+// Native-only: the module itself is `#[cfg(not(target_arch = "wasm32"))]`.
+#[cfg(not(target_arch = "wasm32"))] mod voice_tools;
+
 use std::{
     net::SocketAddr,
     sync::{
@@ -10,11 +15,42 @@ use std::{
 
 use anyhow::Result;
 use axum::{Json, Router, routing::get};
+use clap::{Parser, Subcommand};
 use rmcp::{
     ServiceExt, handler::server::wrapper::Parameters, schemars, tool, tool_router, transport::stdio,
 };
 use serde_json::json;
 use sysinfo::System;
+
+use crate::client_cmd::{ClientArgs, run as run_client};
+
+// ---------------------------------------------------------------------------
+// Top-level CLI surface.
+//
+// `aphrody-mcp` historically had no subcommands — the bare invocation booted
+// the stdio MCP server. To preserve that contract while adding a `client`
+// subcommand, the `command` field is optional: `None` ⇒ implicit `Server`.
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Parser)]
+#[command(
+    name = "aphrody-mcp",
+    version,
+    about = "Unified Rust MCP server + client. Bare invocation starts the stdio server (15 tools); \
+             `client` subcommand connects to third-party MCP servers."
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<TopCommand>,
+}
+
+#[derive(Debug, Subcommand)]
+enum TopCommand {
+    /// Run the stdio MCP server exposing the 15 built-in tools (default mode).
+    Server,
+    /// Connect to a third-party MCP server (stdio or HTTP) and invoke its tools.
+    Client(ClientArgs),
+}
 
 // ---------------------------------------------------------------------------
 // Global uptime anchor (set once at server boot).
@@ -107,6 +143,14 @@ pub struct ExtractStructuredRequest {
 pub struct VisionAnalyzeRequest {
     #[schemars(description = "Absolute or workspace-relative path to a PNG / WebP screenshot.")]
     pub screenshot_path: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ReTriageRequest {
+    #[schemars(description = "Absolute or workspace-relative path to a binary file to triage \
+                              (PE32/PE64/ELF32/ELF64). The file is read into memory in full — \
+                              best for binaries under 100 MB.")]
+    pub path: String,
 }
 
 // ---------------------------------------------------------------------------
@@ -824,6 +868,104 @@ impl GoogleMcpServer {
         )
         .await
     }
+
+    // -----------------------------------------------------------------------
+    // 16. voice_synthesize — text-to-speech via aphrody-voice (ElevenLabs).
+    //     Native-only (`cfg(not(wasm32))`): the browser path lives in
+    //     `aphrody_voice::web::WebSpeechSynth` and is not exposed over stdio.
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Synthesise speech from text via the aphrody-voice ElevenLabs adapter. \
+                          Returns { audio_base64, mime_type, duration_ms, bytes, voice }. \
+                          Requires ELEVENLABS_API_KEY in env.")]
+    async fn voice_synthesize(
+        &self,
+        Parameters(req): Parameters<voice_tools::VoiceSynthesizeRequest>,
+    ) -> String {
+        voice_tools::synthesize(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 17. voice_transcribe — speech-to-text via aphrody-voice-stt.
+    //     Prefers offline LocalWhisperBackend (APHRODY_WHISPER_MODEL=<ggml.bin>);
+    //     falls back to the OpenAI Whisper REST API on NotImplemented or any
+    //     other provider error.
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Transcribe base64-encoded audio via aphrody-voice-stt. Prefers offline \
+                          whisper.cpp (set APHRODY_WHISPER_MODEL to a GGML model path); falls back \
+                          to the OpenAI Whisper REST API (OPENAI_API_KEY). Returns \
+                          { text, confidence, language, duration_s, backend, mime_type }.")]
+    async fn voice_transcribe(
+        &self,
+        Parameters(req): Parameters<voice_tools::VoiceTranscribeRequest>,
+    ) -> String {
+        voice_tools::transcribe(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // 18. re_triage — reverse engineering triage via aphrody-re.
+    //     Single MCP tool covers the full PE/ELF triage surface (format,
+    //     entry_point, sections + per-section Shannon entropy, imports,
+    //     exports, ASCII/UTF-16LE strings sample, SHA-256). Separate
+    //     re_disasm / re_strings / re_sections MCP tools (R5.7) are
+    //     intentionally not split — every consumer that needs sections or
+    //     strings already gets them in re_triage's response.
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Triage a binary file (PE32/PE64/ELF32/ELF64): detect format via magic, \
+                          parse with goblin, extract sections with per-section Shannon entropy, \
+                          imports, exports, ASCII/UTF-16LE strings sample (≤ 64 entries, min \
+                          length 6), and a SHA-256 fingerprint. Pure Rust, no GPL deps. Returns \
+                          a TriageReport JSON object. Errors with structured envelope on read \
+                          failures or oversized inputs.")]
+    async fn re_triage(
+        &self,
+        Parameters(ReTriageRequest { path }): Parameters<ReTriageRequest>,
+    ) -> String {
+        // Guard against pathological inputs before reading into memory.
+        const MAX_BYTES: u64 = 200 * 1024 * 1024; // 200 MB
+        let meta = match std::fs::metadata(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_BAD_REQUEST",
+                    "reason": format!("unable to stat '{path}': {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        if meta.len() > MAX_BYTES {
+            return serde_json::to_string_pretty(&json!({
+                "error": "RE_BAD_REQUEST",
+                "reason": format!(
+                    "'{path}' is {} bytes (> {MAX_BYTES} byte cap); refuse to triage",
+                    meta.len()
+                ),
+            }))
+            .unwrap_or_default();
+        }
+        let bytes = match std::fs::read(&path) {
+            Ok(b) => b,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_IO",
+                    "reason": format!("read '{path}' failed: {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        match aphrody_re::triage(&bytes) {
+            Ok(report) => serde_json::to_string_pretty(&report).unwrap_or_else(|e| {
+                format!(r#"{{"error":"RE_ENCODE","reason":"{}"}}"#, e.to_string().replace('"', "'"))
+            }),
+            Err(e) => serde_json::to_string_pretty(&json!({
+                "error": "RE_PARSE",
+                "reason": e.to_string(),
+            }))
+            .unwrap_or_default(),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -843,10 +985,21 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::fmt().with_writer(std::io::stderr).with_ansi(false).init();
 
-    tracing::info!("Starting Aphrody MCP Server (Rust native)");
-
-    // Anchor the uptime clock immediately.
+    // Anchor the uptime clock immediately (server-mode dashboards depend on it,
+    // client-mode never reads it but the cost is a single OnceLock store).
     START_INSTANT.get_or_init(Instant::now);
+
+    let cli = Cli::parse();
+    match cli.command {
+        None | Some(TopCommand::Server) => run_server().await,
+        Some(TopCommand::Client(args)) => run_client(args).await,
+    }
+}
+
+/// Boot the stdio MCP server exposing the 15 built-in tools. Equivalent to the
+/// pre-clap behaviour of `aphrody-mcp` (no subcommand).
+async fn run_server() -> Result<()> {
+    tracing::info!("Starting Aphrody MCP Server (Rust native)");
 
     let service = GoogleMcpServer.serve(stdio()).await.inspect_err(|e| {
         tracing::error!("Serving error: {:?}", e);
@@ -854,4 +1007,64 @@ async fn main() -> Result<()> {
 
     service.waiting().await?;
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// CLI parse tests (clap backward compat)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod cli_tests {
+    use super::*;
+
+    #[test]
+    fn cli_clap_backward_compat_no_subcommand_means_server() {
+        // Bare `aphrody-mcp` must parse to the implicit server mode so
+        // existing Claude Desktop / .mcp.json entries keep working.
+        let cli = Cli::try_parse_from(["aphrody-mcp"]).expect("bare invocation must parse");
+        assert!(cli.command.is_none(), "no subcommand ⇒ implicit Server");
+    }
+
+    #[test]
+    fn cli_parses_explicit_server_subcommand() {
+        let cli = Cli::try_parse_from(["aphrody-mcp", "server"]).expect("server must parse");
+        assert!(matches!(cli.command, Some(TopCommand::Server)));
+    }
+
+    #[test]
+    fn cli_parses_client_list_subcommand() {
+        let cli = Cli::try_parse_from(["aphrody-mcp", "client", "list", "bxc"])
+            .expect("client list must parse");
+        match cli.command {
+            Some(TopCommand::Client(args)) => match args.op {
+                crate::client_cmd::ClientOp::List { server_name, config } => {
+                    assert_eq!(server_name, "bxc");
+                    assert!(config.is_none());
+                },
+                other => panic!("expected List, got {other:?}"),
+            },
+            other => panic!("expected Client, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn cli_parses_client_probe_subcommand() {
+        let cli = Cli::try_parse_from([
+            "aphrody-mcp",
+            "client",
+            "probe",
+            "--stdio",
+            "/bin/echo hello",
+        ])
+        .expect("client probe must parse");
+        match cli.command {
+            Some(TopCommand::Client(args)) => match args.op {
+                crate::client_cmd::ClientOp::Probe { stdio } => {
+                    assert_eq!(stdio, "/bin/echo hello");
+                },
+                other => panic!("expected Probe, got {other:?}"),
+            },
+            other => panic!("expected Client, got {other:?}"),
+        }
+    }
 }
