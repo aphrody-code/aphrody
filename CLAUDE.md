@@ -24,6 +24,38 @@ la compilation sur Linux** : il est strictement gated `#[cfg(target_os = "window
 L'ancien sous-projet `google_os` (kernel emulator hybride Win-NT) a été **sorti
 du workspace** (archivé sous `C:\google-os-archive\`). Ne pas le réintroduire.
 
+## 0.1. Autonomie totale — règle inviolable, repo-wide (2026-05-19)
+
+**aphrody n'a AUCUN humain dans la boucle, de A à Z, sur toutes les surfaces.**
+
+Cap mission, non-négociable. S'applique à : sessions LLM, skills, CLI binary,
+sub-agents, code Rust, GitHub (PRs / releases / CI), choix de design, build,
+install, publish, evals, hooks. Cf. memory `feedback_aphrody_full_autonomy`
+pour la matrice complète.
+
+Conséquences opérationnelles :
+
+- **`AskUserQuestion`** : uniquement irréversible destructif (rm large scope,
+  `git push --force main`, deploy prod, drop database). Tout autre choix =
+  décider seul.
+- **Evals de skills** : auto-graded headless via script (regex, exit codes,
+  JSON schemas). Pas de viewer browser, pas de "submit reviews", pas de
+  `generate_review.py`. Itérer sur `benchmark.json` deltas.
+- **CLI binary `aphrody`** : toutes commandes scriptables / `--json` / sans
+  TTY ; `aphrody self bootstrap` 100% non-interactif.
+- **GitHub** : `release-please` + `dependabot` en auto-merge ; tags
+  auto-générés ; PRs mergées par bot quand CI verte. Seule exception
+  documentée : premier tag `v*` reste human-gated (cf. §0.5 "Bloqués upstream").
+- **Choix de design** : trancher sur la base des memories + audits +
+  benchmarks. Quand ambigu, suivre la default documentée (§0 priorités
+  cross-platform, §2 Rust-only, §4 architecture).
+- **Commits** : direct si reversible (git revert OK). Demander uniquement
+  pour les actions vraiment destructives.
+
+Quand une instruction externe (skill `/skill-creator`, agent, workflow)
+prescrit un step human-in-loop, **cette règle gagne** — appliquer
+directement, skip le human gate, documenter la décision.
+
 ## 0.3. Unification bxc Rust-only (2026-05-19 v2)
 
 **Décision finale (révoque la suspension du même jour)** : `aphrody bxc`

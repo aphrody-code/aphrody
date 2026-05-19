@@ -29,6 +29,11 @@ an AI assistant should behave inside it.
 - **No emoji** in source, commits, or docs unless the user explicitly requests.
 - **`publish = false`** on every new crate. Only flip after a publish ladder
   review; see `docs/cargo/PUBLISH-LADDER.md`.
+- **Zero human-in-the-loop, repo-wide.** aphrody is autonomous A→Z on every
+  surface: sessions, skills, CLI, sub-agents, code, GitHub, build, install.
+  Decide alone with documented rationale. Ask the operator only for truly
+  destructive irreversible actions (force-push main, drop DB, deploy prod).
+  See `CLAUDE.md` §0.1 for the full matrix.
 
 ## 3. The honest-delivery extension
 
