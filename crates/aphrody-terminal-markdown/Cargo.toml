@@ -35,5 +35,15 @@ once_cell = { workspace = true }
 # Avoids inlining the ESC ] / BEL / ST framing logic here.
 aphrody-terminal-vt = { path = "../aphrody-terminal-vt" }
 
+# M3 baseline color tokens (BASELINE / BASELINE_DARK) — consumed by
+# theme::MdTheme::from_m3_dark / from_m3_light to derive heading / code /
+# link / emphasis colours from the workspace's canonical token palette.
+m3-tokens = { path = "../m3-tokens", default-features = false }
+
+# JSON envelope for the aphrody-md-* OSC emitter (cf. src/osc.rs).
+# A small payload (≤200 bytes), serialised with the workspace serde_json.
+serde      = { workspace = true }
+serde_json = { workspace = true }
+
 [dev-dependencies]
 # kept empty: integration tests under tests/integration.rs use std only.
