@@ -62,6 +62,27 @@ use serde_json::{Map, Value, json};
 use thiserror::Error;
 
 // ---------------------------------------------------------------------------
+// Builtin tools (read_file, write_file, edit, glob, grep, ls, web_fetch,
+// memory_tool). Each module exposes a `descriptor()` returning a
+// [`ToolDescriptor`] and a unit struct implementing the [`Tool`] trait.
+//
+// The builtin modules are gated on non-WASM targets only: filesystem and
+// network primitives they rely on (`tokio::fs`, `walkdir`, `ignore`, the
+// blocking parts of `reqwest`) cannot link in `wasm32-unknown-unknown`. WASM
+// callers that need a tool should construct a custom one against the
+// vendor-neutral [`Tool`] trait or wait for the WASI surface to stabilise.
+// ---------------------------------------------------------------------------
+
+pub mod error;
+pub mod permissions;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod builtin;
+
+pub use crate::error::ToolError;
+pub use crate::permissions::{Permission, PermissionDescriptor};
+
+// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
@@ -202,6 +223,46 @@ impl ToolDescriptor {
         self.requires_permission = true;
         self
     }
+}
+
+// ---------------------------------------------------------------------------
+// Tool trait — runtime execution surface
+// ---------------------------------------------------------------------------
+
+/// A runnable tool. Implementations describe themselves via
+/// [`Tool::descriptor`] and execute through [`Tool::invoke`].
+///
+/// The trait is intentionally `async` (via [`async_trait::async_trait`]) to
+/// keep parity with the Gemini CLI TypeScript surface where every
+/// `BaseToolInvocation.execute` returns a `Promise`. Implementations should
+/// remain cancellation-friendly (cooperative `tokio` await points) and never
+/// block the runtime worker pool for more than a handful of milliseconds at
+/// a time.
+#[async_trait::async_trait]
+pub trait Tool: Send + Sync {
+    /// Returns the vendor-neutral descriptor for this tool. Stable: the
+    /// caller may cache the result across many invocations.
+    fn descriptor(&self) -> ToolDescriptor;
+
+    /// Returns the permission descriptor for this tool. Defaults to a
+    /// permissive "always allow read" entry; mutating tools override this
+    /// to return an `Ask` or `Deny` profile.
+    fn permission(&self) -> PermissionDescriptor {
+        PermissionDescriptor::allow(self.descriptor().name)
+    }
+
+    /// Execute the tool against the supplied JSON arguments.
+    ///
+    /// Implementations should validate inputs against
+    /// [`ToolDescriptor::input_schema`] before performing any side effect,
+    /// returning [`ToolError::InvalidArgs`] on mismatch.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ToolError`] describing the failure mode (I/O, network,
+    /// validation, etc.). On success returns the JSON payload to surface
+    /// back to the model.
+    async fn invoke(&self, args: Value) -> Result<Value, ToolError>;
 }
 
 // ---------------------------------------------------------------------------

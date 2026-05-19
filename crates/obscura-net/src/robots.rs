@@ -121,10 +121,10 @@ fn parse_robots_txt(body: &str, our_agent: &str) -> RobotsRules {
 }
 
 fn path_matches(path: &str, pattern: &str) -> bool {
-    if pattern.ends_with('*') {
-        path.starts_with(&pattern[..pattern.len() - 1])
-    } else if pattern.ends_with('$') {
-        path == &pattern[..pattern.len() - 1]
+    if let Some(stripped) = pattern.strip_suffix('*') {
+        path.starts_with(stripped)
+    } else if let Some(stripped) = pattern.strip_suffix('$') {
+        path == stripped
     } else {
         path.starts_with(pattern)
     }

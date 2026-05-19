@@ -35,11 +35,28 @@ impl std::fmt::Display for SubprocessExit {
 
 impl std::error::Error for SubprocessExit {}
 
-pub(crate) struct VersionCommand;
+pub(crate) struct VersionCommand {
+    pub json: bool,
+}
 
 #[async_trait]
 impl TerminalCommand for VersionCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        if self.json {
+            let info = serde_json::json!({
+                "version": env!("CARGO_PKG_VERSION"),
+                "commit": env!("APHRODY_GIT_SHA"),
+                "built": env!("APHRODY_BUILD_UNIX"),
+                "target": env!("APHRODY_TARGET"),
+                "profile": env!("APHRODY_PROFILE"),
+                "repo": "https://github.com/aphrody-code/aphrody",
+                "license": "Apache-2.0",
+                "a2a": "ai.json v1 (AGNTCY a2a/v0.4) @ /ai.json + /.well-known/ai.json"
+            });
+            println!("{}", serde_json::to_string_pretty(&info).unwrap());
+            return Ok(());
+        }
+
         // Format mirrors `gh --version` / `rustc -Vv` — flat key:value, no
         // emoji, no styling (terminals downstream may pipe to grep).
         println!("aphrody {}", env!("CARGO_PKG_VERSION"));
@@ -64,6 +81,9 @@ impl TerminalCommand for MirrorCommand {
     async fn execute(&self, ctx: &GoogleContext) -> miette::Result<()> {
         if self.action == "start" {
             ctx.mirror.start_mirroring().await.map_err(|e| miette::miette!(e.to_string()))?;
+            println!("[ok] mirror started");
+        } else {
+            println!("[skip] no-op mirror action: {}", self.action);
         }
         Ok(())
     }
@@ -98,6 +118,147 @@ impl TerminalCommand for ChromiumSyncCommand {
         Err(miette::miette!(
             "`chromium sync` is a Windows-only command (DPAPI-backed master-key path). Run on \
              Windows or use the OAuth2 flow via `aphrody auth`."
+        ))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// `aphrody chromium export-session` — unified Google session JSON
+// ---------------------------------------------------------------------------
+
+pub(crate) struct ChromiumExportSessionCommand {
+    pub profile: String,
+    pub out: Option<PathBuf>,
+    pub domain: String,
+}
+
+#[derive(serde::Serialize)]
+struct GoogleSessionExport {
+    schema: &'static str,
+    generated_at: String,
+    profile: String,
+    domain_filter: String,
+    #[cfg(target_os = "windows")]
+    cookies: Vec<backend::chromium::Cookie>,
+    gemini_oauth: Option<serde_json::Value>,
+    stats: ExportStats,
+}
+
+#[derive(serde::Serialize)]
+struct ExportStats {
+    total_cookies: usize,
+    httponly_count: usize,
+    secure_count: usize,
+    session_count: usize,
+    has_gemini_oauth: bool,
+}
+
+/// Read `~/.gemini/oauth_creds.json` and return the parsed JSON, if present.
+/// Errors are swallowed — the export is still useful with cookies alone, and
+/// the gemini token may simply not exist yet.
+fn read_gemini_oauth() -> Option<serde_json::Value> {
+    let home = platform::home_dir().ok()?;
+    let path = home.join(".gemini").join("oauth_creds.json");
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+#[cfg(target_os = "windows")]
+#[async_trait]
+impl TerminalCommand for ChromiumExportSessionCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        println!(
+            "📦 Export Google session — profil = '{}', filtre domaine = '%{}%'",
+            self.profile, self.domain
+        );
+
+        let user_data = platform::chrome_user_data()
+            .ok_or_else(|| miette::miette!("Chrome user-data path not known on this platform"))?;
+
+        let mut parser = ChromiumParser::new(user_data);
+        let profiles = parser.get_profiles();
+        if !profiles.iter().any(|p| p == &self.profile) {
+            return Err(miette::miette!(
+                "Profil '{}' introuvable. Profils disponibles: {:?}",
+                self.profile,
+                profiles
+            ));
+        }
+        parser.load_master_key().map_err(|e| miette::miette!(e.to_string()))?;
+        println!("🔑 Master Key déchiffrée.");
+
+        let cookies = parser
+            .get_cookies_full(&self.profile, &self.domain)
+            .map_err(|e| miette::miette!("get_cookies_full: {e:#}"))?;
+        println!("🍪 Cookies extraits : {} entrées", cookies.len());
+
+        let gemini_oauth = read_gemini_oauth();
+        match &gemini_oauth {
+            Some(_) => println!("🔓 Token Gemini CLI fusionné depuis ~/.gemini/oauth_creds.json"),
+            None => println!(
+                "⚠️  ~/.gemini/oauth_creds.json absent ou illisible — section gemini_oauth = null"
+            ),
+        }
+
+        let stats = ExportStats {
+            total_cookies: cookies.len(),
+            httponly_count: cookies.iter().filter(|c| c.is_httponly).count(),
+            secure_count: cookies.iter().filter(|c| c.is_secure).count(),
+            session_count: cookies.iter().filter(|c| c.is_session).count(),
+            has_gemini_oauth: gemini_oauth.is_some(),
+        };
+
+        let export = GoogleSessionExport {
+            schema: "aphrody.google-session/v1",
+            generated_at: chrono::Utc::now().to_rfc3339(),
+            profile: self.profile.clone(),
+            domain_filter: self.domain.clone(),
+            cookies,
+            gemini_oauth,
+            stats,
+        };
+
+        let out_path = match self.out.clone() {
+            Some(p) => p,
+            None => {
+                let home = platform::home_dir()
+                    .map_err(|_| miette::miette!("home dir unknown"))?;
+                let dir = home.join(".aphrody");
+                std::fs::create_dir_all(&dir)
+                    .map_err(|e| miette::miette!("mkdir {}: {e}", dir.display()))?;
+                dir.join("google-session.json")
+            },
+        };
+
+        let json = serde_json::to_string_pretty(&export)
+            .map_err(|e| miette::miette!("serialize: {e}"))?;
+        std::fs::write(&out_path, &json)
+            .map_err(|e| miette::miette!("write {}: {e}", out_path.display()))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&out_path, std::fs::Permissions::from_mode(0o600));
+        }
+
+        println!("✅ Session écrite : {} ({} octets)", out_path.display(), json.len());
+        println!("   • cookies         : {}", export.stats.total_cookies);
+        println!("   • httpOnly        : {}", export.stats.httponly_count);
+        println!("   • secure          : {}", export.stats.secure_count);
+        println!("   • session-only    : {}", export.stats.session_count);
+        println!(
+            "   • gemini_oauth    : {}",
+            if export.stats.has_gemini_oauth { "yes" } else { "no" }
+        );
+        Ok(())
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[async_trait]
+impl TerminalCommand for ChromiumExportSessionCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        Err(miette::miette!(
+            "`chromium export-session` is Windows-only (DPAPI master-key path)."
         ))
     }
 }

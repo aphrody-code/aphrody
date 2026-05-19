@@ -248,7 +248,7 @@ enum Transport {
     /// Spawned child process; stdio JSON-RPC framing.
     #[cfg(not(target_arch = "wasm32"))]
     Stdio {
-        child: Child,
+        child: Box<Child>,
         stdin: ChildStdin,
         lines: Lines<BufReader<ChildStdout>>,
     },
@@ -319,7 +319,7 @@ impl McpClient {
         let lines = BufReader::new(stdout).lines();
 
         Ok(Self {
-            transport: Transport::Stdio { child, stdin, lines },
+            transport: Transport::Stdio { child: Box::new(child), stdin, lines },
             next_id: 1,
             rpc_timeout: DEFAULT_RPC_TIMEOUT,
             initialized: false,

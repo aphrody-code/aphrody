@@ -154,13 +154,21 @@ function Resolve-ClaudeLane {
 function Resolve-GeminiLane {
     param([string]$Task, [int]$TickN)
     $prompt = Get-GeminiPrompt -Task $Task -TickN $TickN
+
+    # Préférer le wrapper natif aphrody (a2a) — il route vers le fork in-tree
+    # packages/gemini-cli/ via APHRODY_GEMINI_BIN, ou vers le binaire installé,
+    # avec fallback message d'aide structuré (CLAUDE.md §0.4). C'est l'outil
+    # maison (cf. memory project_aphrody_owned_tools).
+    $aphrody = Get-Command aphrody -ErrorAction SilentlyContinue
+    if ($aphrody) {
+        return @{ proc = (Start-LaneProcess -FilePath $aphrody.Source -ArgList @('a2a', $prompt)); missing = $null }
+    }
+    # Fallback ultime : binaire Gemini upstream s'il est dans PATH.
     $cmd = Get-Command gemini -ErrorAction SilentlyContinue
     if ($cmd) {
         return @{ proc = (Start-LaneProcess -FilePath $cmd.Source -ArgList @('--prompt', $prompt)); missing = $null }
     }
-    $bunx = Get-Command bunx -ErrorAction SilentlyContinue
-    if (-not $bunx) { return @{ proc = $null; missing = 'neither gemini nor bunx found' } }
-    @{ proc = (Start-LaneProcess -FilePath $bunx.Source -ArgList @('@google/gemini-cli', '--prompt', $prompt)); missing = $null }
+    @{ proc = $null; missing = 'aphrody binary not in PATH (and no upstream gemini either)' }
 }
 
 # Truncate long output to keep NDJSON readable.

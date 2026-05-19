@@ -59,3 +59,16 @@ windows            = { workspace = true }
 
 [dev-dependencies]
 tempfile           = { workspace = true }
+# `initialize_handshake` bench — measures `aphrody-mcp` stdio handshake
+# p50/p95 (PLAN R-A R1.5). Same convention as `crates/cli/benches/cold_start.rs`.
+criterion          = { workspace = true }
+
+# --- MCP handshake benchmarks (native targets only) ------------------------
+# The bench harness spawns the freshly-built `aphrody-mcp` binary, so it
+# cannot run on wasm32 (no Command::output) and is gated implicitly via the
+# `gemini_runtime::McpClient::from_stdio` cfg in upstream. `harness = false`
+# disables libtest so criterion can install its own main() — same convention
+# as `crates/cli/benches/cold_start.rs`.
+[[bench]]
+name    = "initialize_handshake"
+harness = false
