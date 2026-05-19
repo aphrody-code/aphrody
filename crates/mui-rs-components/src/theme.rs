@@ -1,6 +1,6 @@
 //! M3 theme — groups ColorScheme + TypeScale + ShapeScale + ElevationLevel.
 
-use mui_rs_tokens::{ColorScheme, TypeScale, ShapeScale};
+use m3_tokens::{ColorScheme, TypeScale, ShapeScale};
 
 pub struct Theme {
     pub color: ColorScheme,

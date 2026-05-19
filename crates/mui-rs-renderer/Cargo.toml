@@ -25,7 +25,7 @@ tiny-skia.workspace = true
 bytemuck.workspace = true
 half.workspace = true
 tracing.workspace = true
-mui-rs-tokens = { path = "../mui-rs-tokens" }
+m3-tokens = { path = "../m3-tokens" }
 
 # web
 wasm-bindgen         = { workspace = true, optional = true }

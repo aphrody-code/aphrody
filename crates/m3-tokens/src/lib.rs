@@ -27,6 +27,7 @@
 #[cfg(feature = "std")] extern crate std;
 
 pub mod color;
+pub mod hct;
 #[cfg(test)] pub mod dynamic;
 pub mod elevation;
 pub mod gemini_brand;
