@@ -131,6 +131,28 @@ impl HnswBackend {
         Ok(())
     }
 
+    /// Insert `batch` records into the index and flush **once** at the end.
+    ///
+    /// Equivalent to calling [`MemoryBackend::put`] in a loop, but pays a
+    /// single disk flush rather than `batch.len()`. Useful for bulk imports
+    /// (migration tool R3.4) and benchmarks (R3.7 recall bench) where the
+    /// per-record fsync cost would dominate.
+    ///
+    /// # Errors
+    ///
+    /// Surfaces a single [`MemoryError::Io`] / [`MemoryError::Serde`] from
+    /// the final flush; partial inserts before the failure remain in the
+    /// in-memory index but are not persisted.
+    pub async fn put_many(
+        &mut self,
+        batch: Vec<(String, MemoryRecord)>,
+    ) -> Result<(), MemoryError> {
+        for (key, value) in batch {
+            self.index.insert(key, value);
+        }
+        self.flush().await
+    }
+
     /// Brute-force nearest-neighbour scan over embedded records.
     ///
     /// Time complexity: O(n * d) where n = number of embedded records and

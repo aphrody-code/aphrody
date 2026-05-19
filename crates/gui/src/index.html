@@ -1,220 +1,600 @@
 <!DOCTYPE html>
-<html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>aphrody</title><!--APHRODY_M3_CSS--><script type="module" src="https://esm.run/@material/web/all.js"></script><link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..1000&family=Google+Sans+Mono:wght@400..700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,-25..0" rel="stylesheet"><script>
-        // Host -> WebView reply hook. The native host calls
-        // window.__aphrodyReply(payload) via evaluate_script after handling a
-        // {type:"cmd", content:"…"} IPC. UI can override this to render a
-        // toast / panel; the default just stashes the last reply on window.
-        window.__aphrodyReply = function (payload) {
-          window.__lastReply = payload;
-          // Tokens replies refresh the live :root variables so the surface
-          // re-themes without a page reload.
-          if (payload && payload.kind === 'tokens' && payload.css) {
-            var existing = document.getElementById('aphrody-m3-runtime');
-            if (existing) { existing.remove(); }
-            var style = document.createElement('style');
-            style.id = 'aphrody-m3-runtime';
-            style.textContent = payload.css;
-            document.head.appendChild(style);
-          }
-        };
-        // Ask the host for the current M3 tokens as soon as the page loads.
-        window.addEventListener('DOMContentLoaded', function () {
-          if (window.ipc && window.ipc.postMessage) {
-            window.ipc.postMessage(JSON.stringify({ type: 'cmd', content: 'tokens' }));
-          }
-        });
-      </script><style>
-          :root {
-            --md-sys-color-background: #0F0F0F;
-            --md-sys-color-on-background: #FFFFFF;
-            --md-sys-color-surface: #1C1C1E;
-            --md-sys-color-surface-container: #1C1C1E;
-            --md-sys-color-surface-container-high: #282a2c;
-            --md-sys-color-surface-container-highest: #333537;
-            --md-sys-color-on-surface: #FFFFFF;
-            --md-sys-color-on-surface-variant: #A0A0A5;
-            --md-sys-color-primary: #0078D7;
-            --md-sys-typescale-display-large-font-family: 'Google Sans Flex', sans-serif;
-            --md-sys-typescale-body-medium-font-family: 'Google Sans Flex', sans-serif;
-            --md-sys-typescale-code-font-family: 'Google Sans Mono', monospace;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--md-sys-color-background);
-            color: var(--md-sys-color-on-background);
-            font-family: var(--md-sys-typescale-body-medium-font-family);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-          }
-          md-icon { font-family: 'Material Symbols Rounded'; }
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aphrody</title>
+<!--APHRODY_M3_CSS-->
+<style>
+:root {
+  --bg:           #0F0F0F;
+  --surface:      #1B1C1D;
+  --surface-1:    #232527;
+  --surface-2:    #2A2D2F;
+  --surface-3:    #34373A;
+  --on:           #E3E3E3;
+  --on-variant:   #C4C7C5;
+  --outline:      #444746;
+  --primary:      #A8C7FA;
+  --primary-fill: #062E6F;
+  --accent-a:     #4285F4;
+  --accent-b:     #9B72F8;
+  --accent-c:     #D96570;
+  --error:        #F2B8B5;
+  --radius-pill:  9999px;
+  --radius-lg:    24px;
+  --radius-md:    16px;
+  --radius-sm:    12px;
+  --ease:         cubic-bezier(0.2, 0, 0, 1);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: var(--bg); color: var(--on);
+  font-family: 'Google Sans Flex','Google Sans',-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  font-size: 14px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+body { display: flex; }
+button { font: inherit; color: inherit; }
+svg { display: block; pointer-events: none; }
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-sm { width: 16px; height: 16px; }
+.icon-lg { width: 24px; height: 24px; }
 
-          /* Drawer Styling */
-          .md3-navigation-drawer {
-            width: 280px;
-            background-color: var(--md-sys-color-surface-container);
-            display: flex;
-            flex-direction: column;
-            transition: width 0.2s cubic-bezier(0.2, 0, 0, 1);
-            padding: 12px;
-            box-sizing: border-box;
-          }
-          .drawer-header {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            margin-bottom: 32px;
-          }
-          .new-chat-btn {
-            background-color: var(--md-sys-color-surface-container-high);
-            color: var(--md-sys-color-on-surface-variant);
-            border-radius: 16px;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            border: none;
-            transition: background-color 0.2s;
-            margin-bottom: 24px;
-            width: fit-content;
-          }
-          .new-chat-btn:hover { background-color: var(--md-sys-color-surface-container-highest); }
-          .drawer-section-title {
-            font-size: 14px;
-            font-weight: 500;
-            padding: 8px 12px;
-            color: var(--md-sys-color-on-surface-variant);
-          }
-          .drawer-content { flex: 1; overflow-y: auto; }
-          .drawer-footer { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+/* ---------- Drawer ---------- */
+.drawer {
+  width: 264px; flex-shrink: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  padding: 8px 4px 8px 8px;
+  border-right: 1px solid transparent;
+  transition: width 0.25s var(--ease);
+}
+.drawer-top { display: flex; align-items: center; padding: 8px; gap: 4px; }
+.menu-btn, .icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: transparent; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--on-variant); transition: background 0.15s var(--ease), color 0.15s;
+}
+.menu-btn:hover, .icon-btn:hover { background: var(--surface-2); color: var(--on); }
+.new-chat {
+  margin: 8px 0 16px; align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 16px 10px 12px;
+  background: var(--surface-2); border: none;
+  border-radius: var(--radius-pill); cursor: pointer;
+  color: var(--on); font-weight: 500; font-size: 14px;
+  transition: background 0.15s var(--ease);
+}
+.new-chat:hover { background: var(--surface-3); }
+.drawer-section {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 12px 12px 4px;
+  color: var(--on-variant); text-transform: uppercase;
+}
+.drawer-list { flex: 1; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
+.drawer-list::-webkit-scrollbar { width: 6px; }
+.drawer-list::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+.drawer-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--radius-pill);
+  color: var(--on-variant); cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  transition: background 0.12s var(--ease), color 0.12s;
+}
+.drawer-item:hover { background: var(--surface-1); color: var(--on); }
+.drawer-item.active { background: var(--surface-2); color: var(--on); }
+.drawer-item .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-item .badge {
+  font-size: 10px; font-weight: 500; letter-spacing: 0;
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: rgba(168, 199, 250, 0.12); color: var(--primary);
+  text-transform: none; white-space: nowrap;
+}
+.drawer-foot { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--surface-1); display: flex; flex-direction: column; }
 
-          /* Main Layout */
-          .main-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-          }
-          .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 24px;
-          }
-          .model-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 18px;
-            font-weight: 500;
-            color: var(--md-sys-color-on-surface-variant);
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 8px;
-          }
-          .model-selector:hover { background-color: var(--md-sys-color-surface-container); }
-          .profile-pic {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background-color: var(--md-sys-color-primary);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-          }
+/* ---------- Main ---------- */
+.main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-radius: 16px 0 0 0;
+  margin-top: 8px;
+}
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; flex-shrink: 0;
+}
+.model-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: var(--radius-pill);
+  cursor: pointer; color: var(--on);
+  font-size: 18px; font-weight: 500;
+  transition: background 0.15s var(--ease);
+}
+.model-pill:hover { background: var(--surface-2); }
+.model-pill .chev { width: 18px; height: 18px; color: var(--on-variant); }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 500;
+  padding: 6px 10px; border-radius: var(--radius-pill);
+  background: rgba(168, 199, 250, 0.10); color: var(--primary);
+  border: 1px solid rgba(168, 199, 250, 0.18);
+}
+.status-pill::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--primary); box-shadow: 0 0 8px var(--primary);
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: #fff; font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
 
-          /* Chat Area */
-          .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .greeting {
-            margin-top: 48px;
-            margin-bottom: 48px;
-            text-align: left;
-            width: 100%;
-            max-width: 800px;
-          }
-          .greeting h1 {
-            font-size: 56px;
-            font-weight: 500;
-            margin: 0;
-            line-height: 1.2;
-            background: -webkit-linear-gradient(0deg, #4b90ff, #ff5546);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-          .greeting h2 {
-            font-size: 56px;
-            font-weight: 500;
-            margin: 0;
-            color: var(--md-sys-color-on-surface-variant);
-          }
+/* ---------- Chat ---------- */
+.chat {
+  flex: 1; overflow-y: auto;
+  display: flex; justify-content: center;
+  padding: 0 24px;
+}
+.chat::-webkit-scrollbar { width: 8px; }
+.chat::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+.chat-inner { width: 100%; max-width: 768px; padding: 24px 0; }
 
-          .suggestions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            width: 100%;
-            max-width: 800px;
-          }
-          .suggestion-card {
-            background-color: var(--md-sys-color-surface-container);
-            padding: 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 80px;
-          }
-          .suggestion-card:hover { background-color: var(--md-sys-color-surface-container-high); }
-          .suggestion-card p { margin: 0; font-size: 15px; color: var(--md-sys-color-on-surface); }
-          .suggestion-card md-icon { align-self: flex-end; color: var(--md-sys-color-on-surface-variant); }
+.greeting { margin: 48px 0 32px; }
+.greeting h1 {
+  font-size: 56px; font-weight: 500;
+  line-height: 1.08; letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  background: linear-gradient(90deg, var(--accent-a) 0%, var(--accent-b) 50%, var(--accent-c) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.greeting h2 {
+  font-size: 40px; font-weight: 400;
+  line-height: 1.15; letter-spacing: -0.01em;
+  margin: 0; color: var(--surface-3);
+}
+.suggestions {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.suggestion {
+  background: var(--surface-1); border: none;
+  padding: 16px; border-radius: var(--radius-md);
+  cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 132px; gap: 12px;
+  transition: background 0.12s var(--ease);
+  color: var(--on);
+}
+.suggestion:hover { background: var(--surface-2); }
+.suggestion .label { font-size: 14px; line-height: 1.4; color: var(--on); }
+.suggestion .icon-wrap {
+  align-self: flex-end;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surface-2); color: var(--on-variant);
+  display: flex; align-items: center; justify-content: center;
+}
 
-          /* Input Area */
-          .input-container-wrapper {
-            padding: 0 24px 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .input-box {
-            width: 100%;
-            max-width: 800px;
-            background-color: var(--md-sys-color-surface-container-high);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            padding: 8px 16px;
-            gap: 12px;
-          }
-          .input-box input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--md-sys-color-on-surface);
-            font-size: 16px;
-            font-family: inherit;
-            padding: 12px 0;
-            outline: none;
-          }
-          .input-box input::placeholder { color: var(--md-sys-color-on-surface-variant); }
-          .disclaimer {
-            font-size: 12px;
-            color: var(--md-sys-color-on-surface-variant);
-            margin-top: 16px;
-            text-align: center;
-          }
-        </style></head><body><div class="md3-navigation-drawer"><div class="drawer-header"><md-icon-button children=""><md-icon>menu</md-icon></md-icon-button></div><button class="new-chat-btn"><md-icon>add</md-icon>New chat</button><div class="drawer-content"><div class="drawer-section-title">Recent</div><md-list style="--md-list-container-color: transparent;"><md-list-item children=""><div slot="headline">God Mode Architecture</div><div slot="start"><md-icon>chat_bubble</md-icon></div></md-list-item><md-list-item children=""><div slot="headline">Rust FFI Bindings</div><div slot="start"><md-icon>chat_bubble</md-icon></div></md-list-item><md-list-item children=""><div slot="headline">Windows Native API</div><div slot="start"><md-icon>chat_bubble</md-icon></div></md-list-item></md-list></div><div class="drawer-footer"><md-list style="--md-list-container-color: transparent;"><md-list-item children=""><div slot="headline">Gemini Apps Activity</div><div slot="start"><md-icon>history</md-icon></div></md-list-item><md-list-item children=""><div slot="headline">Settings</div><div slot="start"><md-icon>settings</md-icon></div></md-list-item><md-list-item children=""><div slot="headline">Help</div><div slot="start"><md-icon>help</md-icon></div></md-list-item></md-list></div></div><div class="main-area"><div class="top-bar"><div class="model-selector">Gemini <md-icon>arrow_drop_down</md-icon></div><div class="profile-pic">Y</div></div><div class="chat-container"><div class="greeting"><h1>Hello, aphrody</h1><h2>How can I help you today?</h2></div><div class="suggestions"><div class="suggestion-card"><p>Plan a 3-week itinerary for a road trip across the US</p><md-icon>explore</md-icon></div><div class="suggestion-card"><p>Draft an email to my boss about a project update</p><md-icon>edit_document</md-icon></div><div class="suggestion-card"><p>Explain how quantum computing works to a 5 year old</p><md-icon>lightbulb</md-icon></div><div class="suggestion-card"><p>Write a Rust function to decrypt DPAPI blobs</p><md-icon>code</md-icon></div></div></div><div class="input-container-wrapper"><div class="input-box"><md-icon-button children=""><md-icon>add_photo_alternate</md-icon></md-icon-button><input type="text" placeholder="Enter a prompt here" id="prompt-input" onkeydown="if(event.key === 'Enter') document.getElementById('send-btn').click();"><md-icon-button children=""><md-icon>mic</md-icon></md-icon-button><md-icon-button id="send-btn" style="--md-icon-button-icon-color: var(--md-sys-color-on-surface-variant);" onclick="const val = document.getElementById('prompt-input').value; if(val && window.ipc) { window.ipc.postMessage(JSON.stringify({ type: 'prompt', content: val })); document.getElementById('prompt-input').value = ''; }" children=""><md-icon>send</md-icon></md-icon-button></div><div class="disclaimer">Gemini may display inaccurate info, including about people, so double-check its responses.</div></div></div></body></html>
+/* ---------- Messages ---------- */
+.messages { display: flex; flex-direction: column; gap: 32px; }
+.msg { display: flex; gap: 16px; align-items: flex-start; }
+.msg-av {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 600; font-size: 12px;
+}
+.msg.user .msg-av { background: var(--surface-3); color: var(--on); }
+.msg.assistant .msg-av { background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); }
+.msg.error .msg-av { background: rgba(242, 184, 181, 0.25); color: var(--error); }
+.msg-body { flex: 1; min-width: 0; }
+.msg-meta {
+  font-size: 11px; font-weight: 600;
+  color: var(--on-variant); text-transform: uppercase;
+  margin-bottom: 4px; letter-spacing: 0.4px;
+}
+.msg-text {
+  font-size: 15px; line-height: 1.6; color: var(--on);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.msg.error .msg-text { color: var(--error); }
+.msg-text.streaming::after {
+  content: '▍'; opacity: 0.55; margin-left: 2px;
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- Input ---------- */
+.input-area { padding: 12px 24px 24px; flex-shrink: 0; }
+.input-wrap { max-width: 768px; margin: 0 auto; }
+.input-box {
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  padding: 6px 8px 6px 8px;
+  display: flex; align-items: flex-end;
+  transition: background 0.15s var(--ease);
+}
+.input-box:focus-within { background: var(--surface-2); }
+.input-tools { display: flex; align-items: center; gap: 2px; padding-bottom: 6px; }
+.input-tools .icon-btn { width: 36px; height: 36px; }
+.prompt-input {
+  flex: 1; min-height: 24px; max-height: 160px;
+  background: transparent; border: none; outline: none;
+  color: var(--on); font: inherit; font-size: 15px;
+  padding: 12px 8px; resize: none; overflow-y: auto;
+  font-family: inherit;
+}
+.prompt-input::placeholder { color: var(--on-variant); }
+.send-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface-3); border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--on-variant);
+  transition: background 0.15s var(--ease), color 0.15s, transform 0.15s;
+  margin-bottom: 6px;
+}
+.send-btn:hover { background: var(--surface-2); }
+.send-btn.armed { background: var(--primary); color: var(--primary-fill); }
+.send-btn.armed:hover { filter: brightness(1.1); }
+.disclaimer {
+  font-size: 11px; color: var(--on-variant);
+  margin-top: 12px; text-align: center;
+}
+.disclaimer code {
+  font-family: 'Google Sans Mono','SF Mono',Menlo,Consolas,monospace;
+  font-size: 11px; padding: 1px 4px; border-radius: 4px;
+  background: var(--surface-2); color: var(--on);
+}
+
+/* Hide drawer scrollbar when not scrolling */
+.drawer-list, .drawer-list * { scrollbar-color: var(--surface-3) transparent; }
+</style>
+</head>
+<body>
+
+<aside class="drawer" aria-label="Aphrody navigation">
+  <div class="drawer-top">
+    <button class="menu-btn" id="btn-menu" aria-label="Menu">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+
+  <button class="new-chat" id="btn-new-chat">
+    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
+    Nouveau chat
+  </button>
+
+  <div class="drawer-section">Backend aphrody</div>
+  <ul class="drawer-list">
+    <li class="drawer-item active" data-action="chat">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="label">Chat turn-loop</span><span class="badge">aphrody-chat</span>
+    </li>
+    <li class="drawer-item" data-action="skills">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14 7l3 3-3 3M5 7l-3 3 3 3M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/></svg>
+      <span class="label">Skills</span><span class="badge">skills-runtime</span>
+    </li>
+    <li class="drawer-item" data-action="tools">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a3 3 0 1 1 4 4l-9 9-5 1 1-5 9-9z"/></svg>
+      <span class="label">Tools</span><span class="badge">aphrody-tools</span>
+    </li>
+    <li class="drawer-item" data-action="memory">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 14h18M9 4v16M15 4v16"/></svg>
+      <span class="label">Memory</span><span class="badge">aphrody-memory</span>
+    </li>
+    <li class="drawer-item" data-action="voice-stt">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+      <span class="label">Voice STT</span><span class="badge">voice-stt</span>
+    </li>
+    <li class="drawer-item" data-action="voice-tts">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
+      <span class="label">Voice TTS</span><span class="badge">aphrody-voice</span>
+    </li>
+    <li class="drawer-item" data-action="mcp">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.2 4.2l4.3 4.3M15.5 15.5l4.3 4.3M1 12h6M17 12h6M4.2 19.8l4.3-4.3M15.5 8.5l4.3-4.3"/></svg>
+      <span class="label">MCP servers</span><span class="badge">aphrody-mcp</span>
+    </li>
+    <li class="drawer-item" data-action="channels">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M2 21l3-7L20 4 3 14l7 3 11-13"/></svg>
+      <span class="label">Channels</span><span class="badge">aphrody-channels</span>
+    </li>
+    <li class="drawer-item" data-action="cron">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="label">Cron</span><span class="badge">aphrody-cron</span>
+    </li>
+    <li class="drawer-item" data-action="marketplace">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6L5 8zM9 8V5a3 3 0 0 1 6 0v3"/></svg>
+      <span class="label">Marketplace</span><span class="badge">marketplace</span>
+    </li>
+  </ul>
+
+  <div class="drawer-foot">
+    <li class="drawer-item" data-action="settings" style="list-style:none">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span class="label">Paramètres</span>
+    </li>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="model-pill" id="model-pill">
+      aphrody chat
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="top-right">
+      <div class="status-pill" id="status-pill">backend aphrody</div>
+      <div class="avatar" title="Profil">Y</div>
+    </div>
+  </header>
+
+  <section class="chat">
+    <div class="chat-inner">
+      <div class="greeting" id="greeting">
+        <h1>Bonjour</h1>
+        <h2>Comment puis-je t'aider aujourd'hui ?</h2>
+      </div>
+      <div class="suggestions" id="suggestions">
+        <button class="suggestion" data-prompt="Lance un audit DNS OSINT complet sur le domaine que je vais te donner.">
+          <span class="label">Audit DNS OSINT sur un domaine</span>
+          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="7" r="0.5" fill="currentColor"/><circle cx="7" cy="17" r="0.5" fill="currentColor"/></svg></span>
+        </button>
+        <button class="suggestion" data-prompt="Recommande la stack Rust 2026 canonique pour un serveur REST + Postgres + JWT en distroless.">
+          <span class="label">Stack Rust 2026 pour API REST</span>
+          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></span>
+        </button>
+        <button class="suggestion" data-prompt="Triage forensique d'un binaire PE/ELF inconnu : sections, entropie, strings, hash.">
+          <span class="label">Triage forensique PE/ELF</span>
+          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg></span>
+        </button>
+        <button class="suggestion" data-prompt="Liste les MCP servers configurés et leurs tools disponibles.">
+          <span class="label">MCP servers + tools</span>
+          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><path d="M6 6l5 5M18 6l-5 5M6 18l5-5M18 18l-5-5"/></svg></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <div class="input-box">
+        <div class="input-tools">
+          <button class="icon-btn" id="btn-attach" aria-label="Joindre">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <textarea class="prompt-input" id="prompt-input" rows="1" placeholder="Demander à aphrody"></textarea>
+        <div class="input-tools">
+          <button class="icon-btn" id="btn-mic" aria-label="Micro (Voice STT)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+          </button>
+          <button class="send-btn" id="btn-send" aria-label="Envoyer">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="disclaimer">
+        Backend <code>aphrody chat</code> · memory + tools + hooks + skills + MCP · Linux/Windows/WASM
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+// ---------- DOM utils ----------
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const el = (tag, props) => {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    if (k === 'class') e.className = props[k];
+    else if (k === 'text') e.textContent = props[k];
+    else e.setAttribute(k, props[k]);
+  }
+  return e;
+};
+
+// ---------- Native host bridge ----------
+window.__aphrodyReply = function (payload) {
+  window.__lastReply = payload;
+  if (!payload || !payload.kind) return;
+  switch (payload.kind) {
+    case 'tokens': applyTokens(payload); break;
+    case 'text':   renderAssistant(payload.prompt_id, payload.content || '', !!payload.done); break;
+    case 'error':  renderError(payload.prompt_id || '', payload.message || ''); break;
+    default:       console.warn('[aphrody] unknown reply kind:', payload.kind);
+  }
+};
+function applyTokens(p) {
+  const existing = $('#aphrody-m3-runtime');
+  if (existing) existing.remove();
+  if (p.css) {
+    const s = el('style', {});
+    s.id = 'aphrody-m3-runtime';
+    s.textContent = p.css;
+    document.head.appendChild(s);
+  }
+}
+function postIpc(msg) {
+  try {
+    if (window.ipc && window.ipc.postMessage) window.ipc.postMessage(JSON.stringify(msg));
+  } catch (err) {
+    console.error('[aphrody] ipc.postMessage failed', err);
+  }
+}
+function sendCmd(cmd) { postIpc({ type: 'cmd', content: cmd }); }
+function genId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// ---------- Chat rendering ----------
+const bubbles = new Map();
+
+function mountMessages() {
+  let m = $('.messages');
+  if (m) return m;
+  m = el('div', { class: 'messages' });
+  $('.chat-inner').appendChild(m);
+  return m;
+}
+function hideGreeting() {
+  const g = $('#greeting');     if (g) g.style.display = 'none';
+  const s = $('#suggestions');  if (s) s.style.display = 'none';
+}
+function showGreeting() {
+  const g = $('#greeting');     if (g) g.style.display = '';
+  const s = $('#suggestions');  if (s) s.style.display = '';
+}
+function scrollChat() { const c = $('.chat'); if (c) c.scrollTop = c.scrollHeight; }
+
+function renderUser(id, text) {
+  hideGreeting();
+  const m = mountMessages();
+  const wrap = el('div', { class: 'msg user', 'data-prompt-id': id });
+  const av = el('div', { class: 'msg-av', text: 'Y' });
+  const body = el('div', { class: 'msg-body' });
+  body.appendChild(el('div', { class: 'msg-meta', text: 'vous' }));
+  body.appendChild(el('div', { class: 'msg-text', text }));
+  wrap.appendChild(av); wrap.appendChild(body);
+  m.appendChild(wrap);
+  // Pre-mount the streaming assistant bubble.
+  const a = el('div', { class: 'msg assistant', 'data-prompt-id': id });
+  const aav = el('div', { class: 'msg-av', text: 'a' });
+  const abody = el('div', { class: 'msg-body' });
+  abody.appendChild(el('div', { class: 'msg-meta', text: 'aphrody' }));
+  const txt = el('div', { class: 'msg-text streaming' });
+  abody.appendChild(txt);
+  a.appendChild(aav); a.appendChild(abody);
+  m.appendChild(a);
+  bubbles.set(id, txt);
+  scrollChat();
+}
+function renderAssistant(id, content, done) {
+  const node = bubbles.get(id);
+  if (!node) {
+    hideGreeting();
+    const m = mountMessages();
+    const a = el('div', { class: 'msg assistant' });
+    const aav = el('div', { class: 'msg-av', text: 'a' });
+    const body = el('div', { class: 'msg-body' });
+    body.appendChild(el('div', { class: 'msg-meta', text: 'aphrody' }));
+    body.appendChild(el('div', { class: 'msg-text', text: content }));
+    a.appendChild(aav); a.appendChild(body);
+    m.appendChild(a);
+  } else {
+    node.textContent = (node.textContent || '') + content;
+    if (done) { node.classList.remove('streaming'); bubbles.delete(id); }
+  }
+  scrollChat();
+}
+function renderError(id, message) {
+  hideGreeting();
+  const node = bubbles.get(id);
+  if (node) {
+    const wrap = node.closest('.msg');
+    wrap.classList.remove('assistant'); wrap.classList.add('error');
+    wrap.querySelector('.msg-meta').textContent = 'erreur';
+    node.classList.remove('streaming');
+    node.textContent = message;
+    bubbles.delete(id);
+  } else {
+    const m = mountMessages();
+    const wrap = el('div', { class: 'msg error' });
+    wrap.appendChild(el('div', { class: 'msg-av', text: '!' }));
+    const body = el('div', { class: 'msg-body' });
+    body.appendChild(el('div', { class: 'msg-meta', text: 'erreur' }));
+    body.appendChild(el('div', { class: 'msg-text', text: message }));
+    wrap.appendChild(body); m.appendChild(wrap);
+  }
+  scrollChat();
+}
+
+// ---------- Send pipeline ----------
+function sendPrompt(text) {
+  text = (text || '').trim();
+  if (!text) return;
+  const id = genId();
+  renderUser(id, text);
+  postIpc({ type: 'prompt', content: { id, text } });
+}
+
+// ---------- Wire UI ----------
+function autoresize(t) {
+  t.style.height = 'auto';
+  t.style.height = Math.min(160, t.scrollHeight) + 'px';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Tokens refresh from native host.
+  sendCmd('tokens');
+
+  const input = $('#prompt-input');
+  const send = $('#btn-send');
+
+  input.addEventListener('input', () => {
+    send.classList.toggle('armed', input.value.trim().length > 0);
+    autoresize(input);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      const v = input.value;
+      input.value = '';
+      autoresize(input);
+      send.classList.remove('armed');
+      sendPrompt(v);
+    }
+  });
+  send.addEventListener('click', () => {
+    const v = input.value;
+    input.value = '';
+    autoresize(input);
+    send.classList.remove('armed');
+    sendPrompt(v);
+    input.focus();
+  });
+
+  $$('.suggestion').forEach(b => {
+    b.addEventListener('click', () => sendPrompt(b.dataset.prompt || b.querySelector('.label').textContent));
+  });
+
+  $('#btn-new-chat').addEventListener('click', () => {
+    const m = $('.messages'); if (m) m.remove();
+    bubbles.clear();
+    showGreeting();
+    input.focus();
+  });
+
+  $('#btn-mic').addEventListener('click', () => {
+    sendCmd('voice-stt-toggle');
+    $('#btn-mic').classList.toggle('armed');
+  });
+
+  $$('.drawer-item').forEach(it => {
+    it.addEventListener('click', () => {
+      $$('.drawer-item').forEach(x => x.classList.remove('active'));
+      it.classList.add('active');
+      const action = it.dataset.action;
+      if (action) sendCmd('panel:' + action);
+    });
+  });
+
+  $('#btn-menu').addEventListener('click', () => {
+    const d = $('.drawer');
+    d.style.width = (d.style.width === '72px') ? '264px' : '72px';
+  });
+
+  input.focus();
+});
+</script>
+</body>
+</html>

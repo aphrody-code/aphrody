@@ -4,14 +4,12 @@
 //! Fuses three sources into two MCP tools wired into the unified
 //! `aphrody-mcp` stdio server:
 //!
-//! - [`aphrody_voice::elevenlabs::ElevenLabsProvider`] — production TTS backend
-//!   (ElevenLabs v1 REST API).
-//! - [`aphrody_voice_stt::local_whisper::LocalWhisperBackend`] — preferred
-//!   offline STT (whisper.cpp via `whisper-rs`), built only when the upstream
-//!   crate exposes the `local-whisper` feature.
-//! - [`aphrody_voice_stt::whisper_api::WhisperApiProvider`] — REST fallback
-//!   used when local Whisper is unavailable or returns
-//!   [`SttError::NotImplemented`].
+//! - [`aphrody_voice::elevenlabs::ElevenLabsProvider`] — production TTS backend (ElevenLabs v1 REST
+//!   API).
+//! - [`aphrody_voice_stt::local_whisper::LocalWhisperBackend`] — preferred offline STT (whisper.cpp
+//!   via `whisper-rs`), built only when the upstream crate exposes the `local-whisper` feature.
+//! - [`aphrody_voice_stt::whisper_api::WhisperApiProvider`] — REST fallback used when local Whisper
+//!   is unavailable or returns [`SttError::NotImplemented`].
 //!
 //! # Tool contracts
 //!
@@ -88,10 +86,8 @@ pub(crate) struct VoiceSynthesizeRequest {
 
     /// Provider-specific voice identifier (ElevenLabs `voice_id`).
     /// Defaults to the public "Bella" voice when omitted.
-    #[schemars(
-        description = "Provider voice id (ElevenLabs voice_id). Defaults to Bella \
-                       (EXAVITQu4vr4xnSDxMaL) when omitted."
-    )]
+    #[schemars(description = "Provider voice id (ElevenLabs voice_id). Defaults to Bella \
+                              (EXAVITQu4vr4xnSDxMaL) when omitted.")]
     pub voice: Option<String>,
 
     /// Desired audio container/codec. Currently only `"mp3"` / `"audio/mpeg"`
@@ -107,10 +103,8 @@ pub(crate) struct VoiceSynthesizeRequest {
 pub(crate) struct VoiceTranscribeRequest {
     /// Standard base64 (`+`/`/` alphabet, `=` padding) of the audio bytes.
     /// Max 8 MiB after decode.
-    #[schemars(
-        description = "Base64-encoded audio payload (standard alphabet, padded). \
-                       Max 8 MiB after decode."
-    )]
+    #[schemars(description = "Base64-encoded audio payload (standard alphabet, padded). Max 8 \
+                              MiB after decode.")]
     pub audio_base64: String,
 
     /// MIME type of the encoded audio (e.g. `audio/wav`, `audio/mpeg`).
@@ -137,9 +131,9 @@ fn error_envelope(code: &str, reason: impl Into<String>) -> String {
 fn normalize_format(raw: Option<&str>) -> Result<&'static str, String> {
     match raw.map(str::trim).map(str::to_ascii_lowercase).as_deref() {
         None | Some("") | Some("mp3") | Some("audio/mpeg") | Some("mpeg") => Ok(DEFAULT_TTS_MIME),
-        Some(other) => Err(format!(
-            "unsupported format {other:?}; only \"mp3\" / \"audio/mpeg\" is wired"
-        )),
+        Some(other) => {
+            Err(format!("unsupported format {other:?}; only \"mp3\" / \"audio/mpeg\" is wired"))
+        },
     }
 }
 
@@ -175,7 +169,7 @@ pub(crate) async fn synthesize(req: VoiceSynthesizeRequest) -> String {
                 "VOICE_MISSING_CREDENTIAL",
                 "ELEVENLABS_API_KEY env var is not set; cannot reach the ElevenLabs TTS endpoint",
             );
-        }
+        },
     };
 
     let voice_id = voice.as_deref().unwrap_or(DEFAULT_VOICE_ID);
@@ -186,14 +180,13 @@ pub(crate) async fn synthesize(req: VoiceSynthesizeRequest) -> String {
     let provider = aphrody_voice::elevenlabs::ElevenLabsProvider::new(api_key);
     let opts = aphrody_voice::SynthOptions::default();
     let started = Instant::now();
-    let audio = match aphrody_voice::VoiceProvider::synthesize(&provider, trimmed, voice_id, opts)
-        .await
-    {
-        Ok(bytes) => bytes,
-        Err(err) => {
-            return error_envelope("VOICE_PROVIDER_ERROR", format!("ElevenLabs: {err}"));
-        }
-    };
+    let audio =
+        match aphrody_voice::VoiceProvider::synthesize(&provider, trimmed, voice_id, opts).await {
+            Ok(bytes) => bytes,
+            Err(err) => {
+                return error_envelope("VOICE_PROVIDER_ERROR", format!("ElevenLabs: {err}"));
+            },
+        };
     let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
 
     let encoded = base64::engine::general_purpose::STANDARD.encode(&audio);
@@ -219,8 +212,11 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
     let audio = match base64::engine::general_purpose::STANDARD.decode(audio_base64.as_bytes()) {
         Ok(bytes) => bytes,
         Err(err) => {
-            return error_envelope("VOICE_BAD_REQUEST", format!("audio_base64 decode failed: {err}"));
-        }
+            return error_envelope(
+                "VOICE_BAD_REQUEST",
+                format!("audio_base64 decode failed: {err}"),
+            );
+        },
     };
     if audio.is_empty() {
         return error_envelope("VOICE_BAD_REQUEST", "audio payload is empty after base64 decode");
@@ -252,13 +248,13 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
                     "backend": "local_whisper",
                     "mime_type": mime,
                 }));
-            }
+            },
             Err(aphrody_voice_stt::SttError::NotImplemented { .. }) => {
                 // Fallthrough to REST fallback.
-            }
+            },
             Err(err) => {
                 return error_envelope("VOICE_PROVIDER_ERROR", format!("local_whisper: {err}"));
-            }
+            },
         }
     }
 
@@ -273,15 +269,15 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
                      and REST fallback failed: {err}"
                 ),
             );
-        }
+        },
     };
-    let transcript =
-        match aphrody_voice_stt::SttProvider::transcribe(&provider, &audio, opts).await {
-            Ok(t) => t,
-            Err(err) => {
-                return error_envelope("VOICE_PROVIDER_ERROR", format!("whisper_api: {err}"));
-            }
-        };
+    let transcript = match aphrody_voice_stt::SttProvider::transcribe(&provider, &audio, opts).await
+    {
+        Ok(t) => t,
+        Err(err) => {
+            return error_envelope("VOICE_PROVIDER_ERROR", format!("whisper_api: {err}"));
+        },
+    };
 
     pretty(&json!({
         "text": transcript.text,
@@ -378,19 +374,12 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn voice_dispatch_returns_structured_error_when_missing_text() {
-        let req = VoiceSynthesizeRequest {
-            text: "   ".to_owned(),
-            voice: None,
-            format: None,
-        };
+        let req = VoiceSynthesizeRequest { text: "   ".to_owned(), voice: None, format: None };
         let out = synthesize(req).await;
         let value: serde_json::Value = serde_json::from_str(&out).expect("parse error envelope");
         assert_eq!(value.get("error").and_then(|v| v.as_str()), Some("VOICE_BAD_REQUEST"));
         assert!(
-            value
-                .get("reason")
-                .and_then(|v| v.as_str())
-                .is_some_and(|s| s.contains("non-empty")),
+            value.get("reason").and_then(|v| v.as_str()).is_some_and(|s| s.contains("non-empty")),
             "unexpected reason: {value}"
         );
     }
@@ -409,11 +398,8 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn voice_transcribe_rejects_empty_payload() {
-        let req = VoiceTranscribeRequest {
-            audio_base64: String::new(),
-            mime_type: None,
-            language: None,
-        };
+        let req =
+            VoiceTranscribeRequest { audio_base64: String::new(), mime_type: None, language: None };
         let out = transcribe(req).await;
         let value: serde_json::Value = serde_json::from_str(&out).expect("parse error envelope");
         assert_eq!(value.get("error").and_then(|v| v.as_str()), Some("VOICE_BAD_REQUEST"));

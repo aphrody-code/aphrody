@@ -3,17 +3,14 @@
 //!
 //! These tests exercise the same code path the CLI dispatches into:
 //!   1. Loader resolves a server entry from an in-tree `mcp.json` fixture.
-//!   2. Stdio connect handles a missing command gracefully (no panic, typed
-//!      error).
+//!   2. Stdio connect handles a missing command gracefully (no panic, typed error).
 //!
 //! Both rely on the `gemini-runtime` crate that `client_cmd.rs` itself uses,
 //! ensuring the contract stays in sync.
 
 use std::collections::HashMap;
 
-use gemini_runtime::{
-    McpClient, McpError, McpTransportConfig, load_mcp_config, parse_mcp_config,
-};
+use gemini_runtime::{McpClient, McpError, McpTransportConfig, load_mcp_config, parse_mcp_config};
 
 /// The loader must accept the Claude Desktop / `.mcp.json` shape and surface
 /// the requested entry by name. This is the exact path `aphrody-mcp client

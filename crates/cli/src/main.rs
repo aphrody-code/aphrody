@@ -13,6 +13,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod scrape;
@@ -42,6 +43,34 @@ pub(crate) enum ScrapeProfile {
     Fast,
     Full,
     Stealth,
+}
+
+/// Shell selector for `aphrody completions`.
+///
+/// Wraps [`clap_complete::Shell`] so we can expose user-friendly aliases —
+/// `pwsh` and `powershell` both map to PowerShell, matching how Windows users
+/// invoke pwsh.exe in practice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum CompletionsShell {
+    Bash,
+    Elvish,
+    Fish,
+    #[value(alias = "pwsh")]
+    Powershell,
+    Zsh,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl From<CompletionsShell> for clap_complete::Shell {
+    fn from(s: CompletionsShell) -> Self {
+        match s {
+            CompletionsShell::Bash => Self::Bash,
+            CompletionsShell::Elvish => Self::Elvish,
+            CompletionsShell::Fish => Self::Fish,
+            CompletionsShell::Powershell => Self::PowerShell,
+            CompletionsShell::Zsh => Self::Zsh,
+        }
+    }
 }
 
 /// Messaging-channel selector for `aphrody notify`.
@@ -92,7 +121,11 @@ enum Commands {
         domain: String,
     },
     /// Affiche la version et l'état du système
-    Version,
+    Version {
+        /// Emit version as a single JSON object instead of human-readable text
+        #[arg(long, default_value_t = false)]
+        json: bool,
+    },
     /// Diagnostic env + intégration A2A + supply-chain (first-impression)
     Doctor {
         /// Emit diagnostics as a single JSON object instead of human-readable text
@@ -113,16 +146,6 @@ enum Commands {
     Cros {
         #[command(subcommand)]
         action: CrosActions,
-    },
-    /// Uutils Coreutils (Rust GNU coreutils)
-    Coreutils {
-        #[arg(default_value = "build")]
-        action: String,
-    },
-    /// Uutils Util-linux (Rust linux utils)
-    UtilLinux {
-        #[arg(default_value = "build")]
-        action: String,
     },
     /// Recherche Google Native
     Search {
@@ -206,6 +229,47 @@ enum Commands {
         #[command(subcommand)]
         action: ReAction,
     },
+    /// Tier-1 memory provider operations — migrate, audit, list backends.
+    ///
+    /// Wires the dyn-compatible `aphrody_memory::MemoryProvider` trait so
+    /// records can be copied between Mem0 / Honcho / SqliteLocal without
+    /// custom glue. HTTP providers read their credentials from
+    /// `MEM0_API_KEY` / `HONCHO_API_KEY` (cf. per-provider modules).
+    // `Memory` variant temporarily disabled: `MemoryAction` was added by an
+    // autopilot tick without the matching enum definition + dispatch arm.
+    // Re-enable once `MemoryAction` and its `MemoryCommand` land.
+    // #[cfg(not(target_arch = "wasm32"))]
+    // Memory {
+    //     #[command(subcommand)]
+    //     action: MemoryAction,
+    // },
+    /// Run the unified turn-loop chat agent (one-shot mode).
+    ///
+    /// Composes every aphrody building block (gemini-runtime + tools +
+    /// memory + session + permissions + hooks + prompts + router + cost +
+    /// context + events) into a complete chat agent. When `--prompt <text>`
+    /// is supplied, the orchestrator drives a single user→assistant turn
+    /// and prints the assistant reply on stdout. The interactive REPL
+    /// (ratatui / slash-commands) lives in a follow-up sprint; invoking
+    /// `aphrody chat` without `--prompt` returns a structured error.
+    #[cfg(not(target_arch = "wasm32"))]
+    Chat {
+        /// One-shot prompt to send. When omitted, the interactive REPL is
+        /// reported as not-yet-wired (Phase 2 lands ratatui + slash cmds).
+        #[arg(long, short)]
+        prompt: Option<String>,
+        /// Vendor-qualified model id (`gemini/default`, `anthropic/claude-opus-4-7`).
+        /// Default: `gemini/default`.
+        #[arg(long, short)]
+        model: Option<String>,
+        /// Override the default system prompt.
+        #[arg(long)]
+        system: Option<String>,
+        /// Force the in-process stub backend (skip live LLM detection).
+        /// Useful for CI / smoke runs that must not require a `gemini` binary.
+        #[arg(long)]
+        stub: bool,
+    },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
     /// Credentials lus depuis l'environnement (voir `aphrody notify --help`).
@@ -226,7 +290,7 @@ enum Commands {
     /// Génère des completions shell pour bash / zsh / fish / pwsh / elvish
     Completions {
         #[arg(value_enum)]
-        shell: clap_complete::Shell,
+        shell: CompletionsShell,
     },
     /// Installer / bootstrap natif (remplace les .ps1/.sh scripts/).
     #[command(name = "self")]
@@ -305,12 +369,77 @@ enum Commands {
         #[arg(long)]
         url_only: bool,
     },
+    /// Google NotebookLM RPC client — notebooks / sources / chat / artifacts.
+    ///
+    /// Honours `NOTEBOOKLM_OAUTH_TOKEN` or `NOTEBOOKLM_COOKIES` env vars.
+    /// Also requires `NOTEBOOKLM_AT_TOKEN` + `NOTEBOOKLM_BL_TOKEN` (the
+    /// per-session XSRF + bootstrap config strings the web UI exports).
+    #[cfg(not(target_arch = "wasm32"))]
+    Notebooklm {
+        #[command(subcommand)]
+        action: NotebooklmActions,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
     // dispatch arm uses `Commands::Auto(_)`. Native dispatch reads it.
     #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Auto(Vec<String>),
+}
+
+/// Actions for the `notebooklm` kernel subcommand.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum NotebooklmActions {
+    /// List every notebook owned by the active account.
+    List,
+    /// Create a fresh empty notebook.
+    Create {
+        /// Title to assign to the new notebook (uses upstream default if absent).
+        #[arg(long, short)]
+        title: Option<String>,
+    },
+    /// Delete a notebook by id.
+    Delete {
+        /// Notebook id to delete.
+        notebook_id: String,
+    },
+    /// Attach a source to a notebook (URL or local file path, auto-detected).
+    Upload {
+        /// Target notebook id.
+        notebook_id: String,
+        /// URL (http://, https://) or path to a local file.
+        source: String,
+    },
+    /// Send a chat message and print the reply on stdout.
+    Chat {
+        /// Target notebook id.
+        notebook_id: String,
+        /// Prompt to send.
+        prompt: String,
+    },
+    /// Kick off an artifact generation workflow.
+    Generate {
+        /// Target notebook id.
+        notebook_id: String,
+        /// Kind of artifact (`audio`, `report`, `video`, `quiz`, `mind_map`,
+        /// `flashcards`, `infographic`, `slide_deck`, `data_table`).
+        #[arg(long, short)]
+        kind: String,
+        /// Optional natural-language instructions for the workflow.
+        #[arg(long, short)]
+        prompt: Option<String>,
+    },
+    /// Wait for an artifact to reach `COMPLETE` state and download it locally.
+    Download {
+        /// Target notebook id (used to scope the poll).
+        notebook_id: String,
+        /// Artifact id returned by a previous `generate` call.
+        artifact_id: String,
+        /// Output path for the downloaded payload.
+        #[arg(long, short)]
+        output: std::path::PathBuf,
+    },
 }
 
 #[derive(Subcommand)]
@@ -325,6 +454,23 @@ enum CrosActions {
 enum ChromiumActions {
     /// Synchronise les profils Chromium
     Sync,
+    /// Extrait + déchiffre les cookies Google d'un profil Chrome et fusionne
+    /// avec le token OAuth Gemini CLI dans une session unifiée
+    /// (`~/.aphrody/google-session.json`). Cf. CLAUDE.md §0.4.
+    ExportSession {
+        /// Nom du profil Chrome (sous-dossier de `User Data`).
+        #[arg(long, default_value = "Profile 5")]
+        profile: String,
+        /// Output JSON path. Defaults to `~/.aphrody/google-session.json`.
+        #[arg(long)]
+        out: Option<std::path::PathBuf>,
+        /// Domain substring filter for `host_key LIKE %X%`.
+        /// Defaults to `"google"` (covers .google.com, accounts.google.com,
+        /// gemini.google.com, youtube.com via google-search). Pass `""` to
+        /// dump every cookie of the profile.
+        #[arg(long, default_value = "google")]
+        domain: String,
+    },
 }
 
 /// Actions for the `scan` kernel subcommand (repo analytics).
@@ -524,8 +670,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Auth { force }) => {
             commands::AuthCommand { force }.execute(ctx).await?;
         },
-        Some(Commands::Version) => {
-            VersionCommand.execute(ctx).await?;
+        Some(Commands::Version { json }) => {
+            VersionCommand { json }.execute(ctx).await?;
         },
         Some(Commands::Doctor { json }) => {
             DoctorCommand { json_output: json }.execute(ctx).await?;
@@ -540,18 +686,16 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             ChromiumActions::Sync => {
                 ChromiumSyncCommand.execute(ctx).await?;
             },
+            ChromiumActions::ExportSession { profile, out, domain } => {
+                commands::ChromiumExportSessionCommand { profile, out, domain }
+                    .execute(ctx).await?;
+            },
         },
         Some(Commands::A2a { prompt }) => {
             commands::A2aCommand { prompt }.execute(ctx).await?;
         },
         Some(Commands::Cros { action }) => {
             commands::CrosCommand { action }.execute(ctx).await?;
-        },
-        Some(Commands::Coreutils { action }) => {
-            commands::CoreutilsCommand { action }.execute(ctx).await?;
-        },
-        Some(Commands::UtilLinux { action }) => {
-            commands::UtilLinuxCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Search { query }) => {
             commands::SearchCommand { query }.execute(ctx).await?;
@@ -598,12 +742,20 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 println!("{json}");
             },
         },
+        Some(Commands::Chat { prompt, model, system, stub }) => {
+            commands::ChatCommand { prompt, model, system, stub }.execute(ctx).await?;
+        },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
         },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
-            clap_complete::generate(shell, &mut cmd, "aphrody", &mut std::io::stdout());
+            clap_complete::generate(
+                clap_complete::Shell::from(shell),
+                &mut cmd,
+                "aphrody",
+                &mut std::io::stdout(),
+            );
         },
         Some(Commands::SelfCmd { action }) => match action {
             SelfAction::InstallPath { bin, build, dry_run } => {
@@ -656,6 +808,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::OcDocs { query, url_only }) => {
             oc_cmd::DocsCommand { query, url_only }.execute(ctx).await?;
+        },
+        Some(Commands::Notebooklm { action }) => {
+            commands::NotebooklmCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
@@ -745,8 +900,6 @@ fn main() {
                 Commands::Chromium { .. } => "chromium",
                 Commands::A2a { .. } => "a2a",
                 Commands::Cros { .. } => "cros",
-                Commands::Coreutils { .. } => "coreutils",
-                Commands::UtilLinux { .. } => "util-linux",
                 Commands::Search { .. } => "search",
                 Commands::Gemini { .. } => "gemini",
                 Commands::Scrape { .. } => "scrape",
