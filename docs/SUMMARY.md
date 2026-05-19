@@ -73,6 +73,7 @@
   - [2026-05-18-Gemini-App-Port-Audit](audits/2026-05-18-gemini-app-port-audit.md)
   - [2026-05-18-Plan-Status-Audit](audits/2026-05-18-plan-status-audit.md)
   - [2026-05-18-Wterm-Vs-Microsoft-Terminal-Vs-Aphrody-Terminal](audits/2026-05-18-wterm-vs-microsoft-terminal-vs-aphrody-terminal.md)
+  - [2026-05-19-Bun-To-Rust-Mapping](audits/2026-05-19-bun-to-rust-mapping.md)
   - [2026-05-19-Hardcoded-Paths-Sweep](audits/2026-05-19-hardcoded-paths-sweep.md)
   - [2026-05-19-Hermes-Agent-Vs-Aphrody](audits/2026-05-19-hermes-agent-vs-aphrody.md)
   - [2026-05-19-Winclean-Aphrody-Unification-Sweep](audits/2026-05-19-winclean-aphrody-unification-sweep.md)
