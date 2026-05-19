@@ -15,7 +15,7 @@ description            = "Cross-platform Gemini CLI runtime adapter: detect, ver
 workspace = true
 
 [dependencies]
-tokio        = { workspace = true, features = ["process", "io-util", "macros", "rt-multi-thread"] }
+tokio        = { workspace = true, features = ["process", "io-util", "macros", "rt-multi-thread", "sync"] }
 tokio-stream = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
 serde_json   = { workspace = true }
@@ -25,7 +25,9 @@ futures-util = { workspace = true }
 reqwest      = { workspace = true }
 url          = { workspace = true }
 dirs         = { workspace = true }
+async-trait  = { workspace = true }
 
 [dev-dependencies]
 tokio        = { workspace = true, features = ["macros", "rt-multi-thread"] }
 rustls       = { workspace = true, features = ["ring"] }
+tempfile     = { workspace = true }

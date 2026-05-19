@@ -29,6 +29,9 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 pub mod auth;
+pub mod mcp_client;
+pub mod mcp_config;
+pub mod tools;
 pub mod web_search;
 
 pub use auth::{
@@ -36,6 +39,17 @@ pub use auth::{
     exchange_code_for_tokens, refresh_tokens, request_token_grant, resolve_client_id_from_env,
     resolve_client_secret_from_env,
 };
+pub use mcp_client::{
+    DEFAULT_CONNECT_TIMEOUT as MCP_DEFAULT_CONNECT_TIMEOUT,
+    DEFAULT_RPC_TIMEOUT as MCP_DEFAULT_RPC_TIMEOUT, MCP_PROTOCOL_VERSION, McpClient, McpError,
+    McpTool, ServerInfo as McpServerInfo,
+};
+pub use mcp_config::{
+    ConfigError as McpConfigError, McpConfig, McpServerConfig, McpTransportConfig,
+    default_config_path as mcp_default_config_path, load_default_mcp_config, load_mcp_config,
+    parse_mcp_config,
+};
+pub use tools::{McpProxyTool, Tool, ToolDescriptor, ToolError, ToolRegistry, WebSearchTool};
 pub use web_search::{
     Citation, DEFAULT_BASE_URL as WEB_SEARCH_DEFAULT_BASE_URL,
     DEFAULT_MODEL as WEB_SEARCH_DEFAULT_MODEL, SearchResults, TimeRange, WebSearchConfig,
