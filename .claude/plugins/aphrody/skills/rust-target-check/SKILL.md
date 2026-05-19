@@ -1,5 +1,6 @@
 ---
 name: rust-target-check
+version: "1.0.0"
 description: Runs `cargo check` on the 3 priority targets in parallel (Linux x86_64, Windows MSVC, wasm32-unknown-unknown). Use whenever the user asks to "verify cross-platform", "check the targets", "ensure Linux still compiles", "run xplatform check", or after touching workspace.dependencies / a crate that's expected to compile on all 3 targets. Skip for one-off scratchpad code or non-workspace changes.
 argument-hint: [crate-name | --workspace]
 allowed-tools: Bash, Read

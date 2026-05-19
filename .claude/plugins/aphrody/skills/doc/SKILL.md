@@ -1,5 +1,6 @@
 ---
 name: doc
+version: "1.0.0"
 description: |
   Read, create, and edit .docx documents with formatting and layout fidelity via OpenAI's document skill.
 triggers:

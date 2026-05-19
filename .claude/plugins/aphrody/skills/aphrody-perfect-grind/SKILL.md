@@ -1,5 +1,6 @@
 ---
 name: aphrody-perfect-grind
+version: "1.0.0"
 description: Forced-loop coding mode. Wraps /loop 30s /aphrody-yolo-grind with an explicit perfection oracle — does NOT exit until aphrody meets every objective metric (CI green, 0 unblocked ⏳, nextest 387/387, cargo deny clean, README↔code zero-gap, all 8 crates publish-ready). Every shell + every agent runs in background to maximise parallelism.
 when_to_use: User types "/aphrody-perfect-grind", says "code en boucle", "force le grind", "go full autonomous until perfect", or wants the project driven to ship-ready state without any handhold. Use whenever the goal is "don't stop until aphrody is production-perfect".
 ---

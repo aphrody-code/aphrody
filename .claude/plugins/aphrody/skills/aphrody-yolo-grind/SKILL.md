@@ -1,5 +1,6 @@
 ---
 name: aphrody-yolo-grind
+version: "1.0.0"
 description: Continuous parallel-grind mode that dispatches 4 YOLO agents per tick to drive every PLAN.md ⏳ item to ✅ production-ready as fast as possible. Mission target — outpace the peer A2A Claude on closed deliverables/hour.
 when_to_use: User types "/aphrody-yolo-grind", says "yolo", "grind", "parallèle agents", "production ready fast", or wraps under /loop ("/loop 30s /aphrody-yolo-grind"). Use whenever the goal is maximum parallel forward motion on aphrody PLAN.md items without single-agent serialization.
 ---

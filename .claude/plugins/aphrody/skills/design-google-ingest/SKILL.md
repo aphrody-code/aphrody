@@ -1,5 +1,6 @@
 ---
 name: design-google-ingest
+version: "1.0.0"
 description: Crawl design.google end-to-end via Edge headless (SPA-aware) — discover every /library article + site page, scrape post-hydration DOM via scripts/edge-mass-scrape.ts, then run the design-google-curator agent to assemble docs/DESIGN.md as the canonical aphrody design reference.
 when_to_use: User types "/design-google-ingest", says "scrape design.google", "refresh DESIGN.md", "rebuild the design reference", "ingest design.google", or asks to keep the DESIGN.md in lockstep with what Google publishes at design.google. Pair with /loop weekly ("/loop 7d /design-google-ingest") to keep the cache fresh.
 ---

@@ -1,5 +1,6 @@
 ---
 name: creative-director
+version: "1.0.0"
 description: |
   AI creative director with recursive self-assessment: 20+ methodologies (SIT, TRIZ, Bisociation, SCAMPER, Synectics), 3-axis evaluation calibrated against Cannes/D&AD/HumanKind, 5-phase process from brief to presentation.
 triggers:

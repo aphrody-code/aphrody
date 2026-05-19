@@ -1,5 +1,6 @@
 ---
 name: competitive-ads-extractor
+version: "1.0.0"
 description: |
   Extract and analyze competitors' ads from ad libraries to understand messaging and creative approaches that resonate.
 triggers:

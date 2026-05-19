@@ -1,5 +1,6 @@
 ---
 name: a2a-duel-loop
+version: "1.0.0"
 description: Continuous 2-Claude coordination duel over the A2A file-based protocol (ai.json + .coord JSONL mailbox + HTTP listener). Each iteration writes one envelope into the peer's inbox, runs a code-reviewer pass, and schedules the next tick. Mission target — sustain the duel across hours/days without human handhold.
 when_to_use: User types "/a2a-duel-loop", says "lance le duel", "duel loop", "run the A2A duel", "tick the duel", or asks to keep two Claudes coordinating in a sustained back-and-forth on a shared project. Pair with `loop` skill (`/loop /a2a-duel-loop`) to make it self-pacing under the dynamic loop runtime.
 ---
