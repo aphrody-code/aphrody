@@ -9,7 +9,7 @@ authors.workspace      = true
 homepage.workspace     = true
 repository.workspace   = true
 license.workspace      = true
-description            = "aphrody memory SDK — async MemoryBackend trait with JSONL-file and HNSW in-process backends."
+description            = "aphrody memory SDK — async MemoryBackend (JSONL/HNSW/SQLite/LanceDB) + MemoryProvider (Mem0/Honcho/SqliteLocal Tier-1)."
 
 [lints]
 workspace = true
@@ -40,9 +40,14 @@ chrono       = { workspace = true }
 # uuid workspace dep has v4+v7 features; we additionally need `serde` for
 # Serialize/Deserialize derives on MemoryRecord.
 uuid         = { workspace = true, features = ["serde"] }
+time         = { workspace = true }
 
 # --- tracing ----------------------------------------------------------------
 tracing      = { workspace = true }
+
+# --- HTTP transport (Tier-1 providers: Mem0, Honcho) -----------------------
+reqwest      = { workspace = true }
+base64       = { workspace = true }
 
 # --- SQLite backend ---------------------------------------------------------
 # `bundled` feature compiles a static libsqlite3, removing the system dep
@@ -59,11 +64,15 @@ arrow-schema = { workspace = true }
 [dev-dependencies]
 tokio        = { workspace = true, features = ["full"] }
 tempfile     = { workspace = true }
+# Local axum mock server for Mem0/Honcho HTTP provider smoke tests (offline-clean).
+axum         = { workspace = true }
+rustls       = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # cargo-machete: arrow-array + arrow-schema are consumed only inside async
 # functions that build LanceDB schemas — machete's cfg-blind scan flags them
 # as unused.  Keep the explicit ignore list in sync with `src/lancedb.rs`.
+# `time` is consumed by `sqlite_local`'s timestamp helpers behind type aliases.
 # ---------------------------------------------------------------------------
 [package.metadata.cargo-machete]
-ignored = ["arrow-array", "arrow-schema"]
+ignored = ["arrow-array", "arrow-schema", "time"]

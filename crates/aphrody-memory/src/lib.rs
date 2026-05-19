@@ -28,8 +28,33 @@ pub mod jsonl;
 pub mod lancedb;
 pub mod sqlite;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tier-1 provider surface (Mem0, Honcho, SqliteLocal).
+// Added 2026-05-19 as part of the hermes-agent audit close-out (Sprint C).
+// Coexists with the legacy `MemoryBackend` trait above: providers expose
+// an agent-id + tags + keyword surface, while `MemoryBackend` exposes a
+// key-value + vector surface. Different consumers, different shapes.
+// ─────────────────────────────────────────────────────────────────────────────
+pub mod honcho;
+pub mod mem0;
+pub mod provider;
+pub mod sqlite_local;
+pub mod types;
+
+pub use crate::honcho::HonchoProvider;
 pub use crate::lancedb::LanceDbBackend;
+pub use crate::mem0::Mem0Provider;
+pub use crate::provider::MemoryProvider;
 pub use crate::sqlite::SqliteBackend;
+pub use crate::sqlite_local::SqliteLocalProvider;
+// Tier-1 provider DTOs: re-exported under disambiguated names so they don't
+// collide with the legacy `MemoryBackend` types defined further down in this
+// file. Tests and downstream consumers can either use these aliases or the
+// fully-qualified `aphrody_memory::types::*` paths.
+pub use crate::types::{
+    MemoryConfig, MemoryError as ProviderMemoryError, MemoryQuery,
+    MemoryRecord as ProviderMemoryRecord, ProviderKind,
+};
 
 use std::collections::HashMap;
 
