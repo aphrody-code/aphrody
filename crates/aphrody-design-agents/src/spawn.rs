@@ -554,7 +554,11 @@ mod tests {
 
     #[test]
     fn would_exceed_windows_command_line_triggers_above_limit() {
-        let bin = Path::new("C:/Users/yohan/.local/bin/claude.exe");
+        // Use a portable absolute Windows path so the test does not embed a
+        // user-specific home directory (cf. docs/audits/2026-05-19-hardcoded-paths-sweep.md).
+        // The test only measures the byte-length of the argv encoding; the
+        // actual binary path is incidental.
+        let bin = Path::new("C:/bin/claude.exe");
         let big = "x".repeat(9_000);
         let args = &[big.as_str()];
         assert!(
