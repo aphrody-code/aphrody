@@ -76,10 +76,10 @@ fn resolve_root(arg: Option<PathBuf>) -> anyhow::Result<PathBuf> {
     if let Ok(p) = std::env::var("VPS_ROOT") {
         return Ok(PathBuf::from(p));
     }
-    let home = std::env::var_os("HOME")
-        .or_else(|| std::env::var_os("USERPROFILE"))
-        .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
-    Ok(PathBuf::from(home).join("vps"))
+    if let Ok(p) = std::env::var("APHRODY_ROOT") {
+        return Ok(PathBuf::from(p));
+    }
+    std::env::current_dir().map_err(Into::into)
 }
 
 fn default_out(root: &Path, arg: Option<PathBuf>, name: &str) -> PathBuf {
