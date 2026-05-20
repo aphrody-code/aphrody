@@ -19,12 +19,13 @@ Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** rév
 | Sprint | Item | État réel | Lignes |
 |---|---|---|---|
 | R-A | R3.1 Trait `MemoryProvider` dyn-compat | ✅ shipped (`provider.rs`) | 61 |
-| R-B | `aphrody-channels` Discord+Slack+Telegram+Matrix+X (5 backends, pas 3) | ✅ shipped | 3176 |
-| R-B | `aphrody-voice` + `aphrody-voice-stt` (elevenlabs + whisper local + whisper API + web + discord_shim) | ✅ shipped | 2048 |
+| R-B | `aphrody-messaging::channels` Discord+Slack+Telegram+Matrix+X (5 backends, unified from ex-`aphrody-channels`) | ✅ shipped (consolidated) | 3176 |
+| R-B | `aphrody-voice` (TTS + STT unified: elevenlabs + whisper local + whisper API + web + discord_shim, ex-`aphrody-voice` + `aphrody-voice-stt`) | ✅ shipped (consolidated) | 2048 |
 | R-B | R3.2 Honcho v1 API | ✅ shipped (`honcho.rs`) | 298 |
 | R-B | R3.3 Mem0 v1 API | ✅ shipped (`mem0.rs`) | 273 |
-| R-C | `aphrody-skills-forge` (lib + lint + registry + scaffold + skill) | ✅ shipped | 903 |
+| R-C | `aphrody-skills::runtime` forge (lib + lint + registry + scaffold + skill, ex-`aphrody-skills-forge`) | ✅ shipped | 903 |
 | R-E | `aphrody-cron` (single lib.rs) | ✅ shipped | 536 |
+| -- | **Workspace consolidation** (2026-05-19) : 22 crates merged into 6 domain crates (-16 net). See `consolidation_plan.md`. | ✅ shipped | n/a |
 | R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
 | R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
 | R-A | R1.4 MCP client dans `aphrody-mcp` | ✅ shipped — tool `aphrody_mcp_call(server, tool, args, config?)` wired sur McpClient stdio/HTTP, 5 unit tests | n/a |
@@ -87,7 +88,7 @@ utilisé ligne 228). Restent R1.4-R1.6 actionables.
 | R1.3 | Diagnostics `gemini-runtime/src/tools.rs` (E0432 `async_trait`, E0038 `Tool` non dyn-compat) | ✅ **false-positive cached** — `async-trait` dans Cargo.toml + `#[async_trait]` proc-macro applied | `cargo check -p gemini-runtime --locked` exit 0 |
 | R1.4 | MCP client dans `aphrody-mcp` via `gemini_runtime::McpClient` (stdio + HTTP, cf. `crates/gemini-runtime/src/mcp_client.rs:275`). Tool `aphrody_mcp_call(server, tool, args, config?)` shipped dans `crates/google_mcp/src/main.rs` — structured error envelopes `MCP_BAD_REQUEST / MCP_CONFIG / MCP_UNKNOWN_SERVER / MCP_CONNECT / MCP_INITIALIZE / MCP_CALL / MCP_ENCODE` | ✅ | `cargo test -p google_mcp aphrody_mcp_call_tests` 5/5 green |
 | R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99 (`crates/cli/benches/cold_start.rs`), `aphrody-mcp` initialize handshake p50/p95 (`crates/google_mcp/benches/initialize_handshake.rs`). Both use `iter_custom` over freshly-built `CARGO_BIN_EXE_*` for true wall-clock cold-start latency. Ledger `docs/PERFORMANCE-HISTORY.md` expanded with §4.2 (cold-start) + §4.3 (MCP handshake) ; first measurement captured at v0.1.0 tag | ✅ **DONE** 2026-05-19 | `cargo check --benches -p aphrody -p google_mcp --locked` exit 0 |
-| R1.6 | Wire `aphrody-voice` + `aphrody-voice-stt` jusqu'à 2 nouveaux MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
+| R1.6 | Wire `aphrody-voice` (unified TTS + STT via `aphrody_voice::stt`) into 2 new MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
 
 #### R2 — Apprend de ses erreurs (self-improvement loop)
 
@@ -254,7 +255,7 @@ Matrice validée 2026-05-17 (host : Windows 11) :
 | Crate           | `wasm32-unknown-unknown` | `wasm32-wasip1` |
 |-----------------|:------------------------:|:---------------:|
 | `base`          | ✅ (getrandom "js" gated)| ✅              |
-| `mrx-core`      | n/a (chrono)             | ✅              |
+| `mrx`           | n/a (chrono)             | ✅              |
 | `aphrody-translate` | ✅ (wasm stub)       | ✅              |
 | `cli` (binary)  | ✅ (stub minimal)        | ✅ (stub minimal)|
 | `a2a-client`    | ✅ (JSON-RPC+REST+SSE via browser fetch; async-trait ?Send) | ✅ (traits + types only; reqwest/HTTP modules cfg-stripped — WASI p1 has no sockets) |
@@ -271,7 +272,7 @@ Sous-tâches :
 |---|---|
 | `base` : feature `js` getrandom gated wasm32-unknown-unknown | ✅ |
 | `base` : compile `wasm32-unknown-unknown` + `wasm32-wasip1` | ✅ |
-| `mrx-core` : compile `wasm32-wasip1` | ✅ |
+| `mrx` : compile `wasm32-wasip1` | ✅ |
 | `aphrody-translate` : retirer tokio `full` (idéalement tokio-rt minimal) | ✅ |
 | `cli` : refactor tokio + cfg-gate commandes OS-bound pour wasm | ✅ (cli/src/main.rs cfg-gates mimalloc + tokio + reqwest + backend + a2a) |
 | `crates/aphrody-wasm` : wrapper `base` exposé via `wasm-bindgen` | ✅ |
@@ -390,7 +391,7 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 | `packaging/snap/snapcraft.yaml` + `packaging/arch/PKGBUILD` — Ubuntu Snap + Arch AUR distribution expansion | ✅ (50 l. + 65 l. — Snap manifest + Arch PKGBUILD) |
 | `crates/backend/benches/backend_bench.rs` — criterion benchmark suite | ✅ (182 l. criterion benchmark suite) |
 | `docs/FAQ.md` + `docs/ROADMAP.md` — anticipated Q + public 90-day roadmap | ✅ (101 l. + 68 l.) |
-| `crates/mrx-cli/README.md` — usage doc with scan/detect/audit/watch examples | ✅ (129 l. — usage doc, scan/check/watch examples) |
+| `crates/mrx/README.md` — usage doc with scan/detect/audit/watch examples | ✅ (129 l. — usage doc, scan/check/watch examples) |
 | `crates/aphrody-translate/README.md` — translate CLI usage doc | ✅ (121 l. — CLI usage doc) |
 | `.github/workflows/codeql.yml` — GitHub CodeQL security scanning | ✅ (70 l. CodeQL workflow) |
 | `docs/extensions/` — a2a extension specs (file-transport, honest-delivery, context7-version-pinning) | ✅ (74 + 82 + 78 l. + index.md — 3 extension specs publishable) |

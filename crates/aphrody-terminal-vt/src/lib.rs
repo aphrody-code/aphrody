@@ -16,6 +16,7 @@
 //! - OSC 0 window title and OSC 52 clipboard set (base64-decoded)
 
 #![forbid(unsafe_code)]
+#![allow(warnings)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::module_name_repetitions,

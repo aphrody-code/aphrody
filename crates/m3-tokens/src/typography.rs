@@ -15,7 +15,7 @@
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TypeStyle {
     /// Font family name as declared in the M3 spec.
-    /// Baseline value is `"Roboto"` for all 15 styles.
+    /// Baseline value is `"Google Sans Flex"` for all 15 styles.
     pub font: &'static str,
     /// CSS / OpenType numeric weight (100–900).
     pub weight: u16,
@@ -31,7 +31,7 @@ pub struct TypeStyle {
 
 /// Display Large — the largest display style, used for short, important text.
 pub const DISPLAY_LARGE: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 57.0,
     line_height_dp: 64.0,
@@ -40,7 +40,7 @@ pub const DISPLAY_LARGE: TypeStyle = TypeStyle {
 
 /// Display Medium.
 pub const DISPLAY_MEDIUM: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 45.0,
     line_height_dp: 52.0,
@@ -49,7 +49,7 @@ pub const DISPLAY_MEDIUM: TypeStyle = TypeStyle {
 
 /// Display Small.
 pub const DISPLAY_SMALL: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 36.0,
     line_height_dp: 44.0,
@@ -60,7 +60,7 @@ pub const DISPLAY_SMALL: TypeStyle = TypeStyle {
 
 /// Headline Large — high-emphasis, shorter spans (article titles, dialog headers).
 pub const HEADLINE_LARGE: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 32.0,
     line_height_dp: 40.0,
@@ -69,7 +69,7 @@ pub const HEADLINE_LARGE: TypeStyle = TypeStyle {
 
 /// Headline Medium.
 pub const HEADLINE_MEDIUM: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 28.0,
     line_height_dp: 36.0,
@@ -78,7 +78,7 @@ pub const HEADLINE_MEDIUM: TypeStyle = TypeStyle {
 
 /// Headline Small.
 pub const HEADLINE_SMALL: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 24.0,
     line_height_dp: 32.0,
@@ -89,7 +89,7 @@ pub const HEADLINE_SMALL: TypeStyle = TypeStyle {
 
 /// Title Large — large, semi-bold titles (app bar, dialog title).
 pub const TITLE_LARGE: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 22.0,
     line_height_dp: 28.0,
@@ -98,7 +98,7 @@ pub const TITLE_LARGE: TypeStyle = TypeStyle {
 
 /// Title Medium — medium emphasis (list item titles, card titles).
 pub const TITLE_MEDIUM: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 500,
     size_dp: 16.0,
     line_height_dp: 24.0,
@@ -107,7 +107,7 @@ pub const TITLE_MEDIUM: TypeStyle = TypeStyle {
 
 /// Title Small — smaller component labels (tab labels, chip labels).
 pub const TITLE_SMALL: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 500,
     size_dp: 14.0,
     line_height_dp: 20.0,
@@ -118,7 +118,7 @@ pub const TITLE_SMALL: TypeStyle = TypeStyle {
 
 /// Body Large — default body copy, readable at length.
 pub const BODY_LARGE: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 16.0,
     line_height_dp: 24.0,
@@ -127,7 +127,7 @@ pub const BODY_LARGE: TypeStyle = TypeStyle {
 
 /// Body Medium — compact body copy (supporting text, captions with detail).
 pub const BODY_MEDIUM: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 14.0,
     line_height_dp: 20.0,
@@ -136,7 +136,7 @@ pub const BODY_MEDIUM: TypeStyle = TypeStyle {
 
 /// Body Small — smallest body copy (captions, helper text).
 pub const BODY_SMALL: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 400,
     size_dp: 12.0,
     line_height_dp: 16.0,
@@ -147,7 +147,7 @@ pub const BODY_SMALL: TypeStyle = TypeStyle {
 
 /// Label Large — prominent label for actionable elements (buttons).
 pub const LABEL_LARGE: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 500,
     size_dp: 14.0,
     line_height_dp: 20.0,
@@ -156,7 +156,7 @@ pub const LABEL_LARGE: TypeStyle = TypeStyle {
 
 /// Label Medium — for icon labels, tab bar labels.
 pub const LABEL_MEDIUM: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 500,
     size_dp: 12.0,
     line_height_dp: 16.0,
@@ -165,7 +165,7 @@ pub const LABEL_MEDIUM: TypeStyle = TypeStyle {
 
 /// Label Small — smallest label, used sparingly (badges, annotation).
 pub const LABEL_SMALL: TypeStyle = TypeStyle {
-    font: "Roboto",
+    font: "Google Sans Flex",
     weight: 500,
     size_dp: 11.0,
     line_height_dp: 16.0,
@@ -194,6 +194,40 @@ pub const ALL: [TypeStyle; 15] = [
     LABEL_SMALL,
 ];
 
+/// Kebab-case names for each token in [`ALL`] order.
+pub const NAMES: [&str; 15] = [
+    "display-large", "display-medium", "display-small",
+    "headline-large", "headline-medium", "headline-small",
+    "title-large", "title-medium", "title-small",
+    "body-large", "body-medium", "body-small",
+    "label-large", "label-medium", "label-small",
+];
+
+/// Emits a CSS `:root` block declaring all M3 typography custom properties.
+#[cfg(feature = "std")]
+#[must_use]
+pub fn export_css() -> std::string::String {
+    let mut out = std::string::String::with_capacity(2048);
+    out.push_str(":root {\n");
+    for (style, name) in ALL.iter().zip(NAMES.iter()) {
+        out.push_str(&std::format!(
+            "  --md-sys-typescale-{name}-font-family: '{}';\n\
+             \x20 --md-sys-typescale-{name}-font-weight: {weight};\n\
+             \x20 --md-sys-typescale-{name}-size: {size}px;\n\
+             \x20 --md-sys-typescale-{name}-line-height: {line_height}px;\n\
+             \x20 --md-sys-typescale-{name}-letter-spacing: {letter_spacing}px;\n",
+            style.font,
+            name = name,
+            weight = style.weight,
+            size = style.size_dp,
+            line_height = style.line_height_dp,
+            letter_spacing = style.letter_spacing_dp,
+        ));
+    }
+    out.push('}');
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,9 +251,9 @@ mod tests {
     }
 
     #[test]
-    fn all_fonts_are_roboto() {
+    fn all_fonts_are_google_sans_flex() {
         for style in &ALL {
-            assert_eq!(style.font, "Roboto");
+            assert_eq!(style.font, "Google Sans Flex");
         }
     }
 

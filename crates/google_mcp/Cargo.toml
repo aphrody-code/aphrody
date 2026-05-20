@@ -48,7 +48,6 @@ gemini-runtime     = { path = "../gemini-runtime" }
 # module is `#[cfg(not(target_arch = "wasm32"))]`-gated so the deps follow the
 # same cfg. Both crates live in the workspace; here we re-export the path deps.
 aphrody-voice      = { workspace = true }
-aphrody-voice-stt  = { workspace = true }
 # base64 STANDARD encoding for audio payload framing in voice_tools.
 base64             = { workspace = true }
 # Reverse engineering triage (re_triage MCP tool). Pure Rust, no GPL.

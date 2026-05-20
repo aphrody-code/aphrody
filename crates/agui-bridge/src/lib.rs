@@ -529,7 +529,7 @@ mod tests {
         match node {
             AguiNode::Button(p) => {
                 assert_eq!(p.label, "Go");
-                assert_eq!(p.variant, "filled");
+                assert_eq!(p.variant, ButtonVariant::Filled);
                 assert!(!p.disabled);
             },
             _ => panic!("expected Button"),

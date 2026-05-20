@@ -2026,7 +2026,7 @@ pub(crate) struct NotifyCommand {
 #[async_trait]
 impl TerminalCommand for NotifyCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        use aphrody_channels::{
+        use aphrody_messaging::channels::{
             MessagingChannel, matrix::MatrixChannel, slack::SlackChannel, telegram::TelegramChannel,
         };
 

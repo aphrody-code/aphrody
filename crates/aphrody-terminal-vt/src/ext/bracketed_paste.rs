@@ -26,7 +26,7 @@ pub fn handle_csi_decset(params: &[u16], action: char) -> Option<BracketedPasteS
         'l' => BracketedPasteState::Disabled,
         _ => return None,
     };
-    if params.iter().any(|&m| m == 2004) { Some(state) } else { None }
+    if params.contains(&2004) { Some(state) } else { None }
 }
 
 /// Byte-by-byte accumulator that recognises `ESC [ 200~ … ESC [ 201~`

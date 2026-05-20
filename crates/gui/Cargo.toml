@@ -34,6 +34,8 @@ tracing    = { workspace = true }
 # AND the JSON returned by the `cmd: "tokens"` IPC handler, so the desktop
 # surface and the TUI surface share one palette source.
 m3-tokens  = { path = "../m3-tokens" }
+aphrody-icons = { path = "../aphrody-icons" }
+base64.workspace = true
 
 # Native-only deps. Gated off wasm32 — wry/tao/mimalloc all pull native
 # window handles / C source incompatible with `wasm32-unknown-unknown`,
@@ -41,10 +43,32 @@ m3-tokens  = { path = "../m3-tokens" }
 # the dep graph is kept clean here so a stray `cargo check -p gui
 # --target wasm32-unknown-unknown` doesn't drag mimalloc.h into wasm-ld.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wry                = { workspace = true }
-tao                = { workspace = true }
+winit              = { workspace = true }
+pollster           = { workspace = true }
+mui-rs-renderer    = { path = "../mui-rs-renderer" }
+mui-rs-components  = { path = "../mui-rs-components" }
 tokio              = { workspace = true }
 anyhow             = { workspace = true }
 tracing-subscriber = { workspace = true }
 mimalloc           = { workspace = true }
 backend            = { path = "../backend" }
+taffy              = { workspace = true }
+tuono_lib          = { path = "../tuono_lib" }
+tuono_internal     = { path = "../tuono_internal" }
+tuono              = { path = "../tuono" }
+tuono_lib_macros   = { path = "../tuono_lib_macros" }
+
+aphrody-chat       = { path = "../aphrody-chat" }
+aphrody-sdk         = { path = "../aphrody-sdk" }
+aphrody-events      = { path = "../aphrody-events" }
+aphrody-context     = { path = "../aphrody-context" }
+aphrody-session     = { path = "../aphrody-session" }
+aphrody-tools       = { path = "../aphrody-tools" }
+aphrody-memory      = { path = "../aphrody-memory" }
+aphrody-secrets     = { path = "../aphrody-secrets" }
+aphrody-llm-infra   = { path = "../aphrody-llm-infra" }
+aphrody-prompts     = { path = "../aphrody-prompts" }
+aphrody-router      = { path = "../aphrody-router" }
+aphrody-skills      = { path = "../aphrody-skills" }
+gemini-runtime      = { path = "../gemini-runtime" }
+aphrody-providers   = { workspace = true }

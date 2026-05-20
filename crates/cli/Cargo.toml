@@ -56,10 +56,9 @@ a2a                       = { workspace = true }
 a2a-client                = { workspace = true }
 futures                   = { workspace = true }
 thiserror                 = { workspace = true }
-# Messaging-channel adapters (Slack / Telegram / Matrix) — native-only because
-# the underlying crate pulls reqwest + tokio rt-multi-thread which do not
-# compile on wasm32 (cf. crates/aphrody-channels/Cargo.toml).
-aphrody-channels          = { path = "../aphrody-channels" }
+# Messaging (outbound connectors + bidirectional channels: Slack/Telegram/Matrix/Discord/X).
+# Native-only because reqwest + tokio do not compile on wasm32.
+aphrody-messaging         = { path = "../aphrody-messaging" }
 # `aphrody scan {tree, manifests}` — parallel filesystem walk + manifest parse.
 walkdir                   = { workspace = true }
 ignore                    = { workspace = true }
