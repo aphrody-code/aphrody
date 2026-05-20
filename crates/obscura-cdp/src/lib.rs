@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 pub mod server;
 pub mod dispatch;
 pub mod types;

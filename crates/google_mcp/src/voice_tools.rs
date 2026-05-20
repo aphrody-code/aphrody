@@ -6,9 +6,9 @@
 //!
 //! - [`aphrody_voice::elevenlabs::ElevenLabsProvider`] — production TTS backend (ElevenLabs v1 REST
 //!   API).
-//! - [`aphrody_voice_stt::local_whisper::LocalWhisperBackend`] — preferred offline STT (whisper.cpp
+//! - [`aphrody_voice::stt::local_whisper::LocalWhisperBackend`] — preferred offline STT (whisper.cpp
 //!   via `whisper-rs`), built only when the upstream crate exposes the `local-whisper` feature.
-//! - [`aphrody_voice_stt::whisper_api::WhisperApiProvider`] — REST fallback used when local Whisper
+//! - [`aphrody_voice::stt::whisper_api::WhisperApiProvider`] — REST fallback used when local Whisper
 //!   is unavailable or returns [`SttError::NotImplemented`].
 //!
 //! # Tool contracts
@@ -205,7 +205,7 @@ pub(crate) async fn synthesize(req: VoiceSynthesizeRequest) -> String {
 ///
 /// Decodes the inbound base64 payload, then tries local Whisper first and
 /// falls back to the REST Whisper API on
-/// [`aphrody_voice_stt::SttError::NotImplemented`] or any provider error.
+/// [`aphrody_voice::stt::SttError::NotImplemented`] or any provider error.
 pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
     let VoiceTranscribeRequest { audio_base64, mime_type, language } = req;
 
@@ -230,15 +230,15 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
 
     let mime = mime_type.as_deref().unwrap_or(DEFAULT_STT_MIME).to_owned();
 
-    let mut opts = aphrody_voice_stt::SttOptions::default();
+    let mut opts = aphrody_voice::stt::SttOptions::default();
     opts.language = language.clone();
-    opts.response_format = aphrody_voice_stt::TranscriptFormat::VerboseJson;
+    opts.response_format = aphrody_voice::stt::TranscriptFormat::VerboseJson;
 
     // 1. Try local Whisper first (offline-preferred per task spec).
     let model_path = std::env::var("APHRODY_WHISPER_MODEL").unwrap_or_default();
     if !model_path.is_empty() {
-        let backend = aphrody_voice_stt::local_whisper::LocalWhisperBackend::new(model_path);
-        match aphrody_voice_stt::SttProvider::transcribe(&backend, &audio, opts.clone()).await {
+        let backend = aphrody_voice::stt::local_whisper::LocalWhisperBackend::new(model_path);
+        match aphrody_voice::stt::SttProvider::transcribe(&backend, &audio, opts.clone()).await {
             Ok(transcript) => {
                 return pretty(&json!({
                     "text": transcript.text,
@@ -249,7 +249,7 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
                     "mime_type": mime,
                 }));
             },
-            Err(aphrody_voice_stt::SttError::NotImplemented { .. }) => {
+            Err(aphrody_voice::stt::SttError::NotImplemented { .. }) => {
                 // Fallthrough to REST fallback.
             },
             Err(err) => {
@@ -259,7 +259,7 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
     }
 
     // 2. Fallback: OpenAI Whisper REST API.
-    let provider = match aphrody_voice_stt::whisper_api::WhisperApiProvider::from_env() {
+    let provider = match aphrody_voice::stt::whisper_api::WhisperApiProvider::from_env() {
         Ok(p) => p,
         Err(err) => {
             return error_envelope(
@@ -271,7 +271,7 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
             );
         },
     };
-    let transcript = match aphrody_voice_stt::SttProvider::transcribe(&provider, &audio, opts).await
+    let transcript = match aphrody_voice::stt::SttProvider::transcribe(&provider, &audio, opts).await
     {
         Ok(t) => t,
         Err(err) => {
@@ -294,7 +294,7 @@ pub(crate) async fn transcribe(req: VoiceTranscribeRequest) -> String {
 /// audio ⇒ more grounded transcription). Falls back to `1.0` for plain-text
 /// responses with no segment metadata, matching the contract documented in the
 /// tool description.
-fn confidence_from_segments(transcript: &aphrody_voice_stt::Transcript) -> f32 {
+fn confidence_from_segments(transcript: &aphrody_voice::stt::Transcript) -> f32 {
     if transcript.segments.is_empty() {
         return 1.0;
     }
@@ -417,7 +417,7 @@ mod tests {
 
     #[test]
     fn confidence_synth_is_sensible() {
-        let empty = aphrody_voice_stt::Transcript {
+        let empty = aphrody_voice::stt::Transcript {
             text: "ok".into(),
             language: None,
             duration_s: None,
@@ -425,11 +425,11 @@ mod tests {
         };
         assert_eq!(confidence_from_segments(&empty), 1.0);
 
-        let one_seg = aphrody_voice_stt::Transcript {
+        let one_seg = aphrody_voice::stt::Transcript {
             text: "hello".into(),
             language: None,
             duration_s: None,
-            segments: vec![aphrody_voice_stt::TranscriptSegment {
+            segments: vec![aphrody_voice::stt::TranscriptSegment {
                 id: 0,
                 start: 0.0,
                 end: 1.0,

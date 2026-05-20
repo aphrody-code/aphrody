@@ -20,8 +20,7 @@ pub enum AltScreenEvent {
 ///
 /// `intermediates` must contain `b'?'` as the first byte (i.e. the
 /// sequence is a *private* mode and not a standard ANSI mode). `params`
-/// is the list of mode numbers (vte::Params flattened by the caller).
-/// `action` is the final byte: `'h'` for set, `'l'` for reset; anything
+/// is the list of mode numbers (`vte::Params` flattened by the caller). `action` is the final byte: `'h'` for set, `'l'` for reset; anything
 /// else returns `None`.
 ///
 /// Returns `None` when the sequence does not target an alt-screen mode.

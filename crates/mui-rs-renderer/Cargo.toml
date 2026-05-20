@@ -17,7 +17,7 @@ android = ["android-activity"]
 [dependencies]
 thiserror.workspace = true
 anyhow.workspace = true
-wgpu.workspace = true
+wgpu = "28"
 vello.workspace = true
 peniko.workspace = true
 kurbo.workspace = true
@@ -25,6 +25,7 @@ tiny-skia.workspace = true
 bytemuck.workspace = true
 half.workspace = true
 tracing.workspace = true
+taffy.workspace = true
 m3-tokens = { path = "../m3-tokens" }
 
 # web

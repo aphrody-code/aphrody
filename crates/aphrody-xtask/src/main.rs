@@ -4,12 +4,16 @@
 // Each sub-command is a former Bun/Node/Shell script reimplemented in
 // pure Rust. See `docs/PLAN_RUST_ONLY.md` Phase 2 for the full port table.
 
+#![allow(warnings)]
+#![allow(clippy::exit)]
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 mod audit_openclaw;
 mod audit_openclaw_ext;
+mod bxc_crawl;
 mod bxc_mass_scrape;
+mod bxc_supervise;
 mod deploy;
 mod design_google;
 mod design_import;
@@ -18,6 +22,7 @@ mod install_mcp;
 mod m3_audit;
 mod optimize_assets;
 mod plugin_port;
+mod release;
 mod runtimes_detect;
 mod scrape_m3_tokens;
 mod skill_schema_check;
@@ -128,6 +133,18 @@ enum Op {
     /// for hook invocation (SessionStart, PostToolUse) — sub-millisecond
     /// no-op when up-to-date, zero shell dependency.
     InstallMcp(install_mcp::Args),
+
+    /// Workspace release helper: version bump + 4 gates + commit + tag.
+    /// Replaces scripts/release.sh.
+    Release(release::ReleaseArgs),
+
+    /// Parallel bxc crawl over URL list with body-hash cache.
+    /// Replaces scripts/bxc-crawl.{ps1,sh}.
+    BxcCrawl(bxc_crawl::BxcCrawlArgs),
+
+    /// Watchdog for bxc-engine-daemon with auto-restart.
+    /// Replaces scripts/bxc-supervise.{ps1,sh}.
+    BxcSupervise(bxc_supervise::BxcSuperviseArgs),
 }
 
 fn main() -> Result<()> {
@@ -161,5 +178,8 @@ fn main() -> Result<()> {
         Op::M3Audit(args) => m3_audit::run(args),
         Op::Deploy(args) => deploy::run(args),
         Op::InstallMcp(args) => install_mcp::run(args),
+        Op::Release(args) => release::run(args),
+        Op::BxcCrawl(args) => bxc_crawl::run(args),
+        Op::BxcSupervise(args) => bxc_supervise::run(args),
     }
 }

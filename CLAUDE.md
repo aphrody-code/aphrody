@@ -177,7 +177,7 @@ Sept crates ajoutés au workspace pour fermer la migration **gemini-cli + bxc + 
 
 | Crate | Rôle | Tests | Wiring |
 |---|---|---:|---|
-| `aphrody-chat` | Orchestrator turn-loop (14 étapes : hooks UserPromptSubmit/PreToolUse/PostToolUse/Stop + session JSONL + memory recall + permissions + context budget + events). 17 building blocks intégrés (gemini-runtime, aphrody-tools, aphrody-session, aphrody-memory, aphrody-permissions, aphrody-hooks, aphrody-prompts, aphrody-router, aphrody-cost, aphrody-context, aphrody-events, aphrody-cache, aphrody-rateguard, aphrody-retry, aphrody-secrets, aphrody-skills-runtime, aphrody-mcp). Backend trait `ModelBackend` : `StubBackend` (déterministe), `GeminiBackend` (live), `AnthropicBackend`/`AntigravityBackend` (`NotYetImplemented` structuré). | 24 (14 unit + 8 integ + 2 doctest) | `aphrody chat --stub --prompt "X"` (smoke OK) |
+| `aphrody-chat` | Orchestrator turn-loop (14 steps). 13 building blocks integrated (gemini-runtime, aphrody-tools, aphrody-session, aphrody-memory, aphrody-skills, aphrody-prompts, aphrody-router, aphrody-llm-infra, aphrody-context, aphrody-events, aphrody-secrets, aphrody-mcp). Backend trait `ModelBackend` : `StubBackend`, `GeminiBackend`, `AnthropicBackend`/`AntigravityBackend` (`NotYetImplemented`). | 24 | `aphrody chat --stub --prompt "X"` |
 | `aphrody-sdk` | Façade publique programmatique stable v1.0 (8 modules, ~2200 LoC) — entrée pour intégrations tiers. | 36 | declared workspace.dependencies |
 | `aphrody-tools` | Port des 9 builtin tools gemini-cli (read_file, write_file, edit, glob, grep, ls, run_shell, web_fetch, web_search). Registry + schema validation. | n/a (descriptors) | utilisé par aphrody-chat |
 | `aphrody-shell` | Cross-platform shell exec (Unix exec + Windows CreateProcessW + capture stdout/stderr structuré). | n/a | utilisé par aphrody-tools::run_shell |
@@ -321,31 +321,31 @@ Toute trace de Bun/Node/TS/Python/turbo dans `packages/`, `node_modules/`,
 `scripts/*.ts`, `bun.lock`, `package.json`, `tsconfig.json`, `turbo.json`
 est destinée à être éradiquée (plan : `docs/PLAN.md`).
 
-### Workspace (`Cargo.toml` root, 54 members)
+### Workspace (`Cargo.toml` root, 65 members)
 
 - **CLI / cœur** : `cli` (binaire principal, **cross-platform pur**), `base`
   (no_std primitives), `backend` (forensics + network, cross-platform).
 - **Kernel subcommands** (depuis 2026-05-18) :
-  - `aphrody n2b [args]` — sous-commande Rust native (refactor en cours, ex-façade
-    bun `packages/n2b/src/cli.ts` à supprimer). Cf. `docs/PLAN.md`.
-  - `aphrody n2b watch --interval N --path P` — boucle infinie tokio (Ctrl-C trap).
-  - `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine `:8765` via `crates/cli/src/scrape.rs::ScrapeClient`.
-  - Install PATH : `aphrody self install-path` (binaire Rust natif, ex-`scripts/Install-AphrodyToPath.ps1` / `scripts/install-aphrody-path.sh`).
-- **UI desktop** : `gui` (wry + tao) — desktop seulement, exclu du binaire CLI
-  distribuable.
+  - `aphrody n2b [args]` — sous-commande Rust native.
+  - `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine `:8765`.
+  - Install PATH : `aphrody self install-path`.
+- **UI desktop** : `gui` (wry + tao) — desktop seulement.
 - **Agent / IA (A2A)** : `a2a`, `a2a-client`, `a2a-server`, `a2a-pb`, `a2a-grpc`.
-  En cours d'adaptation cross-platform.
-- **Bridges** : `google_mcp` (MCP server, en cours d'adaptation cross-platform).
-- **Mapper (mrx)** : `mrx-core`, `mrx-detect`, `mrx-audit`, `mrx-watch`, `mrx-cli`
-  (Monorepo Real-time X-platform mapper — migré 2026-05-17 depuis vps/packages/mrx).
-- **Outils dev** : `aphrody-translate` (CLI traduction commentaires EN→FR + scrub AI
-  + style Aphrody).
-- **Marketplace + awesome curator** : `aphrody-marketplace` (registry semver+SHA256
-  skills/MCP/hooks/themes) ; module `awesome` (feature `github`, optional octocrab)
-  ingère `topic:awesome-rust` via `octocrab` (workspace.dependencies:503), rank
-  multi-critères (stars log + recency + license OSI + active), émet `StackPolicy`
-  v1 → `.claude/policies/stack-whitelist.json`. Consommé par hook
-  `UserPromptSubmit` (à câbler).
+- **Bridges** : `google_mcp` (MCP server, cross-platform).
+- **Mapper** : `mrx` (unified crate, ex `mrx-{core,detect,audit,watch,cli}`).
+- **Voice** : `aphrody-voice` (unified TTS + STT, ex `aphrody-voice` + `aphrody-voice-stt`).
+- **Design** : `aphrody-design` (unified sidecar + daemon, ex `aphrody-design-{sidecar,daemon}`),
+  `aphrody-design-agents` (agent spawner + PATH detector).
+- **Messaging** : `aphrody-messaging` (unified outbound connectors + bidirectional channels,
+  ex `aphrody-messaging` + `aphrody-channels`).
+- **LLM Infra** : `aphrody-llm-infra` (unified cost + rateguard + retry + cache,
+  ex `aphrody-{cost,rateguard,retry,cache}`).
+- **Skills** : `aphrody-skills` (unified runtime + hooks + permissions,
+  ex `aphrody-{skills-runtime,hooks,permissions}`).
+- **Chat** : `aphrody-chat` (turn-loop orchestrator) + `aphrody-sdk` (public facade).
+- **Terminal** : `aphrody-terminal-{vt,wasm,backend,llm,browser,markdown,json-out,config}` (8 crates).
+- **Outils dev** : `aphrody-translate`, `aphrody-xtask`, `aphrody-summary`.
+- **Marketplace** : `aphrody-marketplace` (registry semver+SHA256).
 
 ### Hors workspace (`exclude` du root)
 

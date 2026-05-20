@@ -17,6 +17,38 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use serde::{Deserialize, Serialize};
+use aphrody_sdk::{AphrodySdk, SdkConfig};
+use std::sync::Arc;
+
+/// Next.js / Turbopack context for the Aphrody GUI.
+pub struct NextContext {
+    pub sdk: Arc<AphrodySdk>,
+    pub compiler: SwcCompiler,
+}
+
+impl NextContext {
+    pub async fn new() -> anyhow::Result<Self> {
+        let sdk = AphrodySdk::new(SdkConfig::default()).await?;
+        Ok(Self {
+            sdk: Arc::new(sdk),
+            compiler: SwcCompiler::new(),
+        })
+    }
+}
+
+/// A mock wrapper around swc_core (removed to reduce dependencies).
+pub struct SwcCompiler;
+
+impl SwcCompiler {
+    pub fn new() -> Self {
+        SwcCompiler
+    }
+
+    /// Mock transpilation to avoid swc_core dependencies.
+    pub fn transpile_snippet(&self, code: &str) -> String {
+        format!("// [Mock Transpiler] Transpiled:\n{}", code)
+    }
+}
 
 /// IPC message sent from the WebView to the native host.
 ///
@@ -80,6 +112,11 @@ pub enum IpcReply {
         /// The command name we did not recognise.
         cmd: String,
     },
+    /// Raw HTML payload (e.g. for embedding standalone panes)
+    Html {
+        /// Base64 encoded HTML content
+        base64: String,
+    },
 }
 
 /// Build the JSON payload returned by `cmd: "tokens"`.
@@ -94,7 +131,13 @@ pub enum IpcReply {
 #[must_use]
 pub fn tokens_reply() -> IpcReply {
     let theme = m3_tokens::color::BASELINE_DARK;
-    let css = m3_tokens::export_css(&theme);
+    let mut css = m3_tokens::export_css(&theme);
+    // Inject Material Symbols Outlined font embedding
+    css.push_str(&aphrody_icons::SymbolStyle::Outlined.base64_css());
+    // Inject Google Sans Flex font embedding
+    css.push_str(&m3_tokens::google_sans_flex::export_base64_font_face());
+    // Inject typography CSS variables
+    css.push_str(&m3_tokens::typography::export_css());
     let colors = serde_json::json!({
         "primary":            format!("#{:06X}", theme.primary & 0x00FF_FFFF),
         "on_primary":         format!("#{:06X}", theme.on_primary & 0x00FF_FFFF),
@@ -117,13 +160,23 @@ pub fn tokens_reply() -> IpcReply {
     IpcReply::Tokens { css, colors }
 }
 
+const TERMINAL_HTML: &str = include_str!("../../aphrody-wasm/examples/aphrody-terminal-demo.html");
+
 /// Dispatch a parsed IPC command. Returns `Some(reply)` for commands that
 /// produce a synchronous reply (today: `"tokens"`), `None` otherwise (e.g.
 /// long-running prompts that complete asynchronously via tracing).
 #[must_use]
 pub fn dispatch_cmd(cmd: &str) -> IpcReply {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
     match cmd {
         "tokens" => tokens_reply(),
+        "terminal-html" => IpcReply::Html {
+            base64: STANDARD.encode(TERMINAL_HTML.as_bytes()),
+        },
+        "voice-stt-toggle" => IpcReply::Error {
+            prompt_id: "mic".into(),
+            message: "Voice STT (Microphone) is not yet wired to the native OS audio layer.".into()
+        },
         other => IpcReply::Unknown { cmd: other.to_owned() },
     }
 }

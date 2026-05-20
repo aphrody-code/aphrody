@@ -19,4 +19,8 @@ workspace = true
 # the crate is fully `no_std` + `no_alloc` — safe on wasm32-unknown-unknown,
 # embedded, and every other target.
 default = ["std"]
-std     = []
+std     = ["dep:base64"]
+embedded-fonts = []
+
+[dependencies]
+base64 = { workspace = true, optional = true }

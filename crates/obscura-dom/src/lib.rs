@@ -1,3 +1,6 @@
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::derivable_impls)]
+
 #[macro_use]
 extern crate html5ever;
 

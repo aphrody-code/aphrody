@@ -1,8 +1,0 @@
-SPDX-License-Identifier: Apache-2.0
-SPDX-FileCopyrightText: 2026 aphrody contributors
-
-aphrody-demo.cast is an asciinema v2 cast file (JSON-Lines).
-Licensed under Apache-2.0; see ../LICENSE for the full text.
-
-The cast itself cannot carry a header comment without breaking
-strict v2 parsers, so the SPDX metadata lives here in a sibling file.

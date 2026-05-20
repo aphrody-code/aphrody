@@ -20,6 +20,7 @@
 //! Run with `cargo test -p obscura-cdp --test concurrent_navigations_with_fetch
 //! -- --nocapture --ignored`.
 
+#![allow(warnings)]
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};

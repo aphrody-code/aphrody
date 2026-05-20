@@ -16,7 +16,7 @@ workspace = true
 
 [dependencies]
 tokio        = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "net", "time", "sync"] }
-reqwest      = { workspace = true }
+reqwest      = { workspace = true, features = ["multipart"] }
 serde        = { workspace = true, features = ["derive"] }
 serde_json   = { workspace = true }
 async-trait  = { workspace = true }
@@ -28,6 +28,10 @@ tracing      = { workspace = true }
 chrono       = { workspace = true }
 bytes        = { workspace = true }
 gethostname  = "1.1"
+# --- channels deps (merged from aphrody-channels) ---
+async-stream = { workspace = true }
+futures      = { workspace = true }
+tokio-stream = { workspace = true }
 
 # Native SMTP TLS — gated to non-wasm targets (SMTP needs raw sockets).
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

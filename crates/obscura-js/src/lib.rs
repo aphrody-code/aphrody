@@ -1,3 +1,9 @@
+#![allow(unused_imports)]
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::let_underscore_future)]
+#![allow(clippy::new_without_default)]
+#![allow(clippy::redundant_closure)]
+
 extern crate html5ever;
 
 pub mod module_loader;

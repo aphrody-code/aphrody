@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 pub mod page;
 pub mod context;
 pub mod lifecycle;

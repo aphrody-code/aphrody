@@ -7,20 +7,21 @@
 <!--APHRODY_M3_CSS-->
 <style>
 :root {
-  --bg:           #0F0F0F;
-  --surface:      #1B1C1D;
-  --surface-1:    #232527;
-  --surface-2:    #2A2D2F;
-  --surface-3:    #34373A;
-  --on:           #E3E3E3;
-  --on-variant:   #C4C7C5;
-  --outline:      #444746;
-  --primary:      #A8C7FA;
-  --primary-fill: #062E6F;
-  --accent-a:     #4285F4;
-  --accent-b:     #9B72F8;
-  --accent-c:     #D96570;
-  --error:        #F2B8B5;
+  /* Rely entirely on aphrody-design M3 tokens for Pixel Perfect Google Design */
+  --bg:           var(--md-sys-color-background, #0F0F0F);
+  --surface:      var(--md-sys-color-surface, #1B1C1D);
+  --surface-1:    var(--md-sys-color-surface-container-low, #232527);
+  --surface-2:    var(--md-sys-color-surface-container, #2A2D2F);
+  --surface-3:    var(--md-sys-color-surface-container-high, #34373A);
+  --on:           var(--md-sys-color-on-background, #E3E3E3);
+  --on-variant:   var(--md-sys-color-on-surface-variant, #C4C7C5);
+  --outline:      var(--md-sys-color-outline, #444746);
+  --primary:      var(--md-sys-color-primary, #A8C7FA);
+  --primary-fill: var(--md-sys-color-on-primary, #062E6F);
+  --accent-a:     var(--md-sys-color-tertiary, #4285F4);
+  --accent-b:     var(--md-sys-color-secondary, #9B72F8);
+  --accent-c:     var(--md-sys-color-error, #D96570);
+  --error:        var(--md-sys-color-error, #F2B8B5);
   --radius-pill:  9999px;
   --radius-lg:    24px;
   --radius-md:    16px;
@@ -210,6 +211,23 @@ svg { display: block; pointer-events: none; }
 }
 @keyframes blink { 50% { opacity: 0; } }
 
+@keyframes thinking-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes thinking-ripple {
+  0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(66, 133, 244, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
+}
+
+.msg.assistant.streaming .msg-av {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b), var(--accent-c), var(--accent-a));
+  background-size: 300% 300%;
+  animation: thinking-gradient 2s ease infinite, thinking-ripple 1.5s infinite;
+}
+
 /* ---------- Input ---------- */
 .input-area { padding: 12px 24px 24px; flex-shrink: 0; }
 .input-wrap { max-width: 768px; margin: 0 auto; }
@@ -247,7 +265,7 @@ svg { display: block; pointer-events: none; }
   margin-top: 12px; text-align: center;
 }
 .disclaimer code {
-  font-family: 'Google Sans Mono','SF Mono',Menlo,Consolas,monospace;
+  font-family: 'Google Sans Code','Google Sans Mono','SF Mono',Menlo,Consolas,monospace;
   font-size: 11px; padding: 1px 4px; border-radius: 4px;
   background: var(--surface-2); color: var(--on);
 }
@@ -261,62 +279,66 @@ svg { display: block; pointer-events: none; }
 <aside class="drawer" aria-label="Aphrody navigation">
   <div class="drawer-top">
     <button class="menu-btn" id="btn-menu" aria-label="Menu">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span class="material-symbols-outlined">menu</span>
     </button>
   </div>
 
   <button class="new-chat" id="btn-new-chat">
-    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>
+    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
     Nouveau chat
   </button>
 
   <div class="drawer-section">Backend aphrody</div>
   <ul class="drawer-list">
     <li class="drawer-item active" data-action="chat">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="material-symbols-outlined">chat</span>
       <span class="label">Chat turn-loop</span><span class="badge">aphrody-chat</span>
     </li>
     <li class="drawer-item" data-action="skills">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M14 7l3 3-3 3M5 7l-3 3 3 3M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/></svg>
+      <span class="material-symbols-outlined">terminal</span>
       <span class="label">Skills</span><span class="badge">skills-runtime</span>
     </li>
     <li class="drawer-item" data-action="tools">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a3 3 0 1 1 4 4l-9 9-5 1 1-5 9-9z"/></svg>
+      <span class="material-symbols-outlined">build</span>
       <span class="label">Tools</span><span class="badge">aphrody-tools</span>
     </li>
     <li class="drawer-item" data-action="memory">
-      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 14h18M9 4v16M15 4v16"/></svg>
+      <span class="material-symbols-outlined">memory</span>
       <span class="label">Memory</span><span class="badge">aphrody-memory</span>
     </li>
     <li class="drawer-item" data-action="voice-stt">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+      <span class="material-symbols-outlined">mic</span>
       <span class="label">Voice STT</span><span class="badge">voice-stt</span>
     </li>
     <li class="drawer-item" data-action="voice-tts">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
+      <span class="material-symbols-outlined">volume_up</span>
       <span class="label">Voice TTS</span><span class="badge">aphrody-voice</span>
     </li>
     <li class="drawer-item" data-action="mcp">
-      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.2 4.2l4.3 4.3M15.5 15.5l4.3 4.3M1 12h6M17 12h6M4.2 19.8l4.3-4.3M15.5 8.5l4.3-4.3"/></svg>
+      <span class="material-symbols-outlined">dns</span>
       <span class="label">MCP servers</span><span class="badge">aphrody-mcp</span>
     </li>
+    <li class="drawer-item" data-action="terminal">
+      <span class="material-symbols-outlined">terminal</span>
+      <span class="label">Terminal</span><span class="badge">aphrody-terminal</span>
+    </li>
     <li class="drawer-item" data-action="channels">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M2 21l3-7L20 4 3 14l7 3 11-13"/></svg>
+      <span class="material-symbols-outlined">send</span>
       <span class="label">Channels</span><span class="badge">aphrody-channels</span>
     </li>
     <li class="drawer-item" data-action="cron">
-      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="material-symbols-outlined">schedule</span>
       <span class="label">Cron</span><span class="badge">aphrody-cron</span>
     </li>
     <li class="drawer-item" data-action="marketplace">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6L5 8zM9 8V5a3 3 0 0 1 6 0v3"/></svg>
+      <span class="material-symbols-outlined">shopping_bag</span>
       <span class="label">Marketplace</span><span class="badge">marketplace</span>
     </li>
   </ul>
 
   <div class="drawer-foot">
     <li class="drawer-item" data-action="settings" style="list-style:none">
-      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span class="material-symbols-outlined">settings</span>
       <span class="label">Paramètres</span>
     </li>
   </div>
@@ -325,8 +347,9 @@ svg { display: block; pointer-events: none; }
 <main class="main">
   <header class="topbar">
     <div class="model-pill" id="model-pill">
-      aphrody chat
-      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">temp_preferences_custom</span>
+      aphrody advanced
+      <span class="material-symbols-outlined">expand_more</span>
     </div>
     <div class="top-right">
       <div class="status-pill" id="status-pill">backend aphrody</div>
@@ -343,22 +366,26 @@ svg { display: block; pointer-events: none; }
       <div class="suggestions" id="suggestions">
         <button class="suggestion" data-prompt="Lance un audit DNS OSINT complet sur le domaine que je vais te donner.">
           <span class="label">Audit DNS OSINT sur un domaine</span>
-          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="7" r="0.5" fill="currentColor"/><circle cx="7" cy="17" r="0.5" fill="currentColor"/></svg></span>
+          <span class="icon-wrap"><span class="material-symbols-outlined">dns</span></span>
         </button>
         <button class="suggestion" data-prompt="Recommande la stack Rust 2026 canonique pour un serveur REST + Postgres + JWT en distroless.">
           <span class="label">Stack Rust 2026 pour API REST</span>
-          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></span>
+          <span class="icon-wrap"><span class="material-symbols-outlined">code</span></span>
         </button>
         <button class="suggestion" data-prompt="Triage forensique d'un binaire PE/ELF inconnu : sections, entropie, strings, hash.">
           <span class="label">Triage forensique PE/ELF</span>
-          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg></span>
+          <span class="icon-wrap"><span class="material-symbols-outlined">shield</span></span>
         </button>
         <button class="suggestion" data-prompt="Liste les MCP servers configurés et leurs tools disponibles.">
           <span class="label">MCP servers + tools</span>
-          <span class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><path d="M6 6l5 5M18 6l-5 5M6 18l5-5M18 18l-5-5"/></svg></span>
+          <span class="icon-wrap"><span class="material-symbols-outlined">hub</span></span>
         </button>
       </div>
     </div>
+  </section>
+
+  <section class="terminal-view" style="display: none; height: 100%; width: 100%; border: none; overflow: hidden; border-radius: 16px; margin-bottom: 12px; background: #000;">
+    <iframe id="terminal-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
   </section>
 
   <div class="input-area">
@@ -366,16 +393,16 @@ svg { display: block; pointer-events: none; }
       <div class="input-box">
         <div class="input-tools">
           <button class="icon-btn" id="btn-attach" aria-label="Joindre">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="material-symbols-outlined">add</span>
           </button>
         </div>
         <textarea class="prompt-input" id="prompt-input" rows="1" placeholder="Demander à aphrody"></textarea>
         <div class="input-tools">
           <button class="icon-btn" id="btn-mic" aria-label="Micro (Voice STT)">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+            <span class="material-symbols-outlined">mic</span>
           </button>
           <button class="send-btn" id="btn-send" aria-label="Envoyer">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+            <span class="material-symbols-outlined">send</span>
           </button>
         </div>
       </div>
@@ -408,6 +435,14 @@ window.__aphrodyReply = function (payload) {
   if (!payload || !payload.kind) return;
   switch (payload.kind) {
     case 'tokens': applyTokens(payload); break;
+
+    case 'html':
+      const tf = $('#terminal-iframe');
+      if (tf && payload.base64) {
+        tf.src = 'data:text/html;base64,' + payload.base64;
+      }
+      break;
+
     case 'text':   renderAssistant(payload.prompt_id, payload.content || '', !!payload.done); break;
     case 'error':  renderError(payload.prompt_id || '', payload.message || ''); break;
     default:       console.warn('[aphrody] unknown reply kind:', payload.kind);
@@ -439,6 +474,9 @@ function genId() {
 // ---------- Chat rendering ----------
 const bubbles = new Map();
 
+// Canonical Gemini Sparkle SVG (derived from 4 adjoining circles)
+const GEMINI_SPARKLE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C12.4468 5.76672 17.5147 10.4552 23.4566 11.5303V12.4697C17.5147 13.5448 12.4468 18.2333 12 24H11.0267C10.5799 18.2333 5.51203 13.5448 -4.26326e-14 12.4697V11.5303C5.51203 10.4552 10.5799 5.76672 11.0267 0H12Z" fill="#fff"/></svg>`;
+
 function mountMessages() {
   let m = $('.messages');
   if (m) return m;
@@ -467,8 +505,9 @@ function renderUser(id, text) {
   wrap.appendChild(av); wrap.appendChild(body);
   m.appendChild(wrap);
   // Pre-mount the streaming assistant bubble.
-  const a = el('div', { class: 'msg assistant', 'data-prompt-id': id });
-  const aav = el('div', { class: 'msg-av', text: 'a' });
+  const a = el('div', { class: 'msg assistant streaming', 'data-prompt-id': id });
+  const aav = el('div', { class: 'msg-av' });
+  aav.innerHTML = GEMINI_SPARKLE;
   const abody = el('div', { class: 'msg-body' });
   abody.appendChild(el('div', { class: 'msg-meta', text: 'aphrody' }));
   const txt = el('div', { class: 'msg-text streaming' });
@@ -483,16 +522,23 @@ function renderAssistant(id, content, done) {
   if (!node) {
     hideGreeting();
     const m = mountMessages();
-    const a = el('div', { class: 'msg assistant' });
-    const aav = el('div', { class: 'msg-av', text: 'a' });
+    const a = el('div', { class: 'msg assistant' + (done ? '' : ' streaming') });
+    const aav = el('div', { class: 'msg-av' });
+    aav.innerHTML = GEMINI_SPARKLE;
     const body = el('div', { class: 'msg-body' });
     body.appendChild(el('div', { class: 'msg-meta', text: 'aphrody' }));
-    body.appendChild(el('div', { class: 'msg-text', text: content }));
+    body.appendChild(el('div', { class: 'msg-text' + (done ? '' : ' streaming'), text: content }));
     a.appendChild(aav); a.appendChild(body);
     m.appendChild(a);
+    if (!done) bubbles.set(id, a.querySelector('.msg-text'));
   } else {
     node.textContent = (node.textContent || '') + content;
-    if (done) { node.classList.remove('streaming'); bubbles.delete(id); }
+    if (done) { 
+      node.classList.remove('streaming'); 
+      const wrap = node.closest('.msg');
+      if (wrap) wrap.classList.remove('streaming');
+      bubbles.delete(id); 
+    }
   }
   scrollChat();
 }
@@ -509,7 +555,9 @@ function renderError(id, message) {
   } else {
     const m = mountMessages();
     const wrap = el('div', { class: 'msg error' });
-    wrap.appendChild(el('div', { class: 'msg-av', text: '!' }));
+    const aav = el('div', { class: 'msg-av' });
+    aav.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">error</span>';
+    wrap.appendChild(aav);
     const body = el('div', { class: 'msg-body' });
     body.appendChild(el('div', { class: 'msg-meta', text: 'erreur' }));
     body.appendChild(el('div', { class: 'msg-text', text: message }));
@@ -574,6 +622,16 @@ document.addEventListener('DOMContentLoaded', () => {
     input.focus();
   });
 
+  const btnPlus = $('#btn-plus');
+  if (btnPlus) {
+    btnPlus.addEventListener('click', () => {
+      input.value += (input.value ? ' ' : '') + '[📎 attachment.txt]';
+      input.focus();
+      autoresize(input);
+      send.classList.add('armed');
+    });
+  }
+
   $('#btn-mic').addEventListener('click', () => {
     sendCmd('voice-stt-toggle');
     $('#btn-mic').classList.toggle('armed');
@@ -584,6 +642,22 @@ document.addEventListener('DOMContentLoaded', () => {
       $$('.drawer-item').forEach(x => x.classList.remove('active'));
       it.classList.add('active');
       const action = it.dataset.action;
+      
+      if (action === 'terminal') {
+        $('.chat').style.display = 'none';
+        $('.input-area').style.display = 'none';
+        $('.terminal-view').style.display = 'block';
+        const tf = $('#terminal-iframe');
+        if (!tf.src || tf.src === '' || tf.src === 'about:blank') {
+            sendCmd('terminal-html');
+        }
+        return;
+      }
+
+      $('.chat').style.display = '';
+      $('.input-area').style.display = '';
+      if ($('.terminal-view')) $('.terminal-view').style.display = 'none';
+
       if (action) sendCmd('panel:' + action);
     });
   });
