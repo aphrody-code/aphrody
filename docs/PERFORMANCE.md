@@ -79,7 +79,7 @@ the [aggressive scan audit](audits/2026-05-17-mrx-aggressive.md):
 Methodology:
 
 ```bash
-cargo build --release -p mrx-cli
+cargo build --release -p mrx
 for i in 1 2 3; do
     /usr/bin/time -f '%e s' ./target/release/mrx --root . scan \
         --out path.json --map monorepo-map.json

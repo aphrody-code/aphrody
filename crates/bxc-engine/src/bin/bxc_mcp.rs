@@ -338,7 +338,7 @@ async fn handle_tool_call(id: Value, params: &Value, client: &reqwest::Client) -
             let query = required_str(&args, "query");
             let hl = args.get("hl").and_then(Value::as_str).unwrap_or("en");
             match query {
-                Ok(q) if q.is_empty() => bad_request("query must be a non-empty string"),
+                Ok("") => bad_request("query must be a non-empty string"),
                 Ok(q) => call_daemon(client, "google_search", &json!({ "query": q, "hl": hl })).await,
                 Err(e) => bad_request(e),
             }
@@ -382,16 +382,14 @@ async fn handle_tool_call(id: Value, params: &Value, client: &reqwest::Client) -
     as_mcp_result(id, outcome)
 }
 
-fn call_url_tool<'a>(
-    client: &'a reqwest::Client,
-    tool: &'a str,
-    args: &'a Value,
-) -> impl std::future::Future<Output = BxcResult> + 'a {
-    async move {
-        match required_str(args, "url") {
-            Ok(url) => call_daemon(client, tool, &json!({ "url": url })).await,
-            Err(e) => bad_request(e),
-        }
+async fn call_url_tool(
+    client: &reqwest::Client,
+    tool: &str,
+    args: &Value,
+) -> BxcResult {
+    match required_str(args, "url") {
+        Ok(url) => call_daemon(client, tool, &json!({ "url": url })).await,
+        Err(e) => bad_request(e),
     }
 }
 

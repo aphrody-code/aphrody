@@ -20,6 +20,7 @@
 //! -- --nocapture --ignored` (the `ignored` gate keeps it out of the default
 //! suite — it boots a real CDP server, which is heavier than a unit test).
 
+#![allow(warnings)]
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};

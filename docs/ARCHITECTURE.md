@@ -7,13 +7,14 @@ section 8.
 
 ## 1. Bird's-eye view
 
-`aphrody` is a 17-crate Rust workspace producing one primary binary
+`aphrody` is a 65-crate Rust workspace producing one primary binary
 (`aphrody`, in `crates/cli`), a parallel WebAssembly artefact
-(`aphrody-wasm`), and a handful of host-integration crates (desktop GUI, MCP
-server, monorepo mapper). All distributed code sits on top of a single
-`no_std`-compatible primitives crate (`base`). Cross-cutting subsystems
-(A2A coordination, forensics backend, monorepo mapping) live in their own
-layers so the CLI surface stays thin.
+(`aphrody-wasm`), and domain-specific crates for design, messaging,
+LLM infrastructure, skills, terminal, voice, and monorepo mapping.
+All distributed code sits on top of a single `no_std`-compatible
+primitives crate (`base`). Cross-cutting subsystems (A2A coordination,
+forensics backend, monorepo mapping) live in their own layers so the
+CLI surface stays thin.
 
 ```
             +-----------------------------------------+
@@ -44,12 +45,15 @@ layers so the CLI surface stays thin.
   client/server traits, and the gRPC transport binding. Depend on
   `a2a-pb` + `base`.
 - **L3 forensics + monorepo**: `backend` (process / DNS / network
-  introspection, cross-platform), `mrx-core`, `mrx-detect`, `mrx-audit`,
-  `mrx-watch` — the `mrx` (Monorepo Real-time X-platform) mapper split into
-  detect / audit / watch layers, all depending on `mrx-core` + `base`.
+  introspection, cross-platform), `mrx` (unified Monorepo Real-time
+  X-platform mapper, ex `mrx-{core,detect,audit,watch,cli}`).
+- **L3b domain infra**: `aphrody-llm-infra` (cost + rateguard + retry +
+  cache), `aphrody-skills` (runtime + hooks + permissions),
+  `aphrody-messaging` (outbound connectors + bidirectional channels),
+  `aphrody-design` (sidecar + daemon), `aphrody-voice` (TTS + STT).
 - **L4 CLI surface**: `aphrody` (the binary; pulls in `base`, `backend`,
-  and the A2A stack), `mrx-cli` (binary `mrx` for monorepo mapping),
-  `aphrody-translate` (FR translation + AI-isms scrub tool).
+  and the domain crates), `aphrody-translate` (FR translation + AI-isms
+  scrub tool).
 - **L5 host integrations**: `google_mcp` (MCP server bridging `backend` to
   Claude tooling), `gui` (wry + tao desktop UI, excluded from the CLI
   distributable; depends on `backend`).
@@ -57,7 +61,7 @@ layers so the CLI surface stays thin.
   built for `wasm32-unknown-unknown` via `wasm-bindgen` for browser
   embedding.
 
-The 17 workspace members are declared in the root `Cargo.toml`. Out-of-
+The 65 workspace members are declared in the root `Cargo.toml`. Out-of-
 workspace directories (`crates/coreutils`, `crates/util-linux`,
 `crates/a2a-slimrpc`, `vendor/`) are explicitly excluded.
 

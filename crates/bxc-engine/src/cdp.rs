@@ -89,7 +89,7 @@ impl CdpClient {
         let text = serde_json::to_string(&req)?;
 
         let mut ws = self.ws.lock().await;
-        ws.send(Message::Text(text.into()))
+        ws.send(Message::Text(text))
             .await
             .map_err(|e| anyhow::anyhow!("CDP send failed: {e}"))?;
 

@@ -143,6 +143,9 @@ pub fn font_variation_settings(s: &AxisSettings) -> String {
     )
 }
 
+/// Raw TTF bytes for Google Sans Flex.
+pub const TTF_DATA: &[u8] = include_bytes!("../../../assets/fonts/google-sans-flex/GoogleSansFlex-Variable.ttf");
+
 /// Emit a `@font-face` declaration block pointing at the variable font
 /// shipped at
 /// `assets/fonts/google-sans-flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf`.
@@ -159,6 +162,26 @@ pub fn export_font_face(relative_url: &str) -> String {
     s.push_str(&format!(
         "  src: url('{relative_url}GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf'\
          ) format('truetype-variations');\n"
+    ));
+    s.push_str("  font-weight: 100 900;\n");
+    s.push_str("  font-stretch: 75% 125%;\n");
+    s.push_str("  font-style: oblique -10deg 0deg;\n");
+    s.push_str("  font-display: swap;\n");
+    s.push_str("}\n");
+    s
+}
+
+/// Emit a `@font-face` declaration block with the variable font natively embedded as base64.
+#[cfg(feature = "std")]
+#[must_use]
+pub fn export_base64_font_face() -> String {
+    use base64::prelude::*;
+    let encoded = BASE64_STANDARD.encode(TTF_DATA);
+    let mut s = String::with_capacity(encoded.len() + 512);
+    s.push_str("@font-face {\n");
+    s.push_str("  font-family: 'Google Sans Flex';\n");
+    s.push_str(&format!(
+        "  src: url('data:font/ttf;charset=utf-8;base64,{encoded}') format('truetype-variations');\n"
     ));
     s.push_str("  font-weight: 100 900;\n");
     s.push_str("  font-stretch: 75% 125%;\n");

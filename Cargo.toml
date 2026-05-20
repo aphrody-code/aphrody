@@ -47,7 +47,7 @@ members = [
     "crates/gemini-runtime",
     # agui-bridge — AG-UI protocol Rust binding (wire parser + wasm-bindgen renderer)
     # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
-    # "crates/agui-bridge",
+    "crates/agui-bridge",
     # aphrody-messaging — unified messaging (outbound connectors + bidirectional channels)
     "crates/aphrody-messaging",
     # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
@@ -79,21 +79,20 @@ members = [
     "crates/aphrody-design",
     # mui-rs — Material Design 3 native UI library (wgpu + vello + winit)
     # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
-    # "crates/mui-rs",
-    # "crates/mui-rs-components",
-    # "crates/mui-rs-core",
-    # "crates/mui-rs-macros",
-    # "crates/mui-rs-motion",
-    # "crates/mui-rs-renderer",
+    "crates/mui-rs",
+    "crates/mui-rs-components",
+    "crates/mui-rs-core",
+    "crates/mui-rs-macros",
+    "crates/mui-rs-motion",
+    "crates/mui-rs-renderer",
 
-    # bxc rust-bridge
-    "crates/bxc-engine",
-    "crates/obscura-browser",
-    "crates/obscura-cdp",
-    "crates/obscura-dom",
-    "crates/obscura-js",
-    "crates/obscura-mcp",
-    "crates/obscura-net",
+    # bxc rust-bridge (excluded)
+
+    # Tuono React SSR framework (migrated)
+    "crates/tuono",
+    "crates/tuono_internal",
+    "crates/tuono_lib",
+    "crates/tuono_lib_macros",
     # aphrody-skills-forge — programmatic SKILL.md scaffolding + registry +
     # lint engine (Sprint D / skills-forge).
     "crates/aphrody-skills-forge",
@@ -182,19 +181,14 @@ members = [
     # stdio server (handshake + tools/list + tools/call sweep + p50/p95 +
     # NDJSON report). Replaces the ad-hoc bash/pwsh probes.
     "crates/aphrody-mcp-smoke",
+
+    # Next.js / Turbopack integration (excluded)
 ]
 exclude = [
     "crates/coreutils",
     "crates/util-linux",
     "crates/a2a-slimrpc",
     # agui-bridge + mui-rs : temporarily excluded (mui-rs-tokens in progress)
-    "crates/agui-bridge",
-    "crates/mui-rs",
-    "crates/mui-rs-components",
-    "crates/mui-rs-core",
-    "crates/mui-rs-macros",
-    "crates/mui-rs-motion",
-    "crates/mui-rs-renderer",
     # aphrody-x-client : self-rooted workspace (intégrera root workspace
     # plus tard quand agent-twitter-client 0.1.x stabilisé).
     "crates/aphrody-x-client",
@@ -206,6 +200,14 @@ exclude = [
     "crates/n2b-core",
     "crates/n2b-github",
     "crates/n2b-native",
+    "crates/nextjs",
+    "crates/bxc-engine",
+    "crates/obscura-browser",
+    "crates/obscura-cdp",
+    "crates/obscura-dom",
+    "crates/obscura-js",
+    "crates/obscura-mcp",
+    "crates/obscura-net",
     "crates/n2b-registry",
     "crates/n2b-report",
     "crates/n2b-rules",
@@ -285,9 +287,9 @@ libc               = { version = "0.2" }
 bytes              = { version = "1" }
 memchr             = { version = "2" }
 memmap2            = { version = "0.9" }
-hashbrown          = { version = "0.17", default-features = false, features = ["inline-more", "allocator-api2"] }
+hashbrown          = { version = "0.14", features = ["inline-more", "raw"] }
 allocator-api2     = { version = "0.2", default-features = false, features = ["alloc"] }
-smallvec           = { version = "1" }
+smallvec           = { version = "1", features = ["serde", "union", "const_new", "impl_bincode"] }
 bumpalo            = { version = "3", features = ["collections", "boxed"] }
 typed-arena        = { version = "2" }
 scopeguard         = { version = "1" }
@@ -342,6 +344,7 @@ globset            = { version = "0.4" }
 glob               = { version = "0.3" }
 ignore             = { version = "0.4" }
 tempfile           = { version = "3" }
+terminal_size      = { version = "0.4" }
 filetime           = { version = "0.2" }
 notify             = { version = "8" }
 which              = { version = "8" }
@@ -489,6 +492,61 @@ ts-rs              = { version = "12", features = ["serde-compat"] }
 similar            = { version = "3" }
 octocrab           = { version = "0.50" }
 
+# --- Next.js / Turbopack General Deps -------------------------------------
+chromiumoxide      = { version = "0.5.4", features = ["tokio-runtime"], default-features = false }
+tungstenite        = "0.20.1"
+allsorts           = { version = "0.14.0", default-features = false, features = ["flate2_rust"] }
+bincode            = { version = "2.0.1", features = ["serde"] }
+bitfield           = "0.19.4"
+bytes-str          = "0.2.7"
+concurrent-queue   = "2.5.0"
+console-subscriber = "0.4.1"
+crc32fast          = "1.4.2"
+ctor               = "0.8"
+crossbeam-utils    = "0.8"
+data-encoding      = "2.3.3"
+dhat               = { version = "0.3.2" }
+either             = "1.15.0"
+erased-serde       = "0.4.5"
+flate2             = "1.0.28"
+futures-retry      = "0.6.0"
+image              = { version = "0.25.8", default-features = false }
+indexmap           = "2.13.0"
+indoc              = "2.0.0"
+inventory          = "0.3.21"
+lzzzz              = "2.0.0"
+markdown           = "1.0.0-alpha.18"
+mime               = "0.3.16"
+napi               = { version = "2", default-features = false, features = ["napi3", "serde-json", "tokio_rt", "error_anyhow", "napi4", "napi5", "compat-mode"] }
+napi-derive        = "2"
+napi-build         = "2"
+nohash-hasher      = "0.2.0"
+owo-colors         = "4.2.2"
+parcel_selectors   = "0.28.2"
+pathdiff           = "0.2.1"
+petgraph           = "0.8.3"
+postcard           = "1.0.4"
+qstring            = "0.7.2"
+quick_cache        = { version = "0.6.14" }
+regress            = "0.10.4"
+ringmap            = "0.2.3"
+roaring            = "0.10.10"
+serde_path_to_error = "0.1.16"
+serde_qs           = "0.13.0"
+serde_with         = "3.12.0"
+shrink-to-fit      = "0.2.10"
+strsim             = "0.11.1"
+thread_local       = "1.1.8"
+triomphe           = { git = "https://github.com/sokra/triomphe", branch = "sokra/unstable" }
+xxhash-rust        = { version = "0.8.12", features = ["xxh3"] }
+unsize             = "1.1.0"
+unty               = "0.0.4"
+urlencoding        = "2.1.2"
+vergen             = { version = "9.0.6", features = ["cargo"] }
+vergen-gitcl       = { version = "1.0.8", features = ["cargo"] }
+webbrowser         = "1.0.6"
+testing            = "22.0.0"
+
 # --- MCP -----------------------------------------------------------------
 rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", features = ["server", "transport-io", "macros", "schemars"] }
 
@@ -587,35 +645,63 @@ preset_env_base                = { version = "7" }
 browserslist-rs                = { version = "0.19" }
 
 # --- Lightning CSS (Vercel/Parcel CSS processor) -------------------------
-lightningcss                   = { version = "1.0.0-alpha.70" }
+lightningcss                   = { version = "1.0.0-alpha.60", features = ["browserslist", "serde"] }
 lightningcss-napi              = { version = "0.4" }
 
 # --- MDX (markdown + JSX) ------------------------------------------------
 mdxjs                          = { version = "1" }
 
-# --- Turbopack runtime + compiler (branche aphrody, isolée d'upstream canary) ---
-# 60+ crates internes vendored depuis aphrody-code/next.js@aphrody.
-# Pour intégration progressive ; activer crate par crate selon besoin réel.
-# Voir docs/research/NEXTJS_VERCEL_RUST_CRATES.md pour la liste exhaustive.
-turbo-tasks                    = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks" }
-turbo-tasks-fs                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-fs" }
-turbo-tasks-env                = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-env" }
-turbo-tasks-fetch              = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-fetch" }
-turbo-tasks-malloc             = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbo-tasks-malloc" }
-turbopack                      = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack" }
-turbopack-core                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-core" }
-turbopack-ecmascript           = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-ecmascript" }
-turbopack-css                  = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-css" }
-turbopack-image                = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-image" }
-turbopack-wasm                 = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-wasm" }
-turbopack-mdx                  = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-mdx" }
-turbopack-dev-server           = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-dev-server" }
-turbopack-nodejs               = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-nodejs" }
-turbopack-browser              = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "turbopack-browser" }
-next-core                      = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-core" }
-next-api                       = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-api" }
-next-build                     = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-build" }
-next-custom-transforms         = { git = "https://github.com/aphrody-code/next.js.git", branch = "aphrody", package = "next-custom-transforms" }
+# --- Turbopack runtime + compiler (migrated to crates/nextjs) ---
+turbo-tasks                    = { path = "crates/nextjs/turbopack/crates/turbo-tasks", version = "1.0.0-canary" }
+turbo-tasks-fs                 = { path = "crates/nextjs/turbopack/crates/turbo-tasks-fs", version = "1.0.0-canary" }
+turbo-tasks-env                = { path = "crates/nextjs/turbopack/crates/turbo-tasks-env", version = "1.0.0-canary" }
+turbo-tasks-fetch              = { path = "crates/nextjs/turbopack/crates/turbo-tasks-fetch", version = "1.0.0-canary" }
+turbo-tasks-malloc             = { path = "crates/nextjs/turbopack/crates/turbo-tasks-malloc", version = "1.0.0-canary", default-features = false }
+turbopack                      = { path = "crates/nextjs/turbopack/crates/turbopack", version = "1.0.0-canary" }
+turbopack-core                 = { path = "crates/nextjs/turbopack/crates/turbopack-core", version = "1.0.0-canary" }
+turbopack-ecmascript           = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript", version = "1.0.0-canary" }
+turbopack-css                  = { path = "crates/nextjs/turbopack/crates/turbopack-css", version = "1.0.0-canary" }
+turbopack-image                = { path = "crates/nextjs/turbopack/crates/turbopack-image", version = "1.0.0-canary" }
+turbopack-wasm                 = { path = "crates/nextjs/turbopack/crates/turbopack-wasm", version = "1.0.0-canary" }
+turbopack-mdx                  = { path = "crates/nextjs/turbopack/crates/turbopack-mdx", version = "1.0.0-canary" }
+turbopack-dev-server           = { path = "crates/nextjs/turbopack/crates/turbopack-dev-server", version = "1.0.0-canary" }
+turbopack-nodejs               = { path = "crates/nextjs/turbopack/crates/turbopack-nodejs", version = "1.0.0-canary" }
+turbopack-browser              = { path = "crates/nextjs/turbopack/crates/turbopack-browser", version = "1.0.0-canary" }
+next-core                      = { path = "crates/nextjs/crates/next-core", version = "1.0.0-canary" }
+next-api                       = { path = "crates/nextjs/crates/next-api", version = "1.0.0-canary" }
+next-build                     = { path = "crates/nextjs/crates/next-build", version = "1.0.0-canary" }
+next-custom-transforms         = { path = "crates/nextjs/crates/next-custom-transforms", version = "1.0.0-canary" }
+next-taskless                  = { path = "crates/nextjs/crates/next-taskless", version = "1.0.0-canary" }
+next-code-frame                = { path = "crates/nextjs/crates/next-code-frame", version = "1.0.0-canary" }
+auto-hash-map                  = { path = "crates/nextjs/turbopack/crates/turbo-tasks-auto-hash-map", version = "1.0.0-canary" }
+turbo-bincode                  = { path = "crates/nextjs/turbopack/crates/turbo-bincode", version = "1.0.0-canary" }
+turbo-dyn-eq-hash              = { path = "crates/nextjs/turbopack/crates/turbo-dyn-eq-hash", version = "1.0.0-canary" }
+turbo-esregex                  = { path = "crates/nextjs/turbopack/crates/turbo-esregex", version = "1.0.0-canary" }
+turbo-frozenmap                = { path = "crates/nextjs/turbopack/crates/turbo-frozenmap", version = "1.0.0-canary" }
+turbo-persistence              = { path = "crates/nextjs/turbopack/crates/turbo-persistence", version = "1.0.0-canary" }
+turbo-prehash                  = { path = "crates/nextjs/turbopack/crates/turbo-prehash", version = "1.0.0-canary" }
+turbo-rcstr                    = { path = "crates/nextjs/turbopack/crates/turbo-rcstr", version = "1.0.0-canary" }
+turbo-tasks-backend            = { path = "crates/nextjs/turbopack/crates/turbo-tasks-backend", version = "1.0.0-canary" }
+turbo-tasks-bytes              = { path = "crates/nextjs/turbopack/crates/turbo-tasks-bytes", version = "1.0.0-canary" }
+turbo-tasks-hash               = { path = "crates/nextjs/turbopack/crates/turbo-tasks-hash", version = "1.0.0-canary" }
+turbo-tasks-macros             = { path = "crates/nextjs/turbopack/crates/turbo-tasks-macros", version = "1.0.0-canary" }
+turbo-tasks-testing            = { path = "crates/nextjs/turbopack/crates/turbo-tasks-testing", version = "1.0.0-canary" }
+turbo-unix-path                = { path = "crates/nextjs/turbopack/crates/turbo-unix-path", version = "1.0.0-canary" }
+turbopack-bench                = { path = "crates/nextjs/turbopack/crates/turbopack-bench", version = "1.0.0-canary" }
+turbopack-cli-utils            = { path = "crates/nextjs/turbopack/crates/turbopack-cli-utils", version = "1.0.0-canary" }
+turbopack-create-test-app      = { path = "crates/nextjs/turbopack/crates/turbopack-create-test-app", version = "1.0.0-canary" }
+turbopack-analyze              = { path = "crates/nextjs/turbopack/crates/turbopack-analyze", version = "1.0.0-canary" }
+turbopack-ecmascript-plugins   = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-plugins", version = "1.0.0-canary" }
+turbopack-ecmascript-runtime   = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-runtime", version = "1.0.0-canary" }
+turbopack-ecmascript-hmr-protocol = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-hmr-protocol", version = "1.0.0-canary" }
+turbopack-env                  = { path = "crates/nextjs/turbopack/crates/turbopack-env", version = "1.0.0-canary" }
+turbopack-node                 = { path = "crates/nextjs/turbopack/crates/turbopack-node", version = "1.0.0-canary", default-features = false }
+turbopack-resolve              = { path = "crates/nextjs/turbopack/crates/turbopack-resolve", version = "1.0.0-canary" }
+turbopack-static               = { path = "crates/nextjs/turbopack/crates/turbopack-static", version = "1.0.0-canary" }
+turbopack-swc-utils            = { path = "crates/nextjs/turbopack/crates/turbopack-swc-utils", version = "1.0.0-canary" }
+turbopack-test-utils           = { path = "crates/nextjs/turbopack/crates/turbopack-test-utils", version = "1.0.0-canary" }
+turbopack-trace-server         = { path = "crates/nextjs/turbopack/crates/turbopack-trace-server", version = "1.0.0-canary" }
+turbopack-trace-utils          = { path = "crates/nextjs/turbopack/crates/turbopack-trace-utils", version = "1.0.0-canary" }
 
 # --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
 # Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
@@ -714,6 +800,7 @@ unused_import_braces           = "warn"
 macro_use_extern_crate         = "warn"
 non_local_definitions          = "warn"
 unreachable_pub                = "warn"
+unexpected_cfgs                = "allow"
 # --- Style lints (relaxed for FFI / OS-bridge realities) ------------------
 # These are too noisy on a workspace bridging POSIX libc, Bun internals,
 # Windows-rs raw handles, and PoC kernel emulation. Re-enable per-crate
@@ -878,3 +965,57 @@ overflow-checks   = true
 inherits          = "dist"
 codegen-units     = 1
 strip             = "symbols"
+
+# --- Size-optimized crates (from Next.js workspace) -----------------------
+[profile.release.package.browserslist-rs]
+opt-level = "s"
+[profile.release.package.cranelift-codegen]
+opt-level = "s"
+[profile.release.package.handlebars]
+opt-level = "s"
+[profile.release.package.lightningcss]
+opt-level = "s"
+[profile.release.package.lightningcss-napi]
+opt-level = "s"
+[profile.release.package.markdown]
+opt-level = "s"
+[profile.release.package.mdxjs]
+opt-level = "s"
+[profile.release.package.regalloc2]
+opt-level = "s"
+[profile.release.package.regex-syntax]
+opt-level = "s"
+[profile.release.package.reqwest]
+opt-level = "s"
+[profile.release.package.styled_jsx]
+opt-level = "s"
+[profile.release.package.swc_css_prefixer]
+opt-level = "s"
+[profile.release.package.swc_ecma_compat_bugfixes]
+opt-level = "s"
+[profile.release.package.swc_ecma_compat_es2015]
+opt-level = "s"
+[profile.release.package.swc_ecma_compat_es2022]
+opt-level = "s"
+[profile.release.package.swc_ecma_preset_env]
+opt-level = "s"
+[profile.release.package.swc_ecma_transforms_module]
+opt-level = "s"
+[profile.release.package.swc_ecma_transforms_proposal]
+opt-level = "s"
+[profile.release.package.swc_plugin_backend_wasmtime]
+opt-level = "s"
+[profile.release.package.swc_plugin_runner]
+opt-level = "s"
+[profile.release.package.wasmtime]
+opt-level = "s"
+[profile.release.package.wasmtime-internal-cranelift]
+opt-level = "s"
+
+[patch.crates-io]
+bincode = { git = "https://github.com/bgw/bincode.git", branch = "bgw/patches" }
+virtue = { git = "https://github.com/bgw/virtue.git", branch = "bgw/fix-generic-default-parsing" }
+# We have to very frequently bump the swc major version of mdxjs-rs
+mdxjs = { git = "https://github.com/vercel-labs/mdxjs-rs-turbopack.git", branch = "turbopack" }
+# Doesn't compile on recent nightly versions because of https://github.com/Michael-F-Bryan/include_dir/pull/117
+include_dir = { git = "https://github.com/vercel-labs/include_dir", branch = "turbopack" }

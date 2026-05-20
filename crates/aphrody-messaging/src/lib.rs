@@ -1,35 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 //! # aphrody-messaging
 //!
-//! Tier-1 messaging connectors derived from the
-//! [`docs/audits/2026-05-19-hermes-agent-vs-aphrody.md`](../../../docs/audits/2026-05-19-hermes-agent-vs-aphrody.md)
-//! audit:
+//! Unified messaging crate combining:
 //!
-//! - **Telegram** — Bot API `sendMessage` (`telegram` module).
-//! - **Slack**    — Web API `chat.postMessage` (`slack` module).
-//! - **SMTP**     — native RFC 5321 client with STARTTLS / implicit TLS support
-//!                  (`email` module; non-wasm only).
-//!
-//! Each provider implements the object-safe
-//! [`connector::Connector`] trait, which lets callers route a single
-//! [`connector::Message`] through an arbitrary dyn dispatch table.
-//!
-//! Distinct from the heavier [`aphrody-channels`] crate (full
-//! `MessagingChannel` trait with attachments, inbox streaming, room listing),
-//! `aphrody-messaging` is the deliberately minimal outbound-only surface used
-//! by alerting / notification pipelines.
+//! - **Outbound connectors** (`connector`, `slack`, `telegram`, `email`) —
+//!   minimal, object-safe [`Connector`] trait for alerting / notification.
+//! - **Bidirectional channels** ([`channels`]) — full [`channels::MessagingChannel`]
+//!   trait with attachments, inbox streaming, room listing (Slack, Telegram,
+//!   Matrix, Discord, X). Merged from the former `aphrody-channels` crate.
 //!
 //! ## Layering
 //!
 //! ```text
-//!         Connector trait (connector.rs)
-//!        ╱           │              ╲
-//! TelegramConnector  SlackConnector  SmtpConnector
-//! ```
+//!  channels::MessagingChannel (rich, bidirectional)
+//!      Discord / Slack / Telegram / Matrix / X
 //!
-//! Adding a new provider is a single-file change: implement
-//! `async fn send` + `async fn health` + `fn id` and expose the struct
-//! through `lib.rs`.
+//!  connector::Connector (minimal, outbound-only)
+//!      TelegramConnector / SlackConnector / SmtpConnector
+//! ```
 
 #![deny(unsafe_code)]
 
@@ -39,6 +27,9 @@ pub mod telegram;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod email;
+
+// Bidirectional messaging channels — merged from the former `aphrody-channels` crate.
+pub mod channels;
 
 pub use connector::{Connector, Message, MessageError, MessageId, MessageResult, ParseMode};
 pub use slack::SlackConnector;

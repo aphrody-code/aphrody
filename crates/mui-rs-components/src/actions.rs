@@ -1,8 +1,9 @@
 //! Actions: Button, IconButton, FAB, ButtonGroup.
 
-use m3_tokens::shape::{CornerRadius, FULL};
-use m3_tokens::elevation::{dp as elevation_dp, LEVEL_COUNT};
-use m3_tokens::state::{StateLayer, HOVER, FOCUS, PRESSED};
+use m3_tokens::{
+    shape::{CornerRadius, FULL},
+    state::{FOCUS, HOVER, PRESSED, StateLayer},
+};
 
 /// M3 Button variants
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -83,7 +84,6 @@ impl Button {
         }
     }
 
-    /// Returns the state layer overlay (opacity) applied over the button background.
     pub fn state_layer(&self, state: InteractionState) -> Option<StateLayer> {
         if self.disabled {
             return None; // Disabled content uses specific container/content opacity, not overlay
@@ -96,4 +96,84 @@ impl Button {
             InteractionState::Dragged => Some(m3_tokens::state::DRAGGED),
         }
     }
+}
+
+use mui_rs_renderer::{
+    pipeline::Widget,
+    vello::{
+        Scene,
+        kurbo::{Affine, RoundedRect},
+        peniko::{Color, Fill},
+    },
+};
+
+impl Widget for Button {
+    fn draw(&self, scene: &mut Scene, transform: Affine) {
+        let (px_left, px_right) = self.horizontal_padding();
+        let width = px_left as f64 + 60.0 + px_right as f64; // approximate width based on label length
+        let height = Button::HEIGHT_DP as f64;
+
+        let rect = RoundedRect::new(0.0, 0.0, width, height, height / 2.0); // Pill shape (FULL radius)
+
+        // Define base color based on variant
+        let base_color = if self.disabled {
+            Color::from_rgba8(28, 27, 31, 30) // Surface on-variant with 0.12 opacity
+        } else {
+            match self.variant {
+                ButtonVariant::Filled => Color::from_rgb8(103, 80, 164), // Primary
+                ButtonVariant::FilledTonal => Color::from_rgb8(232, 222, 248), /* Secondary container */
+                ButtonVariant::Elevated => Color::from_rgb8(243, 237, 247), /* Surface container
+                                                                              * low */
+                ButtonVariant::Outlined | ButtonVariant::Text => Color::TRANSPARENT,
+            }
+        };
+
+        // Draw background
+        scene.fill(Fill::NonZero, transform, base_color, None, &rect);
+
+        // Outlined stroke
+        if self.variant == ButtonVariant::Outlined {
+            let stroke_color = if self.disabled {
+                Color::from_rgba8(28, 27, 31, 30) // disabled outline
+            } else {
+                Color::from_rgb8(121, 116, 126) // Outline color
+            };
+            scene.stroke(
+                &mui_rs_renderer::vello::kurbo::Stroke::new(1.0),
+                transform,
+                stroke_color,
+                None,
+                &rect,
+            );
+        }
+
+        // TODO: State Layer overlay, Shadow/Elevation, Label Text (requires parley), Icon (requires SVG/font).
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Fab {
+    pub icon: String,
+}
+
+impl Widget for Fab {
+    fn draw(&self, scene: &mut Scene, transform: Affine) {
+        let size = 56.0;
+        let rect = RoundedRect::new(0.0, 0.0, size, size, 16.0); // FAB has 16dp rounding in M3
+        let base_color = Color::from_rgb8(232, 222, 248); // Primary Container
+        
+        scene.fill(Fill::NonZero, transform, base_color, None, &rect);
+        // TODO: Shadow/Icon to be implemented
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExtendedFab {
+    pub label: String,
+    pub icon: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SegmentedButton {
+    pub options: Vec<String>,
 }

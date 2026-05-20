@@ -32,6 +32,7 @@ pub mod hct;
 pub mod elevation;
 pub mod gemini_brand;
 pub mod google_sans_flex;
+pub mod google_sans_code;
 pub mod motion;
 pub mod shape;
 pub mod state;

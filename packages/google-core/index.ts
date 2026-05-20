@@ -1,5 +1,0 @@
-export const CORE_VERSION = "1.0.0";
-export const FORENSIC_CONSTANTS = {
-  DNS_TIMEOUT_MS: 5000,
-  TCP_RECON_PORTS: [80, 443, 21, 22, 3389, 445]
-};

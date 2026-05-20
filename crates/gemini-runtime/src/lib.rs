@@ -210,6 +210,14 @@ fn parse_envelope(raw: RawEnvelope) -> StreamEvent {
             let code = raw.rest.get("code").and_then(|v| v.as_i64()).map(|c| c as i32);
             StreamEvent::Error { message, code }
         },
+        "result" if raw.rest.get("status").and_then(|v| v.as_str()) == Some("error") => {
+            let message = raw.rest.get("error")
+                .and_then(|e| e.get("message"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("API result error")
+                .to_owned();
+            StreamEvent::Error { message, code: None }
+        },
         _ => {
             // Reconstruct the original value so callers can inspect it.
             let mut obj = match raw.rest {
