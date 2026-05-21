@@ -4442,6 +4442,7 @@ name = "google_mcp"
 version = "1.0.0-canary"
 dependencies = [
  "anyhow",
+ "aphrody-capture",
  "aphrody-re",
  "aphrody-voice",
  "axum",

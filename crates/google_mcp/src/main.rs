@@ -84,6 +84,17 @@ pub struct WebFetchRequest {
 }
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ScreenCaptureRequest {
+    #[schemars(
+        description = "Optional window title substring (case-insensitive). When \
+                       omitted, the whole primary screen is captured."
+    )]
+    pub window: Option<String>,
+    #[schemars(description = "Optional path to also save the PNG to disk.")]
+    pub save_path: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct ChromeAutopsyRequest {
     #[schemars(description = "Process ID of the target Chrome process.")]
     pub pid: u32,
@@ -993,6 +1004,41 @@ impl GoogleMcpServer {
         Parameters(req): Parameters<gemini_tools::GeminiDeepResearchRequest>,
     ) -> String {
         gemini_tools::deep_research(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // screen_capture — capture the screen (or a window) as a PNG for vision.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Capture the whole primary screen (or a window by title \
+                          substring) as a PNG and return it base64-encoded so a \
+                          vision model can see it. Optionally also save to disk. \
+                          Local-only. Returns { mime, bytes, base64, saved_path }.")]
+    async fn screen_capture(
+        &self,
+        Parameters(ScreenCaptureRequest { window, save_path }): Parameters<ScreenCaptureRequest>,
+    ) -> String {
+        use base64::Engine as _;
+        // GDI capture is a fast blocking syscall; run it off the async worker.
+        let result = tokio::task::spawn_blocking(move || match window {
+            Some(w) => aphrody_capture::capture_window_by_title(&w),
+            None => aphrody_capture::capture_primary_screen(),
+        })
+        .await;
+        let bytes = match result {
+            Ok(Ok(b)) => b,
+            Ok(Err(e)) => return json!({ "error": e.to_string() }).to_string(),
+            Err(e) => return json!({ "error": format!("capture task failed: {e}") }).to_string(),
+        };
+        let mut saved = serde_json::Value::Null;
+        if let Some(p) = save_path {
+            match std::fs::write(&p, &bytes) {
+                Ok(()) => saved = serde_json::Value::String(p),
+                Err(e) => return json!({ "error": format!("save failed: {e}") }).to_string(),
+            }
+        }
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        json!({ "mime": "image/png", "bytes": bytes.len(), "base64": b64, "saved_path": saved })
+            .to_string()
     }
 
     // -----------------------------------------------------------------------
