@@ -52,3 +52,14 @@ m3-tokens (Rust, seed → HCT → tonal palettes)
 ## Pipeline outillage (synergie avec le reste)
 
 `m3-tokens` (cargo) → `tokens.css` → forks UI. Lint/format JS/TS des forks via **oxlint + oxfmt** (cf. `packages/gts` comme référence de config oxc Google-style), migration bun via **n2b**.
+
+## État d'avancement
+
+- **Étape 1 — générateur `m3-tokens` (Rust)** : FAIT. `color.rs` expose `export_css`, `export_shadcn_aliases`, `export_tailwind_theme`, `export_fusion_css`, `color_vars`, `FUSION_ALIAS_MAP` (public). 81 tests + 9 doctests verts, clippy propre.
+- **Étape 2A — CLI `aphrody design tokens`** : FAIT. `crates/cli/src/design_cmd.rs` + sous-commande `Design`/`DesignActions::Tokens`. Options `--format <css|shadcn-registry>`, `--fusion`, `--dark`, `-o <fichier>`. 100% Rust headless (cible #1 Linux), clippy propre.
+  - `aphrody design tokens` → bloc M3 `:root` (36 vars).
+  - `aphrody design tokens --fusion` → M3 + alias shadcn + Tailwind `@theme inline` (3 blocs).
+  - `aphrody design tokens --dark` → palette M3 sombre.
+  - `aphrody design tokens --format shadcn-registry` → item `registry:theme` (JSON).
+- **Étape 2B — item shadcn `registry:theme`** : FAIT (généré, pas écrit à la main). `theme-aphrody.json` (`cssVars.theme` = 19 alias shadcn → `var(--md-sys-color-*)` ; `cssVars.light`/`dark` = 36 couleurs M3 chacune) validé contre le schéma `registry-item.json` et placé dans `packages/ui/apps/v4/public/r/styles/{new-york,default}/`. Consommable via `shadcn add <url>/theme-aphrody.json`.
+- **Reste (étapes 3-4)** : import `@theme inline` côté apps Tailwind + `tokens.css` hérité par material-web — consommation dans les forks, dérivable de la CLI 2A.

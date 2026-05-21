@@ -21,6 +21,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
+#[cfg(not(target_arch = "wasm32"))] mod design_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
@@ -416,12 +417,57 @@ enum Commands {
         #[arg(long, default_value_t = 512)]
         size: u32,
     },
+    /// Material 3 design-token tooling (color CSS export + UI fusion sheet).
+    #[cfg(not(target_arch = "wasm32"))]
+    Design {
+        #[command(subcommand)]
+        action: DesignActions,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
     // dispatch arm uses `Commands::Auto(_)`. Native dispatch reads it.
     #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Auto(Vec<String>),
+}
+
+/// Actions for the `design` subcommand.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum DesignActions {
+    /// Emit Material 3 color tokens as CSS custom properties.
+    ///
+    /// Default: the M3 `--md-sys-color-*` `:root` block only. With `--fusion`,
+    /// also emit the shadcn/ui alias block and the Tailwind v4 `@theme inline`
+    /// block — the materialised three-way UI fusion (see docs/ui/FUSION-PLAN.md).
+    Tokens {
+        /// Output format: raw CSS, or a shadcn `registry:theme` item (JSON).
+        #[arg(long, value_enum, default_value_t = TokensFormat::Css)]
+        format: TokensFormat,
+        /// (CSS format) Also emit shadcn + Tailwind v4 alias sheets (fusion).
+        #[arg(long)]
+        fusion: bool,
+        /// Use the M3 dark baseline palette instead of the light one.
+        #[arg(long)]
+        dark: bool,
+        /// Write to this file instead of stdout.
+        #[arg(short, long)]
+        output: Option<std::path::PathBuf>,
+    },
+}
+
+/// Output format for `design tokens`.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(clap::ValueEnum, Debug, Clone, Default)]
+pub(crate) enum TokensFormat {
+    /// Raw CSS custom properties (`:root { --md-sys-color-* }`; `--fusion` adds
+    /// the shadcn + Tailwind v4 alias sheets).
+    #[default]
+    Css,
+    /// shadcn/ui `registry:theme` item (JSON): `cssVars.theme` aliases shadcn
+    /// tokens to `var(--md-sys-color-*)`, `cssVars.light`/`dark` carry the M3
+    /// palette. Consumable via `shadcn add <url>`.
+    ShadcnRegistry,
 }
 
 /// Actions for the `notebooklm` kernel subcommand.
@@ -986,6 +1032,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 print!("{art}");
             }
         },
+        Some(Commands::Design { action }) => design_cmd::run(action)?,
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
             // the legacy bun/uv/cargo engine dispatcher only for tokens
