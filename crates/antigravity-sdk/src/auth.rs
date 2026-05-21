@@ -33,13 +33,14 @@ pub const ANTIGRAVITY_CLIENT_ID: &str =
 /// OAuth 2.0 token endpoint.
 const TOKEN_ENDPOINT: &str = "https://oauth2.googleapis.com/token";
 
-/// Scopes that the Antigravity CLI requests.
+/// Scopes that the Antigravity desktop client requests in the live sign-in
+/// flow (verified against the running 2.0.1 client, 2026-05-21).
 pub const ANTIGRAVITY_SCOPES: &[&str] = &[
     "https://www.googleapis.com/auth/cloud-platform",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
-    "cclog",
-    "experimentsandconfigs",
+    "https://www.googleapis.com/auth/cclog",
+    "https://www.googleapis.com/auth/experimentsandconfigs",
 ];
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,49 @@
 
 # Analyse du SDK `google-antigravity` (Python) pour port Rust
 
+## 0.0 Confirmation par RE du client desktop Antigravity 2.0.1 (2026-05-21)
+
+> Addendum : faits **vérifiés sur le client installé** (RE forensique locale,
+> machine + compte du propriétaire, aucun secret commité ni transmis). Complète
+> l'analyse du SDK Python ci-dessous, qui ne couvrait pas le wire réel.
+
+- **Ce qu'est Antigravity** : l'IDE agentique de **Codeium / Windsurf reskinné
+  pour Google**, pas un client Gemini léger. Le moteur est le
+  `language_server.exe` Go de Codeium (~136 Mo, gRPC protobuf `exa.*_pb`,
+  symboles `codeium_common_go_proto`), enveloppé d'un shell Electron mince
+  (`app.asar` 2.0.1, author = Google) + un workbench fork de VSCode. Le shell
+  spawn et supervise le LS, qui détient l'auth et tout le trafic cloud.
+- **Modèle d'auth (ce dont le SDK Rust a besoin)** : source de vérité unique =
+  **Windows Credential Manager, cible `gemini:antigravity`** (GENERIC, blob
+  JSON `{token:{access_token, token_type:"Bearer", refresh_token, expiry},
+  auth_method}`). OAuth2 Google standard + refresh offline. **Aucune auth dans
+  les cookies / localStorage** ; `state.vscdb` ne miroite que l'état de sign-in.
+  → c'est exactement ce qu'implémente `crates/antigravity-sdk::auth`.
+- **Flow OAuth live** : authorize `accounts.google.com/o/oauth2/v2/auth`, token
+  `oauth2.googleapis.com/token`, client_id primaire
+  `1071006060591-…apps.googleusercontent.com`, redirect
+  `http://localhost:9109/oauth-callback`, scopes `cloud-platform`,
+  `userinfo.email`, `userinfo.profile`, `cclog`, `experimentsandconfigs`.
+- **Endpoints API** : Cloud Code `cloudcode-pa.googleapis.com` (prod) /
+  `daily-cloudcode-pa.googleapis.com` (défaut LS) — méthodes
+  `v1internal:loadCodeAssist`, `:fetchAvailableModels`, `:onboardUser`. Gemini
+  `generativelanguage.googleapis.com`. Vertex `aiplatform.googleapis.com`
+  (publishers google + anthropic).
+- **Transport LS local** : HTTPS auto-signé sur `127.0.0.1`, port assigné par
+  l'OS, token CSRF, **cert pinné** `sha256/sTZpQemOWEytaZqa7P/y/dNXbHMdOAzMvzHEhUwHZXw=`.
+
+**Deux chemins d'interop pour le SDK Rust** (le crate `antigravity-sdk`
+implémente le #1) :
+1. **Cloud direct (recommandé)** : token OAuth2 → `POST
+   cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` avec
+   `Authorization: Bearer …`. Voir `antigravity_sdk::endpoints::CloudCodeEndpoint`
+   + `AntigravityClient::{load_code_assist, fetch_available_models}`.
+2. **gRPC LS local** : spawn `language_server.exe --standalone --subclient_type
+   hub …`, parser le port sur stdout, appeler
+   `exa.language_server_pb.LanguageServerService` (surface agent complète :
+   Cascade / MCP / worktrees) — nécessite le binaire propriétaire. Non porté
+   (le #1 couvre les besoins sans dépendance binaire).
+
 ## 0. Métadonnées et méthode
 
 - **Acquisition** : le SDK était déjà cloné localement par un autre process à
