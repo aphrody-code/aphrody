@@ -110,7 +110,7 @@ utilisé ligne 228). Restent R1.4-R1.6 actionables.
 | R1.3 | Diagnostics `gemini-runtime/src/tools.rs` (E0432 `async_trait`, E0038 `Tool` non dyn-compat) | ✅ **false-positive cached** — `async-trait` dans Cargo.toml + `#[async_trait]` proc-macro applied | `cargo check -p gemini-runtime --locked` exit 0 |
 | R1.4 | MCP client dans `aphrody-mcp` via `gemini_runtime::McpClient` (stdio + HTTP, cf. `crates/gemini-runtime/src/mcp_client.rs:275`). Tool `aphrody_mcp_call(server, tool, args, config?)` shipped dans `crates/google_mcp/src/main.rs` — structured error envelopes `MCP_BAD_REQUEST / MCP_CONFIG / MCP_UNKNOWN_SERVER / MCP_CONNECT / MCP_INITIALIZE / MCP_CALL / MCP_ENCODE` | ✅ | `cargo test -p google_mcp aphrody_mcp_call_tests` 5/5 green |
 | R1.5 | Bench `criterion` cold-start : `aphrody version` p50/p95/p99 (`crates/cli/benches/cold_start.rs`), `aphrody-mcp` initialize handshake p50/p95 (`crates/google_mcp/benches/initialize_handshake.rs`). Both use `iter_custom` over freshly-built `CARGO_BIN_EXE_*` for true wall-clock cold-start latency. Ledger `docs/PERFORMANCE-HISTORY.md` expanded with §4.2 (cold-start) + §4.3 (MCP handshake) ; first measurement captured at v0.1.0 tag | ✅ **DONE** 2026-05-19 | `cargo check --benches -p aphrody -p google_mcp --locked` exit 0 |
-| R1.6 | Wire `aphrody-voice` (unified TTS + STT via `aphrody_voice::stt`) into 2 new MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ⏳ | `aphrody-mcp --list-tools` → 17 tools |
+| R1.6 | Wire `aphrody-voice` (unified TTS + STT via `aphrody_voice::stt`) into 2 new MCP tools `voice_synthesize(text, voice)` + `voice_transcribe(audio_bytes)` (whisper.cpp natif) | ✅ **DONE** | `voice_synthesize`+`voice_transcribe` à google_mcp/src/main.rs:895,912 ; 8/8 voice tests verts |
 
 #### R2 — Apprend de ses erreurs (self-improvement loop)
 
@@ -138,8 +138,8 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 | R3.2 | ✅ Adapter `honcho` API **v1** (`/v1/apps/{app}/users/{user}/sessions/{sess}/messages`) dans `crates/aphrody-memory/src/honcho.rs` (298 l.) | **DONE** | `cargo test -p aphrody-memory honcho::` |
 | R3.3 | ✅ Adapter `mem0` API **v1** sync (`POST/GET/DELETE /v1/memories/`, `GET /v1/memories/search`) auth `Authorization: Token <key>` dans `crates/aphrody-memory/src/mem0.rs` (273 l.) | **DONE** | `cargo test -p aphrody-memory mem0::` |
 | R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ⏳ | dry-run + JSON diff |
-| R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ⏳ | `cargo test policy_ttl_evicts_after_n_secs` |
-| R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ⏳ | `cargo test schema_v1_to_v2_roundtrip` |
+| R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ✅ **DONE** | `cargo test policy_ttl_evicts_after_n_secs` 3/3 pass (eviction.rs, 14 test fns) |
+| R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ✅ **DONE** | `cargo test schema_v1_to_v2_roundtrip` pass (schema.rs : `upgrade_jsonl()` atomic, lossless) |
 | R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ⏳ | `cargo bench -p aphrody-memory bench_recall_100k` |
 | R3.8 | **Optionnel** : upgrade Honcho v1→v3 (`api.honcho.dev` workspaces/peers + `POST /peer/{id}/chat`) + mem0 v1→v3 (`POST /v3/memories/add/` async + `event_id` polling). Repousser tant que v1 couvre les besoins ; v3 = breaking changes API | ⏳ backlog | smoke E2E contre v3 endpoints |
 
@@ -169,11 +169,11 @@ tools = Phase 2.
 |---|---|---|---|
 | R5.1 | `crates/aphrody-re/` lib (Cargo.toml + lib.rs unique avec modules inline `triage / entropy / strings`) | ✅ **DONE** | `cargo check -p aphrody-re --locked` exit 0 |
 | R5.2 | Deps `goblin = "0.10"` (PE/ELF, déjà workspace pin avec features pe32+pe64+elf32+elf64) + `sha2` + `hex` + `serde` + `thiserror`. `iced-x86`/`capstone` reportés Phase 2 | ✅ **DONE** (subset minimal viable) | `cargo tree -p aphrody-re` |
-| R5.3 | Lib API `triage(bytes) -> TriageReport { format, size, sha256, arch, entry_point, sections[], imports[], exports[], strings_sample[] }`. Sub-cmd CLI `aphrody re triage <binary>` reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test -p aphrody-re` 10/10 pass |
+| R5.3 | Lib API `triage(bytes) -> TriageReport { format, size, sha256, arch, entry_point, sections[], imports[], exports[], strings_sample[] }`. Sub-cmd CLI `aphrody re triage <binary>` | ✅ **DONE** (lib + CLI wire) | `cargo test -p aphrody-re` 10/10 pass ; `ReAction::Triage` dispatch à cli/src/main.rs:637 |
 | R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ⏳ Phase 2 | smoke sur petit binaire test |
-| R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test extract_strings_*` 3/3 pass |
-| R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI reporté Phase 2 | ✅ **DONE** (lib) / ⏳ (CLI wire) | `cargo test shannon_entropy_*` 2/2 pass |
-| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ⏳ Phase 2 | `aphrody-mcp --list-tools` → 19 tools (15 + 4 new) |
+| R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI `aphrody re strings` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test extract_strings_*` 3/3 pass ; `ReAction::Strings` à cli/src/main.rs:540 |
+| R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI `aphrody re sections` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test shannon_entropy_*` 2/2 pass ; `ReAction::Sections` à cli/src/main.rs:562 |
+| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (`re_triage`/`re_strings`/`re_sections`) / ⏳ (`re_disasm` — bloqué par R5.4) | `re_strings`+`re_sections` à google_mcp/src/main.rs:1015,1086 ; build `aphrody-mcp` exit 0 |
 | R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | ⏳ backlog | `cargo build -p aphrody-re --features radare2` |
 | R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ⏳ Phase 2 | smoke avec règles publiques YARA |
 | R5.10 | ~~`unicorn-engine` (CPU emulator)~~ | 🚨 **DROPPED — GPL-2.0 viral incompatible avec Apache-2.0** | n/a |

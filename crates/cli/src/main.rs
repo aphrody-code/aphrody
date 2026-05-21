@@ -530,6 +530,42 @@ pub(crate) enum ReAction {
         #[arg(long)]
         pretty: bool,
     },
+    /// Extract ASCII + UTF-16LE strings from a binary.
+    ///
+    /// Scans the raw bytes for contiguous runs of printable characters
+    /// (ASCII 0x20–0x7E) and UTF-16LE codepoint pairs. Duplicates are
+    /// collapsed. Output is a JSON array of strings.
+    ///
+    /// Example: aphrody re strings target/release/aphrody.exe --min-len 8 --pretty
+    Strings {
+        /// Path to the binary to scan.
+        path: PathBuf,
+        /// Minimum character length for a string to be included.
+        /// Defaults to `STRINGS_MIN_LEN` (6).
+        #[arg(long, default_value_t = aphrody_re::STRINGS_MIN_LEN)]
+        min_len: usize,
+        /// Maximum number of strings to return.
+        /// Defaults to `STRINGS_SAMPLE_LIMIT` (64).
+        #[arg(long, default_value_t = aphrody_re::STRINGS_SAMPLE_LIMIT)]
+        limit: usize,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
+    /// Parse a binary and output its sections as JSON.
+    ///
+    /// Each entry contains `name`, `vaddr`, `size`, and `entropy`
+    /// (Shannon bits/byte, null for zero-size sections like `.bss`).
+    /// High entropy (≥ 7.0) indicates compression or encryption.
+    ///
+    /// Example: aphrody re sections target/release/aphrody.exe --pretty | jq '.[] | select(.entropy > 7)'
+    Sections {
+        /// Path to the binary to parse.
+        path: PathBuf,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -609,6 +645,33 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     serde_json::to_string_pretty(&report)
                 } else {
                     serde_json::to_string(&report)
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
+            },
+            ReAction::Strings { path, min_len, limit, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let strings = aphrody_re::extract_strings(&bytes, min_len, limit);
+                let json = if pretty {
+                    serde_json::to_string_pretty(&strings)
+                } else {
+                    serde_json::to_string(&strings)
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
+            },
+            ReAction::Sections { path, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let report = aphrody_re::triage(&bytes)
+                    .map_err(|e| miette::miette!("aphrody-re sections (via triage) failed: {e}"))?;
+                let json = if pretty {
+                    serde_json::to_string_pretty(&report.sections)
+                } else {
+                    serde_json::to_string(&report.sections)
                 }
                 .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
                 println!("{json}");
