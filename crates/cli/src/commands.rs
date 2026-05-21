@@ -162,6 +162,45 @@ fn read_gemini_oauth() -> Option<serde_json::Value> {
     serde_json::from_str(&content).ok()
 }
 
+/// Read the Antigravity CLI (`agy`) Google OAuth token directly from the
+/// Windows Credential Manager.
+///
+/// gemini-cli was absorbed into the Antigravity CLI; the installer
+/// (`antigravity.google/cli/install.ps1`) drops `agy.exe` under
+/// `%LOCALAPPDATA%\agy\bin`, and the IDE-side auth stores the Google OAuth
+/// token as a **generic credential** named `gemini:antigravity` whose blob is
+/// plaintext JSON: `{"token":{"access_token":"ya29…","refresh_token":…}}`.
+/// Reading it here lets `aphrody auth` extract the session straight from `agy`
+/// with no subprocess and no dependency on the (now-missing) gemini-cli bundle.
+#[cfg(target_os = "windows")]
+fn read_antigravity_oauth() -> Option<serde_json::Value> {
+    use windows_sys::Win32::Security::Credentials::{
+        CRED_TYPE_GENERIC, CredFree, CredReadW, CREDENTIALW,
+    };
+
+    let target: Vec<u16> =
+        "gemini:antigravity".encode_utf16().chain(std::iter::once(0)).collect();
+    // SAFETY: `target` is a NUL-terminated UTF-16 string. On success CredReadW
+    // hands back one heap-allocated CREDENTIALW that we read once and free with
+    // CredFree; the blob slice lives only for the duration of the read.
+    unsafe {
+        let mut pcred: *mut CREDENTIALW = std::ptr::null_mut();
+        if CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut pcred) == 0 || pcred.is_null() {
+            return None;
+        }
+        let cred = &*pcred;
+        let parsed = if cred.CredentialBlob.is_null() || cred.CredentialBlobSize == 0 {
+            None
+        } else {
+            let blob =
+                std::slice::from_raw_parts(cred.CredentialBlob, cred.CredentialBlobSize as usize);
+            serde_json::from_slice::<serde_json::Value>(blob).ok()
+        };
+        CredFree(pcred.cast());
+        parsed
+    }
+}
+
 #[cfg(target_os = "windows")]
 #[async_trait]
 impl TerminalCommand for ChromiumExportSessionCommand {
@@ -317,11 +356,37 @@ impl TerminalCommand for AuthCommand {
             );
         }
 
-        // OAuth2 PKCE flow not yet ported to native Rust — delegate to the
-        // bundled gemini-cli binary which already ships the flow via Bun.
-        // Tracking: docs/PLAN.md §"Auth — native OAuth2 (PKCE + callback)".
-        println!("🌐 Délégation du flux OAuth2 au binaire gemini-cli embarqué...");
-        GeminiCommand { args: vec!["auth".to_string(), "login".to_string()] }.execute(_ctx).await
+        // gemini-cli is deprecated — it was absorbed into the Antigravity CLI
+        // (`agy`, installed at %LOCALAPPDATA%\agy\bin per the official
+        // install.ps1), and `@google/gemini-cli/bundle/gemini.js` no longer
+        // exists. We no longer shell out to it. Instead, extract the Google
+        // OAuth token directly from the Windows Credential Manager entry
+        // `gemini:antigravity` that agy writes, then fall back to an on-disk
+        // token.
+        #[cfg(target_os = "windows")]
+        if let Some(tok) = read_antigravity_oauth() {
+            if let Some(access) = tok.pointer("/token/access_token").and_then(|v| v.as_str()) {
+                Self::persist_god_mode_token("antigravity", access)?;
+                println!(
+                    "🔓 Token Google extrait directement depuis l'Antigravity CLI (agy) — \
+                     Credential Manager `gemini:antigravity`."
+                );
+                return Ok(());
+            }
+            println!("⚠️ Credential `gemini:antigravity` présent mais sans `token.access_token`.");
+        }
+
+        // Last resort: reuse an existing on-disk token (gemini/agy shared store).
+        if read_gemini_oauth().is_some() {
+            println!("🔓 Token réutilisé depuis ~/.gemini/oauth_creds.json.");
+            return Ok(());
+        }
+
+        Err(miette::miette!(
+            "Aucune source d'authentification disponible. Connectez-vous via l'Antigravity CLI \
+             (`agy`, %LOCALAPPDATA%\\agy\\bin\\agy.exe) puis relancez `aphrody auth`. \
+             gemini-cli n'est plus utilisé."
+        ))
     }
 }
 
