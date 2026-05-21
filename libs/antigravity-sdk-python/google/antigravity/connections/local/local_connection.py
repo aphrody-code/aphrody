@@ -1641,19 +1641,6 @@ class LocalConnectionStrategy(connection.ConnectionStrategy):
 
     async def __aenter__(self) -> None:
         """Starts the backend."""
-        # Fail fast if no API key is available. The localharness binary requires
-        # a Gemini API key to call the Gemini API; without one it silently returns
-        # empty responses.
-        api_key = (
-            self._gemini_config.api_key if self._gemini_config else None
-        ) or os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise types.AntigravityValidationError(
-                "A Gemini API key is required. Set it via"
-                " GeminiConfig(api_key=...) or the GEMINI_API_KEY environment"
-                " variable."
-            )
-
         harness_config = self._build_harness_config()
         input_config = localharness_pb2.InputConfig(
             storage_directory=self._save_dir or "",
