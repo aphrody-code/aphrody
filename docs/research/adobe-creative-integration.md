@@ -75,6 +75,32 @@ holds pre-signed download links.
   cached client, optional `save_dir`, returns `{ count, outputs:[{ seed,
   content_type, bytes, saved_path? }] }`.
 
+## Event-driven completion — Adobe I/O Events journaling
+
+Polling each job's `statusUrl` adds latency and request volume. Adobe I/O
+**Events journaling** is the pull-based, at-least-once event log: one stream
+delivers every event the registration subscribes to (e.g. async-job
+completion).
+
+Verified protocol (Adobe docs, 2026-05): `GET <journal_url>[?latest=true |
+since=<pos>&limit=<n>]` with headers `Authorization: Bearer <ims_token>`,
+`x-api-key: <client_id>`, `x-ims-org-id: <org>@AdobeOrg`. `200` →
+`{ events:[{ position, event }], _page:{ last, count } }` plus an HTTP
+`Link: <…?since=…>; rel="next"` header for paging. `204 No Content` → caught
+up; `retry-after` (seconds) gives the back-off and `Link` rel="next" the
+resume position.
+
+Landed in `aphrody_firefly::events`: `JournalClient` (shared `TokenCache`),
+`Position` (Oldest / Latest / Since / NextLink), `read()` (one batch, parses
+the `Link` header, handles 204 + retry-after), `drain()` (follow `next` until
+caught up, returns events + resume position). Pure-logic `Link`-header parser
+and percent-encoder are unit-tested. CLI: `aphrody firefly events [--latest |
+--since <pos>] [--max-batches N] [--json]`.
+
+Config (a journal URL + org id + api key) is **local-only** — kept under
+`var/` (gitignored), sourced into `FIREFLY_JOURNAL_URL` / `FIREFLY_IMS_ORG_ID`
+/ `FIREFLY_CLIENT_ID` / `FIREFLY_CLIENT_SECRET`. Never committed or logged.
+
 ## Next extension (same crate, same auth core)
 
 The **cloud Photoshop API** (`photoshopv2-api.json`, base
