@@ -42,6 +42,8 @@ backend            = { path = "../backend" }
 # loader). This is the same crate the gemini CLI runtime drives at runtime,
 # 59/59 unit tests green at the time of integration.
 gemini-runtime     = { path = "../gemini-runtime" }
+# Gemini web app SDK — backs the gemini_chat / gemini_image MCP tools.
+gemini-web         = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Voice MCP tool wiring (voice_synthesize + voice_transcribe). The voice_tools
