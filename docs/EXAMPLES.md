@@ -244,7 +244,97 @@ It queries the `History` SQLite database (via a safe temporary copy to bypass fi
 
 ---
 
-## 13. Where to find more
+## 13. Native Google AI Ultra / Gemini client (`aphrody antigravity`)
+
+`aphrody antigravity` is the scriptable, non-interactive port of the Antigravity
+(`agy`) cloud surface. It reads the user's Google OAuth token **at runtime** from
+the platform credential store (Windows Credential Manager entry
+`gemini:antigravity`) — no secret is ever embedded in the binary. Native-only
+(builds a `reqwest`/rustls client + reads the credential store; not on wasm32).
+Every variant prints JSON on stdout, so it pipes straight into `jq`:
+
+```bash
+# Who am I? (Google OpenID userinfo: email + name)
+aphrody antigravity whoami --json | jq '.email'
+# "yohan@example.com"
+
+# Models available to the signed-in account / tier
+# (v1internal:fetchAvailableModels)
+aphrody antigravity models --json | jq '.models[].name'
+
+# Bootstrap the Code Assist session — project / tier / entitlements
+# (v1internal:loadCodeAssist)
+aphrody antigravity load --json | jq '.cloudaicompanionProject, .currentTier.id'
+
+# Single-turn Gemini prompt (generativelanguage v1beta generateContent).
+# --model defaults to gemini-2.0-flash; output is always pretty JSON.
+aphrody antigravity chat --prompt "Explain io_uring in one sentence."
+aphrody antigravity chat --model gemini-2.5-flash --prompt "Refactor this loop" \
+  | jq -r '.candidates[0].content.parts[0].text'
+```
+
+On a platform without a credential store (Linux/macOS/wasm) the underlying SDK
+returns `SdkError::Unsupported`, surfaced verbatim as a `miette` report — supply
+your own `OAuthToken` via the `antigravity-sdk` crate instead (recipe 10 pattern).
+
+---
+
+## 14. Magika file classification (`aphrody re classify`)
+
+Native, in-process Google Magika (deep-learning content classifier) — the
+replacement for the Python `magika` shell-out. Requires building with
+`--features magika` (links the ONNX Runtime; host-only, not hermetic-offline,
+not wasm). Without the feature the command errors with a rebuild hint rather
+than silently degrading:
+
+```bash
+cargo build -p aphrody --features magika --release
+
+aphrody re classify state.vscdb --pretty | jq '.label, .score'
+# "sqlite"
+# 0.99996...
+
+# Output shape: { label, mime_type, group, description, extensions,
+#                 is_text, score, kind, overwrite_reason }
+aphrody re classify ./app.asar | jq -r '"\(.label) (\(.mime_type))"'
+# unknown (application/octet-stream)   # asar has no Magika signature → triage instead
+```
+
+Pair it with the `re` reverse-engineering family (`triage`, `strings`,
+`sections`, `disasm`, `google`) for full binary analysis of Google/Electron
+artifacts.
+
+---
+
+## 15. Reproducible forensic extraction (`aphrody forensics`)
+
+`aphrody forensics` maps and inspects local artifacts (Chromium / Electron /
+`state.vscdb`) **without ever emitting secret values**. Requires
+`--features forensics` (links `rusqlite` with bundled libsqlite3; host-only).
+Two contracts, both secret-safe by construction:
+
+```bash
+cargo build -p aphrody --features forensics --release
+
+# `map` — parallel directory walk, emits { path, size, ext } per file.
+# Reads directory metadata + filenames ONLY; file CONTENTS are never opened.
+aphrody forensics map --target ~/.gemini --out var/data/gemini-map
+jq '.file_count, .files[0]' var/data/gemini-map/map.json
+
+# `sqlite` — schema dump, opened SQLITE_OPEN_READ_ONLY. Reads
+# `SELECT name, sql FROM sqlite_master` (table/index NAMES + CREATE statements
+# only). Value columns of ItemTable / cookies / secret-style tables are NEVER
+# selected, so no secret bytes leak. JSON on stdout.
+aphrody forensics sqlite --db state.vscdb | jq '.tables[].name'
+```
+
+This is the reproducible replacement for ad-hoc forensic one-liners: the
+security contract (no content reads on `map`, no value columns on `sqlite`) is
+enforced in code, not by convention.
+
+---
+
+## 16. Where to find more
 
 - [`PROTOCOL.md`](./PROTOCOL.md) — historical file-based A2A spec (the live
   transport is gRPC; see the `a2a-*` crates).
