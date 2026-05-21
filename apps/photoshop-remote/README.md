@@ -27,7 +27,14 @@ Content type `2` = ExtendScript, `1` = error string. (Sources: Adobe
 cd apps/photoshop-remote
 bun install        # @types/bun + typescript (dev only; the client is dep-free)
 bun test           # pure-protocol round-trip tests (no network)
+PS_HOST=<host> PS_PASSWORD=*** bun run probe   # live: exercise ~22 PS APIs/features
 ```
+
+`bun run probe` (`scripts/live-probe.ts`) hits a broad slice of the live API —
+app/document/layer/channel/history/color/units/ExtendScript-engine reads, an
+Action-Manager `executeActionGet`, and one atomic write workflow (new doc →
+layer → selection fill → histogram → flatten → resize → close-without-save) that
+runs on a throwaway document, never the user's open one.
 
 ## Usage
 
