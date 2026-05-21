@@ -116,6 +116,27 @@ pub struct ReTriageRequest {
 }
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ReStringsRequest {
+    #[schemars(description = "Absolute or workspace-relative path to a binary or data file. The \
+                              file is read into memory in full — best for files under 100 MB.")]
+    pub path: String,
+    #[schemars(description = "Minimum length in characters for a string to be included. Defaults \
+                              to 6 when unset. Must be at least 1.")]
+    pub min_len: Option<usize>,
+    #[schemars(description = "Maximum number of strings to return. Defaults to 64 when unset. \
+                              Capped at 4096 to bound response size.")]
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ReSectionsRequest {
+    #[schemars(description = "Absolute or workspace-relative path to a binary file to triage \
+                              (PE32/PE64/ELF32/ELF64). The file is read into memory in full — \
+                              best for binaries under 100 MB.")]
+    pub path: String,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct Context7ResolveRequest {
     #[schemars(description = "The task you need help with. Used to rank library results by \
                               relevance (e.g. 'streaming SSR with App Router').")]
@@ -968,6 +989,144 @@ impl GoogleMcpServer {
         };
         match aphrody_re::triage(&bytes) {
             Ok(report) => serde_json::to_string_pretty(&report).unwrap_or_else(|e| {
+                format!(r#"{{"error":"RE_ENCODE","reason":"{}"}}"#, e.to_string().replace('"', "'"))
+            }),
+            Err(e) => serde_json::to_string_pretty(&json!({
+                "error": "RE_PARSE",
+                "reason": e.to_string(),
+            }))
+            .unwrap_or_default(),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // re_strings — extract printable ASCII + UTF-16LE strings from any file.
+    //
+    // Mirrors the `aphrody re strings` CLI sub-command. Uses the public
+    // `aphrody_re::extract_strings` function directly — no goblin parse, so
+    // it works on arbitrary blobs (firmware dumps, data files, PE/ELF alike).
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Extract printable ASCII and UTF-16LE strings from any file (binary, \
+                          firmware, PE, ELF, data blob). Returns a JSON object with `path`, \
+                          `min_len`, `limit`, and a `strings` array of deduplicated runs. Works \
+                          on any file format — no binary parsing required. Errors with a \
+                          structured envelope on read failure or if the file exceeds 100 MB.")]
+    async fn re_strings(
+        &self,
+        Parameters(ReStringsRequest { path, min_len, limit }): Parameters<ReStringsRequest>,
+    ) -> String {
+        const MAX_BYTES: u64 = 100 * 1024 * 1024; // 100 MB
+        const DEFAULT_MIN_LEN: usize = 6;
+        const DEFAULT_LIMIT: usize = 64;
+        const CAP_LIMIT: usize = 4096;
+
+        let min_len = min_len.unwrap_or(DEFAULT_MIN_LEN).max(1);
+        let limit = limit.unwrap_or(DEFAULT_LIMIT).min(CAP_LIMIT);
+
+        let meta = match std::fs::metadata(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_BAD_REQUEST",
+                    "reason": format!("unable to stat '{path}': {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        if meta.len() > MAX_BYTES {
+            return serde_json::to_string_pretty(&json!({
+                "error": "RE_BAD_REQUEST",
+                "reason": format!(
+                    "'{path}' is {} bytes (> {MAX_BYTES} byte cap); refuse to read",
+                    meta.len()
+                ),
+            }))
+            .unwrap_or_default();
+        }
+        let bytes = match std::fs::read(&path) {
+            Ok(b) => b,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_IO",
+                    "reason": format!("read '{path}' failed: {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        let strings = aphrody_re::extract_strings(&bytes, min_len, limit);
+        serde_json::to_string_pretty(&json!({
+            "path": path,
+            "min_len": min_len,
+            "limit": limit,
+            "count": strings.len(),
+            "strings": strings,
+        }))
+        .unwrap_or_else(|e| {
+            format!(r#"{{"error":"RE_ENCODE","reason":"{}"}}"#, e.to_string().replace('"', "'"))
+        })
+    }
+
+    // -----------------------------------------------------------------------
+    // re_sections — return the section table with per-section Shannon entropy
+    // for a PE32/PE64/ELF32/ELF64 binary.
+    //
+    // Mirrors the `aphrody re sections` CLI sub-command. Delegates to
+    // `aphrody_re::triage` and projects only the `sections` field, giving
+    // callers a lightweight, focused view without the full triage payload.
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Parse a PE32/PE64/ELF32/ELF64 binary and return its section table as a \
+                          JSON object. Each entry contains `name` (string), `vaddr` (u64), \
+                          `size` (u64 bytes on disk), and `entropy` (Shannon bits/byte, null for \
+                          .bss-style sections with no on-disk content). High entropy (>= 7.0) \
+                          signals compression or encryption (UPX, custom packers). Returns a \
+                          structured envelope on read failure, oversized inputs, or unknown \
+                          binary formats.")]
+    async fn re_sections(
+        &self,
+        Parameters(ReSectionsRequest { path }): Parameters<ReSectionsRequest>,
+    ) -> String {
+        const MAX_BYTES: u64 = 200 * 1024 * 1024; // 200 MB
+
+        let meta = match std::fs::metadata(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_BAD_REQUEST",
+                    "reason": format!("unable to stat '{path}': {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        if meta.len() > MAX_BYTES {
+            return serde_json::to_string_pretty(&json!({
+                "error": "RE_BAD_REQUEST",
+                "reason": format!(
+                    "'{path}' is {} bytes (> {MAX_BYTES} byte cap); refuse to triage",
+                    meta.len()
+                ),
+            }))
+            .unwrap_or_default();
+        }
+        let bytes = match std::fs::read(&path) {
+            Ok(b) => b,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_IO",
+                    "reason": format!("read '{path}' failed: {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        match aphrody_re::triage(&bytes) {
+            Ok(report) => serde_json::to_string_pretty(&json!({
+                "path": path,
+                "format": report.format,
+                "section_count": report.sections.len(),
+                "sections": report.sections,
+            }))
+            .unwrap_or_else(|e| {
                 format!(r#"{{"error":"RE_ENCODE","reason":"{}"}}"#, e.to_string().replace('"', "'"))
             }),
             Err(e) => serde_json::to_string_pretty(&json!({
