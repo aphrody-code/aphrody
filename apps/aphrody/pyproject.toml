@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aphrody"
+version = "0.1.0"
+description = "Keyless Python client/CLI for Google's AI Ultra stack (Gemini, Cloud Code, Vertex AI) — uses on-device OAuth credentials, never an API key."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "aphrody contributors" }]
+keywords = ["gemini", "vertex-ai", "cloud-code", "antigravity", "oauth", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "httpx>=0.28",
+    "fire>=0.7",
+    "google-genai>=1.0",
+    "google-auth>=2.30",
+]
+
+[project.optional-dependencies]
+# Browser-cookie extraction is LGPL-3.0; kept as an isolated optional extra
+# so the core package stays Apache-2.0-clean (dynamic import = separate work).
+cookies = ["browser-cookie3>=0.20"]
+dev = ["pytest>=8.0", "pytest-httpx>=0.35"]
+
+[project.scripts]
+aphrody = "aphrody.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/aphrody-code/aphrody"
+
+[tool.setuptools.packages.find]
+include = ["aphrody*"]
+
+[tool.setuptools.package-data]
+"aphrody.ui" = ["*.html", "*.js", "*.css"]
+

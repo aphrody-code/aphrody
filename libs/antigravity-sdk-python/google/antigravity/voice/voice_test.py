@@ -49,7 +49,7 @@ class VoiceTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(transcription, "Hello world")
         mock_instance.transcribe.assert_called_once_with(
-            audio_data, beam_size=5
+            audio_data, beam_size=5, language=None
         )
 
     @mock.patch("google.antigravity.voice.tts.Kokoro")
@@ -69,7 +69,7 @@ class VoiceTest(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(sr, 24000)
         mock_instance.create.assert_called_once_with(
-            "Hello", voice="af_bella", speed=1.0
+            "Hello", voice="af_bella", speed=1.0, lang="en-us"
         )
 
     @mock.patch("sounddevice.OutputStream")

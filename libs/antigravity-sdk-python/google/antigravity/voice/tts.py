@@ -65,21 +65,35 @@ class LocalKokoroTextToSpeech:
         self.kokoro = Kokoro(model_path, voices_path)
 
     def synthesize(
-        self, text: str, voice: str = "af_bella"
+        self, text: str, voice: str = "af_bella", lang: str | None = None
     ) -> tuple[np.ndarray, int]:
         """Synthesize text to audio.
 
         Args:
             text: Text to synthesize.
             voice: Name of the voice to use.
+            lang: Optional language code (e.g. 'fr-fr', 'ja', 'en-us'). If None,
+              it is auto-detected from the voice name prefix.
 
         Returns:
             A tuple of (audio_samples, sample_rate) where audio_samples is a
             numpy array of mono float32 samples at 24000Hz.
         """
+        if lang is None:
+            # Auto-detect language from voice prefix
+            if voice.startswith("jf") or voice.startswith("jm"):
+                lang = "ja"
+            elif voice.startswith("ff") or voice.startswith("fm"):
+                lang = "fr-fr"
+            elif voice.startswith("bf") or voice.startswith("bm"):
+                lang = "en-gb"
+            else:
+                lang = "en-us"
+
         samples, sample_rate = self.kokoro.create(
             text,
             voice=voice,
             speed=1.0,
+            lang=lang,
         )
         return np.array(samples, dtype=np.float32), sample_rate

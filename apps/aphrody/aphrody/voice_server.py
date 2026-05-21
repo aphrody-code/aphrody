@@ -1,29 +1,19 @@
-# Copyright 2026 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 aphrody contributors
+"""Voice server backend and static UI runner for aphrody voice command.
 
-"""WebSocket server for local voice-to-voice web application.
-
-Bridges the browser audio stream (Web Audio API) with the local Whisper STT,
-Kokoro TTS, and Antigravity Agent connection.
+Bridges the browser audio stream (Web Audio API) with local Whisper STT,
+Kokoro TTS, and the Antigravity Agent connection.
 """
 
-import argparse
 import asyncio
+import http.server
 import json
 import os
 import sys
 import urllib.request
+import webbrowser
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -40,7 +30,7 @@ KOKORO_MODEL_URL = (
     "https://huggingface.co/thewh1teagle/Kokoro/resolve/main/kokoro-v0_19.onnx"
 )
 KOKORO_VOICES_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
-DEFAULT_MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+DEFAULT_MODELS_DIR = os.path.join(os.path.expanduser("~"), ".aphrody", "models")
 
 
 def ensure_models_exist(models_dir: str) -> tuple[str, str]:
@@ -395,70 +385,91 @@ class VoiceServer:
             )
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Material Design 3 Voice Server"
-    )
-    parser.add_argument(
-        "--host", type=str, default="127.0.0.1", help="Host address to bind to"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=8789,
-        help="Port to run the WebSocket server on",
-    )
-    parser.add_argument(
-        "--whisper-model",
-        type=str,
-        default="base",
-        help="Size or path of the Whisper model",
-    )
-    parser.add_argument(
-        "--kokoro-model",
-        type=str,
-        default=None,
-        help="Path to Kokoro ONNX file",
-    )
-    parser.add_argument(
-        "--voices-path",
-        type=str,
-        default=None,
-        help="Path to voices.json configuration",
-    )
-    parser.add_argument(
-        "--voice-name",
-        type=str,
-        default="ff_siwis",
-        help="Default Kokoro voice",
-    )
-    parser.add_argument(
-        "--models-dir",
-        type=str,
-        default=DEFAULT_MODELS_DIR,
-        help="Dir to store downloaded models",
-    )
+def run_ui_http_server(
+    host: str,
+    ui_port: int,
+    websocket_host: str,
+    websocket_port: int,
+    launch_browser: bool,
+) -> None:
+    """Serve the static voice UI and open it in the default web browser."""
+    ui_dir = Path(__file__).parent / "ui"
 
-    args = parser.parse_args()
+    class UIHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, directory=str(ui_dir), **kwargs)
 
-    # Automatically resolve or download models
-    if not args.kokoro_model or not args.voices_path:
-        print("Resolving Kokoro model and voices paths...")
-        resolved_model, resolved_voices = ensure_models_exist(args.models_dir)
-        kokoro_model_path = args.kokoro_model or resolved_model
-        kokoro_voices_path = args.voices_path or resolved_voices
+        def do_GET(self) -> None:
+            if self.path in {"/", "/index.html"}:
+                try:
+                    content = (ui_dir / "index.html").read_text(
+                        encoding="utf-8"
+                    )
+                    # Inject current websocket coordinates
+                    content = content.replace(
+                        "ws://127.0.0.1:8789",
+                        f"ws://{websocket_host}:{websocket_port}",
+                    )
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    encoded = content.encode("utf-8")
+                    self.send_header("Content-Length", str(len(encoded)))
+                    self.end_headers()
+                    self.wfile.write(encoded)
+                    return
+                except Exception as e:
+                    print(
+                        f"Error serving index.html template: {e}",
+                        file=sys.stderr,
+                    )
+            super().do_GET()
+
+        def log_message(self, format: str, *args: Any) -> None:
+            # Suppress HTTP traffic noise on stdout
+            pass
+
+    try:
+        server = http.server.HTTPServer((host, ui_port), UIHandler)
+        print(f"Serving localized French voice UI at http://{host}:{ui_port}")
+        if launch_browser:
+            webbrowser.open(f"http://{host}:{ui_port}")
+        server.serve_forever()
+    except Exception as e:
+        print(f"Warning: Failed to start web UI server: {e}", file=sys.stderr)
+
+
+async def start_voice_server(
+    host: str = "127.0.0.1",
+    port: int = 8789,
+    whisper_model: str = "base",
+    kokoro_model: str | None = None,
+    voices_path: str | None = None,
+    voice_name: str = "ff_siwis",
+    models_dir: str | None = None,
+    ui: bool = True,
+    ui_port: int = 8790,
+) -> None:
+    """Start the WebSocket and optionally the HTTP server for the French UI."""
+    target_models_dir = models_dir or DEFAULT_MODELS_DIR
+
+    # Automatically resolve or download Kokoro models
+    if not kokoro_model or not voices_path:
+        print(f"Resolving Kokoro model in {target_models_dir}...")
+        resolved_model, resolved_voices = ensure_models_exist(target_models_dir)
+        kokoro_model_path = kokoro_model or resolved_model
+        kokoro_voices_path = voices_path or resolved_voices
     else:
-        kokoro_model_path = args.kokoro_model
-        kokoro_voices_path = args.voices_path
+        kokoro_model_path = kokoro_model
+        kokoro_voices_path = voices_path
 
-    print(f"Using Whisper model: {args.whisper_model}")
+    print(f"Using Whisper model: {whisper_model}")
     print(f"Using Kokoro model: {kokoro_model_path}")
     print(f"Using voices file: {kokoro_voices_path}")
 
     # Load local Speech-to-Text
     print("Loading local Whisper model...")
     stt = LocalWhisperSpeechToText(
-        model_size_or_path=args.whisper_model,
+        model_size_or_path=whisper_model,
         device="cpu",
         compute_type="int8",
     )
@@ -470,17 +481,19 @@ async def main() -> None:
         voices_path=kokoro_voices_path,
     )
 
-    voice_server = VoiceServer(stt, tts, args.voice_name)
+    voice_server = VoiceServer(stt, tts, voice_name)
 
-    print(f"Starting WebSocket server on ws://{args.host}:{args.port}")
-    async with websockets.serve(
-        voice_server.handle_connection, args.host, args.port
-    ):
+    # Serve UI in background thread if requested
+    if ui:
+        import threading
+
+        t = threading.Thread(
+            target=run_ui_http_server,
+            args=(host, ui_port, host, port, True),
+            daemon=True,
+        )
+        t.start()
+
+    print(f"Starting WebSocket server on ws://{host}:{port}")
+    async with websockets.serve(voice_server.handle_connection, host, port):
         await asyncio.Future()  # run forever
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nExiting voice server...")

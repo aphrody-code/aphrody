@@ -73,15 +73,24 @@ class LocalWhisperSpeechToText:
             compute_type=compute_type,
         )
 
-    def transcribe(self, audio_data: np.ndarray) -> str:
+    def transcribe(
+        self,
+        audio_data: np.ndarray,
+        language: str | None = None,
+        beam_size: int = 5,
+    ) -> str:
         """Transcribe PCM float32 mono audio at 16kHz to text.
 
         Args:
             audio_data: Numpy array of mono float32 audio samples.
+            language: Optional language code (e.g. 'fr', 'en', 'ja').
+            beam_size: Size of beam search. Set to 1 for greedy decoding (faster).
 
         Returns:
             The transcribed text.
         """
-        segments, _ = self.model.transcribe(audio_data, beam_size=5)
+        segments, _ = self.model.transcribe(
+            audio_data, beam_size=beam_size, language=language
+        )
         text_segments = [segment.text for segment in segments]
         return " ".join(text_segments).strip()
