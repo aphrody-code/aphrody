@@ -95,45 +95,47 @@ pub struct Dialog {
     pub title: String,
 }
 
-use mui_rs_renderer::pipeline::Widget;
-use mui_rs_renderer::vello::{Scene, kurbo::{Affine, RoundedRect}, peniko::{Color, Fill}};
+use mui_rs_renderer::pipeline::{DrawCx, Widget};
+use mui_rs_renderer::shadow;
+use mui_rs_renderer::vello::kurbo::{Affine, Rect, RoundedRect, Stroke};
+use mui_rs_renderer::vello::peniko::{Color, Fill};
 
 #[derive(Debug, Clone)]
 pub struct Tooltip {
     pub text: String,
 }
 
+impl Card {
+    /// Default M3 card footprint in dp (medium component).
+    pub const WIDTH_DP: f64 = 200.0;
+    pub const HEIGHT_DP: f64 = 150.0;
+    const RADIUS_DP: f64 = 12.0; // Medium corner radius
+}
+
 impl Widget for Card {
-    fn draw(&self, scene: &mut Scene, transform: Affine) {
-        let width = 200.0;
-        let height = 150.0;
-        
-        let rect = RoundedRect::new(0.0, 0.0, width, height, 12.0); // Medium radius
-        
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let (w, h, r) = (Card::WIDTH_DP, Card::HEIGHT_DP, Card::RADIUS_DP);
+        let rect = RoundedRect::new(0.0, 0.0, w, h, r);
+
+        // Real M3 elevation shadow (behind the surface), per variant resting level.
+        let level = self.elevation_level(InteractionState::Resting);
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, w, h), r, level);
+
         let base_color = match self.variant {
             CardVariant::Elevated => Color::from_rgb8(243, 237, 247), // Surface container low
-            CardVariant::Filled => Color::from_rgb8(232, 222, 248), // Surface container highest
+            CardVariant::Filled => Color::from_rgb8(232, 222, 248),   // Surface container highest
             CardVariant::Outlined => Color::from_rgb8(254, 247, 255), // Surface
         };
+        cx.scene.fill(Fill::NonZero, transform, base_color, None, &rect);
 
-        scene.fill(
-            Fill::NonZero,
-            transform,
-            base_color,
-            None,
-            &rect,
-        );
-
-        // If outlined, add stroke (approximated for now with inner fill)
+        // Outlined cards carry a real 1dp outline stroke (no shadow).
         if self.variant == CardVariant::Outlined {
-            let inner_rect = RoundedRect::new(1.0, 1.0, width - 1.0, height - 1.0, 11.0);
-            scene.fill(
-                Fill::NonZero,
-                transform,
-                Color::from_rgb8(254, 247, 255), // Outline inner
-                None,
-                &inner_rect,
-            );
+            let outline = if self.disabled {
+                Color::from_rgba8(28, 27, 31, 30)
+            } else {
+                Color::from_rgb8(121, 116, 126) // Outline
+            };
+            cx.scene.stroke(&Stroke::new(1.0), transform, outline, None, &rect);
         }
     }
 }
