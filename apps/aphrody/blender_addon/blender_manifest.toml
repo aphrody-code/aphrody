@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "aphrody"
+version = "1.0.0"
+name = "Aphrody"
+tagline = "Pro control surface: JSON socket server + optimised mesh/render/export"
+maintainer = "aphrody contributors"
+type = "add-on"
+
+# Compatible with Blender 4.2 (extensions) through 5.1.
+blender_version_min = "4.2.0"
+
+license = ["SPDX:Apache-2.0"]
+tags = ["Pipeline", "Import-Export", "Mesh", "Render"]
+
+website = "https://github.com/aphrody-code/aphrody"
+
+# Pure stdlib (socket/json/threading) — no wheels/permissions beyond network,
+# used only for the local control socket on 127.0.0.1.
+[permissions]
+network = "Local control socket (127.0.0.1) for the aphrody CLI bridge"

@@ -320,6 +320,14 @@ async function initAudio() {
       }
     });
 
+    if (!audioContext || !isConnected) {
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+      return;
+    }
+
     micSource = audioContext.createMediaStreamSource(micStream);
     
     // Create ScriptProcessorNode (2048 buffer size, 1 input channel, 1 output channel)

@@ -4,8 +4,10 @@
 
 On Windows the source of truth is the **Windows Credential Manager** generic
 credential ``gemini:antigravity`` written by the Antigravity CLI. On other
-platforms (and as a refresh cache everywhere) aphrody uses a private file at
-``~/.aphrody/antigravity-token.json`` with owner-only permissions.
+platforms (Linux is cible #1) — and as a refresh cache / fallback everywhere —
+aphrody uses a private file ``antigravity-token.json`` inside its secrets
+directory (``<repo>/var/secrets`` in-repo, else ``~/.aphrody``), with
+owner-only permissions.
 
 No secret is ever logged. The blob is read, parsed, and — for the Win32 path —
 copied out of the LSASS allocation before it is freed.
@@ -19,6 +21,7 @@ import stat
 import sys
 from pathlib import Path
 
+from aphrody import _paths
 from aphrody.auth.tokens import OAuthToken
 from aphrody.errors import (
     CredentialManagerError,
@@ -34,8 +37,17 @@ _IS_WINDOWS = sys.platform.startswith("win")
 
 
 def cache_path() -> Path:
-    """Return the path to aphrody's private refreshed-token cache."""
-    return Path.home() / ".aphrody" / "antigravity-token.json"
+    """Return the path to aphrody's private token file.
+
+    Honors ``APHRODY_TOKEN_PATH``; otherwise the file ``antigravity-token.json``
+    inside :func:`aphrody._paths.secrets_dir` (``var/secrets`` in-repo). On
+    Linux — where there is no Credential Manager — this file is the token
+    source, not just a cache.
+    """
+    override = os.environ.get("APHRODY_TOKEN_PATH")
+    if override:
+        return Path(override).expanduser()
+    return _paths.secret_file("antigravity-token.json")
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +214,15 @@ def read_token() -> OAuthToken:
         UnsupportedPlatformError: No credential source exists on this platform.
     """
     if _IS_WINDOWS:
-        blob = read_windows_credential()
+        try:
+            blob = read_windows_credential()
+        except (CredentialManagerError, EmptyCredentialError):
+            # No live Credential Manager entry: fall back to the secrets file
+            # (e.g. a token dropped into var/secrets/antigravity-token.json).
+            cached = read_cache()
+            if cached is not None:
+                return cached
+            raise
         try:
             return OAuthToken.from_blob(blob)
         except (json.JSONDecodeError, KeyError) as exc:

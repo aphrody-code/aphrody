@@ -2,6 +2,17 @@
 
 A reference catalog of the Python open-source landscape published by Google across its GitHub organizations, assembled for the aphrody project. Each repo is listed with stars, maintenance status (active vs archived), last-push date and description; notable repos are enriched with real GitHub topics and README excerpts.
 
+## aphrody project docs
+
+The keyless Python `aphrody` CLI distilled from this landscape:
+
+- [`apps/aphrody/README.md`](../../apps/aphrody/README.md) — the keyless CLI/lib (Gemini, Cloud Code, Vertex AI, the Gemini web app via cookies, Nano Banana Pro image generation + Material 3 icons, and a local voice loop) — **no API key, ever**.
+- [`STACK.md`](STACK.md) — the chosen Python library stack (fire, httpx, google-genai, google-auth, …) and why.
+- [`gemini-web-app-analysis.md`](gemini-web-app-analysis.md) — UI + Boq wire analysis of `gemini.google.com/app`, mapping each feature to the cookie client.
+- [`nanobanana-pro.md`](nanobanana-pro.md) — the **Nano Banana Pro** (Gemini 3 Pro Image, 4K) image suite + Material 3 icon generation/SVG→ICO pipeline (`aphrody image …`).
+- [`python-image-toolchain.md`](python-image-toolchain.md) — vetted Python library stack for image manipulation, icons, compression, GIF/animation and game spritesheets (Windows-clean installs).
+- [`nanobanana-extract.md`](nanobanana-extract.md) — the original keyless `gemini-2.5-flash-image` extraction notes that seeded `aphrody.images`.
+
 ## Scope
 
 | Organization | Python repos | Active | Archived | Section |
