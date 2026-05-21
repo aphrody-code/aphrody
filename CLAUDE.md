@@ -152,6 +152,8 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 - **Pipes shell exit code** : un pipe vers `tail`/`head` masque l'exit code d'origine. Utiliser `; echo "===EXIT=$?==="`.
 - **`skill-creator` frontmatter** : `source/version` dans `metadata`, pas de `<` / `>` dans description.
 - **`octocrab` Search API** : `.sort("stars")` prend `&str`. Feature-gate `github` active pour isolation CI.
+- **Agents parallèles `isolation: "worktree"`** : non fiable (agents partagent parfois le main tree → races HEAD-switch). Intégrer par *harvest* (`git checkout <branch> -- <path>`) + hand-merge des fichiers partagés, jamais `git merge` de bases enchevêtrées. Nettoyer : `git worktree unlock` avant `git worktree remove --force`.
+- **Peer agy ↔ main concurrent** : le peer committe sur `main` avec l'identité git `aphrody-code` (identique à la nôtre). Re-vérifier `git log --oneline main..HEAD` avant tout fast-forward ; ne pas supposer la base de branche stable.
 
 ## 7.5. aphrody-terminal — LLM-first terminal
 
