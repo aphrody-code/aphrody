@@ -56,6 +56,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod google;
+
 use iced_x86::{
     Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter,
 };

@@ -615,6 +615,20 @@ pub(crate) enum ReAction {
         #[arg(long)]
         pretty: bool,
     },
+    /// Analyse a Google binary (Electron / Chromium / Go / Node / V8 snapshot).
+    ///
+    /// Detects the binary family, extracts OAuth2 client IDs, Google API
+    /// endpoints, auto-updater URLs, and code-signing subject. Output is a
+    /// single JSON object.
+    ///
+    /// Example: aphrody re google agy.exe --pretty | jq '.family, .chromium_version'
+    Google {
+        /// Path to the binary to analyse.
+        path: PathBuf,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -735,6 +749,19 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     serde_json::to_string_pretty(&insns)
                 } else {
                     serde_json::to_string(&insns)
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
+            },
+            ReAction::Google { path, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let report = aphrody_re::google::analyze_google(&bytes);
+                let json = if pretty {
+                    serde_json::to_string_pretty(&report)
+                } else {
+                    serde_json::to_string(&report)
                 }
                 .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
                 println!("{json}");

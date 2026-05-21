@@ -33,6 +33,10 @@ thiserror  = { workspace = true }
 # Pure-Rust x86/x64 disassembler + Intel formatter. No C, no GPL.
 # Apex Cap R5.4 (Sprint R-E): `disasm()` public API.
 iced-x86   = { workspace = true }
+# Byte-level needle search for family detection in the `google` module.
+memchr     = { workspace = true }
+# Structured pattern extraction (OAuth IDs, endpoints, version strings).
+regex      = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
