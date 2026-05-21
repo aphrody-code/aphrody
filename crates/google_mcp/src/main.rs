@@ -1147,6 +1147,28 @@ impl GoogleMcpServer {
         photoshop_tools::action_json(req).await
     }
 
+    #[tool(description = "Generative expand (Adobe Firefly v3): enlarge an image's canvas to \
+                          width×height, AI-filling the new area (optional prompt). image_url must \
+                          be Adobe-readable. Optionally save_dir. Returns { count, image_urls, \
+                          saved_paths }. Set FIREFLY_CLIENT_ID/SECRET.")]
+    async fn firefly_generative_expand(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::FireflyExpandRequest>,
+    ) -> String {
+        photoshop_tools::generative_expand(req).await
+    }
+
+    #[tool(description = "Generative fill (Adobe Firefly v3): replace the masked region of an image \
+                          with prompt-guided content. image_url + mask_url (white = fill) must be \
+                          Adobe-readable. Optionally save_dir. Returns { count, image_urls, \
+                          saved_paths }. Set FIREFLY_CLIENT_ID/SECRET.")]
+    async fn firefly_generative_fill(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::FireflyFillRequest>,
+    ) -> String {
+        photoshop_tools::generative_fill(req).await
+    }
+
     // -----------------------------------------------------------------------
     // screen_capture — capture the screen (or a window) as a PNG for vision.
     // -----------------------------------------------------------------------

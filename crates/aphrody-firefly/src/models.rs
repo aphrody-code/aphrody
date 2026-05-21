@@ -167,6 +167,117 @@ impl GenerateImageRequest {
     }
 }
 
+/// A reference to a source/mask image for the edit endpoints (expand / fill).
+/// Carries either a pre-signed `url` (our headless flow) or a Firefly storage
+/// `uploadId`. Exactly one should be set.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ImageSourceRef {
+    /// A pre-signed, Adobe-readable URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// A Firefly storage upload id (from the Firefly upload API).
+    #[serde(rename = "uploadId", skip_serializing_if = "Option::is_none")]
+    pub upload_id: Option<String>,
+}
+
+impl ImageSourceRef {
+    /// Reference an image by pre-signed URL.
+    #[must_use]
+    pub fn url(u: impl Into<String>) -> Self {
+        Self { url: Some(u.into()), upload_id: None }
+    }
+    /// Reference an image by Firefly `uploadId`.
+    #[must_use]
+    pub fn upload(id: impl Into<String>) -> Self {
+        Self { url: None, upload_id: Some(id.into()) }
+    }
+}
+
+/// The `image` block for an expand request (`{ source }`).
+#[derive(Debug, Clone, Serialize)]
+pub struct ExpandImage {
+    /// The image to expand.
+    pub source: ImageSourceRef,
+}
+
+/// The request body for `POST /v3/images/expand-async` (generative expand).
+#[derive(Debug, Clone, Serialize)]
+pub struct ExpandRequest {
+    /// The source image.
+    pub image: ExpandImage,
+    /// Target canvas size (the expanded dimensions).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<Size>,
+    /// Number of variations (1–4).
+    #[serde(rename = "numVariations", skip_serializing_if = "Option::is_none")]
+    pub num_variations: Option<u8>,
+    /// Optional prompt guiding the generated fill content.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
+}
+
+impl ExpandRequest {
+    /// Expand `source` to `size`.
+    #[must_use]
+    pub fn new(source: ImageSourceRef, size: Size) -> Self {
+        Self { image: ExpandImage { source }, size: Some(size), num_variations: None, prompt: None }
+    }
+    /// Set the number of variations (clamped to 1..=4).
+    #[must_use]
+    pub fn with_variations(mut self, n: u8) -> Self {
+        self.num_variations = Some(n.clamp(1, 4));
+        self
+    }
+    /// Set the guiding prompt.
+    #[must_use]
+    pub fn with_prompt(mut self, p: impl Into<String>) -> Self {
+        self.prompt = Some(p.into());
+        self
+    }
+}
+
+/// The `image` block for a fill request (`{ source, mask }`).
+#[derive(Debug, Clone, Serialize)]
+pub struct FillImage {
+    /// The base image.
+    pub source: ImageSourceRef,
+    /// The mask marking the region to fill (white = fill).
+    pub mask: ImageSourceRef,
+}
+
+/// The request body for `POST /v3/images/fill-async` (generative fill).
+#[derive(Debug, Clone, Serialize)]
+pub struct FillRequest {
+    /// Source + mask.
+    pub image: FillImage,
+    /// Prompt describing the desired fill content.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
+    /// Number of variations (1–4).
+    #[serde(rename = "numVariations", skip_serializing_if = "Option::is_none")]
+    pub num_variations: Option<u8>,
+}
+
+impl FillRequest {
+    /// Fill the masked region of `source` (mask from `mask`).
+    #[must_use]
+    pub fn new(source: ImageSourceRef, mask: ImageSourceRef) -> Self {
+        Self { image: FillImage { source, mask }, prompt: None, num_variations: None }
+    }
+    /// Set the fill prompt.
+    #[must_use]
+    pub fn with_prompt(mut self, p: impl Into<String>) -> Self {
+        self.prompt = Some(p.into());
+        self
+    }
+    /// Set the number of variations (clamped to 1..=4).
+    #[must_use]
+    pub fn with_variations(mut self, n: u8) -> Self {
+        self.num_variations = Some(n.clamp(1, 4));
+        self
+    }
+}
+
 /// Response from submitting an async generate job.
 #[derive(Debug, Clone, Deserialize)]
 pub struct AsyncJobSubmission {
@@ -358,6 +469,44 @@ mod tests {
             serde_json::from_str(r#"{"status":"some_future_state"}"#).unwrap();
         assert_eq!(env.status, JobStatus::Unknown);
         assert!(!env.status.is_terminal());
+    }
+
+    #[test]
+    fn expand_request_serializes() {
+        let req = ExpandRequest::new(ImageSourceRef::url("https://s3/in.jpg"), Size::SQUARE_2K)
+            .with_variations(2)
+            .with_prompt("extend the beach");
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["image"]["source"]["url"], "https://s3/in.jpg");
+        assert_eq!(v["size"]["width"], 2048);
+        assert_eq!(v["numVariations"], 2);
+        assert_eq!(v["prompt"], "extend the beach");
+        // uploadId omitted when only url is set.
+        assert!(v["image"]["source"].get("uploadId").is_none());
+    }
+
+    #[test]
+    fn fill_request_serializes_source_and_mask() {
+        let req = FillRequest::new(
+            ImageSourceRef::url("https://s3/src.png"),
+            ImageSourceRef::upload("mask-upload-1"),
+        )
+        .with_prompt("a bouquet of flowers");
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["image"]["source"]["url"], "https://s3/src.png");
+        assert_eq!(v["image"]["mask"]["uploadId"], "mask-upload-1");
+        assert_eq!(v["prompt"], "a bouquet of flowers");
+        assert!(v.get("numVariations").is_none());
+    }
+
+    #[test]
+    fn image_source_ref_one_field_only() {
+        let u = ImageSourceRef::url("https://x");
+        assert_eq!(u.url.as_deref(), Some("https://x"));
+        assert!(u.upload_id.is_none());
+        let up = ImageSourceRef::upload("id1");
+        assert!(up.url.is_none());
+        assert_eq!(up.upload_id.as_deref(), Some("id1"));
     }
 
     #[test]

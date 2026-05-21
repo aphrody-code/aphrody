@@ -12,8 +12,8 @@
 //! generated image feeds straight into a Photoshop op as an `external` input.
 
 use aphrody_firefly::{
-    ContentClass, FireflyClient, GenerateImageRequest, LrEdit, OutputType, PhotoshopClient,
-    PsInput, PsOutput, Storage,
+    ContentClass, ExpandRequest, FillRequest, FireflyClient, GenerateImageRequest, ImageSourceRef,
+    LrEdit, OutputType, PhotoshopClient, PsInput, PsOutput, Size, Storage,
 };
 use rmcp::schemars::{self, JsonSchema};
 use serde::Deserialize;
@@ -446,6 +446,122 @@ pub(crate) async fn action_json(req: PsActionJsonRequest) -> String {
         },
         Err(e) => json!({ "error": e }).to_string(),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Firefly generative edit tools — expand (enlarge canvas, AI-fill) and fill
+// (replace a masked region). Both take Adobe-readable URLs and download the
+// result. Mirror the connector's image_generative_expand.
+// ---------------------------------------------------------------------------
+
+/// Request for [`generative_expand`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct FireflyExpandRequest {
+    /// URL of the source image (Adobe-readable / presigned).
+    pub image_url: String,
+    /// Target width in pixels.
+    pub width: u32,
+    /// Target height in pixels.
+    pub height: u32,
+    /// Optional prompt guiding the generated fill content.
+    #[serde(default)]
+    pub prompt: Option<String>,
+    /// Number of variations (1–4, default 1).
+    #[serde(default)]
+    pub variations: Option<u8>,
+    /// Optional directory to save the downloaded outputs.
+    #[serde(default)]
+    pub save_dir: Option<String>,
+}
+
+/// Request for [`generative_fill`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct FireflyFillRequest {
+    /// URL of the base image (Adobe-readable / presigned).
+    pub image_url: String,
+    /// URL of the mask image (white = region to fill).
+    pub mask_url: String,
+    /// Prompt describing the desired fill content.
+    #[serde(default)]
+    pub prompt: Option<String>,
+    /// Number of variations (1–4, default 1).
+    #[serde(default)]
+    pub variations: Option<u8>,
+    /// Optional directory to save the downloaded outputs.
+    #[serde(default)]
+    pub save_dir: Option<String>,
+}
+
+/// Generative expand: enlarge the canvas of an image, AI-filling the new area.
+pub(crate) async fn generative_expand(req: FireflyExpandRequest) -> String {
+    let mut fx = ExpandRequest::new(
+        ImageSourceRef::url(req.image_url),
+        Size { width: req.width, height: req.height },
+    );
+    if let Some(n) = req.variations {
+        fx = fx.with_variations(n);
+    }
+    if let Some(p) = req.prompt {
+        fx = fx.with_prompt(p);
+    }
+    match ff_client().await {
+        Ok(c) => match c.expand(&fx).await {
+            Ok(result) => download_and_report(c, &result, req.save_dir, "expand").await,
+            Err(e) => json!({ "error": format!("generativeExpand: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Generative fill: replace the masked region of an image with prompt content.
+pub(crate) async fn generative_fill(req: FireflyFillRequest) -> String {
+    let mut fx = FillRequest::new(
+        ImageSourceRef::url(req.image_url),
+        ImageSourceRef::url(req.mask_url),
+    );
+    if let Some(p) = req.prompt {
+        fx = fx.with_prompt(p);
+    }
+    if let Some(n) = req.variations {
+        fx = fx.with_variations(n);
+    }
+    match ff_client().await {
+        Ok(c) => match c.fill(&fx).await {
+            Ok(result) => download_and_report(c, &result, req.save_dir, "fill").await,
+            Err(e) => json!({ "error": format!("generativeFill: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Download a Firefly result (optionally to disk) and report URLs/seeds/paths.
+async fn download_and_report(
+    client: &FireflyClient,
+    result: &aphrody_firefly::GenerateResult,
+    save_dir: Option<String>,
+    prefix: &str,
+) -> String {
+    let urls: Vec<String> = result.outputs.iter().map(|o| o.image.url.clone()).collect();
+    let mut saved: Vec<String> = Vec::new();
+    if let Some(dir) = save_dir.as_deref() {
+        match client.download_outputs(result).await {
+            Ok(images) => {
+                for img in &images {
+                    match img.save_to_dir(std::path::Path::new(dir), prefix).await {
+                        Ok(p) => saved.push(p.display().to_string()),
+                        Err(e) => return json!({ "error": format!("save: {e}") }).to_string(),
+                    }
+                }
+            }
+            Err(e) => return json!({ "error": format!("download: {e}") }).to_string(),
+        }
+    }
+    json!({
+        "count": urls.len(),
+        "image_urls": urls,
+        "saved_paths": saved,
+    })
+    .to_string()
 }
 
 /// Serialize a Photoshop job into a tool-result JSON string.
