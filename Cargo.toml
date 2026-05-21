@@ -177,6 +177,10 @@ members = [
     # surface (ported from icebear0828/notebooklm-client + teng-lin/notebooklm-py
     # + jacob-bd/notebooklm-mcp-cli, all MIT). No browser automation in-crate.
     "crates/notebooklm",
+    # gemini-web — pure-Rust client for the Gemini web app (gemini.google.com/app)
+    # Boq batchexecute surface; mirrors notebooklm transport (cookie auth +
+    # page-bootstrap token scrape + MaZiqc send/parse). No browser automation in-crate.
+    "crates/gemini-web",
     # aphrody-mcp-smoke — end-to-end smoke test for the unified aphrody-mcp
     # stdio server (handshake + tools/list + tools/call sweep + p50/p95 +
     # NDJSON report). Replaces the ad-hoc bash/pwsh probes.
@@ -387,6 +391,7 @@ aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canar
 
 # --- notebooklm (Google NotebookLM Boq RPC client) ------------------------
 notebooklm         = { path = "crates/notebooklm", version = "1.0.0-canary" }
+gemini-web         = { path = "crates/gemini-web", version = "1.0.0-canary" }
 
 # --- aphrody-voice family (TTS + STT) ------------------------------------
 aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
