@@ -217,9 +217,12 @@ pub struct AphrodyMcpCallRequest {
 
 // ---------------------------------------------------------------------------
 // context7 HTTP helper — helper for the public
-// Context7 docs API (https://mcp.context7.com/api/v2/{libs/search,context}).
-// CONTEXT7_API_KEY is OPTIONAL: the public tier works unauthenticated,
-// a Bearer key unlocks larger quotas.
+// Context7 docs API (https://context7.com/api/v1/{search,<libraryId>}).
+// NOTE 2026-05-21: the old `mcp.context7.com/api/v2/{libs/search,context}`
+// host now 404s ("Use /mcp for MCP protocol communication") — Context7 moved
+// the REST surface to `context7.com/api/v1` (search) + `context7.com/api/v1/<id>`
+// (docs, `?type=txt&topic=&tokens=`). CONTEXT7_API_KEY is OPTIONAL: the public
+// tier works unauthenticated, a Bearer key unlocks larger quotas.
 // ---------------------------------------------------------------------------
 
 static CONTEXT7_CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
@@ -228,7 +231,7 @@ fn context7_base_url() -> String {
     std::env::var("CONTEXT7_API_BASE")
         .ok()
         .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "https://mcp.context7.com/api".to_string())
+        .unwrap_or_else(|| "https://context7.com/api".to_string())
 }
 
 fn context7_client() -> &'static reqwest::Client {
@@ -1153,11 +1156,14 @@ impl GoogleMcpServer {
             Context7ResolveRequest,
         >,
     ) -> String {
-        context7_get("v2/libs/search", &[
-            ("query", query.as_str()),
-            ("libraryName", library_name.as_str()),
-        ])
-        .await
+        // Context7 v1 search takes a single `query`; fold the library name in
+        // for ranking when present.
+        let q = if library_name.trim().is_empty() {
+            query.clone()
+        } else {
+            format!("{library_name} {query}")
+        };
+        context7_get("v1/search", &[("query", q.as_str())]).await
     }
 
     // -----------------------------------------------------------------------
@@ -1172,8 +1178,15 @@ impl GoogleMcpServer {
         &self,
         Parameters(Context7DocsRequest { library_id, query }): Parameters<Context7DocsRequest>,
     ) -> String {
-        context7_get("v2/context", &[("query", query.as_str()), ("libraryId", library_id.as_str())])
-            .await
+        // Context7 v1 docs are path-based: /api/v1/<libraryId>?type=txt&topic=&tokens=.
+        // libraryId is returned with a leading '/' (e.g. "/websites/rs_tokio").
+        let path = format!("v1/{}", library_id.trim_start_matches('/'));
+        context7_get(&path, &[
+            ("type", "txt"),
+            ("topic", query.as_str()),
+            ("tokens", "5000"),
+        ])
+        .await
     }
 
     // -----------------------------------------------------------------------
@@ -1260,19 +1273,18 @@ impl GoogleMcpServer {
 
         let ctx7_future = async {
             if let Some(name) = library_name.as_deref().filter(|s| !s.is_empty()) {
-                let resolved = context7_get("v2/libs/search", &[
-                    ("query", query.as_str()),
-                    ("libraryName", name),
-                ])
-                .await;
+                let q = format!("{name} {query}");
+                let resolved = context7_get("v1/search", &[("query", q.as_str())]).await;
                 let lib_id =
                     serde_json::from_str::<serde_json::Value>(&resolved).ok().and_then(|v| {
                         v.pointer("/results/0/id").and_then(|x| x.as_str()).map(str::to_owned)
                     });
                 if let Some(id) = lib_id {
-                    let docs = context7_get("v2/context", &[
-                        ("query", query.as_str()),
-                        ("libraryId", id.as_str()),
+                    let path = format!("v1/{}", id.trim_start_matches('/'));
+                    let docs = context7_get(&path, &[
+                        ("type", "txt"),
+                        ("topic", query.as_str()),
+                        ("tokens", "5000"),
                     ])
                     .await;
                     format!("### resolved library_id: `{id}`\n\n{resolved}\n\n### docs\n\n{docs}")
@@ -1280,7 +1292,7 @@ impl GoogleMcpServer {
                     resolved
                 }
             } else {
-                context7_get("v2/libs/search", &[("query", query.as_str())]).await
+                context7_get("v1/search", &[("query", query.as_str())]).await
             }
         };
 
