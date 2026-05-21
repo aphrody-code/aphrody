@@ -1,89 +1,98 @@
-# Material Design 3 Voice-to-Voice Web Application
+# Application Web Parole-à-Parole Material Design 3
 
-This is a local, real-time speech-to-speech AI voice assistant web application that runs entirely offline without requiring external API keys. It uses the `google-antigravity` Python SDK with:
-- **Speech-to-Text (STT):** Local CTranslate2-based Whisper model (`faster-whisper`).
-- **Text-to-Speech (TTS):** Local ONNX-based Kokoro model (`kokoro-onnx`).
-- **Orchestration:** Standard Antigravity `Agent` with `LocalConnectionStrategy`.
-- **UI:** A pixel-perfect Google Material Design 3 and Gemini brand-inspired web interface, using Vanilla CSS, a pulsing visualizer gem, and local Voice Activity Detection (VAD) in the browser.
+Il s'agit d'une application web d'assistant vocal IA locale, en temps réel et parole-à-parole, qui s'exécute entièrement hors ligne sans nécessiter de clés API externes. Elle utilise le SDK Python `google-antigravity` avec :
+- **Reconnaissance vocale (STT) :** Modèle Whisper local basé sur CTranslate2 (`faster-whisper`).
+- **Synthèse vocale (TTS) :** Modèle Kokoro local au format ONNX (`kokoro-onnx`).
+- **Orchestration :** Agent standard Antigravity avec `LocalConnectionStrategy`.
+- **Interface utilisateur :** Une interface web inspirée de Google Material Design 3 et de la marque Gemini, utilisant du CSS natif, une gemme de visualisation pulsante et une détection d'activité vocale (VAD) locale dans le navigateur.
 
 ---
 
 ## Architecture
 
 ```
-                       [ Browser Web Page ]
+                       [ Navigateur Web ]
                                 |
-             (WebSocket Connection ws://localhost:8789)
+             (Connexion WebSocket ws://localhost:8789)
                                 |
                                 v
-                      [ server.py (Backend) ]
+                     [ server.py (Backend) ]
          _______________________|_______________________
         |                       |                       |
         v                       v                       v
- [ Local Whisper STT ]    [ Antigravity Agent ]   [ Local Kokoro TTS ]
+ [ Whisper STT Local ]    [ Agent Antigravity ]   [ Kokoro TTS Local ]
 ```
 
-1. **Microphone Capture:** The browser captures mic input at 16kHz mono.
-2. **Client-Side VAD:** Real-time RMS monitoring in JavaScript detects speech boundaries.
-3. **Audio Streaming:** Binary float32 PCM frames are streamed over WebSockets while user speaks.
-4. **Whisper Transcription:** On silence timeout, the server transcribes speech using Whisper.
-5. **Agent Execution:** The transcript is sent to the local `Agent` which yields a text response stream.
-6. **Concurrent Synthesis:** Text chunks are sent to Kokoro TTS on punctuation boundaries.
-7. **Gapless Audio Playback:** Synthesized 24kHz float32 PCM frames are streamed back to the client and scheduled using AudioContext.
-8. **Barge-in Interrupt:** User speaking during agent output triggers immediate cancellation of the active response.
+1. **Capture du microphone :** Le navigateur capture l'entrée micro en 16kHz mono.
+2. **VAD côté client :** La surveillance du niveau RMS en temps réel dans JavaScript détecte les limites de la parole.
+3. **Flux audio :** Les trames PCM float32 binaires sont envoyées via WebSockets pendant que l'utilisateur parle.
+4. **Transcription Whisper :** Après un délai de silence, le serveur transcrit la parole avec Whisper.
+5. **Exécution de l'agent :** La transcription est envoyée à l'agent local qui renvoie un flux de réponse texte.
+6. **Synthèse concurrente :** Les segments de texte sont envoyés à Kokoro TTS dès qu'une ponctuation (y compris virgules et points-virgules) est rencontrée.
+7. **Lecture audio fluide :** Les trames PCM float32 24kHz synthétisées sont renvoyées au client et planifiées pour une lecture sans coupure via AudioContext.
+8. **Interruption active (Barge-in) :** Si l'utilisateur commence à parler pendant que l'agent s'exprime, la génération et la lecture de la réponse en cours sont immédiatement interrompues.
 
 ---
 
-## Setup & Installation
+## Configuration et Installation
 
-### 1. Set Up Python Environment
+### 1. Configurer l'environnement Python
 
-Ensure you have installed the `voice` dependencies extra of the `google-antigravity` package.
+Assurez-vous d'avoir installé les dépendances `voice` du paquet `google-antigravity`.
 
-Using `uv`:
+Avec `uv` :
 ```bash
-# In the libs/antigravity-sdk-python directory
+# Dans le dossier libs/antigravity-sdk-python
 uv pip install -e ".[voice]"
 uv pip install websockets
 ```
 
-### 2. Run the WebSocket Server
+### 2. Lancer le serveur WebSocket
 
-Start the server using `server.py`:
+Démarrez le serveur avec `server.py` :
 ```bash
 python server.py
 ```
 
-*Note: The server will automatically download the default Kokoro ONNX model (`kokoro-v0_19.onnx`, ~80MB) and voices config (`voices.json`, ~20MB) from Hugging Face into a local `./models/` directory on first launch.*
+*Note : Lors du premier lancement, le serveur téléchargera automatiquement le modèle Kokoro ONNX par défaut (`kokoro-v0_19.onnx`, ~80 Mo) et la configuration des voix (`voices.json`, ~20 Mo) depuis Hugging Face dans un dossier local `./models/`.*
 
-You can also customize parameters via command line:
+Vous pouvez personnaliser les paramètres via la ligne de commande :
 ```bash
-python server.py --host 127.0.0.1 --port 8789 --whisper-model small --voice-name af_bella
+python server.py --host 127.0.0.1 --port 8789 --whisper-model tiny --voice-name ff_siwis
 ```
 
 ---
 
-## Running the Web Frontend
+## Lancement du Frontend Web
 
-Since the frontend is built using standard HTML5 APIs and Vanilla CSS, you can open it directly in your browser:
+Le frontend étant construit avec des API HTML5 standards et du CSS natif, vous pouvez l'ouvrir directement dans votre navigateur :
 
-1. Double-click [index.html](index.html) or run a simple local web server:
+1. Double-cliquez sur [index.html](index.html) ou lancez un serveur web local simple :
    ```bash
-   # Using Python
+   # Avec Python
    python -m http.server 8000
-   # Using Bun
+   # Avec Bun
    bunx serve
    ```
-2. Open `http://localhost:8000` (or the local file path) in Chrome, Edge, or Firefox.
-3. Click the glowing visualizer Gem in the center of the screen to connect to the backend WebSocket.
-4. Allow microphone access when prompted.
-5. Speak! The visualizer will scale and pulse, and the conversation log will display transcripts in real time.
+2. Ouvrez `http://localhost:8000` (ou le chemin du fichier local) dans Chrome, Edge ou Firefox.
+3. Cliquez sur la gemme de visualisation lumineuse au centre de l'écran pour vous connecter au serveur WebSocket.
+4. Autorisez l'accès au microphone lorsque cela vous est demandé.
+5. Parlez ! Le visualiseur changera de taille et pulsera, et le journal affichera les transcriptions en temps réel.
 
 ---
 
-## Design System Integration
+## Optimisation de la latence
 
-The design implements the specifications from the parent repository [DESIGN.md](../../../DESIGN.md):
-- **Typography:** Uses Outfit / Google Sans Flex for variable typographic weight.
-- **Color Palette:** Strictly adheres to M3 baseline values (violet primary, container shades) and the Gemini brand spectrum gradient (blue → purple → pink).
-- **Layout:** Displays a modern sidebar for threshold configuration, a centered visual arena for speech cues, and a collapsible chat log for history tracking.
+Pour obtenir une réactivité maximale et une latence minimale :
+1. **Modèle Whisper plus petit :** Utilisez le paramètre `--whisper-model tiny` (ou `base`) lors du lancement du serveur. Les modèles plus petits s'exécutent beaucoup plus rapidement sur CPU.
+2. **Délai de silence court :** Réglez le curseur de délai de silence sur `0.4s` ou `0.3s` dans l'interface des paramètres. Cela permet de déclencher la transcription dès que vous arrêtez de parler.
+3. **Synthèse sur virgules/points-virgules :** Le serveur commence la génération audio Kokoro dès qu'il rencontre une virgule ou un point-virgule, permettant de commencer la lecture audio avant même que la phrase entière ne soit générée par l'agent.
+
+---
+
+## Intégration du Design System
+
+Le design applique les spécifications du fichier [DESIGN.md](../../../DESIGN.md) du dépôt parent :
+- **Typographie :** Utilise Outfit / Google Sans Flex pour des graisses typographiques adaptables.
+- **Palette de couleurs :** Respecte strictement les valeurs de base M3 (couleur primaire violette, nuances des conteneurs) et le dégradé de la marque Gemini (bleu -> violet -> rose).
+- **Mise en page :** Un panneau latéral moderne pour la configuration du seuil, une arène centrale pour les signaux vocaux et un tiroir rétractable pour l'historique des conversations.

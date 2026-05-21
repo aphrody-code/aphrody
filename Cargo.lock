@@ -4214,6 +4214,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gemini-web"
+version = "1.0.0-canary"
+dependencies = [
+ "pretty_assertions",
+ "regex",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "generator"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"

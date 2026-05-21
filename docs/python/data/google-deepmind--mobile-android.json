@@ -1,0 +1,21 @@
+{
+  "createdAt": "2021-04-21T09:34:44Z",
+  "description": "RL research on Android devices.",
+  "forksCount": 109,
+  "fullName": "google-deepmind/android_env",
+  "homepage": "",
+  "isArchived": false,
+  "isFork": false,
+  "license": {
+    "key": "apache-2.0",
+    "name": "Apache License 2.0",
+    "url": "https://api.github.com/licenses/apache-2.0"
+  },
+  "name": "android_env",
+  "openIssuesCount": 3,
+  "pushedAt": "2026-05-21T13:24:54Z",
+  "stargazersCount": 1219,
+  "updatedAt": "2026-05-21T06:30:19Z",
+  "url": "https://github.com/google-deepmind/android_env",
+  "visibility": "public"
+}
