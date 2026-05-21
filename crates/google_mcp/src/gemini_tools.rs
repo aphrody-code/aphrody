@@ -84,6 +84,61 @@ pub(crate) async fn image(req: GeminiImageRequest) -> String {
     }
 }
 
+/// Request for [`video`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct GeminiVideoRequest {
+    /// The video-generation prompt (routed to the Veo video model).
+    pub prompt: String,
+}
+
+/// Request for [`deep_research`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct GeminiDeepResearchRequest {
+    /// The research topic / question to investigate in depth.
+    pub query: String,
+}
+
+/// Generate a video (Veo) via the Gemini web app. Returns JSON
+/// `{ "text", "generated_video_urls", "count", "note" }`.
+///
+/// Video generation is asynchronous and can take minutes; this returns whatever
+/// the model has produced within the request window (any ready video URLs plus
+/// the status text). Re-issue the call to poll for completion.
+pub(crate) async fn video(req: GeminiVideoRequest) -> String {
+    let prompt = format!("Create a video with Veo: {}", req.prompt);
+    match send_once(&prompt, GeminiModel::Pro).await {
+        Ok(reply) => json!({
+            "text": reply.text,
+            "generated_video_urls": reply.generated_video_urls,
+            "count": reply.generated_video_urls.len(),
+            "note": "Veo generation is async; if count is 0, re-issue to poll for the rendered video.",
+        })
+        .to_string(),
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Run a Deep Research investigation via the Gemini web app. Returns JSON
+/// `{ "report", "model" }`.
+///
+/// Deep Research is a multi-step agentic flow; the consolidated report is
+/// returned as text. Uses the Pro model for the strongest research synthesis.
+pub(crate) async fn deep_research(req: GeminiDeepResearchRequest) -> String {
+    let prompt = format!(
+        "Do a deep, multi-source research investigation and write a thorough, \
+         well-structured report with citations on: {}",
+        req.query
+    );
+    match send_once(&prompt, GeminiModel::Pro).await {
+        Ok(reply) => json!({
+            "report": reply.text,
+            "model": GeminiModel::Pro.label(),
+        })
+        .to_string(),
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
 /// Send one prompt, refreshing the session once on an auth error.
 async fn send_once(prompt: &str, model: GeminiModel) -> Result<gemini_web::ChatReply, String> {
     let cell = client().await?;
