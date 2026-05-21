@@ -9,6 +9,11 @@ use tracing::debug;
 
 use crate::auth::{OAuthToken, token_from_credential_manager};
 use crate::error::SdkError;
+use crate::models::{
+    FetchAvailableModelsRequest, FetchAvailableModelsResponse, GenerateContentRequest,
+    GenerateContentResponse, LoadCodeAssistRequest, LoadCodeAssistResponse, OnboardUserRequest,
+    OnboardUserResponse,
+};
 
 /// Authenticated HTTP client for the Antigravity (Google AI Ultra / Gemini)
 /// API surface.
@@ -205,5 +210,90 @@ impl AntigravityClient {
             body,
         )
         .await
+    }
+
+    // -- Typed wrappers ------------------------------------------------------
+
+    /// Typed `loadCodeAssist`: serialize `req`, post it via the existing
+    /// [`load_code_assist`](Self::load_code_assist) building block, and
+    /// deserialize the JSON response into [`LoadCodeAssistResponse`].
+    ///
+    /// # Errors
+    ///
+    /// * Any [`SdkError`] from [`load_code_assist`](Self::load_code_assist).
+    /// * [`SdkError::TokenParse`] if the request cannot be serialized or the
+    ///   response cannot be deserialized into the typed shape.
+    pub async fn load_code_assist_typed(
+        &self,
+        req: &LoadCodeAssistRequest,
+    ) -> Result<LoadCodeAssistResponse, SdkError> {
+        let body = serde_json::to_value(req)?;
+        let value = self.load_code_assist(&body).await?;
+        Ok(serde_json::from_value(value)?)
+    }
+
+    /// Typed `fetchAvailableModels`: serialize `req`, post it via the existing
+    /// [`fetch_available_models`](Self::fetch_available_models) building block,
+    /// and deserialize the JSON response into [`FetchAvailableModelsResponse`].
+    ///
+    /// # Errors
+    ///
+    /// * Any [`SdkError`] from
+    ///   [`fetch_available_models`](Self::fetch_available_models).
+    /// * [`SdkError::TokenParse`] on (de)serialization failure.
+    pub async fn fetch_available_models_typed(
+        &self,
+        req: &FetchAvailableModelsRequest,
+    ) -> Result<FetchAvailableModelsResponse, SdkError> {
+        let body = serde_json::to_value(req)?;
+        let value = self.fetch_available_models(&body).await?;
+        Ok(serde_json::from_value(value)?)
+    }
+
+    /// Typed `onboardUser`: serialize `req`, post it to the production Cloud
+    /// Code `v1internal:onboardUser` method, and deserialize the JSON response
+    /// into [`OnboardUserResponse`].
+    ///
+    /// # Errors
+    ///
+    /// * Any [`SdkError`] from [`cloud_code`](Self::cloud_code).
+    /// * [`SdkError::TokenParse`] on (de)serialization failure.
+    pub async fn onboard_user(
+        &self,
+        req: &OnboardUserRequest,
+    ) -> Result<OnboardUserResponse, SdkError> {
+        let body = serde_json::to_value(req)?;
+        let value = self
+            .cloud_code(
+                crate::endpoints::CloudCodeEndpoint::Prod,
+                crate::endpoints::METHOD_ONBOARD_USER,
+                &body,
+            )
+            .await?;
+        Ok(serde_json::from_value(value)?)
+    }
+
+    /// Gemini `generateContent`: post `req` to
+    /// `{GEMINI_API_HOST}/v1beta/models/{model}:generateContent` and
+    /// deserialize the response into [`GenerateContentResponse`].
+    ///
+    /// `model` is a bare model id such as `"gemini-2.0-flash"`.
+    ///
+    /// # Errors
+    ///
+    /// * Any [`SdkError`] from [`post_json`](Self::post_json).
+    /// * [`SdkError::TokenParse`] on (de)serialization failure.
+    pub async fn generate_content(
+        &self,
+        model: &str,
+        req: &GenerateContentRequest,
+    ) -> Result<GenerateContentResponse, SdkError> {
+        let url = format!(
+            "{}/v1beta/models/{model}:generateContent",
+            crate::endpoints::GEMINI_API_HOST
+        );
+        let body = serde_json::to_value(req)?;
+        let value = self.post_json(&url, &body).await?;
+        Ok(serde_json::from_value(value)?)
     }
 }

@@ -84,6 +84,16 @@ pub struct GoogleReport {
     /// Code-signing subject hint (`"Google LLC"` or `"Google Inc"`), if the
     /// certificate chain or any DER-embedded string is detected.
     pub code_sign_subject: Option<String>,
+    /// Fully-qualified protobuf gRPC service names discovered in a Go binary
+    /// (`exa.<package>_pb.<Name>Service`) plus Codeium proto package symbols
+    /// (`codeium_common_go_proto`, `exa.<package>_pb`). Sorted + deduped.
+    /// Always present (possibly empty).
+    pub grpc_services: Vec<String>,
+    /// gRPC RPC method names extracted from embedded service paths
+    /// (`/exa.<package>_pb.<Name>Service/<Method>`) and from a conservative
+    /// verb-noun allowlist of identifiers found in the string corpus. Sorted +
+    /// deduped. Always present (possibly empty).
+    pub grpc_methods: Vec<String>,
     /// Human-readable list of detection signals used to classify the binary.
     pub indicators: Vec<String>,
 }
@@ -134,6 +144,10 @@ pub fn analyze_google(bytes: &[u8]) -> GoogleReport {
     // --- 7. Code-signing subject — best-effort byte scan --------------------
     let code_sign_subject = detect_code_sign_subject(bytes, &mut indicators);
 
+    // --- 8. gRPC `exa.*` services + RPC methods (Go binaries: Codeium LS) ----
+    let (grpc_services, grpc_methods) =
+        extract_grpc_surface(bytes, &strings, &mut indicators);
+
     GoogleReport {
         family,
         chromium_version,
@@ -141,6 +155,8 @@ pub fn analyze_google(bytes: &[u8]) -> GoogleReport {
         google_endpoints,
         updater_urls,
         code_sign_subject,
+        grpc_services,
+        grpc_methods,
         indicators,
     }
 }
@@ -389,6 +405,120 @@ fn detect_code_sign_subject(bytes: &[u8], indicators: &mut Vec<String>) -> Optio
 }
 
 // ---------------------------------------------------------------------------
+// gRPC `exa.*` services + RPC methods
+// ---------------------------------------------------------------------------
+
+/// Extract protobuf gRPC service descriptors and RPC method names from a Go
+/// binary such as the Codeium `language_server.exe`.
+///
+/// Two complementary passes are run:
+///
+/// 1. **Raw-byte regex** over the whole blob — Go gRPC binaries embed the
+///    fully-qualified routing path verbatim
+///    (`/exa.<package>_pb.<Name>Service/<Method>`), the package symbol
+///    (`exa.<package>_pb`), and the Codeium proto package marker
+///    (`codeium_common_go_proto`). Running on raw bytes catches paths even
+///    when they straddle the `extract_strings` minimum-length window.
+/// 2. **String-corpus allowlist** — conservatively promotes verb-noun
+///    CamelCase identifiers (`Get*`, `Fetch*`, `Start*`, `Record*`,
+///    `Accept*`, `Auth*`) that appear in the corpus to method candidates.
+///    This is gated behind the presence of at least one `exa.*` service so an
+///    arbitrary binary full of `GetFoo` symbols does not produce noise.
+///
+/// Returns `(services, methods)`, both sorted and deduplicated.
+fn extract_grpc_surface(
+    bytes: &[u8],
+    strings: &[String],
+    indicators: &mut Vec<String>,
+) -> (Vec<String>, Vec<String>) {
+    use std::collections::BTreeSet;
+
+    // Fully-qualified service: `exa.<package>_pb.<Name>Service`.
+    let service_re = Regex::new(r"\bexa\.[a-z0-9_]+_pb\.[A-Za-z][A-Za-z0-9]*Service\b")
+        .expect("static regex");
+    // Bare proto package symbol: `exa.<package>_pb` (no trailing `.Service`).
+    let package_re = Regex::new(r"\bexa\.[a-z0-9_]+_pb\b").expect("static regex");
+    // gRPC routing path: `/exa.<package>_pb.<Name>Service/<Method>`.
+    let path_re =
+        Regex::new(r"/(exa\.[a-z0-9_]+_pb\.[A-Za-z][A-Za-z0-9]*Service)/([A-Za-z][A-Za-z0-9]*)")
+            .expect("static regex");
+    // Codeium proto package marker.
+    let codeium_marker = b"codeium_common_go_proto";
+
+    let mut services: BTreeSet<String> = BTreeSet::new();
+    let mut methods: BTreeSet<String> = BTreeSet::new();
+
+    // --- Pass 1a: routing paths (most authoritative) on raw bytes -----------
+    for cap in path_re.captures_iter(bytes) {
+        if let (Some(svc), Some(meth)) = (cap.get(1), cap.get(2)) {
+            if let (Ok(svc), Ok(meth)) =
+                (std::str::from_utf8(svc.as_bytes()), std::str::from_utf8(meth.as_bytes()))
+            {
+                services.insert(svc.to_owned());
+                methods.insert(meth.to_owned());
+            }
+        }
+    }
+
+    // --- Pass 1b: fully-qualified service names on raw bytes ----------------
+    for m in service_re.find_iter(bytes) {
+        if let Ok(svc) = std::str::from_utf8(m.as_bytes()) {
+            services.insert(svc.to_owned());
+        }
+    }
+
+    // --- Pass 1c: bare `exa.*_pb` package symbols on raw bytes --------------
+    for m in package_re.find_iter(bytes) {
+        if let Ok(pkg) = std::str::from_utf8(m.as_bytes()) {
+            // Skip if this match is actually the prefix of a full service name
+            // already recorded — keep only standalone package symbols.
+            let pkg = pkg.to_owned();
+            if !services.iter().any(|s| s.starts_with(&pkg) && s.len() > pkg.len()) {
+                services.insert(pkg);
+            }
+        }
+    }
+
+    // --- Pass 1d: Codeium proto package marker ------------------------------
+    if memmem::find(bytes, codeium_marker).is_some() {
+        services.insert("codeium_common_go_proto".to_owned());
+        indicators.push("gRPC proto package: codeium_common_go_proto".to_owned());
+    }
+
+    // --- Pass 2: conservative verb-noun allowlist over the string corpus ----
+    // Only mine the corpus for extra methods once we know this binary actually
+    // carries an `exa.*` gRPC surface, to keep false positives near zero.
+    let has_exa_service = services.iter().any(|s| s.contains("Service"));
+    if has_exa_service {
+        // `<Verb><Noun>` with at least one capitalised noun segment after the
+        // verb (so bare verbs like `Get` alone are rejected).
+        let verb_re = Regex::new(
+            r"\b(?:Get|Fetch|Start|Record|Accept|Auth)[A-Z][A-Za-z0-9]+\b",
+        )
+        .expect("static regex");
+        for s in strings {
+            for m in verb_re.find_iter(s.as_bytes()) {
+                if let Ok(name) = std::str::from_utf8(m.as_bytes()) {
+                    methods.insert(name.to_owned());
+                }
+            }
+        }
+    }
+
+    let services: Vec<String> = services.into_iter().collect();
+    let methods: Vec<String> = methods.into_iter().collect();
+
+    for svc in &services {
+        indicators.push(format!("gRPC service: {svc}"));
+    }
+    for meth in &methods {
+        indicators.push(format!("gRPC method: {meth}"));
+    }
+
+    (services, methods)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -561,6 +691,136 @@ mod tests {
         assert!(json["google_endpoints"].is_array());
         assert!(json["updater_urls"].is_array());
         assert!(json["indicators"].is_array());
+    }
+
+    // gRPC `exa.*` surface tests ----------------------------------------------
+
+    #[test]
+    fn google_grpc_path_extracts_service_and_method() {
+        // Synthetic Go binary fragment: build-id marker + a real-shaped gRPC
+        // routing path + the Codeium proto package symbol.
+        let mut buf = b"Go build ID: \"abc\"\x00".to_vec();
+        buf.extend_from_slice(
+            b"/exa.language_server_pb.LanguageServerService/FetchUserInfo\x00",
+        );
+        buf.extend_from_slice(b"codeium_common_go_proto\x00");
+        let r = analyze_google(&buf);
+
+        // Family unchanged.
+        assert_eq!(r.family, BinaryFamily::GoBinary, "family must stay GoBinary, got {:?}", r.family);
+
+        // Service from the path is recorded (full FQN).
+        assert!(
+            r.grpc_services
+                .iter()
+                .any(|s| s == "exa.language_server_pb.LanguageServerService"),
+            "expected service FQN, got {:?}",
+            r.grpc_services
+        );
+        // Codeium proto package marker recorded.
+        assert!(
+            r.grpc_services.iter().any(|s| s == "codeium_common_go_proto"),
+            "expected codeium_common_go_proto, got {:?}",
+            r.grpc_services
+        );
+        // Method from the path is recorded.
+        assert!(
+            r.grpc_methods.iter().any(|m| m == "FetchUserInfo"),
+            "expected FetchUserInfo method, got {:?}",
+            r.grpc_methods
+        );
+        // Human indicators present.
+        assert!(r.indicators.iter().any(|s| s.starts_with("gRPC service:")));
+        assert!(r.indicators.iter().any(|s| s.starts_with("gRPC method:")));
+    }
+
+    #[test]
+    fn google_grpc_methods_allowlist_and_sorted_dedup() {
+        let mut buf = b".gopclntab\x00".to_vec();
+        // Two distinct service paths.
+        buf.extend_from_slice(b"/exa.auth_pb.AuthService/GetAuthStatus\x00");
+        buf.extend_from_slice(b"/exa.models_pb.ModelService/GetAvailableModels\x00");
+        // Allowlisted verb-noun identifiers loose in the corpus (mined only
+        // because an exa.* service is present). Duplicate to test dedup.
+        buf.extend_from_slice(b"FetchUserInfo GetModelResponse FetchUserInfo\x00");
+        // A non-allowlisted CamelCase identifier that must NOT be captured.
+        buf.extend_from_slice(b"RenderTemplate ComputeHash\x00");
+        let r = analyze_google(&buf);
+
+        assert_eq!(r.family, BinaryFamily::GoBinary);
+
+        // Services sorted ascending.
+        let mut sorted_svc = r.grpc_services.clone();
+        sorted_svc.sort();
+        assert_eq!(r.grpc_services, sorted_svc, "services must be sorted");
+
+        // Methods sorted + deduped.
+        let mut sorted_meth = r.grpc_methods.clone();
+        sorted_meth.sort();
+        sorted_meth.dedup();
+        assert_eq!(r.grpc_methods, sorted_meth, "methods must be sorted + deduped");
+
+        // Allowlisted verbs captured.
+        for expected in ["GetAuthStatus", "GetAvailableModels", "FetchUserInfo", "GetModelResponse"] {
+            assert!(
+                r.grpc_methods.iter().any(|m| m == expected),
+                "expected method {expected}, got {:?}",
+                r.grpc_methods
+            );
+        }
+        // FetchUserInfo only once despite appearing twice.
+        assert_eq!(
+            r.grpc_methods.iter().filter(|m| *m == "FetchUserInfo").count(),
+            1,
+            "FetchUserInfo must be deduplicated"
+        );
+        // Non-allowlisted identifiers excluded.
+        assert!(
+            !r.grpc_methods.iter().any(|m| m == "RenderTemplate" || m == "ComputeHash"),
+            "non-allowlisted identifiers must not be captured, got {:?}",
+            r.grpc_methods
+        );
+    }
+
+    #[test]
+    fn google_grpc_no_mining_without_exa_service() {
+        // Verb-noun identifiers present, but NO exa.* service — the corpus
+        // allowlist must stay dormant so unrelated binaries are not polluted.
+        let buf = b"go:buildid\x00GetUserInfo FetchData StartServer\x00".to_vec();
+        let r = analyze_google(&buf);
+        assert_eq!(r.family, BinaryFamily::GoBinary);
+        assert!(r.grpc_services.is_empty(), "no services expected, got {:?}", r.grpc_services);
+        assert!(r.grpc_methods.is_empty(), "no methods expected, got {:?}", r.grpc_methods);
+    }
+
+    #[test]
+    fn google_grpc_bare_package_symbol_extracted() {
+        // A bare `exa.*_pb` package symbol with no full service routing path.
+        let buf = b"runtime.goexit\x00exa.codeium_common_pb\x00".to_vec();
+        let r = analyze_google(&buf);
+        assert_eq!(r.family, BinaryFamily::GoBinary);
+        assert!(
+            r.grpc_services.iter().any(|s| s == "exa.codeium_common_pb"),
+            "expected bare package symbol, got {:?}",
+            r.grpc_services
+        );
+    }
+
+    #[test]
+    fn google_grpc_empty_on_non_go() {
+        // Electron buffer without any exa.* surface — grpc vecs stay empty.
+        let buf = make_electron_buf();
+        let r = analyze_google(&buf);
+        assert!(r.grpc_services.is_empty());
+        assert!(r.grpc_methods.is_empty());
+    }
+
+    #[test]
+    fn google_report_serializes_grpc_arrays() {
+        let r = analyze_google(b"");
+        let json = serde_json::to_value(&r).expect("serialize");
+        assert!(json["grpc_services"].is_array(), "grpc_services must serialize as array");
+        assert!(json["grpc_methods"].is_array(), "grpc_methods must serialize as array");
     }
 
     // Combined test -----------------------------------------------------------

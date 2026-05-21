@@ -14,15 +14,61 @@ description            = "Native Rust SDK for Antigravity (Google AI Ultra / Gem
 [lints]
 workspace = true
 
-[dependencies]
-serde       = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true }
-thiserror   = { workspace = true }
-tracing     = { workspace = true }
-tokio       = { workspace = true, features = ["macros", "rt"] }
-reqwest     = { workspace = true }
+[features]
+default = []
+# gRPC types for the local language_server bridge (compiles the .proto).
+# Pulls in tonic/prost + a build-time protoc; host-only, never in the default
+# build / CI / wasm target.
+grpc = [
+    "dep:prost",
+    "dep:tonic",
+    "dep:tonic-prost",
+    "dep:tonic-prost-build",
+    "dep:protoc-bin-vendored",
+]
+# Full local language_server bridge: spawn the proprietary binary, parse its
+# port, and speak cert-pinned HTTPS gRPC. Opt-in, host-only. (base64/sha2/rand
+# are always-on deps — used by the always-compiled oauth/state_sync modules —
+# so they are not gated here.)
+local-ls = [
+    "grpc",
+    "dep:regex",
+    "dep:rustls",
+    "dep:hyper-rustls",
+    "dep:x509-parser",
+    "tokio/process",
+    "tokio/rt-multi-thread",
+]
 
-# --- Windows-only: Credential Manager (CredReadW) ----------------------------
+[dependencies]
+serde         = { workspace = true, features = ["derive"] }
+serde_json    = { workspace = true }
+thiserror     = { workspace = true }
+tracing       = { workspace = true }
+# `net`/`io-util`/`time`: OAuth loopback listener (oauth.rs). `macros`/`rt`: base.
+tokio         = { workspace = true, features = ["macros", "rt", "net", "io-util", "time"] }
+reqwest       = { workspace = true }
+# Always-on: base64/sha2/rand back the OAuth PKCE flow (oauth.rs); base64 +
+# data-encoding (base32) back the state.vscdb decoder (state_sync.rs).
+base64        = { workspace = true }
+sha2          = { workspace = true }
+rand          = { workspace = true }
+data-encoding = { workspace = true }
+
+# --- Optional: local language_server gRPC bridge (feature `local-ls`) ---------
+prost        = { workspace = true, optional = true }
+tonic        = { workspace = true, optional = true }
+tonic-prost  = { workspace = true, optional = true }
+regex        = { workspace = true, optional = true }
+rustls       = { workspace = true, optional = true }
+hyper-rustls = { version = "0.27", optional = true, default-features = false, features = ["http1", "http2", "ring", "tls12"] }
+x509-parser  = { version = "0.18", optional = true }
+
+[build-dependencies]
+tonic-prost-build   = { workspace = true, optional = true }
+protoc-bin-vendored = { workspace = true, optional = true }
+
+# --- Windows-only: Credential Manager (CredReadW / CredWriteW) ----------------
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
@@ -36,7 +82,11 @@ pretty_assertions = { workspace = true }
 # (rustls 0.23 requirement, cf. CLAUDE.md section 7).  Listed here so the
 # integration test can call `ring::default_provider().install_default()`.
 rustls            = { workspace = true }
+# config.rs round-trip test writes a temp config file.
+tempfile          = { workspace = true }
 
 [package.metadata.cargo-machete]
 # tracing: macro-only usage (debug!/warn!/error!); machete under-counts.
-ignored = ["tracing"]
+# prost / tonic-prost: only referenced from build.rs-generated code in OUT_DIR.
+# tonic-prost-build / protoc-bin-vendored: build-script-only deps.
+ignored = ["tracing", "prost", "tonic-prost", "tonic-prost-build", "protoc-bin-vendored"]

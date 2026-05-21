@@ -25,6 +25,14 @@ workspace = true
 #   cargo build -p aphrody --features magika
 magika = ["aphrody-re/magika", "dep:ort"]
 
+# Reproducible forensic extraction, exposed via `aphrody forensics ...`.
+# Opt-in because it links `rusqlite` with the `bundled` libsqlite3 C source,
+# which requires a C compiler at build time (host-only, not hermetic-offline,
+# not wasm). The command maps + classifies + dumps schema ONLY; it never
+# emits secret values (tokens / cookie bytes / `secret://` rows). Build with:
+#   cargo build -p aphrody --features forensics
+forensics = ["dep:rusqlite"]
+
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
 # - On wasm32-*, only a minimal stub (Version + help) is built, because
@@ -79,6 +87,13 @@ aphrody-re                = { path = "../aphrody-re" }
 # features pull `download-binaries` (prebuilt runtime fetched at build time) so
 # `aphrody re classify` works out of the box once the feature is enabled.
 ort                       = { version = "=2.0.0-rc.12", optional = true }
+# `aphrody forensics sqlite` — read-only SQLite schema dump (`--features
+# forensics`). Reuses the workspace-pinned `rusqlite` (0.37, `bundled`
+# libsqlite3 C source) so the command works without a system sqlite and shares
+# a single resolved version + `links = "sqlite3"` with `aphrody-memory`
+# (cargo-deny bans duplicates). The DB is opened SQLITE_OPEN_READ_ONLY and only
+# the `sqlite_master` schema is read — value columns are NEVER selected.
+rusqlite                  = { workspace = true, optional = true }
 # `aphrody logo` — canonical icon (assets/aphrody.webp) -> .ico / .svg / M3
 # maskable PNG + pixel-perfect terminal rendering. Native-only (image+ico).
 aphrody-logo              = { path = "../aphrody-logo" }
@@ -97,6 +112,11 @@ dirs                      = { workspace = true }
 # `aphrody notebooklm {...}` — Google NotebookLM Boq RPC client (native HTTP,
 # no browser automation in-process).
 notebooklm                = { workspace = true }
+# `aphrody antigravity {...}` — native Google AI Ultra / Gemini client (WS3).
+# Reads the OAuth token at runtime (Windows Credential Manager); never embeds a
+# secret. Native-only: it builds a reqwest::Client (rustls/ring) and reads the
+# credential store, neither of which links on wasm32.
+antigravity-sdk           = { path = "../antigravity-sdk" }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
