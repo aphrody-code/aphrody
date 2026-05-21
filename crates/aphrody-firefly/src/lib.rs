@@ -63,6 +63,7 @@ pub mod client;
 pub mod error;
 pub mod events;
 pub mod models;
+pub mod photoshop;
 
 pub use auth::{AccessToken, ImsCredentials, TokenCache, FIREFLY_SCOPE, IMS_TOKEN_ENDPOINT};
 pub use client::{
@@ -71,6 +72,10 @@ pub use client::{
 pub use error::{FireflyError, Result};
 pub use events::{
     parse_link_next, JournalBatch, JournalClient, JournalConfig, JournalEvent, PageInfo, Position,
+};
+pub use photoshop::{
+    DocumentOperationsRequest, Input as PsInput, Output as PsOutput, OutputType, PhotoshopClient,
+    PhotoshopJob, PsJobStatus, Storage,
 };
 pub use models::{
     AsyncJobSubmission, ContentClass, GenerateImageRequest, GenerateResult, ImageRef, JobStatus,
