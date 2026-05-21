@@ -15,6 +15,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod context;
 #[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "images"))] mod image_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
@@ -203,6 +204,17 @@ enum Commands {
     Index {
         #[command(subcommand)]
         action: index_cmd::IndexAction,
+    },
+    /// Gemini (Nano Banana) image generation to disk.
+    ///
+    /// Built only with `--features images`. Generates from a prompt via the
+    /// signed-in Google cookie jar (no API key) and saves to disk.
+    ///
+    /// Example: aphrody image generate "a banana mascot chef" --out ./out
+    #[cfg(all(not(target_arch = "wasm32"), feature = "images"))]
+    Image {
+        #[command(subcommand)]
+        action: image_cmd::ImageAction,
     },
     /// Tier-1 memory provider operations — migrate, audit, list backends.
     ///
@@ -852,6 +864,10 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         #[cfg(feature = "index")]
         Some(Commands::Index { action }) => {
             index_cmd::run(action).await?;
+        },
+        #[cfg(feature = "images")]
+        Some(Commands::Image { action }) => {
+            image_cmd::run(action).await?;
         },
         #[cfg(feature = "forensics")]
         Some(Commands::Forensics { action }) => {
