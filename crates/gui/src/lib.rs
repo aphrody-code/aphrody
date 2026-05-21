@@ -36,6 +36,50 @@ impl NextContext {
     }
 }
 
+/// The Gemini web assistant powering the Google-app-desktop bar.
+///
+/// Holds a single cached [`aphrody_chat::backend::GeminiWebBackend`] (the
+/// **3.5 Flash** model via the signed-in Google cookie jar — the one model the
+/// minimal UI exposes). The backend bootstraps once (page token scrape) and is
+/// reused across prompts; conversation continuity is threaded server-side
+/// (latency objective).
+pub struct GeminiAssistant {
+    backend: aphrody_chat::backend::GeminiWebBackend,
+}
+
+impl GeminiAssistant {
+    /// Connect to Gemini web (3.5 Flash). The caller installs a rustls
+    /// `CryptoProvider` first.
+    ///
+    /// # Errors
+    ///
+    /// Propagates the backend connect error (missing cookie jar / signed out).
+    pub async fn connect() -> anyhow::Result<Self> {
+        let backend = aphrody_chat::backend::GeminiWebBackend::connect_default()
+            .await
+            .map_err(|e| anyhow::anyhow!("gemini web assistant: {e}"))?;
+        Ok(Self { backend })
+    }
+
+    /// Send one prompt and return the reply as an [`IpcReply`] keyed by
+    /// `prompt_id`.
+    pub async fn ask(&self, prompt_id: &str, prompt: &str) -> IpcReply {
+        use aphrody_chat::backend::ModelBackend as _;
+        let messages = [aphrody_chat::types::Message::user(prompt)];
+        match self.backend.complete(&messages).await {
+            Ok(resp) => IpcReply::Text {
+                prompt_id: prompt_id.to_owned(),
+                content: resp.content,
+                done: true,
+            },
+            Err(e) => IpcReply::Error {
+                prompt_id: prompt_id.to_owned(),
+                message: format!("Gemini 3.5 Flash: {e}"),
+            },
+        }
+    }
+}
+
 /// A mock wrapper around swc_core (removed to reduce dependencies).
 pub struct SwcCompiler;
 
