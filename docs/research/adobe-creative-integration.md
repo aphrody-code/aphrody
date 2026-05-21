@@ -189,6 +189,29 @@ numVariations? }`. `ImageSourceRef` serializes either a presigned `url` (our
 headless path) or a Firefly storage `uploadId`. Both return the standard
 `{ jobId, statusUrl }` and resolve to `result.outputs[].image.url`.
 
+## Live, in-app Photoshop — UXP bridge (landed)
+
+The cloud APIs are headless but bounded. To expose the **entire** Photoshop
+surface — every menu, filter, adjustment and recorded action — aphrody also
+drives the *running* desktop Photoshop from the inside:
+
+- **UXP panel** (`apps/photoshop-uxp/`, the one explicitly-authorized JS
+  artifact) runs inside Photoshop and is a WebSocket *client*. It executes
+  `batchPlay` (the universal ActionDescriptor executor) and an `eval` escape
+  hatch with the full UXP DOM in scope.
+- **Rust bridge** (`crates/google_mcp/src/photoshop_bridge.rs`) is a local
+  WebSocket *server* on `127.0.0.1:8765` (tokio-tungstenite), started lazily on
+  the first `photoshop_live_*` call, correlating each `{id,op,args}` request to
+  its `{id,ok,result}` response.
+- **MCP tools**: `photoshop_live_info` (version + active doc + layer tree),
+  `photoshop_live_batchplay` (any ActionDescriptor array), `photoshop_live_exec`
+  (arbitrary UXP JS). batchPlay + eval together cover everything ScriptListener
+  / Alchemist can record.
+
+This is the in-policy successor to the local-automation half of `photoshop-mcp`
+(ExtendScript/COM): UXP instead of ExtendScript, all orchestration in Rust, the
+JS reduced to a thin transport client.
+
 ## RE: the official "Adobe for creativity" connector (Claude Desktop)
 
 The full captured corpus (6 skills + manifests) lives under

@@ -7,6 +7,8 @@ mod client_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod gemini_tools;
 #[cfg(not(target_arch = "wasm32"))] mod firefly_tools;
 #[cfg(not(target_arch = "wasm32"))] mod photoshop_tools;
+// Live Photoshop bridge — WebSocket server the in-app UXP plugin connects to.
+#[cfg(not(target_arch = "wasm32"))] mod photoshop_bridge;
 
 use std::{
     net::SocketAddr,
@@ -1167,6 +1169,41 @@ impl GoogleMcpServer {
         Parameters(req): Parameters<photoshop_tools::FireflyFillRequest>,
     ) -> String {
         photoshop_tools::generative_fill(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // photoshop_live_* — drive the RUNNING desktop Photoshop from the inside
+    // via the UXP plugin (apps/photoshop-uxp) over the local WebSocket bridge
+    // (127.0.0.1:8765). batchPlay + eval expose the entire Photoshop surface.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Report the running Photoshop's state via the in-app UXP plugin: app \
+                          version, active document (name, dimensions, mode), and the layer tree. \
+                          Requires the aphrody UXP panel loaded in Photoshop. Returns { ok, result }.")]
+    async fn photoshop_live_info(&self) -> String {
+        photoshop_tools::live_info().await
+    }
+
+    #[tool(description = "Run a batchPlay command array inside the RUNNING Photoshop (in-app UXP \
+                          plugin) — the universal driver for ANY Photoshop operation (the same \
+                          ActionDescriptor JSON ScriptListener/Alchemist emit). `commands` is the \
+                          array; `options` is optional. Returns { ok, result } with batchPlay's \
+                          response descriptors. Requires the aphrody UXP panel loaded.")]
+    async fn photoshop_live_batchplay(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsBatchPlayRequest>,
+    ) -> String {
+        photoshop_tools::live_batchplay(req).await
+    }
+
+    #[tool(description = "Evaluate arbitrary UXP JavaScript inside the RUNNING Photoshop (in-app \
+                          plugin) with app/photoshop/constants/core/batchPlay in scope — full \
+                          internal access for anything not expressible as one batchPlay array. \
+                          `return` a JSON-serializable value. Requires the aphrody UXP panel loaded.")]
+    async fn photoshop_live_exec(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsExecRequest>,
+    ) -> String {
+        photoshop_tools::live_exec(req).await
     }
 
     // -----------------------------------------------------------------------
