@@ -411,6 +411,7 @@ dependencies = [
  "hex",
  "ignore",
  "indicatif",
+ "m3-tokens",
  "miette",
  "mimalloc",
  "notebooklm",
@@ -7655,6 +7656,17 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
+
+[[package]]
+name = "mui-rs-core"
+version = "1.0.0-canary"
+dependencies = [
+ "m3-tokens",
+]
+
+[[package]]
+name = "mui-rs-macros"
+version = "1.0.0-canary"
 
 [[package]]
 name = "mui-rs-motion"
