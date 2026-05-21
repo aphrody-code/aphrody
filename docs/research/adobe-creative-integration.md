@@ -145,6 +145,68 @@ artifact — its manifest + a thin `fetch()` bridge are documented in
 `docs/integrations/photoshop-uxp-panel.md`; it is intentionally *not* committed
 as source to keep the repo Rust-only. Override only on explicit instruction.
 
+## Maximal Photoshop automation — Lightroom + Sensei ops (landed)
+
+To match the official connector's editing surface (not just generate + manifest),
+`aphrody_firefly::photoshop` now drives the full headless edit family on the
+same IMS token, all submit→poll→terminal jobs:
+
+| Capability | REST op (verified 2026-05) | SDK method | MCP tool |
+|---|---|---|---|
+| Auto-tone (AI exposure/contrast/highlights/shadows/vibrance) | `POST image.adobe.io/lrService/autoTone` | `lr_auto_tone` | `photoshop_auto_tone` |
+| Auto-straighten (Upright) | `POST .../lrService/autoStraighten` | `lr_auto_straighten` | `photoshop_auto_straighten` |
+| Camera-Raw edit (exposure…sharpness) | `POST .../lrService/edit` | `lr_edit` (`LrEdit`) | `photoshop_edit` |
+| Apply `.xmp` preset | `POST .../lrService/presets` | `lr_apply_preset` | — |
+| Remove background | `POST .../sensei/cutout` | `remove_background` | `photoshop_remove_background` |
+| Create subject/bg mask | `POST .../sensei/mask` | `create_mask` | `photoshop_create_mask` |
+| Product crop | `POST .../psdService/productCrop` | `product_crop` | `photoshop_product_crop` |
+| Depth blur (Neural Filter) | `POST .../psdService/depthBlur` | `depth_blur` | `photoshop_depth_blur` |
+| Play actionJSON | `.../psdService/documentOperations` `options.actionJSON` | `action_json` | `photoshop_action_json` |
+
+Wire-shape notes (verified): **Lightroom** takes `inputs` as a single object
+(not an array) + `outputs[]` + optional `options`; status polls at
+`lrService/status/<id>`. **Sensei** (`cutout`/`mask`) takes singular
+`input`/`output` objects. **psdService** ops use `inputs[]`/`outputs[]`.
+`LrEdit` serializes to the canonical Camera-Raw Process-2012 XMP keys
+(`Exposure2012`, `Contrast2012`, `Highlights2012`, …). `PhotoshopJob` now also
+tolerates a top-level `status` (Lightroom/Sensei single-status shape) in
+addition to the per-output array. `productCrop`/`depthBlur` are Adobe
+"coming-soon" surfaces — wired and ready, return the API's status verbatim.
+
+## RE: the official "Adobe for creativity" connector (Claude Desktop)
+
+Reverse-engineered from the locally-installed connector plugin (read-only):
+`…\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\local-agent-mode-sessions\…\rpm\plugin_017FSfZwAM3GF7xTpsbDUHoA\`.
+
+- **`.mcp.json`**: `{ "Adobe for creativity": { "type": "http", "url":
+  "https://adobe-creativity.adobe.io/mcp" } }` — a **remote, Adobe-hosted MCP**.
+  No local binary, no `env`/secrets on disk. Auth = interactive Adobe IMS OAuth
+  handled by the connector; skills retry on 401 by re-authenticating.
+- **`plugin.json`**: `adobe-for-creativity` v1.0.2, author Adobe, Apache-2.0,
+  repo `github.com/adobe/skills`.
+- **6 skills** (`SKILL.md`) orchestrate the remote tools: `adobe-batch-edit-photos`,
+  `adobe-create-social-variations`, `adobe-design-from-template` (Express),
+  `adobe-edit-quick-cut`, `adobe-resize-photos-and-videos`, `adobe-retouch-portraits`.
+- **Hosted tool surface** referenced by the skills: `image_apply_auto_tone`
+  (`type: cameraRawFilter`), `image_auto_straighten` (`uprightMode`,
+  `constrainCrop`), `image_adjust_exposure|highlights|dark_portions|light_portions|`
+  `brightness_and_contrast|vibrance_and_saturation|color_temperature` (a/b/luminance),
+  `image_apply_preset` (`presetName`), `image_select_subject` (`bodyParts`),
+  `image_apply_gaussian_blur` / `image_apply_lens_blur` (`blurRadius`,
+  `blurTarget`), `image_crop_and_resize` (`output`, `fit: reframe|pad|extract`,
+  `focus: subject|face|upper_body|{prompt}|{x,y}`), `video_resize`
+  (`mode: letterbox|crop|stretch`), `video_create_quick_cut`, plus asset/board
+  helpers (`asset_add_file`, `asset_preview_file`, `asset_*_file_upload`,
+  `create_firefly_board`) and an `adobe_mandatory_init` handshake.
+
+**Mapping to aphrody (verified equivalences):** the connector's hosted
+`image_apply_auto_tone` ⇔ our `lrService/autoTone`; `image_auto_straighten` ⇔
+`lrService/autoStraighten`; the `image_adjust_*` family ⇔ `lrService/edit` with
+the Camera-Raw keys above; `image_crop_and_resize` ⇔ `psdService/productCrop` +
+rendition; background removal ⇔ `sensei/cutout`; `image_select_subject`/mask ⇔
+`sensei/mask`. aphrody reaches the **same underlying Firefly Services REST APIs**
+through its own IMS server-to-server token — independent of the hosted connector.
+
 ## Security / privacy
 
 - Credentials read from the environment only; the secret is never logged,
