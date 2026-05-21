@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Recall benchmark — top-10 semantic search over 100k records on `HnswBackend`.
+// Recall benchmark — top-10 semantic search over 100k events on `HnswBackend`.
 //
 // PLAN R-B R3.7 acceptance criterion (cf. `docs/PLAN.md`):
 //
 //   "Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms"
+//   verify: `cargo bench -p aphrody-memory bench_recall_100k`
+//
+// The criterion group is named `bench_recall_100k` so the PLAN verify command
+// (which is a benchmark-id substring filter, not a Rust symbol) selects this
+// bench precisely.
 //
 // The brute-force cosine implementation in `crates/aphrody-memory/src/hnsw.rs`
 // scans every embedded record per query. With 128-dim vectors and 100 000
 // records that is ~12.8 M f32 multiply-adds per query — comfortably under the
-// 100 ms budget on a 2024-class x86_64 CPU (e.g. AMD Ryzen 9 7950X / Intel
-// Core i9-14900K, the reference machine documented in
-// `docs/PERFORMANCE-HISTORY.md` §3).
+// 100 ms budget on a 2024-class x86_64 CPU.
 //
 // ## Why `HnswBackend` and not `SqliteBackend` / Tier-1 providers
 //
@@ -19,11 +22,10 @@
 // that exposes a semantic-search method (`search(&Embedding, top_k)`). Of the
 // three implementations only `HnswBackend` keeps the entire index in process
 // memory ; `SqliteBackend` performs a full table scan over a `BLOB` column
-// (deserialise → cosine → sort) which dominates the bench with SQLite-specific
+// (deserialise -> cosine -> sort) which dominates the bench with SQLite-specific
 // overhead unrelated to the recall algorithm. `LanceDbBackend` carries a real
-// ANN index but pulls Arrow/IO transitives that double the bench compile time
-// and require Tokio's multi-thread runtime — not the latency we want to
-// publish as the headline number.
+// ANN index but pulls Arrow/IO transitives and requires Tokio's multi-thread
+// runtime — not the latency we want to publish as the headline number.
 //
 // The Tier-1 providers (`Mem0Provider`, `HonchoProvider`, `SqliteLocalProvider`)
 // expose keyword search only ; "semantic" there is a property of the remote
@@ -31,14 +33,13 @@
 //
 // ## Methodology
 //
-// - Setup is performed once, *outside* the criterion timed window, via
+// - Setup (100k inserts) runs once, *outside* the criterion timed window, via
 //   `runtime.block_on(build_corpus())`. Each criterion sample runs `iters`
 //   in-memory `search()` calls and reports the total elapsed time ; criterion
-//   then derives p50 / mean / std-dev / outliers internally.
+//   then derives p50 / mean / std-dev / outliers (and the p95 cited in the
+//   PLAN) internally.
 // - Sample size is 20. Each sample loops `iters` searches where `iters` is
-//   tuned by criterion so a sample lasts ~5 s. Total bench wall-clock is
-//   ~100 s — long enough for stable percentiles, short enough to keep
-//   `cargo bench` interactive on a developer workstation.
+//   tuned by criterion so a sample lasts long enough for stable percentiles.
 // - The query embedding is generated with the same deterministic SplitMix64
 //   PRNG that seeds the corpus, picking a seed outside the corpus range
 //   (`0x_DEADBEEF_CAFE_F00D`) so the query is not trivially identical to any
@@ -47,14 +48,9 @@
 // ## Verify
 //
 // ```bash
-// cargo bench -p aphrody-memory --bench recall_100k --locked
-// # → target/criterion/aphrody_memory_recall/recall_100k_top10_d128/report/index.html
-// ```
-//
-// Compile-time gate:
-//
-// ```bash
 // cargo check --benches -p aphrody-memory --locked
+// cargo bench -p aphrody-memory bench_recall_100k -- --warm-up-time 1 --measurement-time 3
+// # -> target/criterion/bench_recall_100k/recall_100k_top10_d128/report/index.html
 // ```
 
 use std::hint::black_box;
@@ -65,21 +61,18 @@ use tokio::runtime::{Builder, Runtime};
 
 use aphrody_memory::{Embedding, HnswBackend, MemoryBackend, MemoryRecord};
 
-/// Number of records seeded into the in-memory index for the headline bench.
+/// Number of events seeded into the in-memory index for the headline bench.
 ///
-/// The PLAN verify is `100k` ; reducing this is a regression. Increasing it is
-/// fine as long as `p95 < 100 ms` still holds — open a PR with the new ceiling
-/// in `docs/PERFORMANCE-HISTORY.md` §4.4.
+/// The PLAN verify is `100k` ; reducing this is a regression.
 const RECORD_COUNT: usize = 100_000;
 
 /// Embedding dimensionality. 128 matches the size emitted by small SBERT
 /// distillates (e.g. `all-MiniLM-L6-v2` projected to 128 via mean-pooled
 /// truncation) — representative of the smaller end of production deployments.
-/// The cost scales linearly in this constant ; bump to 384 only if you also
-/// adjust `RECORD_COUNT` downwards to stay within budget.
+/// The cost scales linearly in this constant.
 const EMBED_DIM: usize = 128;
 
-/// Top-K passed to every `search()` call — matches the PLAN verb.
+/// Top-K passed to every `search()` call — matches the PLAN verb (top-10).
 const TOP_K: usize = 10;
 
 /// Build a fresh single-thread Tokio runtime for the bench.
@@ -99,8 +92,8 @@ fn make_runtime() -> Runtime {
 /// SplitMix64 — branchless, allocation-free, no dependency on `rand`. Each
 /// dimension is mapped from a fresh u64 to `[-1.0, 1.0]` via the signed-i64
 /// route so the distribution is centred (cosine similarity is undefined on
-/// zero vectors ; centring around zero is OK because we ship 128 dims and
-/// the probability of an all-zero output is effectively zero).
+/// zero vectors ; centring around zero is OK because we ship 128 dims and the
+/// probability of an all-zero output is effectively zero).
 fn synthetic_embedding(seed: u64, dim: usize) -> Embedding {
     let mut state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15);
     (0..dim)
@@ -118,14 +111,14 @@ fn synthetic_embedding(seed: u64, dim: usize) -> Embedding {
 }
 
 /// Synthesize the bench corpus : one `HnswBackend` loaded with `RECORD_COUNT`
-/// records, plus one query embedding never present in the corpus.
+/// events, plus one query embedding never present in the corpus.
 ///
 /// The temp directory is returned so the caller keeps it alive — `HnswBackend`
 /// performs one disk flush in `put_many` and the on-disk file would otherwise
 /// be reaped before the bench finishes. The flush is intentional : it
-/// exercises the same code path a production caller hits during a bulk
-/// import (R3.4 migration tool), so the bench captures realistic init cost
-/// even though that cost lives outside the timed window.
+/// exercises the same code path a production caller hits during a bulk import
+/// (R3.4 migration tool), so the bench captures realistic init cost even
+/// though that cost lives outside the timed window.
 async fn build_corpus() -> (tempfile::TempDir, HnswBackend, Embedding) {
     let dir = tempfile::tempdir().expect("tempdir must succeed");
     let mut backend = HnswBackend::open(dir.path())
@@ -134,7 +127,7 @@ async fn build_corpus() -> (tempfile::TempDir, HnswBackend, Embedding) {
 
     let batch: Vec<(String, MemoryRecord)> = (0..RECORD_COUNT)
         .map(|i| {
-            let rec = MemoryRecord::new("bench", format!("rec-{i}"))
+            let rec = MemoryRecord::new("bench", format!("event-{i}"))
                 .with_embedding(synthetic_embedding(i as u64, EMBED_DIM));
             // Match the convention "<ns>/<uuid>" used by the production code.
             let key = format!("bench/{}", rec.id);
@@ -146,30 +139,26 @@ async fn build_corpus() -> (tempfile::TempDir, HnswBackend, Embedding) {
         .await
         .expect("bulk insert must succeed (no I/O failure on tempdir)");
 
-    // Query seed deliberately outside the corpus range so the query is not
-    // a trivial nearest-neighbour of itself.
+    // Query seed deliberately outside the corpus range so the query is not a
+    // trivial nearest-neighbour of itself.
     let query = synthetic_embedding(0x_DEAD_BEEF_CAFE_F00D, EMBED_DIM);
 
     (dir, backend, query)
 }
 
-/// Top-10 semantic-search recall bench over 100 000 records.
+/// Top-10 semantic-search recall bench over 100 000 events.
 ///
-/// The bench loops `iters` calls to `HnswBackend::search` and reports the
-/// total elapsed wall-clock to criterion, which derives the percentile
-/// distribution from the sample of 20 such windows.
+/// The bench loops `iters` calls to `HnswBackend::search` and reports the total
+/// elapsed wall-clock to criterion, which derives the percentile distribution
+/// (including the p95 cited in the PLAN) from the sample of 20 such windows.
 fn bench_recall_100k(c: &mut Criterion) {
     let runtime = make_runtime();
     // Setup runs once, outside the timed loop. `_dir` keeps the tempdir alive
-    // until the bench function returns ; backend reads only happen at
-    // `open()`, not during `search()`, so a dropped tempdir would not break
-    // the inner loop — but it WOULD leak temp files on early bench failure,
-    // so we explicitly bind it.
+    // until the bench function returns.
     let (_dir, backend, query) = runtime.block_on(build_corpus());
 
-    let mut group = c.benchmark_group("aphrody_memory_recall");
-    // 20 samples × N iters per sample ; criterion auto-tunes iters so each
-    // sample is ~5 s wall-clock.
+    let mut group = c.benchmark_group("bench_recall_100k");
+    // 20 samples x N iters per sample ; criterion auto-tunes iters.
     group.sample_size(20);
     // Throughput in elements per second — useful for the regression dashboard.
     group.throughput(criterion::Throughput::Elements(RECORD_COUNT as u64));

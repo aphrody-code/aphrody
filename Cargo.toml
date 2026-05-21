@@ -44,6 +44,10 @@ members = [
     "crates/aphrody-icons",
     # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
     "crates/gemini-runtime",
+    # obscura-runtime — façade binaire externe pour le moteur headless Obscura
+    # (pilier R4 scraping). Zéro dépendance V8/compilation : spawn `obscura`
+    # résolu via $APHRODY_OBSCURA_BIN > sibling > PATH.
+    "crates/obscura-runtime",
     # aphrody-messaging — unified messaging (outbound connectors + bidirectional channels)
     "crates/aphrody-messaging",
     # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
@@ -92,6 +96,10 @@ members = [
     # sections + Shannon entropy + SHA-256, ASCII/UTF-16 strings sample.
     # Pure Rust, no GPL deps. Apex Cap R5 (Sprint R-E).
     "crates/aphrody-re",
+    # aphrody-logo — canonical icon (assets/aphrody.webp) embedded once ->
+    # multi-res .ico, scalable .svg, M3 maskable/shape PNGs, pixel-perfect
+    # terminal rendering (Kitty graphics protocol + truecolor half-blocks).
+    "crates/aphrody-logo",
     # aphrody-marketplace — skill / MCP / hook / theme extension index
     # (Sprint F / hermes-agent : embedded + file + http loaders, semver +
     # tag queries, SHA-256 integrity verification).
@@ -575,6 +583,10 @@ bindgen            = { version = "0.72" }
 # reads for the CRI @UTF tables that back CPK / USM / AWB containers.
 goblin             = { version = "0.10", default-features = false, features = ["std", "endian_fd", "pe32", "pe64", "elf32", "elf64"] }
 byteorder          = { version = "1.5" }
+# `iced-x86` — pure Rust x86/x64 disassembler + formatter (Intel/AT&T/Nasm/Masm).
+# No C dependencies, no GPL, compiles on all targets including wasm32.
+# Used by aphrody-re::disasm (Apex Cap R5, Sprint R-E, item R5.4).
+iced-x86           = { version = "1.21" }
 
 # --- POSIX shim helpers (Linux/macOS bridges) -----------------------------
 nix-cross          = { package = "nix", version = "0.31", default-features = false }

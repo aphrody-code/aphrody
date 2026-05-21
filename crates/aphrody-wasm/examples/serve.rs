@@ -20,9 +20,12 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-/// Demo page embedded at build time. Sibling assets (none today) would be
-/// embedded via additional `include_str!` / `include_bytes!` blocks.
+/// Demo page embedded at build time. Sibling assets are embedded via
+/// `include_bytes!` so the binary is fully self-contained.
 const DEMO_HTML: &str = include_str!("aphrody-terminal-demo.html");
+
+/// Canonical project icon embedded at build time (18 KB WebP).
+const APHRODY_WEBP: &[u8] = include_bytes!("aphrody.webp");
 
 const BIND_ADDR: &str = "127.0.0.1:18800";
 
@@ -112,11 +115,13 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             "text/html; charset=utf-8",
             DEMO_HTML.as_bytes(),
         ),
-        "/favicon.ico" => {
-            // 204 No Content — browsers stop asking after one round.
-            stream.write_all(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n")?;
-            stream.flush()
-        }
+        "/favicon.ico" | "/aphrody.webp" => write_response(
+            &mut stream,
+            200,
+            "OK",
+            "image/webp",
+            APHRODY_WEBP,
+        ),
         "/healthz" => write_response(
             &mut stream,
             200,

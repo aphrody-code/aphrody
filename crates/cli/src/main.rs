@@ -324,6 +324,30 @@ enum Commands {
         #[command(subcommand)]
         action: NotebooklmActions,
     },
+    /// Render or export the canonical aphrody logo (`assets/aphrody.webp`).
+    ///
+    /// With no flag, prints the icon to the terminal — Kitty graphics protocol
+    /// when supported (true pixels), truecolor Unicode half-blocks otherwise.
+    /// Flags export derived assets instead (multi-resolution `.ico`, scalable
+    /// `.svg`, or an M3 maskable adaptive-icon PNG).
+    #[cfg(not(target_arch = "wasm32"))]
+    Logo {
+        /// Write a multi-resolution Windows `.ico` (16/32/48/64/128/256) here.
+        #[arg(long)]
+        ico: Option<std::path::PathBuf>,
+        /// Write a scalable `.svg` here.
+        #[arg(long)]
+        svg: Option<std::path::PathBuf>,
+        /// Write an M3 maskable adaptive-icon PNG here (uses `--size`).
+        #[arg(long)]
+        maskable: Option<std::path::PathBuf>,
+        /// Terminal render width in character cells.
+        #[arg(long, default_value_t = 40)]
+        cols: u32,
+        /// Pixel side for the maskable PNG export.
+        #[arg(long, default_value_t = 512)]
+        size: u32,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
@@ -566,6 +590,31 @@ pub(crate) enum ReAction {
         #[arg(long)]
         pretty: bool,
     },
+    /// Disassemble x86-64 instructions from a binary (or raw shellcode).
+    ///
+    /// Reads the file into memory and decodes up to `--limit` instructions
+    /// starting at byte offset 0, using the virtual address supplied via
+    /// `--rip` for display. Uses `iced-x86` Intel-syntax formatter.
+    ///
+    /// Output is a JSON array of `{ offset, address, bytes_hex, mnemonic, text }`.
+    ///
+    /// Example: aphrody re disasm target/release/aphrody.exe --limit 20 --pretty
+    Disasm {
+        /// Path to the binary (or raw shellcode blob) to disassemble.
+        path: PathBuf,
+        /// Virtual address of the first byte (used for the `address` field
+        /// and RIP-relative operand display). Pass 0 when the load address
+        /// is unknown.
+        #[arg(long, default_value_t = 0)]
+        rip: u64,
+        /// Maximum number of instructions to decode. Defaults to
+        /// `DISASM_LIMIT` (256).
+        #[arg(long)]
+        limit: Option<usize>,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -676,6 +725,20 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
                 println!("{json}");
             },
+            ReAction::Disasm { path, rip, limit, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let effective_limit = limit.unwrap_or(aphrody_re::DISASM_LIMIT);
+                let insns = aphrody_re::disasm(&bytes, rip, effective_limit);
+                let json = if pretty {
+                    serde_json::to_string_pretty(&insns)
+                } else {
+                    serde_json::to_string(&insns)
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
+            },
         },
         Some(Commands::Chat { prompt, model, system, stub }) => {
             commands::ChatCommand { prompt, model, system, stub }.execute(ctx).await?;
@@ -746,6 +809,32 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Notebooklm { action }) => {
             commands::NotebooklmCommand { action }.execute(ctx).await?;
+        },
+        Some(Commands::Logo { ico, svg, maskable, cols, size }) => {
+            let mut wrote = false;
+            if let Some(p) = ico {
+                aphrody_logo::write_ico(&p).map_err(|e| miette::miette!("logo ico: {e}"))?;
+                println!("wrote {}", p.display());
+                wrote = true;
+            }
+            if let Some(p) = svg {
+                aphrody_logo::write_svg(&p).map_err(|e| miette::miette!("logo svg: {e}"))?;
+                println!("wrote {}", p.display());
+                wrote = true;
+            }
+            if let Some(p) = maskable {
+                let png = aphrody_logo::maskable_png(size, aphrody_logo::BRAND_BG)
+                    .map_err(|e| miette::miette!("logo maskable: {e}"))?;
+                std::fs::write(&p, png)
+                    .map_err(|e| miette::miette!("write {}: {e}", p.display()))?;
+                println!("wrote {}", p.display());
+                wrote = true;
+            }
+            if !wrote {
+                let art = aphrody_logo::render_terminal(cols)
+                    .map_err(|e| miette::miette!("logo render: {e}"))?;
+                print!("{art}");
+            }
         },
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to

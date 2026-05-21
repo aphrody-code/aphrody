@@ -140,7 +140,7 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 | R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ⏳ | dry-run + JSON diff |
 | R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ✅ **DONE** | `cargo test policy_ttl_evicts_after_n_secs` 3/3 pass (eviction.rs, 14 test fns) |
 | R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ✅ **DONE** | `cargo test schema_v1_to_v2_roundtrip` pass (schema.rs : `upgrade_jsonl()` atomic, lossless) |
-| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ⏳ | `cargo bench -p aphrody-memory bench_recall_100k` |
+| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ✅ **DONE** (bench) / ⏳ p95 | `cargo bench -p aphrody-memory --bench recall` — mesuré p95≈172ms sur `HnswBackend` brute-force ; <100ms requiert swap `instant-distance` HNSW (noté src/hnsw.rs) |
 | R3.8 | **Optionnel** : upgrade Honcho v1→v3 (`api.honcho.dev` workspaces/peers + `POST /peer/{id}/chat`) + mem0 v1→v3 (`POST /v3/memories/add/` async + `event_id` polling). Repousser tant que v1 couvre les besoins ; v3 = breaking changes API | ⏳ backlog | smoke E2E contre v3 endpoints |
 
 #### R4 — Scraping bas niveau
@@ -170,10 +170,10 @@ tools = Phase 2.
 | R5.1 | `crates/aphrody-re/` lib (Cargo.toml + lib.rs unique avec modules inline `triage / entropy / strings`) | ✅ **DONE** | `cargo check -p aphrody-re --locked` exit 0 |
 | R5.2 | Deps `goblin = "0.10"` (PE/ELF, déjà workspace pin avec features pe32+pe64+elf32+elf64) + `sha2` + `hex` + `serde` + `thiserror`. `iced-x86`/`capstone` reportés Phase 2 | ✅ **DONE** (subset minimal viable) | `cargo tree -p aphrody-re` |
 | R5.3 | Lib API `triage(bytes) -> TriageReport { format, size, sha256, arch, entry_point, sections[], imports[], exports[], strings_sample[] }`. Sub-cmd CLI `aphrody re triage <binary>` | ✅ **DONE** (lib + CLI wire) | `cargo test -p aphrody-re` 10/10 pass ; `ReAction::Triage` dispatch à cli/src/main.rs:637 |
-| R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ⏳ Phase 2 | smoke sur petit binaire test |
+| R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ✅ **DONE** | `aphrody_re::disasm` (lib.rs) + `ReAction::Disasm` (cli/main.rs) ; 6/6 tests ; smoke `aphrody re disasm` exit 0 |
 | R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI `aphrody re strings` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test extract_strings_*` 3/3 pass ; `ReAction::Strings` à cli/src/main.rs:540 |
 | R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI `aphrody re sections` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test shannon_entropy_*` 2/2 pass ; `ReAction::Sections` à cli/src/main.rs:562 |
-| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (`re_triage`/`re_strings`/`re_sections`) / ⏳ (`re_disasm` — bloqué par R5.4) | `re_strings`+`re_sections` à google_mcp/src/main.rs:1015,1086 ; build `aphrody-mcp` exit 0 |
+| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (`re_triage`/`re_strings`/`re_sections`) / ⏳ (`re_disasm` MCP tool — lib `aphrody_re::disasm` prête depuis R5.4, reste à exposer le tool) | `re_strings`+`re_sections` à google_mcp/src/main.rs:1015,1086 ; build `aphrody-mcp` exit 0 |
 | R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | ⏳ backlog | `cargo build -p aphrody-re --features radare2` |
 | R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ⏳ Phase 2 | smoke avec règles publiques YARA |
 | R5.10 | ~~`unicorn-engine` (CPU emulator)~~ | 🚨 **DROPPED — GPL-2.0 viral incompatible avec Apache-2.0** | n/a |
