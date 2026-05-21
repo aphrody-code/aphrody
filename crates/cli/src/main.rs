@@ -629,6 +629,22 @@ pub(crate) enum ReAction {
         #[arg(long)]
         pretty: bool,
     },
+    /// Classify a file's content type with Google Magika (deep-learning).
+    ///
+    /// Native, in-process replacement for the Python `magika` shell-out.
+    /// Outputs `{ label, mime_type, group, description, extensions, is_text,
+    /// score, kind, overwrite_reason }`. Requires building with
+    /// `--features magika` (links the ONNX Runtime); without it the command
+    /// errors with the rebuild instruction rather than silently degrading.
+    ///
+    /// Example: aphrody re classify state.vscdb --pretty | jq '.label, .score'
+    Classify {
+        /// Path to the file to classify.
+        path: PathBuf,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -765,6 +781,28 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 }
                 .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
                 println!("{json}");
+            },
+            ReAction::Classify { path, pretty } => {
+                #[cfg(feature = "magika")]
+                {
+                    let report = aphrody_re::magika::classify_path(&path)
+                        .map_err(|e| miette::miette!("magika classify failed: {e}"))?;
+                    let json = if pretty {
+                        serde_json::to_string_pretty(&report)
+                    } else {
+                        serde_json::to_string(&report)
+                    }
+                    .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                    println!("{json}");
+                }
+                #[cfg(not(feature = "magika"))]
+                {
+                    let _ = (&path, pretty);
+                    return Err(miette::miette!(
+                        "`aphrody re classify` requires the `magika` feature (ONNX Runtime). \
+                         Rebuild with: cargo build -p aphrody --features magika"
+                    ));
+                }
             },
         },
         Some(Commands::Chat { prompt, model, system, stub }) => {

@@ -17,6 +17,13 @@ crate-type = ["rlib"]
 [lints]
 workspace = true
 
+[features]
+# Native Google Magika deep-learning file-type classification. Opt-in because
+# the `magika` crate links the ONNX Runtime via `ort`, which is host-only and
+# fetches a prebuilt runtime at build time (not hermetic-offline, not wasm).
+# The final binary must also pull `ort` with a backend — see crates/cli.
+magika = ["dep:magika"]
+
 [dependencies]
 # Cross-platform binary parser (Apache-2.0/MIT). Features pe32+pe64+elf32+elf64
 # already enabled in [workspace.dependencies], with std + endian_fd.
@@ -37,6 +44,10 @@ iced-x86   = { workspace = true }
 memchr     = { workspace = true }
 # Structured pattern extraction (OAuth IDs, endpoints, version strings).
 regex      = { workspace = true }
+# Google Magika ML file-type classifier (Apache-2.0). Optional: links ONNX
+# Runtime via `ort` in the final binary. Pinned 1.1.0 (latest stable on
+# crates.io, embeds the model).
+magika     = { version = "1.1.0", optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -58,6 +58,14 @@
 
 pub mod google;
 
+/// Native Magika file-type classification (opt-in `magika` feature).
+///
+/// Host-only and excluded from default + wasm builds because it links the
+/// ONNX Runtime via `ort`. Build with `cargo build -p aphrody --features
+/// magika`. See the module docs for the rationale.
+#[cfg(feature = "magika")]
+pub mod magika;
+
 use iced_x86::{
     Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter,
 };
