@@ -82,9 +82,9 @@ The previous separate servers are now **all fused into a single
 Rust binary` `aphrody-mcp` (~7 MB, sub-millisecond cold-start, zero JS
 runtime, zero secondary MCP server, zero external subprocess).
 
-| Server | Type | Binary | Tools (18) | Env |
+| Server | Type | Binary | Tools (20) | Env |
 |---|---|---|---|---|
-| **`aphrody`** | stdio | `aphrody-mcp` (Rust, rmcp 1.7.0) | 8 ex-google_mcp (`coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard`) + 2 voice (`voice_synthesize, voice_transcribe`) + 1 re (`re_triage`) + 2 Context7 (`context7_resolve_library_id, context7_query_docs`) + 3 Microsoft Learn (`microsoft_docs_search, microsoft_docs_fetch, microsoft_code_sample_search`) + 2 aggregators (`docs_auto_search, aphrody_mcp_call`) | `ELEVENLABS_API_KEY`, `CONTEXT7_API_KEY` (optional) |
+| **`aphrody`** | stdio | `aphrody-mcp` (Rust, rmcp 1.7.0) | 8 ex-google_mcp (`coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard`) + 2 voice (`voice_synthesize, voice_transcribe`) + 3 re (`re_triage, re_strings, re_sections`) + 2 Context7 (`context7_resolve_library_id, context7_query_docs`) + 3 Microsoft Learn (`microsoft_docs_search, microsoft_docs_fetch, microsoft_code_sample_search`) + 2 aggregators (`docs_auto_search, aphrody_mcp_call`) | `ELEVENLABS_API_KEY`, `CONTEXT7_API_KEY` (optional) |
 
 Third-party SaaS MCPs (`github`, `context7`) are intentionally **not
 bundled** — install them in your own `.claude/settings.json` if needed.
