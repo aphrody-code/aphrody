@@ -13,20 +13,18 @@ default = []
 wasm    = ["mui-rs-renderer/web", "wasm-bindgen", "wasm-bindgen-futures"]
 
 [dependencies]
-thiserror.workspace = true
-taffy.workspace = true
 parley.workspace = true
-fontique.workspace = true
-accesskit.workspace = true
-tracing.workspace = true
+serde.workspace = true
 m3-tokens     = { path = "../m3-tokens" }
 mui-rs-renderer   = { path = "../mui-rs-renderer" }
-mui-rs-motion     = { path = "../mui-rs-motion" }
-serde.workspace = true
-aphrody-icons     = { path = "../aphrody-icons" }
 
 wasm-bindgen         = { workspace = true, optional = true }
 wasm-bindgen-futures = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta.workspace = true
+
+# `parley` is used (text layout) but machete's heuristic misses it;
+# `wasm-bindgen-futures` is wired via the `wasm` feature.
+[package.metadata.cargo-machete]
+ignored = ["parley", "wasm-bindgen-futures"]
