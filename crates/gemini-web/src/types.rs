@@ -39,6 +39,9 @@ pub struct ChatReply {
     /// Generated-image URLs (Nano Banana / image model output; may be empty).
     #[serde(default)]
     pub generated_image_urls: Vec<String>,
+    /// Generated-video URLs (Veo / video model output; may be empty).
+    #[serde(default)]
+    pub generated_video_urls: Vec<String>,
     /// Number of reply candidates the server returned.
     pub candidate_count: usize,
 }

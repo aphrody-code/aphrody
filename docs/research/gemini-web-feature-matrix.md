@@ -59,6 +59,31 @@ plain header switches: image/video/research are asynchronous generation jobs
 distinct request shape per tool plus a polling loop — out of scope for the
 text-chat transport and explicitly NOT claimed as working.
 
+## Tools menu inventory (live, 2026-05-21)
+
+The `+` menu in the input bar exposes these generative modes (each a selectable
+chip that re-routes the next `StreamGenerate`): **Images**, **Vidéos**,
+**Musique**, **Canvas**, **Deep Research**, **Apprentissage guidé** — plus the
+attachment sources (Fichiers, Drive, Photos, Notebooks). Selecting one shows a
+chip in the input bar (e.g. "Deep Research" with a "Sources / Fichiers" sub-row
+and the placeholder "Que souhaitez-vous rechercher ?").
+
+- **Deep Research** is a two-step async agent: the first turn returns a research
+  *plan*; confirming it runs the multi-step investigation (minutes), streamed.
+- **Vidéos (Veo)** is async video generation (minutes); the rendered video URL
+  arrives in a late streamed chunk.
+
+## Shipped (this work)
+
+`aphrody-mcp` now exposes four Gemini tools backed by `gemini-web` (cookie auth,
+no API key): `gemini_chat` (3.5 Flash + model switch), `gemini_image` (Nano
+Banana), `gemini_video` (Veo), `gemini_deep_research` (Pro). The SDK
+`ChatReply` now carries `generated_image_urls` + `generated_video_urls`
+(structurally extracted from `candidate[12]`). Video/research use prompt-routing
+(an explicitly phrased prompt + media extraction) rather than the mode-chip flag,
+which is the documented enhancement for guaranteed routing + plan-confirmation
++ poll-to-completion.
+
 ## Next steps to fully exploit (concrete)
 1. **Deep Think**: capture the `StreamGenerate` request with "Extended" selected;
    diff the model header / inner_list vs Standard to locate the flag; add
