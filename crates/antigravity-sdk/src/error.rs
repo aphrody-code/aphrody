@@ -40,4 +40,53 @@ pub enum SdkError {
         /// Response body from the server.
         body: String,
     },
+
+    /// An I/O error occurred (loopback listener, token persistence, …).
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// The OAuth loopback flow failed (bad callback request, state mismatch, …).
+    #[error("OAuth loopback flow error: {0}")]
+    OAuthFlow(String),
+
+    /// The OAuth loopback flow timed out waiting for the browser redirect.
+    #[error("OAuth loopback flow timed out after {0} seconds")]
+    OAuthTimeout(u64),
+
+    /// The local `language_server` binary could not be located.
+    #[cfg(feature = "local-ls")]
+    #[error("language_server binary not found")]
+    LanguageServerNotFound,
+
+    /// Spawning or controlling the local `language_server` process failed.
+    #[cfg(feature = "local-ls")]
+    #[error("language_server process error: {0}")]
+    Spawn(String),
+
+    /// The `language_server` did not announce its listening port in time.
+    #[cfg(feature = "local-ls")]
+    #[error("timed out waiting for language_server to report its port")]
+    PortTimeout,
+
+    /// Building the pinned TLS configuration failed.
+    #[cfg(feature = "local-ls")]
+    #[error("TLS configuration error: {0}")]
+    Tls(String),
+
+    /// Establishing the gRPC transport channel failed.
+    #[cfg(feature = "local-ls")]
+    #[error("gRPC transport error: {0}")]
+    Transport(String),
+
+    /// A gRPC call returned a non-OK status.
+    #[cfg(feature = "local-ls")]
+    #[error("gRPC status error: {0}")]
+    Grpc(String),
+}
+
+#[cfg(feature = "local-ls")]
+impl From<tonic::Status> for SdkError {
+    fn from(status: tonic::Status) -> Self {
+        SdkError::Grpc(status.to_string())
+    }
 }

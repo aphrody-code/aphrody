@@ -9,9 +9,11 @@
 // a2a transports) cannot be linked on wasm and live behind
 // `cfg(not(target_arch = "wasm32"))`.
 
+#[cfg(not(target_arch = "wasm32"))] mod antigravity_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
+#[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
@@ -174,6 +176,21 @@ enum Commands {
         #[command(subcommand)]
         action: ReAction,
     },
+    /// Reproducible forensic extraction — filesystem map + SQLite schema dump.
+    ///
+    /// SECURITY: maps + classifies + dumps schema ONLY. It never prints or
+    /// copies secret VALUES (tokens, cookie bytes, `secret://` rows). The
+    /// SQLite path opens databases read-only and reads `sqlite_master`
+    /// (names + CREATE statements) only — value columns are never selected.
+    /// Built only with `--features forensics` (links `rusqlite` bundled);
+    /// in a default build the subcommand is absent from the clap surface.
+    ///
+    /// Example: aphrody forensics sqlite --db state.vscdb | jq '.tables[].name'
+    #[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))]
+    Forensics {
+        #[command(subcommand)]
+        action: forensics_cmd::ForensicsAction,
+    },
     /// Tier-1 memory provider operations — migrate, audit, list backends.
     ///
     /// Wires the dyn-compatible `aphrody_memory::MemoryProvider` trait so
@@ -323,6 +340,20 @@ enum Commands {
     Notebooklm {
         #[command(subcommand)]
         action: NotebooklmActions,
+    },
+    /// Native Google AI Ultra / Gemini client (Antigravity). Scriptable,
+    /// non-interactive, JSON output — `models`, `whoami`, `load`, `chat`.
+    ///
+    /// Reads the OAuth token at runtime from the platform credential store
+    /// (Windows Credential Manager entry `gemini:antigravity`); no secret is
+    /// embedded in the binary. On platforms without a credential store the
+    /// underlying SDK returns an "unsupported platform" error.
+    ///
+    /// Example: aphrody antigravity chat --model gemini-2.0-flash --prompt "hi" | jq '.candidates[0].content'
+    #[cfg(not(target_arch = "wasm32"))]
+    Antigravity {
+        #[command(subcommand)]
+        action: antigravity_cmd::AntigravityAction,
     },
     /// Render or export the canonical aphrody logo (`assets/aphrody.webp`).
     ///
@@ -805,6 +836,10 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 }
             },
         },
+        #[cfg(feature = "forensics")]
+        Some(Commands::Forensics { action }) => {
+            forensics_cmd::run(action).await?;
+        },
         Some(Commands::Chat { prompt, model, system, stub }) => {
             commands::ChatCommand { prompt, model, system, stub }.execute(ctx).await?;
         },
@@ -875,6 +910,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Notebooklm { action }) => {
             commands::NotebooklmCommand { action }.execute(ctx).await?;
         },
+        Some(Commands::Antigravity { action }) => antigravity_cmd::run(action).await?,
         Some(Commands::Logo { ico, svg, maskable, cols, size }) => {
             let mut wrote = false;
             if let Some(p) = ico {

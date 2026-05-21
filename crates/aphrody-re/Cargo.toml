@@ -24,6 +24,13 @@ workspace = true
 # The final binary must also pull `ort` with a backend — see crates/cli.
 magika = ["dep:magika"]
 
+# Read-only LevelDB key/value enumerator (WS6b). Chromium stores Local/Session
+# Storage and `shared_proto_db` as LevelDB. Pure-Rust, MIT-licensed reader so we
+# keep the no-C, no-GPL guarantee (the C++ `leveldb`/`leveldb-sys` bindings are
+# avoided). Opt-in because it pulls a filesystem `Env` (host-only); the default
+# + wasm builds stay untouched.
+leveldb = ["dep:rusty-leveldb", "dep:tempfile"]
+
 [dependencies]
 # Cross-platform binary parser (Apache-2.0/MIT). Features pe32+pe64+elf32+elf64
 # already enabled in [workspace.dependencies], with std + endian_fd.
@@ -48,6 +55,18 @@ regex      = { workspace = true }
 # Runtime via `ort` in the final binary. Pinned 1.1.0 (latest stable on
 # crates.io, embeds the model).
 magika     = { version = "1.1.0", optional = true }
+# Pure-Rust LevelDB reader (MIT). Chosen at v4 (the maintained 2026 line on
+# crates.io, supersedes the v3 the WS6b brief drafted against): same `DB::open`
+# / `LdbIterator` surface, fewer transitive crates. `default-features = false`
+# drops the async runtimes; we re-add only `fs` so a real on-disk LevelDB
+# directory (the `PosixDiskEnv`) can be opened. No `tokio`/`async-std` pulled.
+rusty-leveldb = { version = "4", optional = true, default-features = false, features = ["fs"] }
+# Forensic safety: Chromium DBs are often live/locked, and opening a LevelDB
+# replays the WAL into the directory. We copy the dir into a scratch temp dir
+# first and open the copy, leaving the source untouched. Optional, leveldb-gated.
+tempfile   = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+# Round-trip tests build a temp DB on disk; reuse the workspace pin.
+tempfile   = { workspace = true }
