@@ -17,6 +17,14 @@ description           = "Aphrody — cross-platform Rust CLI (Linux / Windows / 
 [lints]
 workspace = true
 
+[features]
+# Native Google Magika deep-learning file-type classification, exposed via
+# `aphrody re classify <path>`. Opt-in because it links the ONNX Runtime
+# (`ort`), which fetches a prebuilt backend at build time — host-only, not
+# hermetic-offline, not wasm. Build with:
+#   cargo build -p aphrody --features magika
+magika = ["aphrody-re/magika", "dep:ort"]
+
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
 # - On wasm32-*, only a minimal stub (Version + help) is built, because
@@ -67,6 +75,10 @@ gemini-runtime            = { path = "../gemini-runtime" }
 # `aphrody re triage` — reverse engineering primitives (pure Rust, goblin-based,
 # zero GPL). Native-only because it reads binaries from disk (std::fs::read).
 aphrody-re                = { path = "../aphrody-re" }
+# ONNX Runtime backend for the Magika classifier (`--features magika`). Default
+# features pull `download-binaries` (prebuilt runtime fetched at build time) so
+# `aphrody re classify` works out of the box once the feature is enabled.
+ort                       = { version = "=2.0.0-rc.12", optional = true }
 # `aphrody logo` — canonical icon (assets/aphrody.webp) -> .ico / .svg / M3
 # maskable PNG + pixel-perfect terminal rendering. Native-only (image+ico).
 aphrody-logo              = { path = "../aphrody-logo" }
