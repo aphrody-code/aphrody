@@ -48,6 +48,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+voice = [
+    "faster-whisper>=1.0",
+    "kokoro-onnx>=0.3",
+    "sounddevice>=0.4.6",
+    "numpy>=1.22",
+]
 
 [project.urls]
 Homepage = "https://github.com/Google-Antigravity/antigravity-sdk-python"
