@@ -7,7 +7,7 @@ Go Style
 
 https://google.github.io/styleguide/go
 
-[Overview](index.md) | [Guide](guide.md) | [Decisions](decisions.md) |[Best practices](best-practices.md)
+[Overview](index.md) | [Guide](guide.md) | [Decisions](decisions.md) | [Best practices](best-practices.md) | [Architecture](ARCHITECTURE.md)
 
 []()
 
@@ -26,6 +26,7 @@ the style guidance given by anyone reviewing Go code at Google.
 |  **Style Guide**  |    https://google.github.io/styleguide/go/guide     |     Everyone      |          Yes          |          Yes          |
 |**Style Decisions**|  https://google.github.io/styleguide/go/decisions   |Readability Mentors|          Yes          |          No           |
 |**Best Practices** |https://google.github.io/styleguide/go/best-practices| Anyone interested |          No           |          No           |
+|**Architecture**   | [Architecture](ARCHITECTURE.md)                     | Everyone          |          No           |          No           |
 
 []()
 
@@ -45,12 +46,14 @@ the style guidance given by anyone reviewing Go code at Google.
    individual Go programmers at Google should keep up-to-date with this
    document.
 
-3. **[Best Practices](https://google.github.io/styleguide/go/best-practices)**documents some of the patterns that have evolved over time that solve common
+3. **[Best Practices](https://google.github.io/styleguide/go/best-practices)** documents some of the patterns that have evolved over time that solve common
    problems, read well, and are robust to code maintenance needs.
 
    These best practices are not canonical, but Go programmers at Google are
    encouraged to use them where possible to keep the codebase uniform and
    consistent.
+
+4. **[Architecture](ARCHITECTURE.md)** outlines the design of Go modules in `aphrody`, describing IPC protocols, build patterns, and integration workflows.
 
 These documents intend to:
 
