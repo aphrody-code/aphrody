@@ -168,6 +168,63 @@ pub async fn fetch_token(
     })
 }
 
+/// A reusable, concurrency-safe IMS token cache.
+///
+/// Holds the credentials and the most recently minted [`AccessToken`], minting
+/// a fresh one through IMS only when the cached token is missing or near
+/// expiry. Shared by every Firefly Services client (image API, journaling, the
+/// future Photoshop API) so a process makes at most one token round-trip per
+/// ~24 h regardless of how many APIs it touches (latency objective).
+pub struct TokenCache {
+    creds: ImsCredentials,
+    token: tokio::sync::Mutex<Option<AccessToken>>,
+}
+
+impl TokenCache {
+    /// Build a cache around the given credentials (no network on construction).
+    #[must_use]
+    pub fn new(creds: ImsCredentials) -> Self {
+        Self { creds, token: tokio::sync::Mutex::new(None) }
+    }
+
+    /// The Developer Console client id (sent as the `x-api-key` header).
+    #[must_use]
+    pub fn client_id(&self) -> &str {
+        &self.creds.client_id
+    }
+
+    /// Borrow the underlying credentials (for `Debug` rendering).
+    #[must_use]
+    pub fn creds(&self) -> &ImsCredentials {
+        &self.creds
+    }
+
+    /// Return a valid bearer token, refreshing through IMS if needed, using
+    /// `http` as the transport.
+    ///
+    /// # Errors
+    ///
+    /// As [`fetch_token`].
+    pub async fn bearer(&self, http: &reqwest::Client) -> Result<String> {
+        let mut guard = self.token.lock().await;
+        if let Some(tok) = guard.as_ref() {
+            if tok.is_valid() {
+                return Ok(tok.token.clone());
+            }
+        }
+        let fresh = fetch_token(http, &self.creds).await?;
+        let value = fresh.token.clone();
+        *guard = Some(fresh);
+        Ok(value)
+    }
+}
+
+impl std::fmt::Debug for TokenCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TokenCache").field("creds", &self.creds).finish_non_exhaustive()
+    }
+}
+
 /// Truncate a string to at most `max` bytes on a char boundary (for safe error
 /// bodies; never includes secrets — IMS error bodies are non-secret).
 pub(crate) fn truncate(s: &str, max: usize) -> String {
@@ -228,13 +285,15 @@ mod tests {
     fn token_validity_reflects_refresh_instant() {
         let valid = AccessToken {
             token: "x".into(),
-            refresh_after: Instant::now() + Duration::from_secs(60),
+            refresh_after: Instant::now() + Duration::from_secs(90),
         };
         assert!(valid.is_valid());
 
         let expired = AccessToken {
             token: "x".into(),
-            refresh_after: Instant::now() - Duration::from_secs(1),
+            refresh_after: Instant::now()
+                .checked_sub(Duration::from_secs(1))
+                .expect("instant minus 1s is representable"),
         };
         assert!(!expired.is_valid());
 
