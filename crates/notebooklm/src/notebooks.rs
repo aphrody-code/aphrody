@@ -44,22 +44,17 @@ impl NotebookClient {
         let mut out = Vec::new();
         let Some(rows) = envelope.get(0).and_then(Value::as_array) else { return Ok(out) };
         for row in rows {
-            // Row layout (captured from live wire) :
-            //   [ <id>, [ <title>, ...], ..., <source_count>?, ...]
+            // Row layout (captured from live wire 2026-05-21) :
+            //   [ <title>, [ <source>, ... ], <id>, <emoji>, ... ]
             let Some(items) = row.as_array() else { continue };
-            let id = items.first().and_then(Value::as_str).unwrap_or_default().to_string();
+            let id = items.get(2).and_then(Value::as_str).unwrap_or_default().to_string();
             if id.is_empty() {
                 continue;
             }
-            let title = items
-                .get(2)
-                .and_then(|v| v.as_array())
-                .and_then(|a| a.first())
-                .and_then(Value::as_str)
-                .or_else(|| items.get(2).and_then(Value::as_str))
-                .unwrap_or_default()
-                .to_string();
-            let source_count = items.get(4).and_then(Value::as_u64).map(|n| n as u32);
+            let title =
+                items.first().and_then(Value::as_str).unwrap_or_default().to_string();
+            let source_count =
+                items.get(1).and_then(Value::as_array).map(|a| a.len() as u32);
             out.push(Notebook {
                 id,
                 title,
@@ -76,39 +71,60 @@ impl NotebookClient {
         let path = format!("/notebook/{notebook_id}");
         let payload = json!([notebook_id, Value::Null, [2], Value::Null, 1]);
         let envelope = self.transport.rpc_raw(GET_NOTEBOOK, &payload, Some(&path)).await?;
-        let title = envelope
-            .get(2)
+        // Wire layout (captured live 2026-05-21): the RPC result is wrapped one
+        // level deep -> envelope[0] = [ <title>, [ <source>, ... ], <id>, <emoji>, ... ].
+        let inner = envelope.get(0);
+        let title = inner
             .and_then(|v| v.get(0))
             .and_then(Value::as_str)
-            .or_else(|| envelope.get(2).and_then(Value::as_str))
             .unwrap_or_default()
             .to_string();
         let mut sources = Vec::new();
-        if let Some(rows) = envelope.get(1).and_then(Value::as_array) {
+        if let Some(rows) = inner.and_then(|v| v.get(1)).and_then(Value::as_array) {
             for row in rows {
+                // Source row: [ [<id>], <title>, <meta[]>, ... ] where
+                //   meta = [ _, word_count, [ts], [doc_id,[ts]], <type>,
+                //            <youtube_meta|null>, <status>, [<url>]|null, <char_count>, ... ]
+                //   type: 1=text/doc, 3=pdf/file, 5=web url, 9=youtube.
                 let Some(items) = row.as_array() else { continue };
-                let id =
-                    items.first().and_then(Value::as_str).unwrap_or_default().to_string();
-                if id.is_empty() {
-                    continue;
-                }
-                let title = items
-                    .get(2)
-                    .and_then(|v| v.get(0))
+                let id = items
+                    .first()
+                    .and_then(Value::as_array)
+                    .and_then(|a| a.first())
                     .and_then(Value::as_str)
                     .unwrap_or_default()
                     .to_string();
-                let kind_code = items.get(3).and_then(Value::as_u64).unwrap_or(0);
-                let kind = match kind_code {
-                    1 => SourceKind::Url,
-                    2 => SourceKind::Text,
+                if id.is_empty() {
+                    continue;
+                }
+                let title =
+                    items.get(1).and_then(Value::as_str).unwrap_or_default().to_string();
+                let meta = items.get(2).and_then(Value::as_array);
+                let type_code =
+                    meta.and_then(|m| m.get(4)).and_then(Value::as_u64).unwrap_or(0);
+                let kind = match type_code {
+                    1 => SourceKind::Text,
                     3 => SourceKind::File,
-                    4 => SourceKind::YouTube,
+                    9 => SourceKind::YouTube,
                     _ => SourceKind::Url,
                 };
-                let url = items.get(4).and_then(Value::as_str).map(str::to_string);
-                let word_count = items.get(5).and_then(Value::as_u64).map(|n| n as u32);
-                let status_code = items.get(6).and_then(Value::as_u64).map(|n| n as u16);
+                // URL lives at meta[7][0] for web sources, meta[5][0] for YouTube.
+                // meta[7] is JSON null for YouTube rows, so filter to arrays
+                // before falling back (Value::get returns Some(Null), not None).
+                let url = meta
+                    .and_then(|m| {
+                        m.get(7)
+                            .filter(|v| v.is_array())
+                            .or_else(|| m.get(5).filter(|v| v.is_array()))
+                    })
+                    .and_then(Value::as_array)
+                    .and_then(|a| a.first())
+                    .and_then(Value::as_str)
+                    .map(str::to_string);
+                let word_count =
+                    meta.and_then(|m| m.get(1)).and_then(Value::as_u64).map(|n| n as u32);
+                let status_code =
+                    meta.and_then(|m| m.get(6)).and_then(Value::as_u64).map(|n| n as u16);
                 sources.push(Source {
                     id,
                     title,

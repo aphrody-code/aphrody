@@ -6569,6 +6569,7 @@ dependencies = [
  "base64",
  "pretty_assertions",
  "reqwest 0.13.3",
+ "rustls",
  "serde",
  "serde_json",
  "sha2",
