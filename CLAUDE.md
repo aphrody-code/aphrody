@@ -117,11 +117,11 @@ Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ## 6.0. Relation aphrody ↔ winclean
 
-**`C:\src\winclean\`** est la **spécialisation Windows-only** d'aphrody (C# NativeAOT/C++20, 146 tools P/Invoke, IEVR).
+**`C:\src\winclean\`** est la **spécialisation Windows-only** d'aphrody (C# NativeAOT/C++20, 176 tools P/Invoke `[McpServerTool]`, IEVR).
 aphrody est la version **cross-platform** (Linux #1, Rust).
 - **Skills/agents** : Génériques (reverse engineering, deep analysis, protocol RE) dans aphrody. Windows-only (Winclean.Mcp, IEVR) dans winclean.
 - **Logique** : Si cross-platform, pure Rust dans aphrody. Si Win32 spécifique complexe (DWM, ConPTY), dans winclean.
-- **A2A** : transport gRPC + miroir de compatibilité `C:\winclean\.coord\` (winclean écoute sur `:8788`). Ne pas toucher aux fichiers en cours d'édition uncommitted du peer (`git status` d'abord).
+- **A2A** : le bridge C# `Winclean.A2a.exe` héberge un serveur A2A 1.0 HTTP/JSON-RPC sur `127.0.0.1:5151` (env `WINCLEAN_A2A_PORT`) et spawn `Winclean.Mcp.exe` en stdio. Coordination cross-repo = mailbox fichier `C:\src\winclean\.coord\` (`inbox-from-{aphrody,winclean}.jsonl` + `heartbeat-aphrody.txt`). `:8788` = listener côté aphrody, distinct du `:5151` C#. Détails : [`docs/peer-a2a-mcp-csharp.md`](docs/peer-a2a-mcp-csharp.md). Ne pas toucher aux fichiers uncommitted du peer (`git -C C:\src\winclean status` d'abord).
 
 ## 6.5. Skills & agents
 
