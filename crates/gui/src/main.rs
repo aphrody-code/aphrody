@@ -12,7 +12,7 @@ use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoop},
-    window::{Window, WindowId},
+    window::{Window, WindowId, WindowLevel},
 };
 use mui_rs_renderer::surface::RenderSurface;
 use mui_rs_renderer::pipeline::RenderPipeline;
@@ -77,10 +77,17 @@ impl WindowSizeClass {
 impl<'a> ApplicationHandler for App<'a> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
+            // Google-app-desktop style: a minimal, frameless, always-on-top,
+            // translucent floating assistant bar (not a full app window).
+            // Compact pill that stays available in the foreground; the M3
+            // surface inside renders the Gemini gem + input + reply.
             let window_attributes = Window::default_attributes()
-                .with_title("Aphrody Universal Engine")
-                .with_decorations(false)
-                .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 800.0));
+                .with_title("Aphrody")
+                .with_decorations(false) // frameless / borderless
+                .with_transparent(true) // rounded translucent surface
+                .with_resizable(true)
+                .with_window_level(WindowLevel::AlwaysOnTop) // always active in foreground
+                .with_inner_size(winit::dpi::LogicalSize::new(760.0, 132.0));
 
             let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
             self.window = Some(window.clone());
