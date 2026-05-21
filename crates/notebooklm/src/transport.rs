@@ -115,7 +115,12 @@ impl HttpTransport {
             HeaderValue::from_static("1"),
         );
         for (name, value) in self.auth.request_headers() {
-            let header_name = HeaderName::from_static(name);
+            // `HeaderName::from_static` panics on non-lowercase names, and the
+            // auth layer hands us canonical-cased names ("Cookie",
+            // "Authorization"); parse case-insensitively at runtime instead.
+            let header_name = HeaderName::from_bytes(name.as_bytes()).map_err(|e| {
+                NotebookError::Auth(format!("invalid auth header name {name}: {e}"))
+            })?;
             let header_value = HeaderValue::from_str(&value).map_err(|e| {
                 NotebookError::Auth(format!("invalid auth header {name}: {e}"))
             })?;
