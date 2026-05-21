@@ -21,6 +21,7 @@ vello.workspace = true
 peniko.workspace = true
 kurbo.workspace = true
 taffy.workspace = true
+parley.workspace = true
 
 # web
 wasm-bindgen         = { workspace = true, optional = true }

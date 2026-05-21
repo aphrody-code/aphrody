@@ -260,8 +260,12 @@ profile.md
 # ----------------------------------------------------------------------------
 # 13. External clones / vendored research mirrors
 # ----------------------------------------------------------------------------
-# NOTE: vendor/ and packages/ were fully removed in the Rust-only pivot
-# (2026-05-19). Patterns retained below only to block accidental re-clones.
+# NOTE (2026-05-21 polyglot pivot): packages/* hosts forked Bun/TS workspace
+# members that keep their OWN .git (e.g. packages/material-web, fork of
+# material-components/material-web). They are intentionally NOT tracked by the
+# parent monorepo to avoid accidental gitlink embedding — each fork is pushed
+# to its own aphrody-code/* remote. Drop a `!packages/<name>/` negation here if
+# a future package should instead be vendored directly into this repo.
 shared/git/
 opt/
 vendor/
@@ -381,3 +385,20 @@ lefthook.yml
 .claude/*.local.md
 .claude/*.local.json
 
+
+# ----------------------------------------------------------------------------
+# 25. Structural non-trackables (stabilise checkpoint 2026-05-22)
+# ----------------------------------------------------------------------------
+# Registered git worktrees (e.g. parallel-agent sandboxes) — never commit.
+.claude/worktrees/
+# Vendored third-party clone with its own .git (text extraction lib).
+/python/langextract/
+# uv build caches nested under python packages.
+**/.uv-cache/
+# Built tool binaries (n2b etc.) — reproducible, not source.
+/bin/
+# Stray scratch outputs.
+/=ro
+/test_localsystem.txt
+/webview2_analysis_results.jsonl
+/webview2_visualization.html

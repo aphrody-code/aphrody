@@ -381,6 +381,112 @@ pub fn export_css(theme: &ColorRoles) -> std::string::String {
     )
 }
 
+/// Mapping from a semantic UI-system token name to the M3 `--md-sys-color-*`
+/// role it aliases. Shared by [`export_shadcn_aliases`] (shadcn/ui variable
+/// names) and [`export_tailwind_theme`] (Tailwind v4 `--color-*` names) so the
+/// two fusion sheets stay in lockstep. See `docs/ui/FUSION-PLAN.md`.
+const FUSION_ALIAS_MAP: &[(&str, &str)] = &[
+    ("background", "surface"),
+    ("foreground", "on-surface"),
+    ("card", "surface-container-low"),
+    ("card-foreground", "on-surface"),
+    ("popover", "surface-container"),
+    ("popover-foreground", "on-surface"),
+    ("primary", "primary"),
+    ("primary-foreground", "on-primary"),
+    ("secondary", "secondary-container"),
+    ("secondary-foreground", "on-secondary-container"),
+    ("muted", "surface-variant"),
+    ("muted-foreground", "on-surface-variant"),
+    ("accent", "tertiary-container"),
+    ("accent-foreground", "on-tertiary-container"),
+    ("destructive", "error"),
+    ("destructive-foreground", "on-error"),
+    ("border", "outline-variant"),
+    ("input", "outline-variant"),
+    ("ring", "primary"),
+];
+
+/// Emits a shadcn/ui semantic-token `:root` block aliasing shadcn variables to
+/// the M3 system colors produced by [`export_css`]. The aliases are pure
+/// `var()` references (theme-independent): emit this sheet *after* the
+/// `export_css` output so shadcn components inherit the live M3 palette, and
+/// light/dark switching flows through automatically. Backs the `registry:theme`
+/// fusion item in `docs/ui/FUSION-PLAN.md`.
+///
+/// Only available with the `std` feature.
+///
+/// # Example
+///
+/// ```rust
+/// use m3_tokens::color::export_shadcn_aliases;
+/// let css = export_shadcn_aliases();
+/// assert!(css.contains("--primary: var(--md-sys-color-primary);"));
+/// ```
+#[cfg(feature = "std")]
+pub fn export_shadcn_aliases() -> std::string::String {
+    let mut out = std::string::String::from(":root {\n");
+    for (name, role) in FUSION_ALIAS_MAP {
+        out.push_str(&std::format!("  --{name}: var(--md-sys-color-{role});\n"));
+    }
+    out.push('}');
+    out
+}
+
+/// Emits a Tailwind v4 `@theme inline { ... }` block mapping Tailwind's
+/// `--color-*` design tokens to the M3 system colors produced by
+/// [`export_css`]. Import this so utilities (`bg-primary`, `text-foreground`,
+/// `border-border`, ...) resolve to the live M3 palette. Backs the Tailwind
+/// side of the fusion described in `docs/ui/FUSION-PLAN.md`.
+///
+/// Only available with the `std` feature.
+///
+/// # Example
+///
+/// ```rust
+/// use m3_tokens::color::export_tailwind_theme;
+/// let css = export_tailwind_theme();
+/// assert!(css.starts_with("@theme inline {"));
+/// assert!(css.contains("--color-primary: var(--md-sys-color-primary);"));
+/// ```
+#[cfg(feature = "std")]
+pub fn export_tailwind_theme() -> std::string::String {
+    let mut out = std::string::String::from("@theme inline {\n");
+    for (name, role) in FUSION_ALIAS_MAP {
+        out.push_str(&std::format!("  --color-{name}: var(--md-sys-color-{role});\n"));
+    }
+    out.push('}');
+    out
+}
+
+/// Emits the complete fusion stylesheet: the M3 `:root` system colors
+/// ([`export_css`]) followed by the shadcn/ui alias block
+/// ([`export_shadcn_aliases`]) and the Tailwind v4 `@theme inline` block
+/// ([`export_tailwind_theme`]), separated by blank lines. This single sheet is
+/// the materialised output of the three-way UI fusion (Material 3 + shadcn +
+/// Tailwind) — see `docs/ui/FUSION-PLAN.md`.
+///
+/// Only available with the `std` feature.
+///
+/// # Example
+///
+/// ```rust
+/// use m3_tokens::color::{BASELINE, export_fusion_css};
+/// let css = export_fusion_css(&BASELINE);
+/// assert!(css.contains("--md-sys-color-primary:"));
+/// assert!(css.contains("--primary: var(--md-sys-color-primary);"));
+/// assert!(css.contains("@theme inline {"));
+/// ```
+#[cfg(feature = "std")]
+pub fn export_fusion_css(theme: &ColorRoles) -> std::string::String {
+    std::format!(
+        "{}\n\n{}\n\n{}",
+        export_css(theme),
+        export_shadcn_aliases(),
+        export_tailwind_theme()
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

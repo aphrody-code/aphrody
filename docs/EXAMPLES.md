@@ -218,7 +218,7 @@ Verify and extract structured timeline data from the WebView2 default profile di
 
 ```bash
 # Verify environment and run the WebView2 deep dive example script
-uv run libs/antigravity-sdk-python/examples/deep_dives/webview2_magika_langextract.py
+uv run python/antigravity-sdk-python/examples/deep_dives/webview2_magika_langextract.py
 # Reading 'gemini:antigravity' from Windows Credential Manager...
 # Successfully loaded Gemini access token for Vertex AI.
 # Found WebView2 user profile: C:\Users\<user>\AppData\Local\Google\Google\latest\default\WebView2\EBWebView\Default

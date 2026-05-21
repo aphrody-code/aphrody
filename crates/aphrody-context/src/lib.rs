@@ -228,6 +228,174 @@ impl TokenEstimator for HeuristicTokenEstimator {
     }
 }
 
+/// Token estimator that delegates to the `aphrody-tokenizer-go` binary.
+///
+/// Gated under `#[cfg(not(target_arch = "wasm32"))]` because process spawning
+/// is unsupported on WASM.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug, Clone)]
+pub struct GoTokenEstimator {
+    encoding: String,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl GoTokenEstimator {
+    /// Create a new Go-based exact BPE estimator.
+    ///
+    /// `encoding` defaults to `cl100k_base` if not specified.
+    #[must_use]
+    pub fn new(encoding: Option<&str>) -> Self {
+        Self {
+            encoding: encoding.unwrap_or("cl100k_base").to_string(),
+        }
+    }
+
+    /// Resolve the path to the `aphrody-tokenizer-go` binary.
+    fn resolve_bin() -> Option<std::path::PathBuf> {
+        // Step 1: Env override
+        if let Ok(explicit) = std::env::var("APHRODY_TOKENIZER_GO_BIN") {
+            let p = std::path::PathBuf::from(explicit.trim());
+            if p.exists() {
+                return Some(p);
+            }
+        }
+
+        // Step 2: Sibling of the running binary
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(dir) = exe.parent() {
+                for cand in ["aphrody-tokenizer-go.exe", "aphrody-tokenizer-go"] {
+                    let p = dir.join(cand);
+                    if p.exists() {
+                        return Some(p);
+                    }
+                }
+            }
+        }
+
+        // Step 3: PATH walk
+        if let Some(path_var) = std::env::var_os("PATH") {
+            for dir in std::env::split_paths(&path_var) {
+                for cand in ["aphrody-tokenizer-go.exe", "aphrody-tokenizer-go"] {
+                    let p = dir.join(cand);
+                    if p.exists() {
+                        return Some(p);
+                    }
+                }
+            }
+        }
+
+        // Step 4: Check if Go binary was compiled under go/aphrody-tokenizer-go/
+        // (convenient for local tests/development).
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut current = Some(cwd.as_path());
+            while let Some(path) = current {
+                for cand in ["go/aphrody-tokenizer-go/aphrody-tokenizer-go.exe", "go/aphrody-tokenizer-go/aphrody-tokenizer-go"] {
+                    let p = path.join(cand);
+                    if p.exists() {
+                        return Some(p);
+                    }
+                }
+                // Also check if we are already inside the crates/aphrody-tokenizer-go folder
+                for cand in ["aphrody-tokenizer-go.exe", "aphrody-tokenizer-go"] {
+                    let p = path.join(cand);
+                    if p.exists() && path.ends_with("aphrody-tokenizer-go") {
+                        return Some(p);
+                    }
+                }
+                current = path.parent();
+            }
+        }
+
+        None
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Default for GoTokenEstimator {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl TokenEstimator for GoTokenEstimator {
+    fn estimate(&self, text: &str) -> u32 {
+        if text.is_empty() {
+            return 0;
+        }
+
+        let bin = match Self::resolve_bin() {
+            Some(p) => p,
+            None => {
+                // Fallback to HeuristicTokenEstimator on failure to resolve binary
+                tracing::warn!("aphrody-tokenizer-go binary not found; falling back to heuristic estimator");
+                return HeuristicTokenEstimator::default().estimate(text);
+            }
+        };
+
+        // Use the stdin JSON interface as designed
+        let mut child = match std::process::Command::new(&bin)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("Failed to spawn tokenizer process: {}; falling back to heuristic", e);
+                return HeuristicTokenEstimator::default().estimate(text);
+            }
+        };
+
+        // Write the request to stdin
+        if let Some(mut stdin) = child.stdin.take() {
+            let req = serde_json::json!({
+                "encoding": self.encoding,
+                "text": text,
+            });
+            if let Err(e) = serde_json::to_writer(&mut stdin, &req) {
+                tracing::warn!("Failed to write JSON to tokenizer: {}; falling back to heuristic", e);
+                return HeuristicTokenEstimator::default().estimate(text);
+            }
+        }
+
+        // Read response
+        let output = match child.wait_with_output() {
+            Ok(out) => out,
+            Err(e) => {
+                tracing::warn!("Failed to read tokenizer output: {}; falling back to heuristic", e);
+                return HeuristicTokenEstimator::default().estimate(text);
+            }
+        };
+
+        if !output.status.success() {
+            tracing::warn!("Tokenizer exited with status: {}; falling back to heuristic", output.status);
+            return HeuristicTokenEstimator::default().estimate(text);
+        }
+
+        #[derive(serde::Deserialize)]
+        struct TokenizerResponse {
+            tokens: Option<u32>,
+            error: Option<String>,
+        }
+
+        match serde_json::from_slice::<TokenizerResponse>(&output.stdout) {
+            Ok(resp) => {
+                if let Some(err) = resp.error {
+                    tracing::warn!("Tokenizer returned error: {}; falling back to heuristic", err);
+                    HeuristicTokenEstimator::default().estimate(text)
+                } else {
+                    resp.tokens.unwrap_or(0).max(1)
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Failed to parse tokenizer JSON response: {}; falling back to heuristic", e);
+                HeuristicTokenEstimator::default().estimate(text)
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // ContextSnapshot — serde-round-trippable persistence shape.
 // ---------------------------------------------------------------------------

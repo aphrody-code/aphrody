@@ -43,19 +43,37 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 - Pour Linux : appels `libc`, `nix`, `tokio`, `io_uring` réels. Windows : `windows-rs` direct.
 - Aucun `TODO: implement later`. Scaffold interdit : chaque fichier ship une feature observable.
 
-## 2. Politique de langages
+## 2. Politique de langages — monorepo polyglotte
 
-> Toolchain pinned to `nightly-2026-05-17` via `rust-toolchain.toml`. Re-pin requires PR.
+> Pivot 2026-05-21 : aphrody passe de « 100% Rust » à **monorepo polyglotte
+> Rust + Bun + Python + Go**, **Rust restant le langage primaire** (cœur CLI,
+> systems, FFI). Les trois autres toolchains sont des citoyens de première
+> classe pour les surfaces où ils dominent (UI web, ML/data, bridges natifs).
+> Rust toolchain pinned `nightly-2026-05-17` via `rust-toolchain.toml` ;
+> Bun/Go/Python pinnés via `mise.toml`. Re-pin requires PR.
 
-**aphrody est 100% Rust dans tout le repo (binaire, workspace, scripts, skills, MCP, tooling, doc-build).**
-- **Tout code** : Rust nightly (Edition 2024).
-- **C/C++** : Banni de la distribution, sauf wrappers FFI (`cxx::bridge`).
-- **FFI** : `mimalloc` global, zero-copy via pointeurs bruts encapsulés.
-- **JS/TS/Node/Bun** : **BANNIS**. Aucune invocation `bun`/`node`/`npm`/`tsc`/`turbo`. Tout code/script `.ts`/`.js` et config associée migrés en Rust ou supprimés. MCP stdio en binaires Rust. `packages/` n'existe plus.
-- **Python** : Banni (scripts `.py` à migrer en Rust ou supprimer).
-- **Shell** : Préférer binaires Rust. Wrappers de bootstrap one-shot (`dev-setup.sh`, `scripts/deploy.{ps1,sh}`) tolérés.
-- **Web / UI** : **WASM Rust natif** (`wasm-bindgen`) ou **WebGPU** (`wgpu` crate). UI = wrappers Material Web Components 3 natifs.
+**aphrody est un monorepo polyglotte. Une seule entrée d'orchestration : le
+`justfile` racine (`just build|test|lint|fmt|ci`).** Chaque langage garde son
+manifeste canonique et son workspace natif :
+
+| Langage | Rôle | Workspace / manifeste | Toolchain |
+|---------|------|-----------------------|-----------|
+| **Rust** (primaire) | Cœur CLI, systems, FFI, WASM | `Cargo.toml` (`crates/*`) | `rust-toolchain.toml` |
+| **Bun** (TS/JS) | Apps web first-party + lint (oxlint) | `package.json` + `bunfig.toml` + `.oxlintrc.json` (`apps/*`) | `mise.toml` |
+| **Python** | ML / data / SDK clients | `pyproject.toml` (uv : `python/*`) | `mise.toml` (uv) |
+| **Go** | Bridges natifs (tokenizer, genai) | `go.work` (`go/*`) | `mise.toml` |
+
+> **Arborescence (magika-style, 2026-05-22)** : ségrégation par langage — `crates/` (Rust, modèle tauri), `python/` (packages uv), `go/` (modules go.work), `apps/` + `packages/` (Bun TS/JS). Plus de Python sous `apps/`/`libs/`, plus de Go sous `crates/`.
+
+- **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
+- **Bun** : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Versions de deps centralisées via le **Bun catalog** racine (`workspaces.catalog` ; refs `"dep": "catalog:"`). Lint = **oxlint** (oxc, `.oxlintrc.json`, `just lint-bun`), format = **oxfmt** (oxc, `.oxfmtrc.json`, `just fmt-bun`). Outils globaux (`bun add -g`) : `turbo` (orchestre les forks pnpm/turbo de `packages/*`), `tsc`, `oxc`. Web/UI = **Material Web Components 3** (fork `packages/material-web`) ; WASM (`wasm-bindgen`) et WebGPU (`wgpu`) pour les surfaces Rust-natives. Les forks `packages/*` gardent leur PM natif (npm/pnpm), hors workspace bun.
+- **Python** : géré par **uv** (workspace `python/*`), lint/format **ruff**, tests **pytest**.
+- **Go** : modules sous `go/`, agrégés par **go.work** ; `go vet`/`go test` via le runner.
+- **C/C++** : toujours banni de la distribution, sauf wrappers FFI (`cxx::bridge`).
+- **FFI** : `mimalloc` global côté Rust, zero-copy via pointeurs bruts encapsulés.
+- **Shell** : wrappers de bootstrap one-shot tolérés ; logique réelle dans une des 4 toolchains.
 - **Vercel Rust stack** (`turbopack-*`, `swc-*`, `next-*`, `lightning-css`, `oxc`) déclaré dans `Cargo.toml` racine. Pas de re-vendoring.
+- **Supply-chain** : chaque toolchain passe son gate (`cargo deny`/`vet`, `bun`/`npm audit`, `uv`/`pip-audit`, `govulncheck`) — cf. §5.
 
 ## 2.5. Méthodologie docs / versions / fact-checking
 

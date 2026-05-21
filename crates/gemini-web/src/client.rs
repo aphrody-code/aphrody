@@ -2,6 +2,7 @@
 //! [`GeminiWebClient`] — the public façade composing auth + bootstrap +
 //! transport into a scriptable Gemini web client.
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::{Path, PathBuf};
 
 use crate::auth::Auth;
@@ -30,6 +31,7 @@ impl GeminiWebClient {
     /// Resolves `HOME` (Unix) or `USERPROFILE` (Windows). Returns `None` when
     /// neither is set.
     #[must_use]
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn default_cookie_path() -> Option<PathBuf> {
         let home = std::env::var_os("HOME")
             .or_else(|| std::env::var_os("USERPROFILE"))?;
@@ -42,6 +44,7 @@ impl GeminiWebClient {
     ///
     /// Propagates auth (bad/missing jar), bootstrap (signed out) and network
     /// errors.
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn from_cookie_file(path: impl AsRef<Path>, language: &str) -> Result<Self> {
         let auth = Auth::from_cookie_file(path).await?;
         Self::from_auth(auth, language).await
@@ -53,6 +56,7 @@ impl GeminiWebClient {
     ///
     /// [`GeminiError::Auth`] if no home directory is resolvable, plus the same
     /// errors as [`Self::from_cookie_file`].
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn from_default_cookie_file(language: &str) -> Result<Self> {
         let path = Self::default_cookie_path().ok_or_else(|| {
             GeminiError::Auth("cannot resolve HOME/USERPROFILE for default cookie path".into())

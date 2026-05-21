@@ -18,7 +18,7 @@ server) reproduces it in Rust. No secrets are reproduced here.
 Notes on `localharness`:
 
 - Declared as wheel package-data in
-  [`libs/antigravity-sdk-python/pyproject.toml`](../../libs/antigravity-sdk-python/pyproject.toml)
+  [`python/antigravity-sdk-python/pyproject.toml`](../../python/antigravity-sdk-python/pyproject.toml)
   lines 67-71: *"Include the pre-compiled Go binary in the wheel. The release
   script places the platform-appropriate binary at
   `google/antigravity/bin/localharness` before building each wheel."* and
@@ -66,7 +66,7 @@ artifacts, not for building any aphrody deliverable.
 
 ## Sources
 
-- In-repo: [`libs/antigravity-sdk-python/pyproject.toml`](../../libs/antigravity-sdk-python/pyproject.toml),
+- In-repo: [`python/antigravity-sdk-python/pyproject.toml`](../../python/antigravity-sdk-python/pyproject.toml),
   [`crates/antigravity-sdk/src/local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs),
   [`crates/antigravity-sdk/proto/exa_language_server.proto`](../../crates/antigravity-sdk/proto/exa_language_server.proto),
   [`docs/research/antigravity-sdk-analysis.md`](../research/antigravity-sdk-analysis.md).

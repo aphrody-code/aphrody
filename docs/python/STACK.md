@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Python Stack — apps/aphrody (2026)
+# Python Stack — python/aphrody (2026)
 
 Fact-checked against PyPI on 2026-05-21. Versions are the current stable
 releases. All libraries confirmed Python 3.10-3.14 compatible unless noted.
@@ -272,9 +272,9 @@ pytest-httpx works at the `httpx` transport layer — no monkey-patching of
 
 ruff configuration is already present in the workspace `pyproject.toml` with
 `convention = "google"` and the `D` pydocstyle ruleset. No additional config
-required for `apps/aphrody/`.
+required for `python/aphrody/`.
 
-For pyright, add to `apps/aphrody/pyproject.toml`:
+For pyright, add to `python/aphrody/pyproject.toml`:
 
 ```toml
 [tool.pyright]
@@ -309,7 +309,7 @@ is not required.
 
 ## Dependencies Block (pyproject.toml)
 
-Paste into `apps/aphrody/pyproject.toml` under `[project]`:
+Paste into `python/aphrody/pyproject.toml` under `[project]`:
 
 ```toml
 dependencies = [

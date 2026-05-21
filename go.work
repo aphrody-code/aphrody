@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+// go.work — Go workspace for the aphrody polyglot monorepo.
+//
+// Aggregates every Go module in the repo so `go build`, `go test` and the
+// gopls language server resolve cross-module imports without per-module
+// replace directives. Add new modules with `go work use ./path/to/module`.
+//
+// The unified task runner (root justfile) drives this via `just *-go`.
+
+go 1.26.3
+
+use ./go/aphrody-tokenizer-go
