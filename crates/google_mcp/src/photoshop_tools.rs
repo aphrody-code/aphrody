@@ -564,6 +564,63 @@ async fn download_and_report(
     .to_string()
 }
 
+// ---------------------------------------------------------------------------
+// Live Photoshop (in-app UXP plugin) — drive the *running* desktop Photoshop
+// from the inside through the WebSocket bridge. batchPlay + eval expose the
+// entire Photoshop surface (every menu/filter/action), unlike the headless
+// cloud API. Requires the aphrody UXP panel (apps/photoshop-uxp) to be loaded.
+// ---------------------------------------------------------------------------
+
+/// Generous budget — a heavy `batchPlay` (e.g. a Neural Filter) can take a
+/// while inside Photoshop.
+const LIVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
+
+fn bridge_result(r: Result<Value, String>) -> String {
+    match r {
+        Ok(v) => json!({ "ok": true, "result": v }).to_string(),
+        Err(e) => json!({ "ok": false, "error": e }).to_string(),
+    }
+}
+
+/// Report the live Photoshop state (app version, active document, layer tree).
+pub(crate) async fn live_info() -> String {
+    bridge_result(crate::photoshop_bridge::call("info", json!({}), LIVE_TIMEOUT).await)
+}
+
+/// Request for [`live_batchplay`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct PsBatchPlayRequest {
+    /// The `batchPlay` command array — an array of ActionDescriptor objects
+    /// (the same JSON ScriptListener / Alchemist emit). Drives any Photoshop op.
+    pub commands: Value,
+    /// Optional `batchPlay` options object (e.g. `{ "synchronousExecution": false }`).
+    #[serde(default)]
+    pub options: Option<Value>,
+}
+
+/// Run a `batchPlay` command array inside the live Photoshop — the universal
+/// driver for any Photoshop operation.
+pub(crate) async fn live_batchplay(req: PsBatchPlayRequest) -> String {
+    let args = json!({ "commands": req.commands, "options": req.options.unwrap_or_else(|| json!({})) });
+    bridge_result(crate::photoshop_bridge::call("batchPlay", args, LIVE_TIMEOUT).await)
+}
+
+/// Request for [`live_exec`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct PsExecRequest {
+    /// JavaScript evaluated inside the UXP plugin. The async body has `app`,
+    /// `photoshop`, `constants`, `core` and `batchPlay` in scope and should
+    /// `return` a JSON-serializable value.
+    pub code: String,
+}
+
+/// Evaluate arbitrary UXP JavaScript inside the live Photoshop (full internal
+/// access — DOM, modules, batchPlay). The escape hatch for anything not
+/// expressible as a single `batchPlay` array.
+pub(crate) async fn live_exec(req: PsExecRequest) -> String {
+    bridge_result(crate::photoshop_bridge::call("eval", json!({ "code": req.code }), LIVE_TIMEOUT).await)
+}
+
 /// Serialize a Photoshop job into a tool-result JSON string.
 fn job_json(job: &aphrody_firefly::PhotoshopJob) -> String {
     serde_json::to_string(&json!({

@@ -35,6 +35,12 @@ reqwest            = { workspace = true }
 rustls             = { workspace = true }
 schemars           = { workspace = true }
 axum               = { workspace = true }
+# Live Photoshop bridge: a local WebSocket server the in-app UXP plugin
+# connects to, letting the photoshop_live_* MCP tools drive the running
+# Photoshop from the inside (batchPlay / DOM). Standalone WS server (no axum
+# `ws` feature needed in this workspace).
+tokio-tungstenite  = { workspace = true }
+futures-util       = { workspace = true }
 sysinfo            = { workspace = true }
 backend            = { path = "../backend" }
 # MCP client surface: reuse the production-tested implementation from
