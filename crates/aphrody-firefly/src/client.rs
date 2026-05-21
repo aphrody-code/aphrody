@@ -3,14 +3,13 @@
 //! The high-level Firefly Services client: token caching, async-job submit +
 //! poll, and output download.
 
-use crate::auth::{self, AccessToken, ImsCredentials};
+use crate::auth::{self, ImsCredentials, TokenCache};
 use crate::error::{FireflyError, Result};
 use crate::models::{
     AsyncJobSubmission, GenerateImageRequest, GenerateResult, JobStatusEnvelope,
 };
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
 
 /// Firefly REST base host.
 pub const FIREFLY_API_BASE: &str = "https://firefly-api.adobe.io";
@@ -91,8 +90,7 @@ impl FireflyImage {
 /// latency objective).
 pub struct FireflyClient {
     http: reqwest::Client,
-    creds: ImsCredentials,
-    token: Mutex<Option<AccessToken>>,
+    tokens: TokenCache,
     poll: PollConfig,
 }
 
@@ -106,7 +104,7 @@ impl FireflyClient {
         let http = reqwest::Client::builder()
             .user_agent(concat!("aphrody-firefly/", env!("CARGO_PKG_VERSION")))
             .build()?;
-        Ok(Self { http, creds, token: Mutex::new(None), poll: PollConfig::default() })
+        Ok(Self { http, tokens: TokenCache::new(creds), poll: PollConfig::default() })
     }
 
     /// Build a client from `FIREFLY_CLIENT_ID` / `FIREFLY_CLIENT_SECRET`.
@@ -128,16 +126,7 @@ impl FireflyClient {
 
     /// Return a valid bearer token, refreshing it through IMS if needed.
     async fn bearer(&self) -> Result<String> {
-        let mut guard = self.token.lock().await;
-        if let Some(tok) = guard.as_ref() {
-            if tok.is_valid() {
-                return Ok(tok.token.clone());
-            }
-        }
-        let fresh = auth::fetch_token(&self.http, &self.creds).await?;
-        let value = fresh.token.clone();
-        *guard = Some(fresh);
-        Ok(value)
+        self.tokens.bearer(&self.http).await
     }
 
     /// Submit a generate request and wait for the job to complete, returning the
@@ -173,7 +162,7 @@ impl FireflyClient {
         let resp = self
             .http
             .post(GENERATE_ASYNC_ENDPOINT)
-            .header("x-api-key", &self.creds.client_id)
+            .header("x-api-key", self.tokens.client_id())
             .bearer_auth(&token)
             .header(reqwest::header::ACCEPT, "application/json")
             .json(req)
@@ -234,7 +223,7 @@ impl FireflyClient {
         let resp = self
             .http
             .get(status_url)
-            .header("x-api-key", &self.creds.client_id)
+            .header("x-api-key", self.tokens.client_id())
             .bearer_auth(&token)
             .header(reqwest::header::ACCEPT, "application/json")
             .send()
@@ -305,7 +294,7 @@ impl FireflyClient {
 impl std::fmt::Debug for FireflyClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FireflyClient")
-            .field("creds", &self.creds)
+            .field("creds", self.tokens.creds())
             .field("poll", &self.poll)
             .finish_non_exhaustive()
     }

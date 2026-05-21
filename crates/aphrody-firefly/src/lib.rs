@@ -61,13 +61,17 @@
 pub mod auth;
 pub mod client;
 pub mod error;
+pub mod events;
 pub mod models;
 
-pub use auth::{AccessToken, ImsCredentials, FIREFLY_SCOPE, IMS_TOKEN_ENDPOINT};
+pub use auth::{AccessToken, ImsCredentials, TokenCache, FIREFLY_SCOPE, IMS_TOKEN_ENDPOINT};
 pub use client::{
     FireflyClient, FireflyImage, PollConfig, FIREFLY_API_BASE, GENERATE_ASYNC_ENDPOINT,
 };
 pub use error::{FireflyError, Result};
+pub use events::{
+    parse_link_next, JournalBatch, JournalClient, JournalConfig, JournalEvent, PageInfo, Position,
+};
 pub use models::{
     AsyncJobSubmission, ContentClass, GenerateImageRequest, GenerateResult, ImageRef, JobStatus,
     JobStatusEnvelope, Output, Size,

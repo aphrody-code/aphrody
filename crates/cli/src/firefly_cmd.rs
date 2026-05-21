@@ -10,7 +10,9 @@
 
 use std::path::PathBuf;
 
-use aphrody_firefly::{ContentClass, FireflyClient, GenerateImageRequest, Size};
+use aphrody_firefly::{
+    ContentClass, FireflyClient, GenerateImageRequest, JournalClient, Position, Size,
+};
 
 /// Actions for the `firefly` subcommand.
 #[derive(clap::Subcommand, Debug, Clone)]
@@ -43,6 +45,24 @@ pub(crate) enum FireflyAction {
         #[arg(long, default_value = "firefly")]
         prefix: String,
         /// Emit JSON (saved paths + seeds) instead of a path list.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Drain the Adobe I/O Events journal (event-driven job completion).
+    ///
+    /// Reads FIREFLY_JOURNAL_URL + FIREFLY_IMS_ORG_ID (+ FIREFLY_CLIENT_ID/SECRET)
+    /// from the environment. Example: aphrody firefly events --latest
+    Events {
+        /// Start from the latest position (only new events) instead of oldest.
+        #[arg(long)]
+        latest: bool,
+        /// Resume strictly after this journal position.
+        #[arg(long)]
+        since: Option<String>,
+        /// Maximum HTTP round-trips when draining the journal.
+        #[arg(long, default_value_t = 20)]
+        max_batches: u32,
+        /// Emit JSON (events + next position) instead of a summary.
         #[arg(long)]
         json: bool,
     },
@@ -123,6 +143,51 @@ pub(crate) async fn run(action: FireflyAction) -> miette::Result<()> {
                         Some(s) => println!("{} (seed {s})", path.display()),
                         None => println!("{}", path.display()),
                     }
+                }
+            }
+            Ok(())
+        },
+
+        FireflyAction::Events { latest, since, max_batches, json } => {
+            let start = if let Some(pos) = since {
+                Position::Since(pos)
+            } else if latest {
+                Position::Latest
+            } else {
+                Position::Oldest
+            };
+
+            let client = JournalClient::from_env()
+                .map_err(|e| miette::miette!("Firefly journaling setup: {e}"))?;
+            let (events, next) = client
+                .drain(start, max_batches)
+                .await
+                .map_err(|e| miette::miette!("journal read: {e}"))?;
+
+            if json {
+                let payload = serde_json::json!({
+                    "count": events.len(),
+                    "next": next,
+                    "events": events.iter().map(|e| serde_json::json!({
+                        "position": e.position,
+                        "event": e.event,
+                    })).collect::<Vec<_>>(),
+                });
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&payload)
+                        .map_err(|e| miette::miette!("encode: {e}"))?
+                );
+            } else if events.is_empty() {
+                println!("(journal caught up — no new events)");
+            } else {
+                println!("{} event(s)", events.len());
+                for e in &events {
+                    let kind = e.event.get("type").and_then(|v| v.as_str()).unwrap_or("event");
+                    println!("{}  {kind}", e.position);
+                }
+                if let Some(n) = next {
+                    println!("next: {n}");
                 }
             }
             Ok(())
