@@ -3,7 +3,7 @@
 This document describes the Go-based sub-systems within `aphrody`.
 
 Currently, Go is leveraged to handle two key performance-sensitive tasks:
-1. **Exact BPE (Byte-Pair Encoding) tokenization** (`crates/aphrody-tokenizer-go`) without bloating the core Rust binary with heavy tokenization tables or Python runtime requirements.
+1. **Exact BPE (Byte-Pair Encoding) tokenization** (`go/aphrody-tokenizer-go`) without bloating the core Rust binary with heavy tokenization tables or Python runtime requirements.
 2. **HTML-to-text/markdown-like parsing and extraction** leveraging Google's official HTML parser sub-repository (`golang.org/x/net/html`) to clean raw web page context.
 
 ---
@@ -93,6 +93,180 @@ On failure:
 
 ---
 
+### 2.3 Context Caching Schemas
+
+The context caching API allows caching large documents or prompt prefixes to reduce latency and token costs.
+
+#### Create Cache Request (`create_cache`)
+```json
+{
+  "command": "create_cache",
+  "model": "gemini-2.5-flash",
+  "prompt": "Large context dataset contents...",
+  "display_name": "my-shared-cache",
+  "ttl_seconds": 300
+}
+```
+
+#### Response (Returns `CachedContent` object)
+```json
+{
+  "cache": {
+    "name": "cachedContents/...",
+    "model": "models/gemini-2.5-flash",
+    "createTime": "2026-05-21T18:00:00Z",
+    "updateTime": "2026-05-21T18:00:00Z",
+    "expireTime": "2026-05-21T18:05:00Z"
+  }
+}
+```
+
+---
+
+### 2.4 Files API Schemas
+
+The Files API allows uploading large media files (videos, images, audio, PDFs) for multimodal input.
+
+#### List Files Request (`list_files`)
+```json
+{
+  "command": "list_files"
+}
+```
+
+#### Response (Returns list of `File` metadata)
+```json
+{
+  "files": [
+    {
+      "name": "files/...",
+      "displayName": "input-video.mp4",
+      "mimeType": "video/mp4",
+      "sizeBytes": "1048576"
+    }
+  ]
+}
+```
+
+---
+
+### 2.5 Multimodal Live WebSocket Schema
+
+The Multimodal Live API provides low-latency bidirectional streaming using WebSockets.
+
+#### Live Chat Single-shot IPC Request (`live_chat`)
+```json
+{
+  "command": "live_chat",
+  "model": "gemini-2.5-flash",
+  "prompt": "Hello!",
+  "system_instruction": "Answer briefly."
+}
+```
+
+#### Response
+```json
+{
+  "text": "Hello! How can I help you today?"
+}
+```
+
+### 2.6 Models API Schemas
+
+The Models API allows listing available models and querying metadata for a specific model.
+
+#### List Models Request (`list_models`)
+```json
+{
+  "command": "list_models",
+  "filter": "state=ACTIVE",
+  "query_base": true
+}
+```
+
+#### Response (Returns list of `Model` objects)
+```json
+{
+  "models_list": [
+    {
+      "name": "models/gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash",
+      "description": "...",
+      "supportedGenerationMethods": ["generateContent", "countTokens"]
+    }
+  ]
+}
+```
+
+#### Get Model Request (`get_model`)
+```json
+{
+  "command": "get_model",
+  "model": "models/gemini-2.5-flash"
+}
+```
+
+#### Response (Returns `Model` object)
+```json
+{
+  "model_info": {
+    "name": "models/gemini-2.5-flash",
+    "displayName": "Gemini 2.5 Flash",
+    "description": "..."
+  }
+}
+```
+
+---
+
+### 2.7 Tunings API Schemas
+
+The Tunings API allows creating fine-tuning jobs (SFT/Symmetric), checking their status, listing jobs, and canceling them.
+
+#### Tune Model Request (`tune_model`)
+```json
+{
+  "command": "tune_model",
+  "base_model": "models/gemini-2.5-flash",
+  "tuning_dataset": {
+    "gcsUri": "gs://my-bucket/training.jsonl"
+  },
+  "tuned_model_display_name": "My Tuned Model",
+  "description": "SFT fine-tuned model"
+}
+```
+
+#### Response (Returns `TuningJob` object)
+```json
+{
+  "tuning_job": {
+    "name": "tuningJobs/...",
+    "state": "ACTIVE",
+    "createTime": "2026-05-21T18:00:00Z"
+  }
+}
+```
+
+#### Get Tuning Job Request (`get_tuning_job`)
+```json
+{
+  "command": "get_tuning_job",
+  "name": "tuningJobs/..."
+}
+```
+
+#### Response (Returns `TuningJob` object)
+```json
+{
+  "tuning_job": {
+    "name": "tuningJobs/...",
+    "state": "SUCCEEDED"
+  }
+}
+```
+
+---
+
 ## 3. Rust-to-Go IPC Bridge
 
 Inside the `aphrody-context` crate, the `GoTokenEstimator` manages the interaction:
@@ -112,11 +286,11 @@ The Go binary is compiled target-native:
 
 During development or verification tests, the binary can be compiled locally:
 ```bash
-cd crates/aphrody-tokenizer-go
+cd go/aphrody-tokenizer-go
 go build -o aphrody-tokenizer-go.exe main.go
 ```
 
-The compiled binary is placed adjacent to the running binary or in `crates/aphrody-tokenizer-go/` to allow automated tests to automatically resolve it.
+The compiled binary is placed adjacent to the running binary or in `go/aphrody-tokenizer-go/` to allow automated tests to automatically resolve it.
 
 ### CLI Manual Verification
 
@@ -137,6 +311,45 @@ You can verify the subcommands manually from the command line:
 # Test HTML-to-text parsing via stdin pipe
 echo "<div>Hello <span>world</span></div>" | .\aphrody-tokenizer-go.exe html2text
 # Output: Hello world
+
+# Create a Context Cache for large prompt input
+.\aphrody-tokenizer-go.exe create_cache gemini-2.5-flash "Here is some large background text to cache" "my-cache-display-name"
+
+# List active caches
+.\aphrody-tokenizer-go.exe list_caches
+
+# Get metadata of a specific cache
+.\aphrody-tokenizer-go.exe get_cache "cachedContents/12345abcde"
+
+# Delete a cache resource
+.\aphrody-tokenizer-go.exe delete_cache "cachedContents/12345abcde"
+
+# Upload a file via Gen AI Files API
+.\aphrody-tokenizer-go.exe upload "C:\path\to\document.pdf" "DocumentDisplayName"
+
+# List uploaded files
+.\aphrody-tokenizer-go.exe list_files
+
+# List all available models
+.\aphrody-tokenizer-go.exe list_models
+
+# Get metadata of a specific model
+.\aphrody-tokenizer-go.exe get_model models/gemini-2.5-flash
+
+# Start a fine-tuning job on a model using SFT dataset GCS URI
+.\aphrody-tokenizer-go.exe tune_model models/gemini-2.5-flash gs://my-bucket/dataset.jsonl "My Tuned Model"
+
+# Retrieve metadata of a fine-tuning job
+.\aphrody-tokenizer-go.exe get_tuning_job tuningJobs/my-tuning-job-id
+
+# List all active tuning jobs
+.\aphrody-tokenizer-go.exe list_tuning_jobs
+
+# Cancel a running tuning job
+.\aphrody-tokenizer-go.exe cancel_tuning_job tuningJobs/my-tuning-job-id
+
+# Run interactive console chat over Live WebSocket API (modalities=TEXT)
+.\aphrody-tokenizer-go.exe live_chat gemini-2.5-flash "You are a helpful assistant"
 ```
 
 ---

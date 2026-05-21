@@ -39,7 +39,9 @@
 //! assert_eq!(cfg.extra.get("x"), Some(&serde_json::json!(1)));
 //! ```
 
-use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

@@ -65,7 +65,7 @@ socket server inside Blender on **`localhost:9876`**. `aphrody.blender` is a
 **dependency-free** client (stdlib `socket` + `json`) mirroring that protocol —
 no MCP layer needed.
 
-aphrody also ships its **own** add-on at `apps/aphrody/blender_addon/`
+aphrody also ships its **own** add-on at `python/aphrody/blender_addon/`
 (`aphrody_addon.py` + `blender_manifest.toml`): a superset of the same protocol
 plus pro commands (`aphrody_optimize_mesh`, `aphrody_auto_material`,
 `aphrody_setup_studio`, `aphrody_scene_stats`, `aphrody_render`,

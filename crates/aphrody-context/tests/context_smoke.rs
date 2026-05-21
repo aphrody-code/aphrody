@@ -11,6 +11,8 @@ use aphrody_context::{
     ContextError, ContextMessage, ContextWindow, HeuristicTokenEstimator, MessageRole,
     TokenEstimator,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use aphrody_context::GoTokenEstimator;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -267,3 +269,18 @@ fn pin_unknown_id_returns_error() {
     let err = w.unpin("also-does-not-exist").unwrap_err();
     assert!(matches!(err, ContextError::MessageNotFound(_)));
 }
+
+// ---------------------------------------------------------------------------
+// 10. go_token_estimator_smoke
+// ---------------------------------------------------------------------------
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn go_token_estimator_smoke() {
+    let est = GoTokenEstimator::default();
+    // "hello world" in cl100k is exactly 2 tokens.
+    assert_eq!(est.estimate("hello world"), 2);
+    assert_eq!(est.estimate(""), 0);
+    assert_eq!(est.estimate("x"), 1);
+}
+

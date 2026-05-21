@@ -6,8 +6,8 @@
 Analysis of a **live, logged-in** capture of `gemini.google.com/app` (user "Yohan",
 session captured headless via CDP with injected Google session cookies — see
 `var/forks/gemini_app.png`), cross-referenced against the cookie-authenticated Boq
-client `apps/aphrody/aphrody/gemini_web.py` and the CLI surface
-`apps/aphrody/aphrody/cli.py`.
+client `python/aphrody/aphrody/gemini_web.py` and the CLI surface
+`python/aphrody/aphrody/cli.py`.
 
 The goal: decide how the keyless cookie path (`aphrody web`) should grow to expose
 the features the browser exposes, using the **same** `batchexecute`/`StreamGenerate`

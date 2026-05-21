@@ -4,15 +4,11 @@
 managed = true
 
 [tool.uv.workspace]
+# Polyglot monorepo (magika-style language segregation): all Python packages
+# live under python/* (moved 2026-05-22 from apps/aphrody + libs/*). Bun apps
+# stay under apps/*, Rust under crates/, Go under go/.
 members = [
-    "apps/*",
-    "libs/*",
-]
-# Non-Python siblings under apps/* that must not be treated as uv members.
-# The peer's Photoshop integration ships JS/UXP dirs (photoshop-uxp panel,
-# photoshop-remote WS bridge) with no pyproject.toml — exclude the family.
-exclude = [
-    "apps/photoshop-*",
+    "python/*",
 ]
 
 [tool.uv.sources]
@@ -88,6 +84,6 @@ line-ending = "auto"
 # (RUF012), and class-level operator docstrings instead of per-method (D102).
 "**/blender_addon/**" = ["E402", "N801", "D102", "RUF012"]
 "examples/**/*.py" = ["D"]
-"libs/antigravity-sdk-python/examples/**/*.py" = ["D"]
+"python/antigravity-sdk-python/examples/**/*.py" = ["D"]
 
 

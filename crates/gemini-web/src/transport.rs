@@ -10,6 +10,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -55,10 +56,17 @@ impl HttpTransport {
     ///
     /// Returns [`GeminiError::Network`] if the reqwest client cannot be built.
     pub fn new(auth: Auth, tokens: SessionTokens) -> Result<Self> {
+        #[cfg(not(target_arch = "wasm32"))]
         let client = reqwest::Client::builder()
             .user_agent(USER_AGENT_CHROME)
             .timeout(Duration::from_mins(2))
             .connect_timeout(Duration::from_secs(15))
+            .build()
+            .map_err(|e| GeminiError::Network(format!("reqwest builder: {e}")))?;
+
+        #[cfg(target_arch = "wasm32")]
+        let client = reqwest::Client::builder()
+            .user_agent(USER_AGENT_CHROME)
             .build()
             .map_err(|e| GeminiError::Network(format!("reqwest builder: {e}")))?;
         Ok(Self {

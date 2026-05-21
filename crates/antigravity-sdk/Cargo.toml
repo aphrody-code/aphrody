@@ -45,15 +45,16 @@ serde         = { workspace = true, features = ["derive"] }
 serde_json    = { workspace = true }
 thiserror     = { workspace = true }
 tracing       = { workspace = true }
-# `net`/`io-util`/`time`: OAuth loopback listener (oauth.rs). `macros`/`rt`: base.
-tokio         = { workspace = true, features = ["macros", "rt", "net", "io-util", "time"] }
-reqwest       = { workspace = true }
 # Always-on: base64/sha2/rand back the OAuth PKCE flow (oauth.rs); base64 +
 # data-encoding (base32) back the state.vscdb decoder (state_sync.rs).
 base64        = { workspace = true }
 sha2          = { workspace = true }
 rand          = { workspace = true }
 data-encoding = { workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio         = { workspace = true, features = ["macros", "rt", "net", "io-util", "time"] }
+reqwest       = { workspace = true }
 
 # --- Optional: local language_server gRPC bridge (feature `local-ls`) ---------
 prost        = { workspace = true, optional = true }
@@ -63,6 +64,15 @@ regex        = { workspace = true, optional = true }
 rustls       = { workspace = true, optional = true }
 hyper-rustls = { version = "0.27", optional = true, default-features = false, features = ["http1", "http2", "ring", "tls12"] }
 x509-parser  = { version = "0.18", optional = true }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+tokio         = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+reqwest       = { version = "0.13", default-features = false, features = ["json", "stream", "query", "form"] }
+getrandom     = { version = "0.2", features = ["js"] }
+
+[target.'cfg(target_os = "wasi")'.dependencies]
+tokio         = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+
 
 [build-dependencies]
 tonic-prost-build   = { workspace = true, optional = true }

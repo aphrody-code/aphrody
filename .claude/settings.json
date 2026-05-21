@@ -1,10 +1,8 @@
 {
-  "enabledPlugins": {
-    "code-simplifier@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "plugin-dev@claude-plugins-official": true
+  "env": {
+    "CARGO_TERM_COLOR": "always",
+    "CARGO_NET_RETRY": "5",
+    "RUST_BACKTRACE": "1"
   },
   "permissions": {
     "allow": [
@@ -53,9 +51,13 @@
       "Bash(rm -rf /*:*)"
     ]
   },
-  "env": {
-    "CARGO_TERM_COLOR": "always",
-    "CARGO_NET_RETRY": "5",
-    "RUST_BACKTRACE": "1"
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
   }
 }

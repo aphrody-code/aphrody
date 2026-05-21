@@ -72,12 +72,14 @@ pub struct OAuthToken {
 // ---------------------------------------------------------------------------
 
 /// Outer envelope: `{"token": <InnerToken>}`.
+#[cfg(any(target_os = "windows", test))]
 #[derive(Deserialize)]
 struct TokenEnvelope {
     token: InnerToken,
 }
 
 /// Inner token fields as stored by agy / as returned by the refresh endpoint.
+#[cfg(any(target_os = "windows", test))]
 #[derive(Deserialize)]
 struct InnerToken {
     access_token: String,
@@ -89,6 +91,7 @@ struct InnerToken {
     expiry: Option<String>,
 }
 
+#[cfg(any(target_os = "windows", test))]
 impl From<InnerToken> for OAuthToken {
     fn from(inner: InnerToken) -> Self {
         OAuthToken {
