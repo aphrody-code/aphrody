@@ -14,6 +14,8 @@
 
 """Google Antigravity SDK for building AI agents."""
 
+from typing import TYPE_CHECKING, Any
+
 from google.antigravity.agent import Agent
 from google.antigravity.connections.connection import AgentConfig
 from google.antigravity.connections.local.local_connection_config import (
@@ -30,6 +32,15 @@ from google.antigravity.types import (
     UsageMetadata,
 )
 
+if TYPE_CHECKING:
+    from google.antigravity.voice import (
+        LocalKokoroTextToSpeech,
+        LocalVoiceAgentLoop,
+        LocalWhisperSpeechToText,
+        SpeechToText,
+        TextToSpeech,
+    )
+
 __all__ = [
     "Agent",
     "AgentConfig",
@@ -37,9 +48,28 @@ __all__ = [
     "GeminiConfig",
     "GenerationConfig",
     "LocalAgentConfig",
+    "LocalKokoroTextToSpeech",
+    "LocalVoiceAgentLoop",
+    "LocalWhisperSpeechToText",
     "ModelConfig",
     "ModelEntry",
+    "SpeechToText",
+    "TextToSpeech",
     "ThinkingLevel",
     "ToolContext",
     "UsageMetadata",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name in {
+        "LocalVoiceAgentLoop",
+        "LocalWhisperSpeechToText",
+        "LocalKokoroTextToSpeech",
+        "SpeechToText",
+        "TextToSpeech",
+    }:
+        from google.antigravity import voice
+
+        return getattr(voice, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
