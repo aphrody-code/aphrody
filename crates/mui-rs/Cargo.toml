@@ -42,6 +42,9 @@ rquickjs = { workspace = true, optional = true }
 [dev-dependencies]
 criterion.workspace = true
 insta.workspace = true
+# For the m3_showcase example (native winit window + wgpu/vello render loop).
+winit    = { workspace = true }
+pollster = { workspace = true }
 
 # Optional deps wired purely through [features] (desktop/android/plugins/
 # js-runtime); not referenced in this umbrella crate's own source, so machete

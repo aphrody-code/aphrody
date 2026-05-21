@@ -50,15 +50,15 @@ impl RenderPipeline {
             | Err(wgpu::SurfaceError::Lost) => return Ok(()),
             Err(e) => return Err(e.into()),
         };
-        let view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
+        // 1) Vello renders into the intermediate Rgba8Unorm storage texture.
         surface
             .renderer
             .render_to_texture(
                 &surface.device,
                 &surface.queue,
                 &self.scene,
-                &view,
+                &surface.target_view,
                 &vello::RenderParams {
                     base_color: self.base_color,
                     width: surface.config.width,
@@ -66,7 +66,21 @@ impl RenderPipeline {
                     antialiasing_method: vello::AaConfig::Area,
                 },
             )
-            .unwrap();
+            .map_err(|e| anyhow::anyhow!("vello render_to_texture failed: {e:?}"))?;
+
+        // 2) Blit the intermediate onto the presentable (sRGB) surface view.
+        let surface_view =
+            surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = surface
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("mui-rs blit") });
+        surface.blitter.copy(
+            &surface.device,
+            &mut encoder,
+            &surface.target_view,
+            &surface_view,
+        );
+        surface.queue.submit([encoder.finish()]);
 
         surface_texture.present();
         Ok(())
