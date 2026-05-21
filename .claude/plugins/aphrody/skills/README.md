@@ -1,81 +1,56 @@
-# `.claude/skills/` — Central Skill Registry
+# `skills/` — aphrody plugin skill registry
 
-Single source of truth for **agent skills** consumed by Claude Code, Gemini CLI,
-and the `skill` runtime (docs.rs/skill). Each skill is a directory whose
-`SKILL.md` declares triggers, scope, and operating instructions.
+Single source of truth for the **agent skills** bundled with the aphrody
+Claude Code plugin. Each skill is a directory whose `SKILL.md` declares
+its triggers, scope, and operating instructions.
 
-Last updated: 2026-05-17.
+Last updated: 2026-05-21 (post-purge: 34 skills, 21 agents).
 
-## Skill format (SKILL.md)
+## Skill format (`SKILL.md`)
 
 Every skill **MUST** start with a YAML frontmatter block:
 
 ```yaml
 ---
 name: my-skill                # kebab-case, matches directory name
-description: One-line summary of what the skill does and why it exists.
-when_to_use: |                # natural-language trigger conditions
-  User says "X", types "/Y", or the conversation reaches state Z.
+description: One-line summary of what the skill does and when it fires.
 ---
 ```
 
 Optional siblings:
 
-| File / dir         | Purpose                                                      |
-|--------------------|--------------------------------------------------------------|
-| `references/`      | Supporting docs (playbooks, catalogs, links).                |
-| `scripts/`         | Helper automation (`.py`, `.ts`, `.sh`).                     |
-| `evals/`           | Evaluation harness (deterministic test cases).               |
+| File / dir    | Purpose                                          |
+|---------------|--------------------------------------------------|
+| `references/` | Supporting docs (playbooks, catalogs, links).    |
+| `scripts/`    | Helper automation (Rust / `cargo run` wrappers). |
+| `evals/`      | Evaluation harness (deterministic test cases).   |
 
-Specs:
-- [`docs.rs/skill`](https://docs.rs/skill) — Rust runtime (`SkillManager`).
-- [`docs.rs/agent-skills`](https://docs.rs/agent-skills) — spec validator library.
-- [Vercel agent-skills](https://github.com/vercel-labs/agent-skills) — canonical catalog.
+> **100 % Rust policy** (CLAUDE.md §2): no `bun` / `node` / `npm` / `tsc`
+> in skills or scripts. Helper automation is Rust (`cargo run -p …`) or a
+> one-shot shell/pwsh wrapper.
 
-## Project skills
+## Highlights
 
-| Name                                         | Trigger                                  | Body                                          |
-|----------------------------------------------|------------------------------------------|-----------------------------------------------|
-| [`start/`](./start/SKILL.md)                 | `/start`, "lance", "go", "exécute"       | Continuous autonomous execution mode          |
-| [`vps-commander/`](./vps-commander/SKILL.md) | "start the tunnel", "connect to the vps" | OVH VPS SSH-tunnel operator                   |
+| Skill                  | Trigger                                   |
+|------------------------|-------------------------------------------|
+| `start`                | `/start`, "lance", "go", "exécute"        |
+| `aphrody-yolo-grind`   | "yolo", "grind", parallel multi-agent     |
+| `aphrody-perfect-grind`| "code en boucle", drive repo to ship-ready|
+| `a2a-duel-loop`        | sustained A2A coordination duel           |
+| `rust-target-check`    | parallel 3-target `cargo check`           |
+| `vps-commander`        | "start the tunnel", "connect to the vps"  |
+| `agent-browser`        | preferred browser automation entrypoint   |
+| `docs-auto` / `context7-mcp` | library / framework / SDK docs lookup |
 
-## Project agents (`.claude/agents/`)
+The full catalogue is auto-discovered from `skills/<name>/SKILL.md`; the
+plugin manifest (`.claude-plugin/plugin.json`) and the plugin
+[`README.md`](../README.md) carry the authoritative counts.
 
-Agents are **invokable sub-agents** with their own toolset and system prompt.
-The Trinity Architecture decides which agent fires per task class:
+## Agents (`../agents/`)
 
-| Agent              | Domain                                                  | Tools                  |
-|--------------------|---------------------------------------------------------|------------------------|
-| `cargo-auditor`    | Workspace audit: licensing, CVE, code quality           | Read, Grep, Glob, Bash |
-| `cpp-engineer`     | C/C++ development (Google Style)                        | Read, Edit, Write, Bash, Glob, Grep |
-| `ffi-architect`    | C++↔Bun FFI zero-allocation architecture                | Read, Edit, Write, Bash, Glob, Grep |
-| `rust-architect`   | Cargo workspaces, FFI boundaries (Fuchsia/Windows-rs)   | Read, Edit, Write, Bash, Glob, Grep |
-| `rust-engineer`    | Rust implementation (Chromium/Google Style)             | Read, Edit, Write, Bash, Glob, Grep |
-
-## Global (user-scope) skills
-
-Live in `~/.claude/skills/` — apply to every repo on this machine:
-
-- `repo-hygiene-audit/` — portability + hygiene sweep, invoked via `/repo-hygiene-audit`.
-
-## Authoring a new skill
-
-```bash
-mkdir -p .claude/skills/<name>/{references,scripts}
-$EDITOR  .claude/skills/<name>/SKILL.md        # paste frontmatter template
-
-bun run skills:discover                         # detect all SKILL.md files
-bun run skills:validate                         # spec-validate every SKILL.md
-```
-
-## Pulling in upstream skill catalogs
-
-| Catalog                                                                                          | Command                                    |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------|
-| [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) — Vercel React/Next.js | `bun run skills:sync:vercel`               |
-| `anthropics/skills` — official Claude Code skills                                                | `bun run skills:sync:claude-official`      |
-| Arbitrary GitHub source                                                                          | `bun run scripts/skills-sync.ts <org>/<repo>` |
-
-The runtime binaries (`skill`, `agent-skills`) are installed via
-`cargo install --locked skill-cli agent-skills-cli` — no Node dependency.
-See [`docs/cargo/SKILLS.md`](../../docs/cargo/SKILLS.md) for the full ecosystem doc.
+Invokable sub-agents with their own toolset and system prompt
+(`rust-architect`, `rust-engineer`, `cargo-auditor`, `cpp-engineer`,
+`ffi-architect`, `zig-engineer`, `cross-platform-validator`,
+`aphrody-cli`, `explore`, `build`, `code-review`, `yolo-prod-ready`,
+`design-google-curator`, plus the infra/quality specialists). See the
+plugin [`README.md`](../README.md) for the full table.

@@ -18,8 +18,10 @@
 # Linux/macOS). Use `RUSTC_WRAPPER=""` to bypass for a single invocation.
 # Setting via PATH instead of hardcoded path lets the repo work on any host.
 rustc-wrapper  = "sccache"
-# 8 cores - 1 for linker + sccache overhead. Overridable via env CARGO_BUILD_JOBS.
-jobs           = 7
+# i7-11370H : 4 physical / 8 logical cores. Saturate all logical cores — the
+# linker + sccache run mostly I/O-bound so the extra job overlaps with them.
+# Overridable via env CARGO_BUILD_JOBS. Tune down to 6 if the 16 GB box swaps.
+jobs           = 8
 
 
 # Default host target. Override with `--target <triple>` for cross-builds
@@ -110,6 +112,9 @@ rustflags = [
 # `force = true` overrides any pre-existing shell env (CI / WSL inherits).
 # ----------------------------------------------------------------------------
 [env]
+# sccache: large local cache so warm rebuilds hit the compiled-artifact cache
+# instead of recompiling. 16 GB RAM box — disk cache, not RAM, so generous is fine.
+SCCACHE_CACHE_SIZE  = "30G"
 VS_INSTALL_DIR      = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders", force = true }
 MSVC_VERSION        = { value = "14.51.36231", force = true }
 VCINSTALLDIR        = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC", force = true }
@@ -176,14 +181,10 @@ quiet   = false
 [alias]
 # Hermetic CI: lockfile must match Cargo.toml, no network access permitted.
 ci             = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--", "-D", "warnings"]
-# aphrody-xtask — Rust port of scripts/*.ts. Adds sub-commands progressively
-# (cf. docs/PLAN_RUST_ONLY.md Phase 2). `cargo xtask skills-sync <owner>/<repo>`.
-xtask          = ["run", "--quiet", "-p", "aphrody-xtask", "--release", "--"]
-# Build every aphrody-* / bxc-* / mrx-* / notebooklm-* binary in release and
-# install them to ~/.local/bin/ in a single shot. Replaces the manual
-# `cargo build --release && cp target/*/release/aphrody*.exe ~/.local/bin/`
-# ritual documented in CLAUDE.md §0.45 ("Gotcha déploiement").
-deploy         = ["xtask", "deploy"]
+# aphrody-xtask supprimé le 2026-05-21 : les anciens alias `xtask`/`deploy`
+# (build + install des binaires vers ~/.local/bin) sont retirés. Pour déployer
+# un binaire : `cargo build --release -p <crate>` puis copier la sortie de
+# `target/release/` vers `~/.local/bin/` (ou via un script ps1/sh ad hoc).
 ci-offline     = ["clippy", "--workspace", "--all-targets", "--all-features", "--locked", "--offline", "--", "-D", "warnings"]
 ci-frozen      = ["clippy", "--workspace", "--all-targets", "--all-features", "--frozen",  "--", "-D", "warnings"]
 xt             = ["nextest", "run", "--workspace", "--all-features", "--locked"]
@@ -204,18 +205,12 @@ build-linux-arm64   = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist",
 build-darwin-x64    = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "x86_64-apple-darwin"]
 build-darwin-arm64  = ["zigbuild", "-p", "cli", "--locked", "--profile", "dist", "--target", "aarch64-apple-darwin"]
 build-wasm          = ["build", "-p", "cli", "--locked", "--profile", "dist", "--target", "wasm32-wasip1"]
-# `cargo check-all-targets` validates type-correctness on every target.
-check-all-targets   = ["xtask", "check-all-targets"]
 
 # --- Supply-chain guards (run before any release / merge) -----------------
 audit-vet      = ["vet"]
 audit-deny     = ["deny", "check"]
 audit-machete  = ["machete", "--with-metadata"]
 audit-udeps    = ["+nightly", "udeps", "--workspace", "--all-targets"]
-audit-all      = ["xtask", "audit"]
-
-# --- Fuzz (cargo-fuzz; libfuzzer-sys) -------------------------------------
-fuzz-bun-ffi   = ["fuzz", "run", "wc_alloc_roundtrip", "-p", "bun_ffi-fuzz"]
 
 # --- Auditable dist build (embeds SBOM in binary via cargo-auditable) -----
 # `cargo install cargo-auditable` once. Then `cargo dist-auditable` ships a

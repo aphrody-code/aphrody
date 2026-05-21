@@ -17,9 +17,6 @@ indent_size = 2
 trim_trailing_whitespace = false   # markdown line-break = two trailing spaces
 indent_size              = 2
 
-[*.{ts,tsx,js,jsx,mjs,cjs}]
-indent_size = 2
-
 [Makefile]
 indent_style = tab
 

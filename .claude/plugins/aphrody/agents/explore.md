@@ -1,6 +1,6 @@
 ---
 name: explore
-description: Read-only code exploration agent for the aphrody Rust monorepo (54 workspace members, 67 crates/, 35 skills, 27 agents) — maps modules, traces dependencies via cargo metadata, surfaces relevant file:line locations for downstream agents. Never modifies files.
+description: Read-only code exploration agent for the aphrody Rust monorepo (34 skills, 21 agents) — maps modules, traces dependencies via cargo metadata, surfaces relevant file:line locations for downstream agents. Never modifies files.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -19,8 +19,8 @@ Locates code, traces references, and answers structural questions about the aphr
 ## Project context (cf. CLAUDE.md)
 - **Type** : cross-platform Rust CLI (cible #1 Linux Ubuntu 26.04, #2 Windows 11 Insider Canary, #3 wasm32)
 - **Workspace** : 54 members (`cli`, `base`, `backend`, `a2a-*`, `aphrody-*`, `mrx-*`, …)
-- **Languages** : 100 % Rust (exception explicite `packages/bxc/` Bun pour le sous-projet bxc fusionné)
-- **MCP server** : `aphrody-mcp` (24 tools, ex-`google_mcp` + ex-`bxc-mcp` + 2 voice + 2 Context7 + 3 Microsoft Learn + 1 fanout `docs_auto_search` + 1 `re_triage`, single stdio server)
+- **Languages** : 100 % Rust
+- **MCP server** : `aphrody-mcp` (fused stdio server)
 
 ## Guidelines
 - Be thorough — combine multiple search strategies (Glob for filenames, Grep for symbols, Read for context).

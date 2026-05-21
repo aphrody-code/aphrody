@@ -47,7 +47,6 @@ tracing      = { workspace = true }
 
 # --- HTTP transport (Tier-1 providers: Mem0, Honcho) -----------------------
 reqwest      = { workspace = true }
-base64       = { workspace = true }
 
 # --- SQLite backend ---------------------------------------------------------
 # `bundled` feature compiles a static libsqlite3, removing the system dep
@@ -71,13 +70,15 @@ rustls       = { workspace = true }
 criterion    = { workspace = true }
 
 # ---------------------------------------------------------------------------
-# cargo-machete: arrow-array + arrow-schema are consumed only inside async
-# functions that build LanceDB schemas — machete's cfg-blind scan flags them
-# as unused.  Keep the explicit ignore list in sync with `src/lancedb.rs`.
-# `time` is consumed by `sqlite_local`'s timestamp helpers behind type aliases.
+# cargo-machete: `time` is consumed by `sqlite_local`'s timestamp helpers
+# behind type aliases -- machete's symbol scan misses this. arrow-array +
+# arrow-schema are now detected correctly and removed from the ignore list.
 # ---------------------------------------------------------------------------
 [package.metadata.cargo-machete]
-ignored = ["arrow-array", "arrow-schema", "time"]
+# arrow-array + arrow-schema are now correctly detected as used (lancedb.rs) --
+# removed from ignored 2026-05-21. `time` stays: consumed via type aliases in
+# sqlite_local that machete cannot see through.
+ignored = ["time"]
 
 # ---------------------------------------------------------------------------
 # Bench harness — R3.7 recall benchmark over 100k records.

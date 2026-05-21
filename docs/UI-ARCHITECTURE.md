@@ -1,5 +1,23 @@
 # Aphrody Unified UI / GUI / Web App / Material Design Documentation
 
+> **AVERTISSEMENT (2026-05-21) — document agrégé largement HISTORIQUE.**
+> Ce fichier concatène d'anciennes sources (`DESIGN.md`, `DESIGN-GOOGLE.md`,
+> `md3/*`, `terminal/*`) désormais supprimées. Plusieurs parties décrivent une
+> architecture **abandonnée** : « God Mode / Google OS » et l'« Architecture à
+> 3 Piliers », notamment le **Pilier II fork C++ de Windows Terminal** et le
+> **Pilier III Bun/JSX**. Ces approches ne reflètent PLUS l'état réel d'aphrody :
+> - **Policy 100 % Rust** : Bun/JS/TS bannis ; pas de fork C++ de Windows
+>   Terminal. Le terminal LLM-first est en Rust pur (crates `aphrody-terminal-*`).
+> - **MD3 natif côté Rust** : tokens dans `m3-tokens`, icônes dans
+>   `aphrody-icons`, renderer wgpu dans `mui-rs*` (exclu du build par défaut),
+>   intégration React via `aphrody-react-reconciler`. Le crate `gui` (wry+tao)
+>   est exclu du workspace par défaut.
+> - Les composants `@material/web` / `packages/ui` décrits plus bas relèvent de
+>   l'ancienne piste JS, conservés ici uniquement comme référence visuelle M3.
+>
+> État courant : [`ARCHITECTURE.md`](ARCHITECTURE.md),
+> [`cargo/CRATES.md`](cargo/CRATES.md), [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md).
+
 
 
 <!-- ============================================== -->

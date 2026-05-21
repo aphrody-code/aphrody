@@ -83,9 +83,11 @@ tempfile = { workspace = true }
 ratatui  = { workspace = true }
 
 # cargo-machete cannot introspect cfg-conditional dep sections and reports
-# wasm-bindgen-family deps as unused on a native host scan.
+# wasm-bindgen-family deps as unused on a native host scan.  a2a-pb, chrono,
+# and tracing are optional deps behind the `native` feature; machete does not
+# resolve optional dep usage and flags them as unused.
 [package.metadata.cargo-machete]
-ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook"]
+ignored = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "a2a-pb", "chrono", "tracing"]
 
 # Example binary requires the native TUI feature stack.
 [[example]]

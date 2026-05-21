@@ -6,7 +6,6 @@
 resolver = "3"
 members = [
     "crates/cli",
-    "crates/gui",
     "crates/backend",
     "crates/base",
     "crates/google_mcp",
@@ -19,9 +18,9 @@ members = [
     "crates/mrx",
     # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
     "crates/aphrody-translate",
-    # aphrody-xtask — Rust port of scripts/*.ts via `cargo xtask <op>`.
-    # Replaces Bun/Node script invocations (docs/PLAN_RUST_ONLY.md Phase 2).
-    "crates/aphrody-xtask",
+    # aphrody-xtask supprimé le 2026-05-21 (cf. memory project-workspace-lean-build) :
+    # crate de dev-tasks jugée inutile ; les tâches ponctuelles repassent en
+    # scripts ps1/sh ad hoc ou commandes cargo directes.
     # aphrody-wasm — browser-facing wasm-bindgen wrapper for base primitives
     "crates/aphrody-wasm",
     # ievr-tools — IEVR binary inventory analysis (consumes peer-Claude scan JSON)
@@ -45,9 +44,6 @@ members = [
     "crates/aphrody-icons",
     # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
     "crates/gemini-runtime",
-    # agui-bridge — AG-UI protocol Rust binding (wire parser + wasm-bindgen renderer)
-    # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
-    "crates/agui-bridge",
     # aphrody-messaging — unified messaging (outbound connectors + bidirectional channels)
     "crates/aphrody-messaging",
     # aphrody-terminal — LLM-first stack (VT parser + WASM renderer + pty backend
@@ -77,22 +73,15 @@ members = [
     "crates/aphrody-design-agents",
     # aphrody-design — unified design infra (sidecar + daemon, merged from aphrody-design-{sidecar,daemon})
     "crates/aphrody-design",
-    # mui-rs — Material Design 3 native UI library (wgpu + vello + winit)
-    # TEMPORARILY excluded while mui-rs-tokens is being built by another agent.
-    "crates/mui-rs",
-    "crates/mui-rs-components",
-    "crates/mui-rs-core",
-    "crates/mui-rs-macros",
-    "crates/mui-rs-motion",
-    "crates/mui-rs-renderer",
+    # NOTE (2026-05-21, build-perf) : les clusters UI lourds `mui-rs*` (wgpu/vello/
+    # winit/wasmtime) et `tuono*` (Next.js/SWC/lightningcss/mdxjs/napi) ainsi que
+    # `gui` (qui agrège les deux) et `agui-bridge` ont été déplacés vers `exclude`.
+    # Aucun n'est dans la chaîne de dépendance du binaire `aphrody` (crate `cli`).
+    # Ils dominaient le temps de `cargo nextest run --workspace` sur cette machine
+    # (4c/8t, 16 Go). Pour les rebâtir explicitement : voir le bloc `exclude` ci-dessous.
 
     # bxc rust-bridge (excluded)
 
-    # Tuono React SSR framework (migrated)
-    "crates/tuono",
-    "crates/tuono_internal",
-    "crates/tuono_lib",
-    "crates/tuono_lib_macros",
     # aphrody-skills-forge — programmatic SKILL.md scaffolding + registry +
     # lint engine (Sprint D / skills-forge).
     "crates/aphrody-skills-forge",
@@ -185,34 +174,37 @@ members = [
     # Next.js / Turbopack integration (excluded)
 ]
 exclude = [
-    "crates/coreutils",
-    "crates/util-linux",
     "crates/a2a-slimrpc",
+    # ------------------------------------------------------------------------
+    # Build-perf (2026-05-21) : clusters UI lourds sortis du workspace par
+    # défaut. Pas de consommateur vital (le binaire `aphrody`/`cli` n'en dépend
+    # pas). Rebâtir au besoin avec un workspace ad hoc ou en les re-listant
+    # temporairement dans `members`.
+    #   * tuono*  → Next.js SSR (swc_core v63, lightningcss, mdxjs, napi)
+    #   * mui-rs* → MD3 natif (wgpu, vello, winit, wasmtime, parley, fontique)
+    #   * gui     → agrège tuono* + mui-rs*
+    #   * agui-bridge → consomme mui-rs-components
+    # ------------------------------------------------------------------------
+    "crates/gui",
+    "crates/agui-bridge",
+    "crates/mui-rs",
+    "crates/mui-rs-components",
+    "crates/mui-rs-core",
+    "crates/mui-rs-macros",
+    "crates/mui-rs-motion",
+    "crates/mui-rs-renderer",
+    "crates/tuono",
+    "crates/tuono_internal",
+    "crates/tuono_lib",
+    "crates/tuono_lib_macros",
     # agui-bridge + mui-rs : temporarily excluded (mui-rs-tokens in progress)
     # aphrody-x-client : self-rooted workspace (intégrera root workspace
     # plus tard quand agent-twitter-client 0.1.x stabilisé).
     "crates/aphrody-x-client",
-    # n2b-* : working copies de l'upstream aphrody-code/n2b@aphrody (cf.
-    # memory project_aphrody_owned_tools). Workspace indépendant, conso
-    # via workspace.dependencies git refs au lieu de path deps.
-    "crates/n2b-ai",
-    "crates/n2b-cli",
-    "crates/n2b-core",
-    "crates/n2b-github",
-    "crates/n2b-native",
-    "crates/nextjs",
-    "crates/bxc-engine",
-    "crates/obscura-browser",
-    "crates/obscura-cdp",
-    "crates/obscura-dom",
-    "crates/obscura-js",
-    "crates/obscura-mcp",
-    "crates/obscura-net",
-    "crates/n2b-registry",
-    "crates/n2b-report",
-    "crates/n2b-rules",
-    "crates/n2b-scanners",
-    "crates/n2b-types",
+    # n2b-* + bxc-engine : supprimés du dépôt le 2026-05-21 (crates retirées pour
+    # de bon, cf. memory project-workspace-lean-build). `aphrody n2b` / la logique
+    # bxc de aphrody-xtask restent des façades qui spawnent un binaire externe
+    # optionnel (APHRODY_N2B_BIN / BXC_BIN) ; aucune dep de compilation.
     # vendor/ retiré 2026-05-18 : ne contenait que des stubs Bun/uv/depot_tools
     # (interdits par la policy 100% Rust). Si on a besoin d'une référence Rust
     # vendored à l'avenir, recréer le dossier ad hoc.
@@ -608,29 +600,10 @@ skill              = { version = "0.8", default-features = false, features = ["n
 # rust-version bump). Rewrite massif possible sur cette branche sans toucher
 # au upstream main.
 #
-# n2b — Node.js → Bun migration linter (68 rules, AST-driven via oxc_parser).
-# Workspace de 11 crates (n2b-cli, n2b-core, n2b-types, n2b-util, n2b-rules,
-# n2b-scanners, n2b-report, n2b-ai, n2b-github, n2b-native, n2b-registry).
-# Repo : https://github.com/aphrody-code/n2b   (branch: aphrody)
-n2b-cli            = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-cli" }
-n2b-core           = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-core" }
-n2b-types          = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-types" }
-n2b-util           = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-util" }
-n2b-rules          = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-rules" }
-n2b-scanners       = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-scanners" }
-n2b-report         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-report" }
-n2b-ai             = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-ai" }
-n2b-github         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-github" }
-n2b-native         = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-native" }
-n2b-registry       = { git = "https://github.com/aphrody-code/n2b.git", branch = "aphrody", package = "n2b-registry" }
-# bxc, ui, next.js sont des packages Bun/TS — voir packages/{bxc,ui,next.js}/README.md.
-
-# --- bxc Rust-bridge (local crates) ------------
-# Cf. docs/research/BXC_CARTOGRAPHY.md pour la cartographie complète.
-# obscura-* sont les crates Rust de bxc (DOM, net, browser, CDP, JS, MCP, engine).
-
-# --- SWC / Vercel Rust ecosystem (publics crates.io) ---------------------
-# Cf. docs/research/NEXTJS_VERCEL_RUST_CRATES.md pour la cartographie complète.
+# n2b — supprimé du workspace le 2026-05-21. La sous-commande `aphrody n2b`
+# reste une façade qui spawne un binaire externe `n2b` (résolu via
+# APHRODY_N2B_BIN puis PATH) ; plus aucune dep de compilation git/path.
+# --- SWC ecosystem (publics crates.io) ---------------------
 swc_core                       = { version = "63", features = ["common", "ecma_parser", "ecma_codegen", "ecma_transforms"] }
 swc_sourcemap                  = { version = "10" }
 swc_plugin_backend_wasmtime    = { version = "9" }
@@ -650,58 +623,6 @@ lightningcss-napi              = { version = "0.4" }
 
 # --- MDX (markdown + JSX) ------------------------------------------------
 mdxjs                          = { version = "1" }
-
-# --- Turbopack runtime + compiler (migrated to crates/nextjs) ---
-turbo-tasks                    = { path = "crates/nextjs/turbopack/crates/turbo-tasks", version = "1.0.0-canary" }
-turbo-tasks-fs                 = { path = "crates/nextjs/turbopack/crates/turbo-tasks-fs", version = "1.0.0-canary" }
-turbo-tasks-env                = { path = "crates/nextjs/turbopack/crates/turbo-tasks-env", version = "1.0.0-canary" }
-turbo-tasks-fetch              = { path = "crates/nextjs/turbopack/crates/turbo-tasks-fetch", version = "1.0.0-canary" }
-turbo-tasks-malloc             = { path = "crates/nextjs/turbopack/crates/turbo-tasks-malloc", version = "1.0.0-canary", default-features = false }
-turbopack                      = { path = "crates/nextjs/turbopack/crates/turbopack", version = "1.0.0-canary" }
-turbopack-core                 = { path = "crates/nextjs/turbopack/crates/turbopack-core", version = "1.0.0-canary" }
-turbopack-ecmascript           = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript", version = "1.0.0-canary" }
-turbopack-css                  = { path = "crates/nextjs/turbopack/crates/turbopack-css", version = "1.0.0-canary" }
-turbopack-image                = { path = "crates/nextjs/turbopack/crates/turbopack-image", version = "1.0.0-canary" }
-turbopack-wasm                 = { path = "crates/nextjs/turbopack/crates/turbopack-wasm", version = "1.0.0-canary" }
-turbopack-mdx                  = { path = "crates/nextjs/turbopack/crates/turbopack-mdx", version = "1.0.0-canary" }
-turbopack-dev-server           = { path = "crates/nextjs/turbopack/crates/turbopack-dev-server", version = "1.0.0-canary" }
-turbopack-nodejs               = { path = "crates/nextjs/turbopack/crates/turbopack-nodejs", version = "1.0.0-canary" }
-turbopack-browser              = { path = "crates/nextjs/turbopack/crates/turbopack-browser", version = "1.0.0-canary" }
-next-core                      = { path = "crates/nextjs/crates/next-core", version = "1.0.0-canary" }
-next-api                       = { path = "crates/nextjs/crates/next-api", version = "1.0.0-canary" }
-next-build                     = { path = "crates/nextjs/crates/next-build", version = "1.0.0-canary" }
-next-custom-transforms         = { path = "crates/nextjs/crates/next-custom-transforms", version = "1.0.0-canary" }
-next-taskless                  = { path = "crates/nextjs/crates/next-taskless", version = "1.0.0-canary" }
-next-code-frame                = { path = "crates/nextjs/crates/next-code-frame", version = "1.0.0-canary" }
-auto-hash-map                  = { path = "crates/nextjs/turbopack/crates/turbo-tasks-auto-hash-map", version = "1.0.0-canary" }
-turbo-bincode                  = { path = "crates/nextjs/turbopack/crates/turbo-bincode", version = "1.0.0-canary" }
-turbo-dyn-eq-hash              = { path = "crates/nextjs/turbopack/crates/turbo-dyn-eq-hash", version = "1.0.0-canary" }
-turbo-esregex                  = { path = "crates/nextjs/turbopack/crates/turbo-esregex", version = "1.0.0-canary" }
-turbo-frozenmap                = { path = "crates/nextjs/turbopack/crates/turbo-frozenmap", version = "1.0.0-canary" }
-turbo-persistence              = { path = "crates/nextjs/turbopack/crates/turbo-persistence", version = "1.0.0-canary" }
-turbo-prehash                  = { path = "crates/nextjs/turbopack/crates/turbo-prehash", version = "1.0.0-canary" }
-turbo-rcstr                    = { path = "crates/nextjs/turbopack/crates/turbo-rcstr", version = "1.0.0-canary" }
-turbo-tasks-backend            = { path = "crates/nextjs/turbopack/crates/turbo-tasks-backend", version = "1.0.0-canary" }
-turbo-tasks-bytes              = { path = "crates/nextjs/turbopack/crates/turbo-tasks-bytes", version = "1.0.0-canary" }
-turbo-tasks-hash               = { path = "crates/nextjs/turbopack/crates/turbo-tasks-hash", version = "1.0.0-canary" }
-turbo-tasks-macros             = { path = "crates/nextjs/turbopack/crates/turbo-tasks-macros", version = "1.0.0-canary" }
-turbo-tasks-testing            = { path = "crates/nextjs/turbopack/crates/turbo-tasks-testing", version = "1.0.0-canary" }
-turbo-unix-path                = { path = "crates/nextjs/turbopack/crates/turbo-unix-path", version = "1.0.0-canary" }
-turbopack-bench                = { path = "crates/nextjs/turbopack/crates/turbopack-bench", version = "1.0.0-canary" }
-turbopack-cli-utils            = { path = "crates/nextjs/turbopack/crates/turbopack-cli-utils", version = "1.0.0-canary" }
-turbopack-create-test-app      = { path = "crates/nextjs/turbopack/crates/turbopack-create-test-app", version = "1.0.0-canary" }
-turbopack-analyze              = { path = "crates/nextjs/turbopack/crates/turbopack-analyze", version = "1.0.0-canary" }
-turbopack-ecmascript-plugins   = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-plugins", version = "1.0.0-canary" }
-turbopack-ecmascript-runtime   = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-runtime", version = "1.0.0-canary" }
-turbopack-ecmascript-hmr-protocol = { path = "crates/nextjs/turbopack/crates/turbopack-ecmascript-hmr-protocol", version = "1.0.0-canary" }
-turbopack-env                  = { path = "crates/nextjs/turbopack/crates/turbopack-env", version = "1.0.0-canary" }
-turbopack-node                 = { path = "crates/nextjs/turbopack/crates/turbopack-node", version = "1.0.0-canary", default-features = false }
-turbopack-resolve              = { path = "crates/nextjs/turbopack/crates/turbopack-resolve", version = "1.0.0-canary" }
-turbopack-static               = { path = "crates/nextjs/turbopack/crates/turbopack-static", version = "1.0.0-canary" }
-turbopack-swc-utils            = { path = "crates/nextjs/turbopack/crates/turbopack-swc-utils", version = "1.0.0-canary" }
-turbopack-test-utils           = { path = "crates/nextjs/turbopack/crates/turbopack-test-utils", version = "1.0.0-canary" }
-turbopack-trace-server         = { path = "crates/nextjs/turbopack/crates/turbopack-trace-server", version = "1.0.0-canary" }
-turbopack-trace-utils          = { path = "crates/nextjs/turbopack/crates/turbopack-trace-utils", version = "1.0.0-canary" }
 
 # --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
 # Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
@@ -733,21 +654,6 @@ nix                = { version = "0.31" }
 # Unicode helpers (consumed by aphrody-tui dev-deps + future TUI layout).
 unicode-width        = { version = "0.2" }
 unicode-segmentation = { version = "1" }
-
-# --- bxc dependencies ---
-html5ever = "0.39"
-markup5ever = "0.39"
-selectors = "0.38"
-servo_arc = "0.4"
-cssparser = "0.37"
-v8 = "147.4.0"
-obscura-dom = { path = "crates/obscura-dom" }
-obscura-net = { path = "crates/obscura-net" }
-obscura-browser = { path = "crates/obscura-browser" }
-obscura-cdp = { path = "crates/obscura-cdp" }
-obscura-js = { path = "crates/obscura-js" }
-obscura-mcp = { path = "crates/obscura-mcp" }
-bxc-engine = { path = "crates/bxc-engine" }
 
 # --- mrx (unified monorepo mapper) ----------------------------------------
 mrx                 = { path = "crates/mrx" }

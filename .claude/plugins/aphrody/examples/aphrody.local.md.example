@@ -8,10 +8,7 @@
 # All fields are optional; defaults match production behaviour.
 
 enabled: true                  # set false to disable the plugin in this project
-bxc_driver: bun                # bun (default, full /api/* surface) | rust (CDP only)
-bxc_port: 8765                 # daemon port (matches BXC_DAEMON_URL default)
-bxc_auto_start: true           # auto-spawn `aphrody bxc daemon` on first scrape/tokens call
-hooks_blocking: false          # cargo-check hook: false=advisory, true=block on warnings
+hooks_blocking: false          # reserved: false=advisory, true=block on warnings (no blocking hook ships today)
 log_level: info                # debug | info | warn | error
 ---
 

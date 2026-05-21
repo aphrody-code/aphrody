@@ -13,9 +13,9 @@
 //! `?` the sender is *querying* the clipboard contents rather than
 //! setting them.
 //!
-//! Validated against the reference parsers in
-//! `C:/worktree/wterm/packages/vt-decoder` (Vercel) and the OSC 52
-//! semantics documented at <https://invisible-island.net/xterm/ctlseqs/ctlseqs.html>.
+//! Validated against wterm's `packages/vt-decoder` reference parser (Vercel)
+//! and the OSC 52 semantics documented at
+//! <https://invisible-island.net/xterm/ctlseqs/ctlseqs.html>.
 
 use base64::Engine;
 

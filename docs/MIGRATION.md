@@ -62,8 +62,9 @@ everything else. Concretely, aphrody complements `gh` with:
 
 - `aphrody doctor` — environment diagnostic (toolchain, lockfile, A2A
   manifest, target triples).
-- `aphrody a2a` — cross-agent coordination over file-based mailbox channels
-  (`ai.json` + `.coord/inbox-*.jsonl`).
+- `aphrody a2a` — cross-agent coordination over the typed gRPC A2A transport
+  (crates `a2a-*`). The legacy file-based mailbox (`ai.json` + `.coord/`) was
+  removed; only the winclean compatibility mirror remains.
 - `aphrody chromium sync` — Chromium profile + forensics surface that `gh`
   intentionally does not touch.
 
@@ -136,8 +137,8 @@ targets (`make lint`, `make fmt`, `make docs`).
 - If you depend on `just`-specific features (env file loading via
   `set dotenv-load`, attribute decorators like `[no-cd]`, recipe
   parameters with defaults), keep `just` and run aphrody alongside.
-- A2A coordination assumes the peer has a `.well-known/ai.json` discoverable
-  endpoint. If your team has no peer agent, the A2A surface is dormant —
+- A2A coordination assumes a reachable peer over the gRPC transport (crates
+  `a2a-*`). If your team has no peer agent, the A2A surface is dormant —
   not broken, just unused.
 - aphrody's nightly Rust pin can clash with stable-only environments.
   Read `rust-toolchain.toml` before building in CI.

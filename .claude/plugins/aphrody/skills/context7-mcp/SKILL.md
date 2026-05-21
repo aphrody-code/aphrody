@@ -1,6 +1,6 @@
 ---
 name: context7-mcp
-description: Fetch current library documentation, API references, and code examples for any developer technology (React, Next.js, tokio, wgpu, Prisma, Supabase, Express, Tailwind, Django, Spring Boot, …) — even well-known ones. Use this skill whenever the user asks setup or configuration questions ("How do I configure Next.js middleware?"), requests code involving libraries ("Write a Prisma query for…"), needs API references ("What are the Supabase auth methods?"), or mentions a specific framework or crate by name. Use even when you think you know the answer — training data may be outdated. Source — upstream `upstash/context7` (MIT), `skills/context7-mcp/SKILL.md`, imported 2026-05-19 and rewired onto the native Rust `mcp__aphrody__context7_*` tools.
+description: Fetch current library documentation, API references, and code examples for any developer technology (React, tokio, wgpu, Prisma, Supabase, Express, Tailwind, Django, Spring Boot, …) — even well-known ones. Use this skill whenever the user asks setup or configuration questions ("How do I configure Axum middleware?"), requests code involving libraries ("Write a Prisma query for…"), needs API references ("What are the Supabase auth methods?"), or mentions a specific framework or crate by name. Use even when you think you know the answer — training data may be outdated. Source — upstream `upstash/context7` (MIT), `skills/context7-mcp/SKILL.md`, imported 2026-05-19 and rewired onto the native Rust `mcp__aphrody__context7_*` tools.
 license: MIT
 upstream: https://github.com/upstash/context7/tree/master/skills/context7-mcp
 ---
@@ -28,7 +28,7 @@ unauthenticated.
 
 Activate this skill when the user :
 
-- Asks setup or configuration questions ("How do I configure Next.js middleware?")
+- Asks setup or configuration questions ("How do I configure Axum middleware?")
 - Requests code involving libraries ("Write a Prisma query for …")
 - Needs API references ("What are the Supabase auth methods ?")
 - Mentions specific frameworks (React, Vue, Svelte, Express, Tailwind, …)
@@ -42,7 +42,7 @@ Activate this skill when the user :
 Call `mcp__aphrody__context7_resolve_library_id` with :
 
 - `libraryName` : The library name extracted from the user's question
-  (e.g. `"Next.js"`, `"tokio"`, `"Prisma"`).
+  (e.g. `"React"`, `"tokio"`, `"Prisma"`).
 - `query` : The user's full question (improves relevance ranking).
 
 ### Step 2 — Select the Best Match
@@ -58,7 +58,7 @@ From the resolution results, choose based on :
 
 Call `mcp__aphrody__context7_query_docs` with :
 
-- `libraryId` : The selected Context7 library ID (e.g. `/vercel/next.js`).
+- `libraryId` : The selected Context7 library ID (e.g. `/facebook/react`).
 - `query` : The user's specific question.
 
 ### Step 4 — Use the Documentation
@@ -73,8 +73,7 @@ Incorporate the fetched documentation into your response :
 
 - **Be specific** : pass the user's full question as the query for
   better results.
-- **Version awareness** : when users mention versions ("Next.js 15",
-  "React 19"), use version-specific library IDs if available from the
+- **Version awareness** : when users mention versions ("React 19"), use version-specific library IDs if available from the
   resolution step.
 - **Prefer official sources** : when multiple matches exist, prefer
   official / primary packages over community forks.
@@ -110,5 +109,3 @@ data — always tell the user why Context7 was not used.
 | Library docs / API reference   | **`context7_query_docs`** (this skill) — versioned, indexed, code snippets                      |
 | Microsoft-specific docs        | `mcp__aphrody__microsoft_docs_search` (Azure / .NET / Windows / M365)                   |
 | Generic web page → Markdown    | `mcp__aphrody__universal_web_fetch` (any URL, Jina reader-proxy via Google Style Guide tool)    |
-| DOM-aware extraction           | `mcp__aphrody__bxc_scrape` (JS-rendered docs, dynamic content, CSS selector)                    |
-| Web search                     | `mcp__aphrody__google_search` (stealth via Lightpanda)                                          |

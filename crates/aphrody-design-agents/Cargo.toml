@@ -31,13 +31,12 @@ thiserror    = { workspace = true }
 tempfile     = { workspace = true }
 tokio        = { workspace = true, features = ["rt-multi-thread", "io-std", "io-util", "macros", "process", "fs", "sync", "time"] }
 tokio-stream = { workspace = true, features = ["io-util"] }
-tokio-util   = { workspace = true }
-tracing      = { workspace = true }
 which        = { workspace = true }
 futures-core = { workspace = true }
-async-stream = { workspace = true }
-reqwest      = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
 tokio    = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "process", "fs", "time"] }
+
+[package.metadata.cargo-machete]
+ignored = []

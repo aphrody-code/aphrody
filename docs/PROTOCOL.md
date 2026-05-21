@@ -1,12 +1,22 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody A2A v1 — Normative Protocol Specification
 
-> Status: stable. Version: 1.0.0. Date: 2026-05-17. License: Apache-2.0.
+> **STATUT : OBSOLÈTE / HISTORIQUE (2026-05-21).** Le transport file-based
+> décrit ci-dessous (manifest `ai.json` + copie `.well-known/ai.json` +
+> mailbox JSONL + overlay HTTP) a été **supprimé** du dépôt : `ai.json`,
+> `.well-known/ai.json`, `schemas/ai.json/v1.json` et le dossier `ai/`
+> n'existent plus. La coordination A2A passe désormais par le **transport
+> gRPC typé** des crates `a2a-pb` / `a2a` / `a2a-client` / `a2a-server` ;
+> seul subsiste, pour la compatibilité cross-repo, le miroir
+> `C:\winclean\.coord\inbox-from-aphrody.jsonl`. Ce document est conservé à
+> titre de référence historique du protocole file-based.
+>
+> Version (historique) : 1.0.0. Date : 2026-05-17. License : Apache-2.0.
 
-This document is the normative reference for third-party implementers who want
-their agent to interoperate with aphrody / winclean instances. The companion
-dev journal at [`docs/posts/2026-05-ai-json.md`](./posts/2026-05-ai-json.md)
-explains the rationale; this file defines the wire contract.
+This document was the normative reference for third-party implementers who
+wanted their agent to interoperate with aphrody / winclean instances over the
+former file-based transport. It is kept for historical context; the live
+transport is gRPC (see the `a2a-*` crates in `docs/cargo/CRATES.md`).
 
 ## 1. Scope
 
@@ -184,7 +194,9 @@ An implementation claiming "compatible with aphrody a2a v1" MUST satisfy:
 
 - AGNTCY a2a directory spec: <https://github.com/agntcy/dir>
 - This repository: <https://github.com/aphrody-code/aphrody>
-- Manifest schema: [`schemas/ai.json/v1.json`](../schemas/ai.json/v1.json)
-- Reference manifest: [`ai.json`](../ai.json)
-- Dev journal narrative: [`docs/posts/2026-05-ai-json.md`](./posts/2026-05-ai-json.md)
-- Extension index: [`docs/extensions/index.md`](./extensions/index.md)
+- Live transport crates: `a2a-pb` / `a2a` / `a2a-client` / `a2a-server`
+  (see [`docs/cargo/CRATES.md`](./cargo/CRATES.md)).
+- The former manifest schema (`schemas/ai.json/v1.json`), reference manifest
+  (`ai.json`), dev-journal post (`docs/posts/2026-05-ai-json.md`) and extension
+  index (`docs/extensions/index.md`) were **removed** with the file-based
+  transport.

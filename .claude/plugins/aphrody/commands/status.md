@@ -1,5 +1,5 @@
 ---
-description: One-screen status report of the aphrody project (binary, branch, PLAN ⏳ items, A2A peer, bxc daemon health, plugin version).
+description: One-screen status report of the aphrody project (binary, branch, PLAN ⏳ items, A2A peer, plugin version).
 allowed-tools: Bash, Read
 argument-hint: (no arguments)
 model: sonnet
@@ -32,9 +32,6 @@ report. No mutations — pure read-only diagnostics.
    - `aphrody doctor --json | jq -r '.peer_a2a.heartbeat_detail'`.
    - Surface stale-flag if `is_stale: true`.
 
-5. **bxc daemon**
-   - `curl -fsS --max-time 2 http://localhost:8765/healthz 2>/dev/null`
-     → 200 = healthy, else "offline (auto-starts on next aphrody scrape)".
 
 6. **Hooks status** (informational)
    - `aphrody self bootstrap --check | head -20` → toolchain readiness.
@@ -52,16 +49,15 @@ branch    : <name> (<N> uncommitted)
 last      : <sha> <subject>
 PLAN ⏳   : <N> total (first 5 line numbers shown)
 A2A peer  : <heartbeat detail> [stale|fresh]
-bxc       : <up | down>
 toolchain : <N>/N required tools OK
 ```
 
 End with a single bullet list of action items if any state is degraded
-(stale peer > 600 s, bxc down for >1 h, unblocked ⏳ count > 10).
+(stale peer > 600 s, unblocked ⏳ count > 10).
 
 ## Anti-stub
 
 - Never fabricate a state if a command fails — surface stderr verbatim.
 - Never invent ⏳ items not in PLAN.md.
 - The `/status` command is informational only — no `git add`, no
-  `aphrody bxc daemon`, no writes.
+  `aphrody daemon`, no writes.

@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "notebooklm"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "NotebookLM Boq RPC client — pure-HTTP, cookie/OAuth auth, batchexecute envelope codec, artifacts/sources/chat/research surface."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+tokio       = { workspace = true, features = ["fs", "io-util", "macros", "rt", "time"] }
+reqwest     = { workspace = true }
+url         = { workspace = true }
+base64      = { workspace = true }
+sha2        = { workspace = true }
+
+[dev-dependencies]
+tokio        = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tempfile     = { workspace = true }
+pretty_assertions = { workspace = true }
+
+[package.metadata.cargo-machete]
+# base64: wired through the Cookie-Editor importer codepath (machete under-counts).
+# tracing: macro-only usage (debug!/warn!); machete under-counts macro invocations.
+# sha2: now correctly detected as used (SAPISIDHASH helper) -- removed from
+# ignored 2026-05-21.
+ignored = ["base64", "tracing"]

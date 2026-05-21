@@ -53,7 +53,8 @@ using `.github/ISSUE_TEMPLATE/bug_report.yml`.
   on Windows, so accumulation under forward-slash bucket lookups silently
   zeroed out.
 - **Fix**: Upgrade to a commit that includes the YOLO #51 fix. The
-  normaliser now lives at `crates/mrx-audit/src/lib.rs:462` and is
+  normaliser now lives in the unified `crates/mrx/` crate (the former
+  `mrx-{core,detect,audit,watch,cli}` were merged into it) and is
   cross-tested at `workspace_key_normalises_windows_paths`.
 
 ## 6. `wasm-pack build` fails with "Cannot find module run.js"

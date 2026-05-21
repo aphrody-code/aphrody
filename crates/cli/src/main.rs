@@ -16,7 +16,6 @@
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
-#[cfg(not(target_arch = "wasm32"))] mod scrape;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
@@ -29,21 +28,11 @@ use clap::{Parser, Subcommand};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
     commands::{
-        ChromiumSyncCommand, DoctorCommand, MirrorCommand, ScrapeProfile, SubprocessExit,
+        ChromiumSyncCommand, DoctorCommand, MirrorCommand, SubprocessExit,
         VersionCommand,
     },
     context::{GoogleContext, TerminalCommand},
 };
-
-// On wasm we still need the `ScrapeProfile` enum for clap; provide a stub
-// that mirrors the native enum shape so the CLI surface is identical.
-#[cfg(target_arch = "wasm32")]
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
-pub(crate) enum ScrapeProfile {
-    Fast,
-    Full,
-    Stealth,
-}
 
 /// Shell selector for `aphrody completions`.
 ///
@@ -157,33 +146,6 @@ enum Commands {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
-    /// Web scraping via BXC daemon (recon ou extraction CSS)
-    Scrape {
-        /// URL cible
-        #[arg(required = true)]
-        url: String,
-        /// Sélecteur CSS — si absent, bxc recon complet est exécuté
-        #[arg(long)]
-        selector: Option<String>,
-        /// Profil de rendu transmis au daemon BXC
-        #[arg(long, value_enum, default_value = "fast")]
-        profile: ScrapeProfile,
-        /// Fichier de sortie (JSON) — stdout si absent
-        #[arg(long, short)]
-        output: Option<PathBuf>,
-    },
-    /// Extraction des design-tokens Material Design 3
-    Tokens {
-        /// Page source des tokens
-        #[arg(long, default_value = "https://m3.material.io/foundations/design-tokens")]
-        url: String,
-        /// Fichier de destination JSON
-        #[arg(long, short, default_value = "packages/ui/tokens/m3.json")]
-        output: PathBuf,
-        /// Écrase le fichier s'il existe déjà
-        #[arg(long)]
-        force: bool,
-    },
     /// Pont WebSocket-PTY pour le frontend WASM (localhost uniquement)
     Term {
         /// Adresse d'écoute du serveur WebSocket (host:port)
@@ -195,23 +157,6 @@ enum Commands {
         /// Répertoire de travail initial du shell
         #[arg(long)]
         cwd: Option<std::path::PathBuf>,
-    },
-    /// Node-to-Bun migration tool (facade around packages/n2b/src/cli.ts via bun).
-    N2b {
-        /// Subcommand / arguments forwarded verbatim to the n2b CLI.
-        ///
-        /// Examples:
-        ///   aphrody n2b scan .
-        ///   aphrody n2b fix src/
-        ///   aphrody n2b rules --report=json
-        ///   aphrody n2b watch --interval 60 --path src/
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<String>,
-    },
-    /// Browser-in-process engine (bxc) — recon / scrape / detect / tokens / daemon.
-    Bxc {
-        #[command(subcommand)]
-        action: BxcAction,
     },
     /// Model Context Protocol — list servers, call tools (~/.config/aphrody/mcp.json).
     #[cfg(not(target_arch = "wasm32"))]
@@ -531,68 +476,7 @@ pub(crate) enum SelfAction {
     },
 }
 
-/// Actions for the `bxc` kernel subcommand.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Subcommand, Debug, Clone)]
-pub(crate) enum BxcAction {
-    /// Start (or supervise) the bxc-engine daemon in the background.
-    ///
-    /// Spawns `bxc-engine serve --port <port>` and persists its PID at
-    /// `var/run/bxc.pid` under the repository root so subsequent commands
-    /// can check whether the daemon is alive.
-    Daemon {
-        /// TCP port the daemon listens on.
-        #[arg(long, default_value = "8765")]
-        port: u16,
-    },
-    /// Full-page reconnaissance (passthrough to /recon).
-    Recon {
-        /// Target URL.
-        url: String,
-    },
-    /// CSS-selector scrape (passthrough to /scrape).
-    Scrape {
-        /// Target URL.
-        url: String,
-        /// CSS selector to extract.
-        #[arg(long)]
-        selector: Option<String>,
-    },
-    /// Framework / runtime detection (passthrough to /detect).
-    Detect {
-        /// Target URL.
-        url: String,
-    },
-    /// Material Design 3 token extraction (passthrough to /tokens/m3).
-    Tokens {
-        /// Target URL.
-        url: String,
-    },
-}
 
-/// Wasm stub — same shape so the clap surface compiles on wasm32 too.
-#[cfg(target_arch = "wasm32")]
-#[derive(Subcommand, Debug, Clone)]
-pub(crate) enum BxcAction {
-    Daemon {
-        #[arg(long, default_value = "8765")]
-        port: u16,
-    },
-    Recon {
-        url: String,
-    },
-    Scrape {
-        url: String,
-        #[arg(long)]
-        selector: Option<String>,
-    },
-    Detect {
-        url: String,
-    },
-    Tokens {
-        url: String,
-    },
-}
 
 /// Actions for the `mcp` kernel subcommand (Model Context Protocol).
 ///
@@ -703,20 +587,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Gemini { args }) => {
             commands::GeminiCommand { args }.execute(ctx).await?;
         },
-        Some(Commands::Scrape { url, selector, profile, output }) => {
-            commands::ScrapeCommand { url, selector, profile, output }.execute(ctx).await?;
-        },
-        Some(Commands::Tokens { url, output, force }) => {
-            commands::TokensCommand { url, output, force }.execute(ctx).await?;
-        },
         Some(Commands::Term { addr, shell, cwd }) => {
             commands::TermCommand { addr, shell, cwd }.execute(ctx).await?;
-        },
-        Some(Commands::N2b { args }) => {
-            commands::N2bCommand { args }.execute(ctx).await?;
-        },
-        Some(Commands::Bxc { action }) => {
-            commands::BxcCommand { action }.execute(ctx).await?;
         },
         Some(Commands::Mcp { action }) => match action {
             McpAction::List { config, no_probe } => {
@@ -886,7 +758,7 @@ async fn main() {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        None | Some(Commands::Version) => {
+        None | Some(Commands::Version { .. }) => {
             println!(
                 "aphrody {} — wasm stub. Use the native binary for full command surface.",
                 env!("CARGO_PKG_VERSION"),
@@ -902,19 +774,14 @@ fn main() {
                 Commands::Cros { .. } => "cros",
                 Commands::Search { .. } => "search",
                 Commands::Gemini { .. } => "gemini",
-                Commands::Scrape { .. } => "scrape",
-                Commands::Tokens { .. } => "tokens",
                 Commands::Doctor { .. } => "doctor",
                 Commands::Term { .. } => "term",
-                Commands::N2b { .. } => "n2b",
-                Commands::Bxc { .. } => "bxc",
-                Commands::Mcp { .. } => "mcp",
                 Commands::Notify { .. } => "notify",
                 Commands::Completions { .. } => "completions",
                 Commands::SelfCmd { .. } => "self",
                 Commands::Scan { .. } => "scan",
                 Commands::Auto(_) => "auto",
-                Commands::Version => unreachable!(),
+                Commands::Version { .. } => unreachable!(),
             };
             eprintln!(
                 "command `{name}` is not available on the wasm target — use the native aphrody \

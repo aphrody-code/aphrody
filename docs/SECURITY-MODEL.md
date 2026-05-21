@@ -4,8 +4,8 @@
 Threat model complementing the disclosure process in
 [`SECURITY.md`](../SECURITY.md). It enumerates assets, trust boundaries,
 attacker classes, and a STRIDE matrix mapping mitigations to threats. Protocol
-references resolve to [`docs/extensions/file-transport-v1.md`](extensions/file-transport-v1.md)
-and the forthcoming `docs/PROTOCOL.md` (tracked in `docs/PLAN.md`).
+references resolve to [`PROTOCOL.md`](PROTOCOL.md) (the legacy file-based
+transport extension was removed in 2026; transport is now gRPC).
 
 ## 1. Scope
 
@@ -13,8 +13,9 @@ In scope:
 
 - The `aphrody` CLI binary (Linux x86_64, Windows x86_64, future arm64).
 - The `aphrody-wasm` browser library targeting `wasm32-unknown-unknown`.
-- The A2A file + HTTP coordination protocol (`ai.json` manifest, `.coord/`
-  JSONL mailbox, listener on `:8788`).
+- The A2A coordination protocol over the typed gRPC transport (crates
+  `a2a-*`). The legacy file-based mailbox (`ai.json` + `.coord/`) was removed;
+  only the winclean compatibility mirror remains.
 - The published crates.io artifacts under the `aphrody-code/*` namespace.
 
 Out of scope:
@@ -54,7 +55,7 @@ Four boundaries are crossed at runtime:
   and inherits its FS rights; no privilege escalation occurs.
 - **TB3** — aphrody binary to peer agent over A2A. Trust is mediated by the
   signed manifest plus heartbeat verification described in
-  [`docs/extensions/file-transport-v1.md`](extensions/file-transport-v1.md).
+  [`PROTOCOL.md`](PROTOCOL.md).
 - **TB4** — aphrody binary to third-party HTTP (DNS resolvers, scrape targets,
   registry mirrors). No trust assumed; all output is validated against schema
   before use.
@@ -96,7 +97,7 @@ privilege) to representative asset by attacker pairs.
 ## 6. Out-of-band trust (the A2A handshake)
 
 The 3-deep ack handshake documented in
-[`docs/extensions/file-transport-v1.md`](extensions/file-transport-v1.md)
+[`PROTOCOL.md`](PROTOCOL.md)
 proves **liveness** (the peer is alive and observing the shared mailbox) but
 does **not** prove identity. Future work: sign manifests with a long-lived
 agent key (rotation policy TBD, target every 90 days) and verify that

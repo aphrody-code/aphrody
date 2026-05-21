@@ -71,41 +71,22 @@ Restart your shell, then `aphrody <TAB>` lists every subcommand.
 
 ---
 
-## 4. Cross-Claude A2A coordination (minimal)
+## 4. Cross-Claude A2A coordination
 
-Two peers (`projA`, `projB`) coordinate via JSONL mailbox files. Bootstrap
-each side with the shipped `ai.json` manifest, then drop an envelope into
-the peer's inbox:
-
-```bash
-# In projB — create the inbox once
-mkdir -p ~/projB/.coord
-touch ~/projB/.coord/inbox-from-a.jsonl
-
-# From projA — drop a structured ask
-echo '{"id":"ask-1","ts":"2026-05-17T16:00:00Z","from":"a","to":"b","type":"ask","subject":"hello","body":"ping"}' \
-  >> ~/projB/.coord/inbox-from-a.jsonl
-
-# Peer B polls its inbox
-tail -f ~/projB/.coord/inbox-from-a.jsonl
-```
-
-The full envelope schema, channel-extension fields, and 3-deep handshake
-live in [`PROTOCOL.md`](./PROTOCOL.md) and
-[`posts/2026-05-ai-json.md`](./posts/2026-05-ai-json.md).
+Peer agents coordinate over the typed **gRPC A2A transport** (crates `a2a-pb`
+/ `a2a` / `a2a-client` / `a2a-server`). The former file-based mailbox
+(`ai.json` manifest + `.coord/*.jsonl`) was removed; the only remaining
+file mirror is the winclean compatibility inbox
+`C:\winclean\.coord\inbox-from-aphrody.jsonl`. See the `a2a-*` crate docs
+for the envelope schema and handshake.
 
 ---
 
-## 5. Scrape a page via BXC profile
+## 5. Web fetch / recon via the MCP server
 
-```bash
-aphrody scrape https://example.com --selector "h1" --profile fast --output result.json
-cat result.json
-# {"url":"https://example.com","selector":"h1","matches":["Example Domain"], ...}
-```
-
-The `--profile` flag accepts `fast`, `full`, or `stealth`. Omit
-`--selector` to run a full BXC recon (asset graph, viewport, fingerprints).
+Forensic web fetch and recon are exposed by the native `aphrody-mcp` server
+(`universal_web_fetch`, `advanced_recon`, `dns_recon`) — there is no longer a
+separate BXC scraping engine. Call them through Claude Code / any MCP client.
 
 ---
 
@@ -130,10 +111,10 @@ aphrody dns example.com | jq '.records.A'
 ## 7. Run a shell command via `aphrody auto`
 
 `auto` is a clap `external_subcommand` — anything after it is forwarded to
-the underlying executor (Bun, uv, or `sh -c`):
+the platform shell (`sh -c` on Unix, `cmd /C` on Windows):
 
 ```bash
-aphrody auto bun run build
+aphrody auto cargo build --release
 aphrody auto cargo nextest run --workspace
 aphrody auto uv pip install pandas
 ```
@@ -233,8 +214,8 @@ Mirror on Windows runners via the PowerShell installer
 
 ## 12. Where to find more
 
-- [`PROTOCOL.md`](./PROTOCOL.md) — full A2A spec (ai.json v1, channels,
-  envelope schema, 3-deep handshake).
+- [`PROTOCOL.md`](./PROTOCOL.md) — historical file-based A2A spec (the live
+  transport is gRPC; see the `a2a-*` crates).
 - [`PERFORMANCE.md`](./PERFORMANCE.md) — bench recipes, headline claims,
   reproduction matrix.
 - [`MIGRATION.md`](./MIGRATION.md) — switching from competing tools

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 # BUILD-SPEED — Aphrody monorepo compilation cache guide
 
-> Workspace: 37 members | Host: Windows 11 28020 x86-64 | Cores: 8 logical
+> Workspace: 57 members (100 % Rust) | Host: Windows 11 28020 x86-64 | Cores: 8 logical
+>
+> **NOTE (2026-05-21).** Les passages `turbo.json` / `~/.bun/…` ci-dessous
+> sont **obsolètes** (Bun/Turbo bannis sous la politique 100 % Rust). Le guide
+> sccache/cargo reste valide.
 
 ## Baseline (before 2026-05-18 optimizations)
 

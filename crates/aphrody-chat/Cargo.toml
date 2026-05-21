@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-chat"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Unified turn-loop REPL that orchestrates the aphrody building blocks (gemini-runtime + tools + memory + session + permissions + hooks + prompts + router + cost + context + events) into a complete chat agent. Replaces the dependency on the packaged TypeScript gemini-cli."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+# --- Workspace primitives -------------------------------------------------
+tokio        = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "sync", "time", "fs"] }
+serde        = { workspace = true, features = ["derive"] }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+async-trait  = { workspace = true }
+tracing      = { workspace = true }
+chrono       = { workspace = true }
+uuid         = { workspace = true, features = ["v4"] }
+futures-util = { workspace = true }
+
+# --- Building blocks ------------------------------------------------------
+# The Gemini CLI subprocess adapter (text + tool-call + done stream events).
+gemini-runtime         = { path = "../gemini-runtime" }
+# Vendor-neutral tool descriptor registry (Anthropic / Gemini / MCP shapes).
+aphrody-tools          = { path = "../aphrody-tools" }
+# JSONL conversation session log (Turn + ToolCall + lifecycle events).
+aphrody-session        = { path = "../aphrody-session" }
+# Tier-1 MemoryProvider trait (Mem0 / Honcho / SqliteLocal) for recall.
+aphrody-memory         = { path = "../aphrody-memory" }
+# Tool-level permission engine (allow / ask / deny).
+
+# Runtime hook dispatcher (PreToolUse / PostToolUse / Stop / ...).
+
+# Jinja-backed prompt template registry with PII scrubber.
+aphrody-prompts        = { path = "../aphrody-prompts" }
+# Three-only provider router (Anthropic + Gemini + Antigravity).
+aphrody-router         = { path = "../aphrody-router" }
+# Unified LLM infra (cost + cache + rateguard + retry).
+aphrody-llm-infra      = { path = "../aphrody-llm-infra" }
+# Single-source-of-truth Provider enum (re-used by router/cost/rateguard).
+aphrody-providers      = { workspace = true }
+# Live context-window manager (sliding-window trim + summarization triggers).
+aphrody-context        = { path = "../aphrody-context" }
+# In-process async pub/sub event bus.
+aphrody-events         = { path = "../aphrody-events" }
+# Secret store abstraction (env / encrypted file / composite).
+aphrody-secrets        = { path = "../aphrody-secrets" }
+# SKILL.md aggregator (skills frontmatter + discovery + manifest).
+aphrody-skills         = { path = "../aphrody-skills" }
+# Native OAuth 2.1 MCP client (RFC 9728/8414/7591/7636).
+aphrody-mcp            = { path = "../aphrody-mcp" }
+
+[dev-dependencies]
+tokio    = { workspace = true, features = ["rt-multi-thread", "macros", "test-util", "io-util", "fs", "sync"] }
+tempfile = { workspace = true }
+# Required by backend tests that construct `aphrody_router::{Anthropic,Antigravity}Provider`
+# — reqwest 0.13 panics with "No provider set" the first time a client is built
+# unless the rustls crypto provider is installed globally (see CLAUDE.md §7).
+rustls   = { workspace = true, features = ["ring"] }
+
+[package.metadata.cargo-machete]
+# Heavy building blocks wired through trait constructors and conditional
+# call sites — machete can falsely report them unused on a fresh check.
+ignored = [
+    "aphrody-llm-infra",
+    "aphrody-secrets",
+    "aphrody-mcp",
+    "aphrody-providers",
+    "tracing",
+    # Dev-only; used inside `#[cfg(test)]` to install the rustls crypto
+    # provider before reqwest clients are built (see CLAUDE.md §7).
+    "rustls",
+]

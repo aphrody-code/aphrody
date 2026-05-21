@@ -1,8 +1,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # DEV-ENV — Aphrody developer environment reference
 
-> Workspace: 40+ crates Rust + Bun packages | Targets: Linux #1, Win11, WASM
-> Sccache 0.15.0+ | Cargo nightly-2026-05-17 | Bun 1.3.14
+> Workspace: 57-member Rust workspace (100 % Rust) | Targets: Linux #1, Win11, WASM
+> Sccache 0.15.0+ | Cargo nightly-2026-05-17
+>
+> **NOTE (2026-05-21).** Les sections « Bun cache » / variables `BUN_*` /
+> `bun … tsc` ci-dessous sont **obsolètes** : le workspace est 100 % Rust
+> (Bun/JS bannis, cf. CLAUDE.md §2). Conservées comme référence historique ;
+> ignorer pour tout nouveau setup.
 
 ## TL;DR — Quick bootstrap
 
