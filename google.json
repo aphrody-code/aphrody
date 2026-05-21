@@ -37,7 +37,8 @@
         "cpp": "cmake + zig c++",
         "rust": "cargo + xwin",
         "python": "uv",
-        "js_ts": "bun"
+        "js_ts": "bun",
+        "go": "go"
       }
     }
   },
@@ -93,7 +94,8 @@
       { "id": "Google.IAPDesktop",         "name": "IAP Desktop",              "version": "2.49.1797",      "status": "installed" },
       { "id": "Google.Antigravity",        "name": "Antigravity",              "version": "1.23.2",         "status": "installed" },
       { "id": "WinClean.DocsMcp",          "name": "WinClean Unified Docs MCP", "version": "1.0.0-LTS",      "status": "installed", "provides": ["microsoft_docs_search", "microsoft_docs_fetch", "context7_query_docs"] },
-      { "id": "WinClean.CoreMcp",          "name": "WinClean Core MCP",         "version": "2.1.0",          "status": "installed", "provides": ["winclean_scan", "winclean_profile", "winclean_debloat"] }
+      { "id": "WinClean.CoreMcp",          "name": "WinClean Core MCP",         "version": "2.1.0",          "status": "installed", "provides": ["winclean_scan", "winclean_profile", "winclean_debloat"] },
+      { "id": "GoLang.Go",                 "name": "Go Programming Language",  "version": "1.26.3",         "status": "installed", "provides": ["go", "gofmt"] }
     ],
 
     "google_recently_installed": [

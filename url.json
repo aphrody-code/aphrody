@@ -38,7 +38,11 @@
     "fuchsia_rust": "https://fuchsia.dev/fuchsia-src/development/languages/rust",
     "cxx_style": "https://google.github.io/styleguide/cppguide.html",
     "ms_rust_guidelines": "https://microsoft.github.io/rust-guidelines",
-    "rust_api_guidelines": "https://rust-lang.github.io/api-guidelines/"
+    "rust_api_guidelines": "https://rust-lang.github.io/api-guidelines/",
+    "go_style_overview": "https://google.github.io/styleguide/go/index",
+    "go_style_guide": "https://google.github.io/styleguide/go/guide",
+    "go_style_decisions": "https://google.github.io/styleguide/go/decisions",
+    "go_style_best_practices": "https://google.github.io/styleguide/go/best-practices"
   },
   "services": {
     "youtube": "https://www.youtube.com",
