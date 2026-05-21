@@ -42,6 +42,39 @@ fn opt_str(v: Option<&str>) -> Value {
     v.map_or(Value::Null, |s| Value::String(s.to_string()))
 }
 
+/// Recursively collect Google-hosted image URLs from a JSON subtree (used for
+/// generated-image extraction, where the exact leaf path varies by build).
+fn collect_image_urls(v: &Value) -> Vec<String> {
+    let mut out = Vec::new();
+    collect_image_urls_into(v, &mut out);
+    out
+}
+
+fn collect_image_urls_into(v: &Value, out: &mut Vec<String>) {
+    match v {
+        Value::String(s) => {
+            if (s.starts_with("https://lh3.googleusercontent.com")
+                || s.starts_with("https://www.gstatic.com")
+                || s.contains("googleusercontent.com/"))
+                && !out.iter().any(|u| u == s)
+            {
+                out.push(s.clone());
+            }
+        },
+        Value::Array(a) => {
+            for item in a {
+                collect_image_urls_into(item, out);
+            }
+        },
+        Value::Object(o) => {
+            for item in o.values() {
+                collect_image_urls_into(item, out);
+            }
+        },
+        _ => {},
+    }
+}
+
 /// Parse the raw streamed `StreamGenerate` response into a [`ChatReply`].
 ///
 /// The body is the Boq `)]}'` + length-prefixed chunk stream; each chunk holds
@@ -101,10 +134,20 @@ fn extract_reply(inner: &Value) -> Option<ChatReply> {
         })
         .unwrap_or_default();
 
+    // Generated images (Nano Banana / image model). The web app nests them under
+    // candidate[12][7]; the exact leaf indices vary by build, so collect every
+    // googleusercontent/lh3 URL found in that subtree.
+    let generated_image_urls = first
+        .get(12)
+        .and_then(|v| v.get(7))
+        .map(collect_image_urls)
+        .unwrap_or_default();
+
     Some(ChatReply {
         text,
         metadata: ConversationMetadata { conversation_id, response_id, choice_id },
         web_image_urls,
+        generated_image_urls,
         candidate_count,
     })
 }
