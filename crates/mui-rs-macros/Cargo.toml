@@ -11,7 +11,7 @@ rust-version.workspace = true
 [lib]
 proc-macro = true
 
+# The current macros are pass-through stubs that use only the built-in
+# `proc_macro` crate. syn/quote/proc-macro2 will return when the macro bodies
+# are implemented (#[m3_component] accesskit derive, M3Token conversion).
 [dependencies]
-syn.workspace = true
-quote.workspace = true
-proc-macro2.workspace = true

@@ -15,18 +15,12 @@ web     = ["wgpu/webgl", "wasm-bindgen", "web-sys", "js-sys", "console_error_pan
 android = ["android-activity"]
 
 [dependencies]
-thiserror.workspace = true
 anyhow.workspace = true
 wgpu = "28"
 vello.workspace = true
 peniko.workspace = true
 kurbo.workspace = true
-tiny-skia.workspace = true
-bytemuck.workspace = true
-half.workspace = true
-tracing.workspace = true
 taffy.workspace = true
-m3-tokens = { path = "../m3-tokens" }
 
 # web
 wasm-bindgen         = { workspace = true, optional = true }
@@ -41,3 +35,7 @@ android-activity = { workspace = true, optional = true }
 [dev-dependencies]
 pollster.workspace = true
 insta.workspace = true
+
+# Optional deps wired through the `web` / `android` features only.
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen", "web-sys", "js-sys", "console_error_panic_hook", "tracing-wasm", "android-activity"]

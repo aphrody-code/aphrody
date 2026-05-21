@@ -17,24 +17,15 @@ plugins    = ["wasmtime", "wit-bindgen", "wasmparser", "walrus"]
 js-runtime = ["rquickjs"]
 
 [dependencies]
-thiserror.workspace = true
-anyhow.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
-serde = { workspace = true }
-serde_json = { workspace = true }
-mimalloc.workspace = true
-
+# Re-exported sub-crates (this umbrella only re-exports; no direct logic deps).
 m3-tokens     = { path = "../m3-tokens" }
 mui-rs-renderer   = { path = "../mui-rs-renderer" }
 mui-rs-motion     = { path = "../mui-rs-motion" }
 mui-rs-components = { path = "../mui-rs-components" }
-mui-rs-macros     = { path = "../mui-rs-macros" }
 
 # desktop
 winit      = { workspace = true, optional = true }
 dark-light = { workspace = true, optional = true }
-pollster   = { workspace = true, optional = true }
 
 # android
 android-activity = { workspace = true, optional = true }
@@ -51,3 +42,9 @@ rquickjs = { workspace = true, optional = true }
 [dev-dependencies]
 criterion.workspace = true
 insta.workspace = true
+
+# Optional deps wired purely through [features] (desktop/android/plugins/
+# js-runtime); not referenced in this umbrella crate's own source, so machete
+# false-flags them.
+[package.metadata.cargo-machete]
+ignored = ["winit", "dark-light", "android-activity", "wasmtime", "wit-bindgen", "wasmparser", "walrus", "rquickjs"]
