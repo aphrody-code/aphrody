@@ -12,8 +12,8 @@
 //! generated image feeds straight into a Photoshop op as an `external` input.
 
 use aphrody_firefly::{
-    ContentClass, FireflyClient, GenerateImageRequest, OutputType, PhotoshopClient, PsInput,
-    PsOutput, Storage,
+    ContentClass, FireflyClient, GenerateImageRequest, LrEdit, OutputType, PhotoshopClient,
+    PsInput, PsOutput, Storage,
 };
 use rmcp::schemars::{self, JsonSchema};
 use serde::Deserialize;
@@ -209,6 +209,243 @@ async fn bridge_inner(req: FireflyToPhotoshopRequest) -> Result<Value, String> {
         "firefly_image_url": image_url,
         "photoshop_job": serde_json::to_value(&job).unwrap_or(Value::Null),
     }))
+}
+
+// ---------------------------------------------------------------------------
+// Lightroom / Sensei single-input edit tools — mirror the verbs of the
+// official "Adobe for creativity" connector (image_apply_auto_tone,
+// image_auto_straighten, image_adjust_*, image_select_subject/mask, remove
+// background), backed by our own Rust client on the same IMS token.
+// ---------------------------------------------------------------------------
+
+/// A single-input → single-output edit request shared by the Lightroom/Sensei
+/// tools (auto-tone, auto-straighten, remove-background, create-mask, etc.).
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct PsEditRequest {
+    /// URL of the input image the Adobe API can read.
+    pub input_url: String,
+    /// Writable destination URL for the edited output.
+    pub output_url: String,
+    /// Output format by extension: png (default), jpg, psd, tiff, dng.
+    #[serde(default)]
+    pub format: Option<String>,
+    /// Storage backing `input_url` (default external).
+    #[serde(default)]
+    pub input_storage: Option<String>,
+    /// Storage backing `output_url` (default external).
+    #[serde(default)]
+    pub output_storage: Option<String>,
+}
+
+impl PsEditRequest {
+    fn input(&self) -> PsInput {
+        PsInput { href: self.input_url.clone(), storage: parse_storage(self.input_storage.as_deref()) }
+    }
+    fn output(&self) -> PsOutput {
+        PsOutput {
+            href: self.output_url.clone(),
+            storage: parse_storage(self.output_storage.as_deref()),
+            kind: parse_output_type(self.format.as_deref()),
+            overwrite: Some(true),
+        }
+    }
+}
+
+/// Request for [`edit`] — explicit Camera-Raw adjustments (Lightroom `edit`).
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct PsAdjustRequest {
+    /// URL of the input image the Adobe API can read.
+    pub input_url: String,
+    /// Writable destination URL for the edited output.
+    pub output_url: String,
+    /// Output format by extension (default jpg).
+    #[serde(default)]
+    pub format: Option<String>,
+    /// Storage backing `input_url` (default external).
+    #[serde(default)]
+    pub input_storage: Option<String>,
+    /// Storage backing `output_url` (default external).
+    #[serde(default)]
+    pub output_storage: Option<String>,
+    /// Exposure in stops (-5.0 … +5.0).
+    #[serde(default)]
+    pub exposure: Option<f64>,
+    /// Contrast (-100 … +100).
+    #[serde(default)]
+    pub contrast: Option<i32>,
+    /// Highlights (-100 … +100).
+    #[serde(default)]
+    pub highlights: Option<i32>,
+    /// Shadows / dark portions (-100 … +100).
+    #[serde(default)]
+    pub shadows: Option<i32>,
+    /// Whites / bright portions (-100 … +100).
+    #[serde(default)]
+    pub whites: Option<i32>,
+    /// Blacks (-100 … +100).
+    #[serde(default)]
+    pub blacks: Option<i32>,
+    /// White-balance temperature shift (-100 … +100).
+    #[serde(default)]
+    pub temperature: Option<i32>,
+    /// White-balance tint (-100 … +100).
+    #[serde(default)]
+    pub tint: Option<i32>,
+    /// Vibrance (-100 … +100).
+    #[serde(default)]
+    pub vibrance: Option<i32>,
+    /// Saturation (-100 … +100).
+    #[serde(default)]
+    pub saturation: Option<i32>,
+    /// Clarity (-100 … +100).
+    #[serde(default)]
+    pub clarity: Option<i32>,
+    /// Dehaze (-100 … +100).
+    #[serde(default)]
+    pub dehaze: Option<i32>,
+    /// Texture (-100 … +100).
+    #[serde(default)]
+    pub texture: Option<i32>,
+    /// Sharpness (0 … 150).
+    #[serde(default)]
+    pub sharpness: Option<i32>,
+}
+
+impl PsAdjustRequest {
+    fn input(&self) -> PsInput {
+        PsInput { href: self.input_url.clone(), storage: parse_storage(self.input_storage.as_deref()) }
+    }
+    fn output(&self) -> PsOutput {
+        PsOutput {
+            href: self.output_url.clone(),
+            storage: parse_storage(self.output_storage.as_deref()),
+            kind: self.format.as_deref().and_then(OutputType::from_ext).unwrap_or(OutputType::Jpeg),
+            overwrite: Some(true),
+        }
+    }
+    fn edit(&self) -> LrEdit {
+        let mut e = LrEdit::new();
+        e.exposure = self.exposure;
+        e.contrast = self.contrast;
+        e.highlights = self.highlights;
+        e.shadows = self.shadows;
+        e.whites = self.whites;
+        e.blacks = self.blacks;
+        e.temperature = self.temperature;
+        e.tint = self.tint;
+        e.vibrance = self.vibrance;
+        e.saturation = self.saturation;
+        e.clarity = self.clarity;
+        e.dehaze = self.dehaze;
+        e.texture = self.texture;
+        e.sharpness = self.sharpness;
+        e
+    }
+}
+
+/// Request for [`action_json`].
+#[derive(Debug, Deserialize, JsonSchema)]
+pub(crate) struct PsActionJsonRequest {
+    /// URL of the input PSD/image.
+    pub input_url: String,
+    /// Writable destination URL for the result.
+    pub output_url: String,
+    /// Output format by extension (default png).
+    #[serde(default)]
+    pub format: Option<String>,
+    /// The `actionJSON` array (a recorded Photoshop action set as JSON).
+    pub actions: Value,
+}
+
+/// Lightroom auto-tone: AI exposure/contrast/highlights/shadows/vibrance.
+pub(crate) async fn auto_tone(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.lr_auto_tone(req.input(), req.output()).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("autoTone: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Lightroom auto-straighten (Upright perspective correction).
+pub(crate) async fn auto_straighten(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.lr_auto_straighten(req.input(), req.output()).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("autoStraighten: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Lightroom edit: apply explicit Camera-Raw adjustments.
+pub(crate) async fn edit(req: PsAdjustRequest) -> String {
+    let edit = req.edit();
+    match ps_client().await {
+        Ok(c) => match c.lr_edit(req.input(), req.output(), &edit).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("edit: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Sensei cutout: remove the background, returning a transparent PNG.
+pub(crate) async fn remove_background(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.remove_background(req.input(), req.output()).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("removeBackground: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Sensei mask: produce a subject/background alpha mask.
+pub(crate) async fn create_mask(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.create_mask(req.input(), req.output()).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("createMask: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// `psdService` product crop (content-aware).
+pub(crate) async fn product_crop(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.product_crop(req.input(), req.output(), None).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("productCrop: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// `psdService` depth blur (Neural-Filter depth-of-field).
+pub(crate) async fn depth_blur(req: PsEditRequest) -> String {
+    match ps_client().await {
+        Ok(c) => match c.depth_blur(req.input(), req.output(), None).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("depthBlur: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
+}
+
+/// Play an `actionJSON` program over a PSD/image (documentOperations).
+pub(crate) async fn action_json(req: PsActionJsonRequest) -> String {
+    let inputs = vec![PsInput::external(req.input_url)];
+    let outputs = vec![PsOutput::external(req.output_url, parse_output_type(req.format.as_deref()))];
+    match ps_client().await {
+        Ok(c) => match c.action_json(inputs, outputs, req.actions).await {
+            Ok(job) => job_json(&job),
+            Err(e) => json!({ "error": format!("actionJSON: {e}") }).to_string(),
+        },
+        Err(e) => json!({ "error": e }).to_string(),
+    }
 }
 
 /// Serialize a Photoshop job into a tool-result JSON string.
