@@ -58,6 +58,7 @@ pub mod boq;
 pub mod bootstrap;
 pub mod client;
 pub mod error;
+pub mod models;
 pub mod payload;
 pub mod rpc_ids;
 pub mod transport;
@@ -66,6 +67,7 @@ pub mod types;
 pub use auth::{Auth, CookieJar, SessionCookie};
 pub use client::GeminiWebClient;
 pub use error::{GeminiError, Result};
+pub use models::{GeminiModel, ReasoningLevel};
 pub use transport::{HttpTransport, SessionTokens};
 pub use types::{ChatReply, ConversationMetadata};
 
@@ -74,6 +76,7 @@ pub mod prelude {
     pub use crate::auth::{Auth, CookieJar, SessionCookie};
     pub use crate::client::GeminiWebClient;
     pub use crate::error::{GeminiError, Result};
+    pub use crate::models::{GeminiModel, ReasoningLevel};
     pub use crate::transport::{HttpTransport, SessionTokens};
     pub use crate::types::{ChatReply, ConversationMetadata};
 }

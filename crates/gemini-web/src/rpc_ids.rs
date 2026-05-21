@@ -42,9 +42,8 @@ pub const URL_STREAM_GENERATE: &str =
 /// opaque per-model tokens (`HanaokaYuzu` `constants.py`).
 pub const MODEL_HEADER: &str = "x-goog-ext-525001261-jspb";
 
-/// Opaque model-selector token for **Gemini Flash** (default).
-pub const MODEL_FLASH: &str = "[1,null,null,null,\"fbb127bbb056c959\"]";
-/// Opaque model-selector token for **Gemini Pro**.
-pub const MODEL_PRO: &str = "[1,null,null,null,\"9d8ca3786ebdfbea\"]";
-/// Opaque model-selector token for the **Thinking** model.
-pub const MODEL_THINKING: &str = "[1,null,null,null,\"5bf011840784117a\"]";
+// Model-selector header VALUES are built by [`crate::models::GeminiModel`],
+// whose tokens + full array shape were captured live (the earlier short-form
+// `[1,null,null,null,"<token>"]` reconstruction was wrong). Pass
+// `GeminiModel::Flash.header()` (etc.) as the `model` argument to
+// `HttpTransport::stream_generate`.
