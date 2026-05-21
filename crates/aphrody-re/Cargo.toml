@@ -65,6 +65,8 @@ rusty-leveldb = { version = "4", optional = true, default-features = false, feat
 # replays the WAL into the directory. We copy the dir into a scratch temp dir
 # first and open the copy, leaving the source untouched. Optional, leveldb-gated.
 tempfile   = { workspace = true, optional = true }
+# Recursive directory walker used by the `adobe` module mapper.
+walkdir    = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
