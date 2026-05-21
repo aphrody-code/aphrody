@@ -99,6 +99,10 @@ members = [
     # sections + Shannon entropy + SHA-256, ASCII/UTF-16 strings sample.
     # Pure Rust, no GPL deps. Apex Cap R5 (Sprint R-E).
     "crates/aphrody-re",
+    # aphrody-images — production-grade Nano Banana image generation, editing
+    # and composition (async concurrent download, typed errors, batch generation,
+    # data-URI decode). Surpasses the Python NanoBanana client.
+    "crates/aphrody-images",
     # aphrody-logo — canonical icon (assets/aphrody.webp) embedded once ->
     # multi-res .ico, scalable .svg, M3 maskable/shape PNGs, pixel-perfect
     # terminal rendering (Kitty graphics protocol + truecolor half-blocks).

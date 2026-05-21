@@ -337,6 +337,7 @@ dependencies = [
  "a2a-lf",
  "antigravity-sdk",
  "aphrody-chat",
+ "aphrody-fsindex",
  "aphrody-logo",
  "aphrody-memory",
  "aphrody-messaging",
@@ -521,6 +522,23 @@ version = "1.0.0-canary"
 dependencies = [
  "base64",
  "serde",
+]
+
+[[package]]
+name = "aphrody-images"
+version = "1.0.0-canary"
+dependencies = [
+ "base64",
+ "gemini-web",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
 ]
 
 [[package]]
