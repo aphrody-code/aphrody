@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Google binary analyser — identifies Electron / Chromium / Go / Node / V8
-//! artefacts and extracts OAuth client IDs, API endpoints, updater URLs, and
-//! code-signing hints from raw binary bytes.
+//! Google binary analyser — identifies Electron / WebView2 / Chromium / Go /
+//! Node / V8 artefacts and extracts OAuth client IDs, API endpoints, updater
+//! URLs, and code-signing hints from raw binary bytes.
 //!
 //! All detection is performed on the raw byte slice via [`extract_strings`]
 //! (from the parent crate) combined with byte-pattern scanning using
@@ -34,13 +34,22 @@ use crate::extract_strings;
 /// Broad classification of the Google binary under analysis.
 ///
 /// Detection order (highest-priority first):
-/// `Electron` → `Chromium` → `GoBinary` → `NodeBundle` → `V8Snapshot` → `Generic`.
+/// `Electron` → `WebView2` → `Chromium` → `GoBinary` → `NodeBundle` →
+/// `V8Snapshot` → `Generic`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BinaryFamily {
     /// Electron application (ships `app.asar` / `chrome_100_percent.pak` /
     /// the string `"electron"`).
     Electron,
+    /// Microsoft Edge WebView2 host application — embeds the Evergreen
+    /// WebView2 runtime (`msedgewebview2`, `WebView2Loader`,
+    /// `CoreWebView2`, `EBWebView` user-data folder). Distinct from a raw
+    /// Chromium browser: the app hosts web content via the Edge runtime
+    /// rather than shipping its own Chromium. This is the family of the
+    /// `google.exe` desktop launcher (user-data under
+    /// `…\Google\latest\default\WebView2\EBWebView`).
+    WebView2,
     /// Chromium / Chrome browser binary (`Chrome/`, `chrome.dll`, `Crashpad`).
     Chromium,
     /// Go-compiled binary (`.gopclntab` section / `go:buildid` / `Go build ID:`).
@@ -161,6 +170,31 @@ fn detect_family(bytes: &[u8], indicators: &mut Vec<String>) -> BinaryFamily {
     }
     if indicators.iter().any(|s| s.starts_with("Electron")) {
         return BinaryFamily::Electron;
+    }
+
+    // WebView2: Microsoft Edge Evergreen runtime host. Checked before plain
+    // Chromium because a WebView2 host also carries `Chrome/` user-agent and
+    // `Crashpad` strings — these markers are more specific and win the tie.
+    let webview2_needles: &[&[u8]] = &[
+        b"msedgewebview2",
+        b"WebView2Loader",
+        b"CoreWebView2",
+        b"EmbeddedBrowserWebView",
+        b"EBWebView",
+        b"Microsoft.Web.WebView2",
+        b"WEBVIEW2_USER_DATA_FOLDER",
+        b"WEBVIEW2_BROWSER_EXECUTABLE_FOLDER",
+    ];
+    for needle in webview2_needles {
+        if memmem::find(bytes, needle).is_some() {
+            indicators.push(format!(
+                "WebView2 marker: {}",
+                std::str::from_utf8(needle).unwrap_or("<binary>")
+            ));
+        }
+    }
+    if indicators.iter().any(|s| s.starts_with("WebView2")) {
+        return BinaryFamily::WebView2;
     }
 
     // Chromium: core browser or headless shell.
@@ -405,6 +439,33 @@ mod tests {
         assert_eq!(r.family, BinaryFamily::Chromium);
         assert!(r.chromium_version.is_some());
         assert_eq!(r.chromium_version.as_deref(), Some("125.0.6422.141"));
+    }
+
+    #[test]
+    fn google_family_webview2_detected() {
+        // A WebView2 host carries both Chromium UA markers AND WebView2-specific
+        // strings; the more-specific WebView2 family must win.
+        let buf =
+            b"Chrome/137.0.7151.69\x00msedgewebview2.exe\x00WebView2Loader.dll\x00EBWebView\x00Crashpad\x00"
+                .to_vec();
+        let r = analyze_google(&buf);
+        assert_eq!(
+            r.family,
+            BinaryFamily::WebView2,
+            "WebView2 must win over Chromium, got {:?}",
+            r.family
+        );
+        assert!(r.indicators.iter().any(|s| s.contains("msedgewebview2")));
+        // The Chromium version is still extracted independently of family.
+        assert_eq!(r.chromium_version.as_deref(), Some("137.0.7151.69"));
+    }
+
+    #[test]
+    fn google_family_webview2_serializes_snake_case() {
+        let buf = b"CoreWebView2\x00Microsoft.Web.WebView2\x00".to_vec();
+        let r = analyze_google(&buf);
+        let json = serde_json::to_value(&r).expect("serialize");
+        assert_eq!(json["family"], "web_view2");
     }
 
     #[test]
