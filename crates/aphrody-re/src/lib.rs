@@ -56,6 +56,11 @@
 
 #![forbid(unsafe_code)]
 
+/// Adobe application directory mapper — forensic inventory of an Adobe
+/// application install dir (Photoshop, Illustrator, …) into structured JSON.
+///
+/// Entry point: [`adobe::map_adobe_app`].
+pub mod adobe;
 /// Native Electron `app.asar` archive reader (list + extract, no execution).
 pub mod asar;
 /// Electron binary analyser — fuses wire, V8 snapshot/code-cache, Electron /
