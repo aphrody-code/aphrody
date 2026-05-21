@@ -30,7 +30,7 @@ use futures_util::StreamExt as _;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ChatError;
-use crate::types::{Message, ToolInvocation};
+use crate::types::{Message, MessageRole, ToolInvocation};
 
 // ---------------------------------------------------------------------------
 // BackendResponse — the structured outcome of one backend round-trip
@@ -282,6 +282,110 @@ impl ModelBackend for GeminiBackend {
             prompt_tokens: 0,      // gemini stream-json does not surface usage; safe zero.
             completion_tokens: 0,
             resolved_model,
+        })
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GeminiWebBackend — native gemini.google.com web app (cookie auth)
+// ---------------------------------------------------------------------------
+
+/// Chat backend talking to the **Gemini web app** (`gemini.google.com/app`) via
+/// the `gemini-web` SDK: signed-in Google cookie jar
+/// (`~/.aphrody/google-cookies.json`) + page-bootstrapped `at` token, no API
+/// key. Defaults to the **3.5 Flash** model.
+///
+/// Conversation continuity is server-side: the first turn opens a fresh thread
+/// and each reply's `[cid, rid, rcid]` metadata is threaded into the next send
+/// (held behind a `Mutex` so the `&self` trait surface stays intact).
+pub struct GeminiWebBackend {
+    client: gemini_web::GeminiWebClient,
+    model: gemini_web::GeminiModel,
+    meta: tokio::sync::Mutex<gemini_web::ConversationMetadata>,
+    name: String,
+}
+
+impl GeminiWebBackend {
+    /// Connect using the default cookie jar (`~/.aphrody/google-cookies.json`)
+    /// and the given model. The caller must have installed a rustls
+    /// `CryptoProvider` before the first reqwest call (the `aphrody` binary does
+    /// this at startup; rustls 0.23 requirement, cf. CLAUDE.md §7).
+    ///
+    /// # Errors
+    ///
+    /// [`ChatError::BackendFailure`] when the cookie jar is missing/invalid or
+    /// the page bootstrap fails (signed out).
+    pub async fn connect(model: gemini_web::GeminiModel) -> Result<Self, ChatError> {
+        let client = gemini_web::GeminiWebClient::from_default_cookie_file("en")
+            .await
+            .map_err(|e| ChatError::BackendFailure(format!("gemini-web connect: {e}")))?;
+        Ok(Self {
+            client,
+            model,
+            meta: tokio::sync::Mutex::new(gemini_web::ConversationMetadata::default()),
+            name: format!("gemini-web/{}", model.id()),
+        })
+    }
+
+    /// Default backend: 3.5 Flash.
+    ///
+    /// # Errors
+    ///
+    /// See [`Self::connect`].
+    pub async fn connect_default() -> Result<Self, ChatError> {
+        Self::connect(gemini_web::GeminiModel::Flash).await
+    }
+
+    /// Build the single prompt for one turn. On the first turn (no thread yet)
+    /// any `System` messages are prepended so the model sees the instructions;
+    /// later turns rely on Gemini's server-side conversation memory and send
+    /// only the latest user message.
+    fn turn_prompt(messages: &[Message], fresh: bool) -> String {
+        let last_user = messages
+            .iter()
+            .rev()
+            .find(|m| matches!(m.role, MessageRole::User))
+            .map(|m| m.content.as_str())
+            .unwrap_or("");
+        if fresh {
+            let system: Vec<&str> = messages
+                .iter()
+                .filter(|m| matches!(m.role, MessageRole::System))
+                .map(|m| m.content.as_str())
+                .collect();
+            if system.is_empty() {
+                last_user.to_string()
+            } else {
+                format!("{}\n\n{}", system.join("\n"), last_user)
+            }
+        } else {
+            last_user.to_string()
+        }
+    }
+}
+
+#[async_trait]
+impl ModelBackend for GeminiWebBackend {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    async fn complete(&self, messages: &[Message]) -> Result<BackendResponse, ChatError> {
+        let mut meta = self.meta.lock().await;
+        let prompt = Self::turn_prompt(messages, meta.is_fresh());
+        let header = self.model.header();
+        let reply = self
+            .client
+            .send(&prompt, Some(header.as_str()), &meta)
+            .await
+            .map_err(|e| ChatError::BackendFailure(format!("gemini-web send: {e}")))?;
+        *meta = reply.metadata.clone();
+        Ok(BackendResponse {
+            content: reply.text,
+            tool_calls: Vec::new(),
+            prompt_tokens: 0, // web app does not surface token usage.
+            completion_tokens: 0,
+            resolved_model: Some(self.model.label().to_string()),
         })
     }
 }
