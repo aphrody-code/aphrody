@@ -80,7 +80,10 @@ use proto::{
 /// fingerprint of the language server's self-signed certificate — not a secret.
 pub const PINNED_SPKI_SHA256_B64: &str = "sTZpQemOWEytaZqa7P/y/dNXbHMdOAzMvzHEhUwHZXw=";
 
-/// Environment variable that overrides the language server binary path.
+/// Environment variable that overrides the language server binary path (Antigravity harness).
+pub const ENV_ANTIGRAVITY_HARNESS: &str = "ANTIGRAVITY_HARNESS_PATH";
+
+/// Environment variable that overrides the language server binary path (legacy Codeium).
 pub const ENV_LANGUAGE_SERVER_BIN: &str = "CODEIUM_LANGUAGE_SERVER_BIN";
 
 /// Default upstream API server URL passed to the language server.
@@ -187,6 +190,28 @@ impl LanguageServer {
     ///
     /// Returns [`SdkError::LanguageServerNotFound`] when no candidate exists.
     pub fn resolve_binary() -> Result<std::path::PathBuf, SdkError> {
+        // 1. Check ANTIGRAVITY_HARNESS_PATH first (Antigravity standard)
+        if let Some(p) = std::env::var_os(ENV_ANTIGRAVITY_HARNESS) {
+            let path = std::path::PathBuf::from(p);
+            if path.is_file() {
+                return Ok(path);
+            }
+            // If it's a directory, try appending known binary names.
+            let exe_names = if cfg!(windows) {
+                &["language_server.exe", "localharness.exe"][..]
+            } else {
+                &["language_server", "localharness"][..]
+            };
+            for name in exe_names {
+                let candidate = path.join(name);
+                if candidate.is_file() {
+                    return Ok(candidate);
+                }
+            }
+            warn!(?path, "ANTIGRAVITY_HARNESS_PATH set but no valid binary found");
+        }
+
+        // 2. Check legacy CODEIUM_LANGUAGE_SERVER_BIN
         if let Some(p) = std::env::var_os(ENV_LANGUAGE_SERVER_BIN) {
             let path = std::path::PathBuf::from(p);
             if path.is_file() {

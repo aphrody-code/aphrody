@@ -223,7 +223,7 @@ aphrody blender showcase assets/aphrody.webp --out var/imgtest/aphrody_showcase.
 aphrody blender multiview "assets/aphrody_body_r*.webp" --out var/imgtest/aphrody_multiview.webp --frames 16
 
 # Or invoke the script directly:
-blender -b -P apps/aphrody/blender_addon/scripts/sprite_to_3d.py -- \
+blender -b -P python/aphrody/blender_addon/scripts/sprite_to_3d.py -- \
     --image assets/aphrody.webp --out model.glb --frames 48 --render frames/
 ```
 

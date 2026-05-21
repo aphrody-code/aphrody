@@ -11,6 +11,7 @@
 //! by default); they are never written into the aphrody workspace.
 
 use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -126,6 +127,7 @@ impl Auth {
     ///
     /// Returns [`GeminiError::Network`] on IO failure or [`GeminiError::Auth`]
     /// on a malformed / incomplete jar.
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn from_cookie_file(path: impl AsRef<Path>) -> Result<Self> {
         let payload = tokio::fs::read_to_string(path.as_ref()).await?;
         Self::from_cookie_editor_json(&payload)

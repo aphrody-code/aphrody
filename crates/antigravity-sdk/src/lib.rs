@@ -52,6 +52,7 @@ pub mod config;
 pub mod endpoints;
 pub mod error;
 pub mod models;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod oauth;
 pub mod state_sync;
 
@@ -79,5 +80,6 @@ pub use models::{
     LoadCodeAssistRequest, LoadCodeAssistResponse, ModelInfo, OnboardUserRequest,
     OnboardUserResponse, Part, Tier,
 };
+#[cfg(not(target_arch = "wasm32"))]
 pub use oauth::{PkcePair, authorize_url, login, persist};
 pub use state_sync::{StateSyncEntry, decode_unified_state, parse_item_table};

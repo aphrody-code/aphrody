@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!--
+    M3 Component Anatomy — Button variants, Card, and FAB
+    Shows the visual structure and token usage of key M3 components.
+
+    Usage: Reference this SVG when explaining M3 component structure,
+    token mapping, or when onboarding new developers to the design system.
+
+    License: Apache-2.0
+  -->
+  <style>
+    text { font-family: 'Roboto', 'Google Sans', system-ui, sans-serif; }
+    .label { font-size: 11px; font-weight: 500; }
+    .token { font-size: 8px; fill: #51443A; font-family: 'Roboto Mono', monospace; }
+    .heading { font-size: 16px; font-weight: 700; fill: #211A13; }
+    .section { font-size: 13px; font-weight: 600; fill: #211A13; }
+    .dim { font-size: 8px; fill: #847468; }
+  </style>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="#FFF8F4"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="heading">M3 Component Anatomy</text>
+
+  <!-- ═══ BUTTONS SECTION ═══ -->
+  <text x="400" y="60" text-anchor="middle" class="section">Button Variants</text>
+
+  <!-- Filled Button -->
+  <rect x="30" y="75" width="140" height="40" rx="20" fill="#8B5000"/>
+  <text x="100" y="100" text-anchor="middle" class="label" fill="#FFFFFF">Filled</text>
+  <text x="100" y="130" text-anchor="middle" class="token">container: primary (#8B5000)</text>
+  <text x="100" y="142" text-anchor="middle" class="token">label: on-primary (#FFF)</text>
+  <text x="100" y="154" text-anchor="middle" class="token">shape: corner-full (20px)</text>
+
+  <!-- Outlined Button -->
+  <rect x="190" y="75" width="140" height="40" rx="20" fill="none" stroke="#847468" stroke-width="1"/>
+  <text x="260" y="100" text-anchor="middle" class="label" fill="#8B5000">Outlined</text>
+  <text x="260" y="130" text-anchor="middle" class="token">container: transparent</text>
+  <text x="260" y="142" text-anchor="middle" class="token">label: primary (#8B5000)</text>
+  <text x="260" y="154" text-anchor="middle" class="token">outline: outline (#847468)</text>
+
+  <!-- Tonal Button -->
+  <rect x="350" y="75" width="140" height="40" rx="20" fill="#FFDCB8"/>
+  <text x="420" y="100" text-anchor="middle" class="label" fill="#2D1600">Tonal</text>
+  <text x="420" y="130" text-anchor="middle" class="token">container: primary-container</text>
+  <text x="420" y="142" text-anchor="middle" class="token">label: on-primary-container</text>
+  <text x="420" y="154" text-anchor="middle" class="token">(#FFDCB8 / #2D1600)</text>
+
+  <!-- Text Button -->
+  <text x="580" y="100" text-anchor="middle" class="label" fill="#8B5000">Text</text>
+  <text x="580" y="130" text-anchor="middle" class="token">container: transparent</text>
+  <text x="580" y="142" text-anchor="middle" class="token">label: primary (#8B5000)</text>
+  <text x="580" y="154" text-anchor="middle" class="token">no outline, no fill</text>
+
+  <!-- Elevated Button -->
+  <rect x="650" y="73" width="140" height="40" rx="20" fill="#F5E6DA" filter="url(#shadow)"/>
+  <text x="720" y="98" text-anchor="middle" class="label" fill="#211A13">Elevated</text>
+  <text x="720" y="130" text-anchor="middle" class="token">container: surface-container-high</text>
+  <text x="720" y="142" text-anchor="middle" class="token">label: primary (#8B5000)</text>
+  <text x="720" y="154" text-anchor="middle" class="token">elevation: level1</text>
+
+  <!-- Shadow filter -->
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+    <filter id="shadow2" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- ═══ CARDS SECTION ═══ -->
+  <text x="200" y="195" text-anchor="middle" class="section">Card Variants</text>
+
+  <!-- Filled Card -->
+  <rect x="30" y="210" width="160" height="160" rx="12" fill="#F5E6DA"/>
+  <rect x="30" y="210" width="160" height="80" rx="12" fill="#FFDCB8"/>
+  <rect x="30" y="278" width="160" height="2" fill="transparent"/>
+  <text x="110" y="252" text-anchor="middle" class="label" fill="#2D1600">Media area</text>
+  <text x="50" y="310" class="label" fill="#211A13">Card Title</text>
+  <text x="50" y="325" class="dim">Subhead or description</text>
+  <text x="50" y="355" class="label" fill="#8B5000">Action</text>
+  <text x="110" y="385" text-anchor="middle" class="token">filled: surface-container-high</text>
+  <text x="110" y="397" text-anchor="middle" class="token">shape: corner-medium (12px)</text>
+
+  <!-- Elevated Card -->
+  <rect x="210" y="208" width="160" height="160" rx="12" fill="#FFF8F4" filter="url(#shadow2)"/>
+  <rect x="210" y="208" width="160" height="80" rx="12" fill="#FFDCB8"/>
+  <text x="290" y="248" text-anchor="middle" class="label" fill="#2D1600">Media area</text>
+  <text x="230" y="310" class="label" fill="#211A13">Card Title</text>
+  <text x="230" y="325" class="dim">Subhead or description</text>
+  <text x="230" y="355" class="label" fill="#8B5000">Action</text>
+  <text x="290" y="385" text-anchor="middle" class="token">elevated: surface + shadow</text>
+  <text x="290" y="397" text-anchor="middle" class="token">elevation: level1</text>
+
+  <!-- Outlined Card -->
+  <rect x="390" y="210" width="160" height="160" rx="12" fill="#FFF8F4" stroke="#D7C3B5" stroke-width="1"/>
+  <rect x="390" y="210" width="160" height="80" rx="12" fill="#FFDCB8" stroke="#D7C3B5" stroke-width="1"/>
+  <text x="470" y="252" text-anchor="middle" class="label" fill="#2D1600">Media area</text>
+  <text x="410" y="310" class="label" fill="#211A13">Card Title</text>
+  <text x="410" y="325" class="dim">Subhead or description</text>
+  <text x="410" y="355" class="label" fill="#8B5000">Action</text>
+  <text x="470" y="385" text-anchor="middle" class="token">outlined: surface + outline</text>
+  <text x="470" y="397" text-anchor="middle" class="token">outline: outline-variant</text>
+
+  <!-- ═══ FAB SECTION ═══ -->
+  <text x="680" y="195" text-anchor="middle" class="section">FAB Variants</text>
+
+  <!-- Small FAB -->
+  <rect x="610" y="215" width="40" height="40" rx="12" fill="#FFDCB8" filter="url(#shadow)"/>
+  <text x="630" y="240" text-anchor="middle" class="label" fill="#8B5000" font-size="18">+</text>
+  <text x="630" y="270" text-anchor="middle" class="token">Small FAB</text>
+  <text x="630" y="282" text-anchor="middle" class="token">40×40, corner-medium</text>
+
+  <!-- FAB -->
+  <rect x="665" y="210" width="56" height="56" rx="16" fill="#FFDCB8" filter="url(#shadow)"/>
+  <text x="693" y="244" text-anchor="middle" class="label" fill="#8B5000" font-size="22">+</text>
+  <text x="693" y="282" text-anchor="middle" class="token">FAB</text>
+  <text x="693" y="294" text-anchor="middle" class="token">56×56, corner-large</text>
+
+  <!-- Large FAB -->
+  <rect x="735" y="200" width="56" height="56" rx="28" fill="#FFDCB8" filter="url(#shadow)"/>
+  <text x="763" y="234" text-anchor="middle" class="label" fill="#8B5000" font-size="26">+</text>
+  <text x="763" y="270" text-anchor="middle" class="token">Large FAB</text>
+  <text x="763" y="282" text-anchor="middle" class="token">96×96, corner-xl</text>
+
+  <!-- FAB tokens -->
+  <text x="693" y="320" text-anchor="middle" class="token">container: primary-container (#FFDCB8)</text>
+  <text x="693" y="332" text-anchor="middle" class="token">icon: on-primary-container (#2D1600)</text>
+  <text x="693" y="344" text-anchor="middle" class="token">elevation: level3 (6dp)</text>
+
+  <!-- ═══ STATE LAYERS ═══ -->
+  <text x="400" y="430" text-anchor="middle" class="section">Interactive States (on primary container)</text>
+
+  <!-- Enabled -->
+  <rect x="40" y="445" width="130" height="50" rx="20" fill="#FFDCB8"/>
+  <text x="105" y="475" text-anchor="middle" class="label" fill="#2D1600">Enabled</text>
+  <text x="105" y="510" text-anchor="middle" class="token">opacity: 0%</text>
+
+  <!-- Hovered -->
+  <rect x="190" y="445" width="130" height="50" rx="20" fill="#FFDCB8"/>
+  <rect x="190" y="445" width="130" height="50" rx="20" fill="#2D1600" opacity="0.08"/>
+  <text x="255" y="475" text-anchor="middle" class="label" fill="#2D1600">Hovered</text>
+  <text x="255" y="510" text-anchor="middle" class="token">state-layer: 8%</text>
+
+  <!-- Focused -->
+  <rect x="340" y="445" width="130" height="50" rx="20" fill="#FFDCB8"/>
+  <rect x="340" y="445" width="130" height="50" rx="20" fill="#2D1600" opacity="0.12"/>
+  <text x="405" y="475" text-anchor="middle" class="label" fill="#2D1600">Focused</text>
+  <text x="405" y="510" text-anchor="middle" class="token">state-layer: 12%</text>
+
+  <!-- Pressed -->
+  <rect x="490" y="445" width="130" height="50" rx="20" fill="#FFDCB8"/>
+  <rect x="490" y="445" width="130" height="50" rx="20" fill="#2D1600" opacity="0.12"/>
+  <text x="555" y="475" text-anchor="middle" class="label" fill="#2D1600">Pressed</text>
+  <text x="555" y="510" text-anchor="middle" class="token">state-layer: 12%</text>
+
+  <!-- Disabled -->
+  <rect x="640" y="445" width="130" height="50" rx="20" fill="#211A13" opacity="0.12"/>
+  <text x="705" y="475" text-anchor="middle" class="label" fill="#211A13" opacity="0.38">Disabled</text>
+  <text x="705" y="510" text-anchor="middle" class="token">container: 12%, label: 38%</text>
+
+  <!-- Footer -->
+  <text x="400" y="545" text-anchor="middle" class="dim">All colors from M3 orange palette (source: #FF9800). See material-design-3-color skill for full token reference.</text>
+  <text x="400" y="560" text-anchor="middle" class="dim">State layer colors use on-[container] color at specified opacity per M3 interaction states spec.</text>
+
+  <!-- Tokens legend -->
+  <text x="400" y="585" text-anchor="middle" class="token">Tokens: --md-sys-color-* (color) • --md-sys-shape-* (corners) • --md-sys-elevation-* (shadow) • --md-sys-state-* (interaction)</text>
+</svg>

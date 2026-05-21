@@ -41,7 +41,7 @@ This README and the three new files above are the RE-intel layer on top of them.
 | Surface | Language | Go? | Evidence |
 |---|---|---|---|
 | Antigravity engine `language_server.exe` (~136 MB) | Go | **Yes** | `codeium_common_go_proto` symbols, `exa.*_pb` gRPC; [`docs/research/antigravity-sdk-analysis.md`](../research/antigravity-sdk-analysis.md) §0.0, `var/data/antigravity-extract/REPORT.md` (local, gitignored) |
-| `localharness` (google-antigravity Python SDK harness) | Go | **Yes** | "pre-compiled Go binary in the wheel", [`libs/antigravity-sdk-python/pyproject.toml`](../../libs/antigravity-sdk-python/pyproject.toml) lines 67-71 |
+| `localharness` (google-antigravity Python SDK harness) | Go | **Yes** | "pre-compiled Go binary in the wheel", [`python/antigravity-sdk-python/pyproject.toml`](../../python/antigravity-sdk-python/pyproject.toml) lines 67-71 |
 | aphrody `crates/antigravity-sdk` | Rust | No (talks *to* Go) | [`crates/antigravity-sdk/src/local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs) |
 | bxc reference (`var/data/bxc-ref/`) | Bun / TypeScript / Zig / Rust | **No** | `package.json` `packageManager: bun@1.3.14`, no `go.mod`, no `*.go` (confirmed by scan) |
 | aphrody workspace (71 crates) | Rust | No | [`CLAUDE.md`](../../CLAUDE.md) §2 |

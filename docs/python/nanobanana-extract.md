@@ -33,7 +33,7 @@ Key capabilities extracted:
 
 - **Upstream licence**: MIT License © 2025 Zhongwei Li
 - **Risk**: MIT is permissive; adaptation + attribution is fully compliant.
-- **Attribution**: preserved in `apps/aphrody/aphrody/images.py` header comment
+- **Attribution**: preserved in `python/aphrody/aphrody/images.py` header comment
   (provenance line referencing the upstream URL and licence).
 
 No code was copied verbatim — the logic was re-implemented using the same
@@ -63,7 +63,7 @@ runtime via `APHRODY_IMAGE_MODEL`.
 
 ## Python dependencies to add to pyproject
 
-Add these to `apps/aphrody/pyproject.toml` (under `[project] dependencies`):
+Add these to `python/aphrody/pyproject.toml` (under `[project] dependencies`):
 
 ```
 google-genai>=1.0.0        # already present for vertex.py; confirm >=1.x for ImageConfig
