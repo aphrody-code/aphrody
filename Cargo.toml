@@ -99,6 +99,10 @@ members = [
     # sections + Shannon entropy + SHA-256, ASCII/UTF-16 strings sample.
     # Pure Rust, no GPL deps. Apex Cap R5 (Sprint R-E).
     "crates/aphrody-re",
+    # aphrody-capture — native Windows screen and window capture to PNG.
+    # GDI BitBlt pipeline, RAII GDI guards, BGRA→RGBA conversion, image::png encoder.
+    # Non-Windows: compile to stubs returning CaptureError::Unsupported.
+    "crates/aphrody-capture",
     # aphrody-images — production-grade Nano Banana image generation, editing
     # and composition (async concurrent download, typed errors, batch generation,
     # data-URI decode). Surpasses the Python NanoBanana client.
