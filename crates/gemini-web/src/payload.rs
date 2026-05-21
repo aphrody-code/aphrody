@@ -244,6 +244,42 @@ mod tests {
     }
 
     #[test]
+    fn parse_stream_extracts_generated_media() {
+        // candidate[1]=text; candidate[12][7] holds the generated-media subtree
+        // (image url + video url). collect_image_urls excludes .mp4; the video
+        // collector scans all of candidate[12].
+        let inner = json!([
+            null,
+            ["c", "r"],
+            null,
+            null,
+            [[
+                "rc",
+                ["here"],
+                null, null, null, null, null, null, null, null, null, null,
+                // candidate[12]:
+                [
+                    null, null, null, null, null, null, null,
+                    // candidate[12][7] = media list:
+                    [
+                        ["https://lh3.googleusercontent.com/img1"],
+                        ["https://video.googleusercontent.com/clip.mp4"]
+                    ]
+                ]
+            ]]
+        ]);
+        let raw = format!(
+            "{}{}\n[[\"wrb.fr\",\"x\",{:?},null,null,null,\"generic\"]]",
+            ")]}'\n",
+            "400",
+            inner.to_string(),
+        );
+        let reply = parse_stream_response(&raw).unwrap();
+        assert!(reply.generated_image_urls.iter().any(|u| u.contains("img1")));
+        assert!(reply.generated_video_urls.iter().any(|u| u.contains("clip.mp4")));
+    }
+
+    #[test]
     fn parse_stream_errors_without_candidates() {
         let raw = format!("{}{}\n{}", ")]}'\n", "40", r#"[["wrb.fr","a","[null,null]",null,null,null,"generic"]]"#);
         assert!(parse_stream_response(&raw).is_err());
