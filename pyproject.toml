@@ -9,6 +9,9 @@ members = [
     "libs/*",
 ]
 
+[tool.uv.sources]
+langextract = { workspace = true }
+
 [tool.ruff]
 line-length = 80
 target-version = "py311"
