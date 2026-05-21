@@ -7,9 +7,9 @@
 //! reverse-engineering reference (<https://github.com/HanaokaYuzu/Gemini-API>).
 
 // ── RPC ids ──────────────────────────────────────────────────────────────────
-/// Send a user message / generate a model turn (and, multiplexed, conversation
-/// list polling). Inner payload framing: `[20, <json_string>, [0, null, 1]]`.
-pub const SEND_MESSAGE: &str = "MaZiqc";
+/// Per-turn sync/ack call fired on `batchexecute` alongside a send. NOT the
+/// generate call — the actual message is sent to [`URL_STREAM_GENERATE`].
+pub const SEND_SYNC: &str = "MaZiqc";
 /// Config flag query, e.g. `bard_activity_enabled`. Inner: `[[["<flag>"]]]`.
 pub const GET_CONFIG_FLAG: &str = "ESY5D";
 /// Locale init. Inner: `[2, ["<lang>"], 0]`.
@@ -31,6 +31,11 @@ pub const URL_APP: &str = "https://gemini.google.com/app";
 pub const URL_ORIGIN: &str = "https://gemini.google.com";
 /// The single-RPC `batchexecute` endpoint.
 pub const URL_BATCH_EXECUTE: &str = "https://gemini.google.com/_/BardChatUi/data/batchexecute";
+/// The streaming generate endpoint — where a user message is actually sent.
+/// Body: `f.req=[null,"<inner_list_json>"]&at=<token>`; query: `bl`, `f.sid`,
+/// `hl`, `_reqid`, `rt=c`. Captured live 2026-05-21.
+pub const URL_STREAM_GENERATE: &str =
+    "https://gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate";
 
 // ── Model routing header ─────────────────────────────────────────────────────
 /// HTTP header that selects the model (NOT the `f.req` body). Values are

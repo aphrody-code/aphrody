@@ -35,20 +35,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(prompt) = std::env::args().nth(1) {
         println!("\nsending: {prompt}");
-        // Diagnostic: dump the raw MaZiqc response so the send-payload shape can
-        // be verified against the live server.
-        let payload = gemini_web::payload::build_send_payload(
-            &prompt,
-            "en",
-            &gemini_web::ConversationMetadata::default(),
+        let reply = client.ask(&prompt, None).await?;
+        println!("reply ({} candidate(s)):\n{}", reply.candidate_count, reply.text);
+        println!(
+            "thread: cid={:?} rid={:?} rcid={:?}",
+            reply.metadata.conversation_id, reply.metadata.response_id, reply.metadata.choice_id,
         );
-        let raw = client
-            .transport()
-            .rpc_raw_text(gemini_web::rpc_ids::SEND_MESSAGE, &payload, Some("/app"), None)
-            .await?;
-        println!("--- RAW MaZiqc response ({} bytes) ---", raw.len());
-        println!("{}", &raw[..raw.len().min(1500)]);
-        println!("--- end raw ---");
     }
     Ok(())
 }

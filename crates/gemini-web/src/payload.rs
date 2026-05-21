@@ -1,33 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `MaZiqc` send-message payload builder + response parser.
+//! `StreamGenerate` send-payload builder + streamed-response parser.
 //!
-//! Wire spec (HIGH confidence; outer framing observed live, inner layout
-//! cross-referenced with HanaokaYuzu/Gemini-API master — see
-//! `var/data/gemini-web-recon/gemini-send-payload-spec.json` and
-//! `docs/research/gemini-web-cdp-exploitation.md`):
+//! Wire spec captured live from `gemini.google.com` build
+//! `boq_assistant-bard-web-server_20260520.03_p0` (2026-05-21). A user message
+//! is NOT sent via `batchexecute`; it goes to
+//! [`crate::rpc_ids::URL_STREAM_GENERATE`] (the `BardFrontendService` streaming
+//! endpoint) with body `f.req=[null,"<inner_list_json>"]&at=<token>`.
 //!
-//! The value handed to [`crate::boq::encode_f_req`] for `MaZiqc` is:
+//! The `inner_list` (the JSON-stringified slot 1 of the `f.req` envelope) is:
 //! ```text
-//! [20, "<inner_json_string>", [0, null, 1]]
+//! [ [prompt, 0, null, null, null, null, 0],   // [0] message_content
+//!   [language],                                 // [1] language_tuple
+//!   [cid, rid, rcid] ]                          // [2] chat_metadata (null on first turn)
 //! ```
-//! where `inner_json_string` is the JSON-stringified message array:
-//! ```text
-//! [ [prompt, 0, null, file_data, null, null, 0],   // message_content
-//!   [language],                                     // language_tuple
-//!   [cid, rid, rcid] ]                              // chat_metadata
-//! ```
-//! `20` is the generate-turn discriminator; `[0, null, 1]` is the trailing
-//! turn-config. On the first turn `cid`/`rid`/`rcid` are `null`.
+//! The live web UI appends further sparse context slots (indices 3+); they are
+//! optional for a text-only send and omitted here.
 
 use serde_json::{json, Value};
 
+use crate::boq::parse_envelopes;
 use crate::error::{GeminiError, Result};
 use crate::types::{ChatReply, ConversationMetadata};
 
-/// Build the `MaZiqc` `f.req` inner payload `[20, <json_string>, [0, null, 1]]`.
+/// Build the `StreamGenerate` `inner_list` for a prompt.
 ///
-/// `language` is the `hl` locale (e.g. `"fr"`). `meta` threads a prior turn's
-/// ids; pass [`ConversationMetadata::default`] for a fresh conversation.
+/// `language` is the `hl` locale (e.g. `"fr"`). `meta` threads a prior turn;
+/// pass [`ConversationMetadata::default`] for a fresh conversation.
 #[must_use]
 pub fn build_send_payload(prompt: &str, language: &str, meta: &ConversationMetadata) -> Value {
     let message_content = json!([prompt, 0, Value::Null, Value::Null, Value::Null, Value::Null, 0]);
@@ -37,47 +35,49 @@ pub fn build_send_payload(prompt: &str, language: &str, meta: &ConversationMetad
         opt_str(meta.response_id.as_deref()),
         opt_str(meta.choice_id.as_deref()),
     ]);
-    let inner_req_list = json!([message_content, language_tuple, chat_metadata]);
-    // The inner array is itself JSON-stringified into slot 1 of the [20, …]
-    // wrapper (double-encoding — matches the live capture).
-    let inner_json_string = inner_req_list.to_string();
-    json!([20, inner_json_string, [0, Value::Null, 1]])
+    json!([message_content, language_tuple, chat_metadata])
 }
 
 fn opt_str(v: Option<&str>) -> Value {
     v.map_or(Value::Null, |s| Value::String(s.to_string()))
 }
 
-/// Parse a `MaZiqc` response envelope (the inner `wrb.fr` payload) into a
-/// [`ChatReply`].
+/// Parse the raw streamed `StreamGenerate` response into a [`ChatReply`].
 ///
-/// Layout (`HanaokaYuzu` master): `inner[1]` = `[cid, rid]` metadata, `inner[4]`
-/// = candidate list, each candidate = `[rcid, [text, …], …]` with the reply
-/// text at `candidate[1][0]` and web images at `candidate[12][1]`.
+/// The body is the Boq `)]}'` + length-prefixed chunk stream; each chunk holds
+/// `wrb.fr` envelopes whose inner JSON carries (progressively) the reply. We
+/// take the richest envelope (longest reply text). Layout: `inner[1]` =
+/// `[cid, rid]`, `inner[4]` = candidate list, candidate = `[rcid, [text, …], …]`.
 ///
 /// # Errors
 ///
-/// Returns [`GeminiError::Parse`] if no candidate with reply text is found.
-pub fn parse_send_response(inner: &Value) -> Result<ChatReply> {
-    let candidates = inner
-        .get(4)
-        .and_then(Value::as_array)
-        .ok_or_else(|| GeminiError::Parse("MaZiqc response: no candidate list at inner[4]".into()))?;
+/// [`GeminiError::Parse`] when no envelope yields reply text.
+pub fn parse_stream_response(raw: &str) -> Result<ChatReply> {
+    let mut best: Option<ChatReply> = None;
+    for inner in parse_envelopes(raw) {
+        if let Some(reply) = extract_reply(&inner) {
+            let better = best.as_ref().is_none_or(|b| reply.text.len() > b.text.len());
+            if better {
+                best = Some(reply);
+            }
+        }
+    }
+    best.ok_or_else(|| GeminiError::Parse("StreamGenerate: no reply candidate in stream".into()))
+}
 
+/// Extract a [`ChatReply`] from one decoded `wrb.fr` inner payload, if it holds
+/// a candidate with text.
+fn extract_reply(inner: &Value) -> Option<ChatReply> {
+    let candidates = inner.get(4).and_then(Value::as_array)?;
     let candidate_count = candidates.len();
-    let first = candidates
-        .first()
-        .ok_or_else(|| GeminiError::Parse("MaZiqc response: empty candidate list".into()))?;
-
+    let first = candidates.first()?;
     let text = first
         .get(1)
         .and_then(Value::as_array)
         .and_then(|a| a.first())
-        .and_then(Value::as_str)
-        .ok_or_else(|| GeminiError::Parse("MaZiqc response: no text at candidate[1][0]".into()))?
+        .and_then(Value::as_str)?
         .to_string();
 
-    // Metadata: cid/rid from inner[1]; rcid from the selected candidate[0].
     let meta_arr = inner.get(1).and_then(Value::as_array);
     let conversation_id = meta_arr
         .and_then(|m| m.first())
@@ -101,7 +101,7 @@ pub fn parse_send_response(inner: &Value) -> Result<ChatReply> {
         })
         .unwrap_or_default();
 
-    Ok(ChatReply {
+    Some(ChatReply {
         text,
         metadata: ConversationMetadata { conversation_id, response_id, choice_id },
         web_image_urls,
@@ -112,18 +112,13 @@ pub fn parse_send_response(inner: &Value) -> Result<ChatReply> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::boq::encode_f_req;
 
     #[test]
-    fn fresh_payload_has_null_metadata_and_prompt() {
+    fn fresh_payload_has_prompt_lang_and_null_metadata() {
         let p = build_send_payload("hello", "fr", &ConversationMetadata::default());
-        assert_eq!(p[0], 20);
-        assert_eq!(p[2], json!([0, null, 1]));
-        // inner[1] is a JSON string; decode it and check the prompt + nulls.
-        let inner: Value = serde_json::from_str(p[1].as_str().unwrap()).unwrap();
-        assert_eq!(inner[0][0], "hello");
-        assert_eq!(inner[1], json!(["fr"]));
-        assert_eq!(inner[2], json!([null, null, null]));
+        assert_eq!(p[0][0], "hello");
+        assert_eq!(p[1], json!(["fr"]));
+        assert_eq!(p[2], json!([null, null, null]));
     }
 
     #[test]
@@ -134,30 +129,20 @@ mod tests {
             choice_id: Some("rc_1".into()),
         };
         let p = build_send_payload("again", "en", &meta);
-        let inner: Value = serde_json::from_str(p[1].as_str().unwrap()).unwrap();
-        assert_eq!(inner[2], json!(["c_1", "r_1", "rc_1"]));
+        assert_eq!(p[2], json!(["c_1", "r_1", "rc_1"]));
     }
 
     #[test]
-    fn payload_encodes_into_batchexecute_envelope() {
-        let p = build_send_payload("hi", "fr", &ConversationMetadata::default());
-        let encoded = encode_f_req("MaZiqc", &p).unwrap();
-        assert!(encoded.contains("MaZiqc"));
-        assert!(encoded.contains("generic"));
-    }
-
-    #[test]
-    fn parse_extracts_text_and_metadata() {
-        // inner[1] = [cid, rid]; inner[4] = [[rcid, [text]]]
-        let inner = json!([
-            null,
-            ["c_42", "r_99"],
-            null,
-            null,
-            [["rc_7", ["the reply text"]]]
-        ]);
-        let reply = parse_send_response(&inner).unwrap();
-        assert_eq!(reply.text, "the reply text");
+    fn parse_stream_extracts_text_and_metadata() {
+        // One wrb.fr chunk; inner[1]=[cid,rid], inner[4]=[[rcid,[text]]].
+        let raw = format!(
+            "{}{}\n{}",
+            ")]}'\n",
+            "120",
+            r#"[["wrb.fr","abc","[null,[\"c_42\",\"r_99\"],null,null,[[\"rc_7\",[\"the reply\"]]]]",null,null,null,"generic"]]"#,
+        );
+        let reply = parse_stream_response(&raw).unwrap();
+        assert_eq!(reply.text, "the reply");
         assert_eq!(reply.metadata.conversation_id.as_deref(), Some("c_42"));
         assert_eq!(reply.metadata.response_id.as_deref(), Some("r_99"));
         assert_eq!(reply.metadata.choice_id.as_deref(), Some("rc_7"));
@@ -165,8 +150,20 @@ mod tests {
     }
 
     #[test]
-    fn parse_fails_without_candidates() {
-        let inner = json!([null, ["c", "r"], null, null, null]);
-        assert!(parse_send_response(&inner).is_err());
+    fn parse_stream_picks_longest_text() {
+        // Two progressive envelopes; the second is richer.
+        let raw = format!(
+            ")]}}'\n40\n{}\n80\n{}",
+            r#"[["wrb.fr","a","[null,[\"c\",\"r\"],null,null,[[\"rc\",[\"par\"]]]]",null,null,null,"generic"]]"#,
+            r#"[["wrb.fr","a","[null,[\"c\",\"r\"],null,null,[[\"rc\",[\"partial then full\"]]]]",null,null,null,"generic"]]"#,
+        );
+        let reply = parse_stream_response(&raw).unwrap();
+        assert_eq!(reply.text, "partial then full");
+    }
+
+    #[test]
+    fn parse_stream_errors_without_candidates() {
+        let raw = format!("{}{}\n{}", ")]}'\n", "40", r#"[["wrb.fr","a","[null,null]",null,null,null,"generic"]]"#);
+        assert!(parse_stream_response(&raw).is_err());
     }
 }
