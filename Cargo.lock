@@ -300,6 +300,7 @@ version = "1.0.0-canary"
 dependencies = [
  "base64",
  "data-encoding",
+ "getrandom 0.2.17",
  "hyper-rustls",
  "pretty_assertions",
  "prost",
@@ -353,6 +354,7 @@ dependencies = [
  "dirs",
  "futures",
  "gemini-runtime",
+ "hex",
  "ignore",
  "indicatif",
  "miette",
@@ -367,6 +369,7 @@ dependencies = [
  "scraper",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -395,6 +398,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "gemini-runtime",
+ "gemini-web",
  "rustls",
  "serde",
  "serde_json",
@@ -481,6 +485,17 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "aphrody-fsindex"
+version = "1.0.0-canary"
+dependencies = [
+ "rusqlite",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.18",
+ "walkdir",
 ]
 
 [[package]]
@@ -4407,6 +4422,7 @@ dependencies = [
  "clap",
  "criterion",
  "gemini-runtime",
+ "gemini-web",
  "reqwest 0.13.3",
  "rmcp",
  "rustls",
