@@ -17,9 +17,8 @@ order: `base` first (no_std primitives, smallest blast radius), then
 `aphrody` itself (the user-facing CLI). Show HN launch lands in D+15;
 the public read-out targets one thousand GitHub stars and the start of
 an organic contributor pipeline. Internal milestone: the YOLO grind loop
-runs unattended across overnight cycles without manual intervention. See
-[`posts/2026-05-yolo-grind-loop.md`](./posts/2026-05-yolo-grind-loop.md)
-for the design write-up.
+runs unattended across overnight cycles without manual intervention (the
+mode is implemented as the `/aphrody-yolo-grind` skill under `.claude/skills/`).
 
 ## Q3 2026 (July to September)
 

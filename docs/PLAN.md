@@ -4,6 +4,28 @@
 > Plan d'exécution stratégique. Révision : **2026-05-19 (refresh Apex Autonomous Agent — 5 piliers)**.
 > Voir [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) pour le contexte d'ensemble.
 > Audit comparatif amont : [`audits/2026-05-19-hermes-agent-vs-aphrody.md`](audits/2026-05-19-hermes-agent-vs-aphrody.md).
+>
+> **MISE À JOUR (2026-05-21) — plusieurs items et statuts ci-dessous sont
+> PÉRIMÉS depuis le nettoyage du workspace :**
+> - **`bxc-engine` / les 11 `n2b-*` ont été SUPPRIMÉS** : les lignes pilier
+>   « R4 scraping bas niveau / bxc-engine » et « R-A n2b » ne décrivent plus
+>   du code in-tree. Le web-fetch/recon passe par le serveur `aphrody-mcp`
+>   (`universal_web_fetch`, `advanced_recon`, `dns_recon`) ; `aphrody n2b`
+>   est une façade qui spawne un binaire externe optionnel.
+> - **`cargo xtask` a été supprimé** : remplacer toute action `aphrody xtask …`
+>   / `cargo xtask …` par `scripts/deploy.{ps1,sh}` ou des commandes cargo
+>   directes.
+> - **A2A file-based supprimé** : `ai.json`, `.well-known/ai.json`,
+>   `schemas/ai.json/v1.json`, dossier `ai/` n'existent plus ; transport gRPC
+>   (`a2a-*`) + miroir winclean uniquement.
+> - **Crates fusionnées** : `mrx-*`→`mrx`, `aphrody-{cache,cost,rateguard,retry}`
+>   →`aphrody-llm-infra`, `aphrody-channels`→`aphrody-messaging`,
+>   `aphrody-{hooks,permissions,skills-runtime}`→`aphrody-skills`,
+>   `aphrody-design-{daemon,sidecar}`→`aphrody-design`,
+>   `aphrody-voice-stt`→`aphrody-voice` (les chemins `crates/mrx-*/…` cités
+>   pointent vers l'ancien découpage).
+> - Worktree par défaut : `~/worktree` via `APHRODY_WORKTREE` (plus de
+>   `C:/worktree`).
 
 ---
 
@@ -455,7 +477,7 @@ D+15 (Show HN), tous techniquement actionables sans autorisation utilisateur.
 clone. C'est le **terminal LLM-first** — conçu spécifiquement pour sub-agents,
 skills, hooks, MCP servers, Ink/React TUIs (Claude Code + Gemini CLI), avec
 **JSON output partout**, **markdown rendu inline**, **config JSON full**.
-Spec normative : [`docs/design/aphrody-terminal-spec.md`](design/aphrody-terminal-spec.md).
+Spec normative : `docs/design/aphrody-terminal-spec.md` (supprimé 2026-05-21 ; voir [`UI-ARCHITECTURE.md`](UI-ARCHITECTURE.md)).
 
 Worktrees référence : `vercel-labs/wterm` (API surface, TS+Zig WASM Apache-2.0)
 + `microsoft/terminal` (algorithmes Buffer/Renderer/AtlasEngine/ConPTY MIT).
@@ -464,7 +486,7 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | Tick | Tâche | Statut |
 |---|---|---|
 | T-1 | Worktrees `vercel-labs/wterm` + `microsoft/terminal` (15 entries, ~1095 MB) | ✅ |
-| T-1 | `docs/design/aphrody-terminal-spec.md` — spec normative LLM-first | ✅ |
+| T-1 | `docs/design/aphrody-terminal-spec.md` — spec normative LLM-first (fichier supprimé 2026-05-21) | ✅ |
 | T-1 | `crates/aphrody-terminal-vt` — VT base (vte + ScreenBuffer + SGR 16-color) | ✅ (`crates/aphrody-terminal-vt/src/lib.rs`, 703 l.) |
 | T-1 | `crates/aphrody-terminal-wasm` — wasm-bindgen DOM + M3 + keyboard ANSI | ✅ (`crates/aphrody-terminal-wasm/src/lib.rs`, 361 l.) |
 | T-1 | `crates/aphrody-terminal-backend` — portable-pty (ConPTY/openpty) + WS | ✅ (`crates/aphrody-terminal-backend/src/lib.rs`, 287 l.) |

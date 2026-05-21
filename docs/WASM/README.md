@@ -35,8 +35,6 @@ Does the crate need a browser surface (DOM, WebGPU canvas, Web Workers, IndexedD
 |------|----------|
 | [`rust-wasm-fundamentals.md`](rust-wasm-fundamentals.md) | wasm-bindgen attributes, panic hook, allocator, async/Promise bridge |
 | [`wgpu-webgpu.md`](wgpu-webgpu.md) | Instance/Adapter/Device/Queue/Surface init, WebGL2 fallback |
-| [`nextjs-integration.md`](nextjs-integration.md) | asyncWebAssembly, edge vs node runtime, Turbopack 16 status |
-| [`bun-native-wasm.md`](bun-native-wasm.md) | `import "./mod.wasm"`, WebAssembly.instantiate, bunfig |
 | [`tooling.md`](tooling.md) | wasm-pack, wasm-opt, twiggy, snippets, profiling |
 | [`build-targets.md`](build-targets.md) | wasm32-unknown-unknown vs wasm32-wasi vs wasm32-wasip1 vs wasm32-unknown-emscripten |
 
@@ -71,12 +69,6 @@ rustup target add wasm32-unknown-unknown wasm32-wasi
 cargo install wasm-bindgen-cli wasm-pack twiggy
 # binaryen (provides wasm-opt) — Linux/macOS package mgr, or :
 cargo install wasm-opt   # Rust wrapper bin
-
-# Per-project (Bun)
-bun add -D @wasm-tool/wasm-pack-plugin
-
-# Per-project (Next.js with WASM)
-# next.config.ts opt-in shown in nextjs-integration.md
 ```
 
 Related : [`../SOURCE_OF_TRUTH.md`](../SOURCE_OF_TRUTH.md), [`../PLAN.md`](../PLAN.md), CLAUDE.md §2 (Language policy), feedback memory `aphrody-ultimate-goals` (WASM scope rule).

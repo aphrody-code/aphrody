@@ -25,7 +25,7 @@ this plugin wires (24 tools) :
   (`tokio::join!`) and returns a fused markdown report. Default entry
   point when the topic is unfamiliar.
 - **Generic web** — `mcp__aphrody__universal_web_fetch` (any URL,
-  Jina reader-proxy) and `mcp__aphrody__bxc_scrape` (DOM-aware CSS
+  Jina reader-proxy) and `mcp__aphrody__agent_browser_scrape` (browser-based CSS
   extraction for JS-rendered docs).
 
 ## About Skills
@@ -61,7 +61,7 @@ skill-name/
 | `mcp__aphrody__microsoft_docs_fetch`           | Get full MS page content | Deep dive into important MS pages    |
 | `mcp__aphrody__microsoft_code_sample_search`   | Find official MS samples | Need implementation patterns         |
 | `mcp__aphrody__universal_web_fetch`                    | Generic URL → Markdown   | Non-Microsoft docs (docs.rs, MDN, …) |
-| `mcp__aphrody__bxc_scrape`                             | DOM-aware CSS extraction | JS-rendered docs, dynamic content    |
+| `mcp__aphrody__agent_browser_scrape`                   | Browser CSS extraction   | JS-rendered docs, dynamic content    |
 | `mcp__aphrody__google_search`                          | Web search (stealth)     | Locating a doc page from concept     |
 
 If `context7` MCP is installed alongside, prefer it for first-pass
@@ -92,7 +92,7 @@ universal_web_fetch(url="https://docs.rs/{crate}/latest/{crate}/")    # Rust cra
 microsoft_docs_fetch(url="…")                # high-signal pages from Phase 1
 microsoft_code_sample_search(query="{technology}", language="{lang}")
 universal_web_fetch(url="…")                 # generic pages
-bxc_scrape(url="…", selector="article")      # JS-rendered docs
+agent_browser_scrape(url="…", selector="article") # JS-rendered docs
 ```
 
 **Phase 3 — Depth:**

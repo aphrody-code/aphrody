@@ -4,8 +4,7 @@
 
 Show HN is scheduled for D+15 (2026-06-01). The next 24h decides the run. This
 document is the concrete playbook for the maintainer between submit and steady
-state. Pair it with [`docs/launch/SHOW-HN.md`](launch/SHOW-HN.md) (titles +
-body candidates), [`docs/COMPARISON.md`](COMPARISON.md) (honest diffs),
+state. Pair it with [`docs/COMPARISON.md`](COMPARISON.md) (honest diffs),
 [`docs/ROADMAP.md`](ROADMAP.md), and [`docs/COMMUNITY.md`](COMMUNITY.md).
 
 ## 1. Pre-flight (T-1h, morning of launch)
@@ -21,7 +20,7 @@ body candidates), [`docs/COMPARISON.md`](COMPARISON.md) (honest diffs),
 
 ## 2. T+0 to T+1h (the critical first hour)
 
-- Post HN title from [`docs/launch/SHOW-HN.md`](launch/SHOW-HN.md) candidate #1.
+- Post the HN title agreed in the launch tracking issue.
 - Stay at the keyboard. Reply within 10 minutes to every top-level comment.
 - Do not defend. Acknowledge criticism, fix forward, link to commits.
 - Watch the front-page ranking. HN algorithm decay is steep; first hour decides
@@ -77,11 +76,10 @@ body candidates), [`docs/COMPARISON.md`](COMPARISON.md) (honest diffs),
   incoming", ship in < 24h, return with "fixed in commit X". Public closure
   beats public silence by a wide margin.
 - **Top comment is "this is just X"**: reply with the differentiator from
-  [`docs/COMPARISON.md`](COMPARISON.md), link the relevant ADR under
-  [`docs/adr/`](adr/). Do not defend in prose; respond with code references.
+  [`docs/COMPARISON.md`](COMPARISON.md). Do not defend in prose; respond with
+  code references.
 - **No traction (< 50 upvotes after 2h)**: do not repost same day. Wait 3 days,
-  try a different angle from [`docs/launch/SHOW-HN.md`](launch/SHOW-HN.md)
-  candidate list (candidate #2 or #3, never the same title).
+  try a different title angle (never the same title twice).
 
 ## 8. Metrics to track
 
@@ -90,7 +88,7 @@ body candidates), [`docs/COMPARISON.md`](COMPARISON.md) (honest diffs),
   `gh api repos/aphrody-code/aphrody --jq .stargazers_count`.
 - Discord and Matrix join count (delta vs T-0).
 - New issue and PR open rate (issues/hour, PRs/day).
-- crates.io download spike on `aphrody` and `mrx-cli`.
+- crates.io download spike on `aphrody` and `mrx`.
 
 ## 9. Mission alignment
 

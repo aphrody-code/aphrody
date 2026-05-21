@@ -8,7 +8,7 @@ authors.workspace     = true
 license.workspace     = true
 homepage.workspace    = true
 repository.workspace  = true
-description           = "aphrody-mcp — unified Rust MCP stdio server fusing google_mcp (8 OS/forensic/recon tools) with bxc-engine (7 scraping tools). 15 tools, pure Rust, ~6.5 MB binary, sub-millisecond cold-start."
+description           = "aphrody-mcp — unified Rust MCP stdio server. Pure Rust, sub-millisecond cold-start."
 
 # The crate stays named `google_mcp` (historical), but ships a single
 # binary named `aphrody-mcp` consumed by the Claude Code plugin.

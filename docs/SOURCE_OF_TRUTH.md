@@ -1,9 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody — Source of Truth
 
-> **Document unique de référence** consolidant les anciens `CLAUDE.md`,
-> `GEMINI.md`, `docs/PLAN.md`, `docs/DESIGN.md`. Lire celui-ci en premier.
-> Mis à jour : **2026-05-17** (pivot CLI ultime cross-platform).
+> **Document unique de référence** consolidant l'état du workspace.
+> Lire celui-ci en premier.
+> Mis à jour : **2026-05-21** (workspace lean : 57 membres, suppression
+> n2b/bxc/xtask, transport A2A 100 % gRPC).
 
 ---
 
@@ -14,7 +15,8 @@
 | **Nom du projet** | `aphrody` |
 | **Binaire distribué** | `aphrody` (cross-platform pur) |
 | **Repo GitHub** | `https://github.com/aphrody-code/aphrody` (privé initialement) |
-| **Stack** | Rust nightly 1.97 + Edition 2024 + Bun (TypeScript) |
+| **Stack** | Rust nightly (Edition 2024). 100 % Rust : pas de bun/node/python. |
+| **Workspace** | 57 membres actifs (71 crates sur disque, 14 exclus) |
 | **Plateformes** (ordre strict) | (1) Linux Ubuntu 26.04 → (2) Windows 11 Insider Canary → (3) WebAssembly → (4) macOS (best-effort) |
 | **Licence** | Apache 2.0 |
 | **Status** | `1.0.0-canary`, pre-LTS |
@@ -33,22 +35,21 @@ Livrer **le CLI ultime cross-platform** :
 - Une supply-chain Google-grade (`cargo-vet` + `cargo-deny` + lockfile-only).
 - Un workspace Rust hermétique reproductible bit-à-bit.
 
-### Objectifs ultimes 2026-05-17 (pivot+1)
+### Objectifs structurants
 
-1. **Refactor Next.js via n2b** (aphrody-code/next.js@aphrody + aphrody-code/n2b@aphrody)
-   en gardant **compatibilité COMPLETE avec upstream vercel/next.js**.
-2. **Refactor shadcn-ui → Material Design 3 natif** (aphrody-code/ui@aphrody)
-   via **bxc scraping** (Google Design / m3.material.io / material-web / CDN).
-3. **Plugin Claude Code aphrody** : skill `pixel-perfect`, MCP `bxc-scrapper`,
-   agent `n2b-ultra`, hook `oxclint`, pipeline `turbo` non bloquant.
-4. **Intégration NATIVE de Turbopack + écosystème Rust Vercel** dans
-   `Cargo.toml` workspace.dependencies (turbopack-*, swc-*, next-*, lightning-css,
-   oxc, biome). Doc étudiée au même titre que les crates Rust internes.
+1. **Material Design 3 natif** : tokens (`m3-tokens`), icônes (`aphrody-icons`),
+   renderer wgpu (`mui-rs*`, exclu par défaut) et intégration React
+   (`aphrody-react-reconciler`).
+2. **Plugin Claude Code aphrody** : serveur MCP natif unique `aphrody-mcp`
+   (15 tools), commandes `/status` + `/docs`, catalogue d'agents/skills.
+3. **Intégration de l'écosystème Rust Vercel** (swc-*, lightningcss, mdxjs, oxc)
+   déclarée dans `Cargo.toml workspace.dependencies` pour les crates `tuono*`
+   (exclues du build par défaut).
 
 ### Règles transversales
 
 - **Web/UI** : tout nouveau projet web cible **WASM Rust natif** ou **WebGPU**.
-  Pas de fallback JS/TS. shadcn legacy → wrappers Material Web 3 natifs.
+  Pas de fallback JS/TS.
 - **Zéro stub / zéro placeholder / zéro scaffolding** : toute feature commencée
   doit être finie. Toute fonction doit faire ce qu'elle prétend faire.
 - **Linux Ubuntu 26.04 = cible #1 bloquante**. Ne compile pas Linux → ne merge pas.
@@ -74,76 +75,58 @@ Toute introduction de code Windows-specific dans le binaire `cli` doit être
 gated `#[cfg(target_os = "windows")]` *et* doit avoir un équivalent Linux
 fonctionnel via `#[cfg(target_os = "linux")]`.
 
-## 3. Architecture (post-pivot 2026-05-17)
+## 3. Architecture
 
-### Upstreams aphrody-code (branche `aphrody` isolée d'upstream main)
+> Détail complet : [`docs/ARCHITECTURE.md`](ARCHITECTURE.md),
+> [`docs/cargo/WORKSPACE.md`](cargo/WORKSPACE.md),
+> [`docs/cargo/CRATES.md`](cargo/CRATES.md).
 
-| Repo | Type | Rôle | Intégration |
-|---|---|---|---|
-| `aphrody-code/n2b` | Rust workspace (11 crates) | Node→Bun linter, 68 rules | `Cargo.toml workspace.dependencies` git+branch="aphrody" |
-| `aphrody-code/bxc` | Bun/TS package | Bun + Lightpanda browser engine | `packages/bxc/` placeholder + git clone OR github:aphrody-code/bxc#aphrody |
-| `aphrody-code/ui` | pnpm workspace | Fork shadcn-ui/ui | `packages/ui/` placeholder + shadcn registry |
-| `aphrody-code/next.js` | pnpm + Cargo (Turbopack) | Fork vercel/next.js canary | `packages/next.js/` placeholder + npm dep |
+### Workspace Rust — 57 membres actifs
 
-Chaque branche `aphrody` contient un fichier `.aphrody/INTEGRATION.md`
-qui documente le contrat de divergence avec upstream.
+Familles principales (inventaire exhaustif dans `CRATES.md`) :
 
-### Workspace Rust (10 membres actifs)
+| Famille | Crates clés |
+|---|---|
+| **Cœur** | `cli` (binaire `aphrody`), `base`, `backend`, `mrx` |
+| **A2A** | `a2a` (`a2a-lf`), `a2a-client`, `a2a-server`, `a2a-pb`, `a2a-grpc`, `a2a-ui`, `google_mcp` |
+| **LLM/agent** | `aphrody-llm-infra`, `aphrody-router`, `aphrody-providers`, `aphrody-gateway`, `aphrody-mcp`, `aphrody-chat`, `aphrody-sdk`, `aphrody-memory`, `gemini-runtime`, `notebooklm`, … |
+| **Skills/orchestration** | `aphrody-skills`, `aphrody-skills-forge`, `aphrody-marketplace`, `aphrody-task-runner`, `aphrody-cron`, `aphrody-events` |
+| **Système** | `aphrody-secrets`, `aphrody-settings`, `aphrody-telemetry`, `aphrody-search`, `aphrody-re`, `aphrody-messaging`, `aphrody-voice`, `ievr-tools`, `aphrody-translate`, `aphrody-summary` |
+| **Design/terminal** | `aphrody-design`, `aphrody-design-agents`, `m3-tokens`, `aphrody-icons`, `aphrody-react-reconciler`, `aphrody-tui`, `aphrody-terminal-*` (8) |
+| **WASM** | `aphrody-wasm`, `aphrody-terminal-wasm`, `a2a-ui` |
 
-| Crate | Rôle | Cross-platform | Statut |
-|---|---|---|---|
-| `cli` | **Binaire principal `aphrody`** | Pur | ✅ Stable |
-| `base` | Primitives no_std partagées | Pur | ✅ Stable |
-| `backend` | Forensics + network | Pur | ✅ Stable |
-| `gui` | wry+tao desktop (exclu de `cli`) | Linux GTK3 / Win / macOS | ⚠ Migration GTK4 prévue |
-| `a2a` | Protocole agent-to-agent | À adapter | 🔧 En cours |
-| `a2a-client` | Client A2A | À adapter | 🔧 En cours |
-| `a2a-server` | Serveur A2A | À adapter | 🔧 En cours |
-| `a2a-pb` | Protobuf gen A2A | Pur | ✅ Stable |
-| `a2a-grpc` | gRPC layer A2A | À adapter | 🔧 En cours |
-| `google_mcp` | Serveur MCP (Model Context Protocol) | À adapter (était Windows-coupled) | 🔧 En cours |
+Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
+`google_mcp`.
 
-**Notes** :
-- `google_kv` archivé (orphan, aucun consumer dans le workspace).
-- `python_ffi` archivé (orphan : 0 consumer, dépend de vendor/bun ; pour AI tuning / MD on utilise candle/comrak en Rust pur).
+### Exclus du workspace (présents sur disque, 14 crates)
 
-### Exclus du workspace
+Clusters UI/web lourds sortis du build par défaut (perf, machine 4c/8t/16 Go) ;
+le binaire `aphrody` n'en dépend pas : `gui`, `agui-bridge`, `mui-rs*` (6),
+`tuono*` (4), `aphrody-x-client`, `a2a-slimrpc`. `coreutils`/`util-linux` sont
+encore listés dans `exclude` mais n'existent plus sur disque.
 
-- `crates/coreutils/`, `crates/util-linux/` — userland GNU conservé en référence.
-- `crates/a2a-slimrpc/` — bloqué par `agntcy-slim-mls` upstream (nightly lifetime issue).
-- `crates/bun_ffi/fuzz/` — cargo-fuzz host-only.
-- `vendor/` — sub-projets externes (bun, electron-prebuilt, coreutils, util-linux).
+### Supprimés (historique)
 
-### Archivé hors du repo (NE PAS réintégrer)
-
-- `crates/google_os/` → `C:\google-os-archive\20260517-*\`.
-  Kernel emulator hybride NT/POSIX, conservé pour référence historique.
-  Le pivot 2026-05-17 abandonne cette trajectoire.
-- `crates/bun_ffi/` → `C:\aphrody-archive\bun_ffi-20260517-*\`.
-  FFI V8↔Rust (Bun bindings). Pollue le workspace pour zéro gain côté
-  CLI portable. Bun reste utilisé comme runtime/CLI externe (scripting).
-- `crates/n2b/` → `C:\aphrody-archive\n2b-20260517-*\`.
-  Outil de migration Node.js → Bun (AST-driven via oxc_parser). Trop
-  spécialisé, deps lourdes (oxc_*, fastembed, octocrab). **Réintégré via
-  upstream `aphrody-code/n2b` branche `aphrody`** (`Cargo.toml workspace.dependencies`).
-- `crates/google_kv/` → `C:\aphrody-archive\google_kv-*\`.
-  Deno KV store SQLite-backed. Orphan (aucun consumer dans le workspace).
-- `crates/python_ffi/` → `C:\aphrody-archive\python_ffi-*\`.
-  PyO3 bridge + Bun JSC bindings. Orphan (0 consumer dans le workspace, dépend
-  de `vendor/bun/src/jsc`). Pour AI tuning / MD rendering, l'écosystème Rust
-  pur est suffisant : `candle` (ML), `llama-rs` (inference), `pulldown-cmark`
-  / `comrak` (Markdown).
+- Pivot 2026-05-17 : `google_os` (archivé `C:\google-os-archive\`), `bun_ffi`,
+  `google_kv`, `python_ffi`.
+- 2026-05-21 : les 11 `n2b-*`, `bxc-engine`, `aphrody-xtask`, et 18 doublons
+  fusionnés (`aphrody-{cache,cost,rateguard,retry}`→`aphrody-llm-infra` ;
+  `aphrody-channels`→`aphrody-messaging` ;
+  `aphrody-{hooks,permissions,skills-runtime}`→`aphrody-skills` ;
+  `aphrody-design-{daemon,sidecar}`→`aphrody-design` ;
+  `aphrody-voice-stt`→`aphrody-voice` ; `mrx-{core,detect,audit,watch,cli}`→
+  `mrx` ; orphelins `aphrody-shell`, `aphrody-sandbox`).
+- `vendor/` retiré (ne contenait que des stubs Bun/uv).
 
 ## 4. Politique de langages
 
 | Langage | Usage |
 |---|---|
-| **Rust nightly + Edition 2024** | Tout le code distribué (binaires, libs, FFI). |
+| **Rust nightly + Edition 2024** | Tout le code (binaires, libs, FFI, tooling, MCP, scripts portés en Rust). |
 | **C/C++** | Interdit dans le code distribué. Tolérable uniquement via `cxx::bridge` pour wrappers FFI inévitables. |
-| **Bun / TypeScript** | Scripting, MCP, tooling, build automation. **`node` interdit** (cf. [[feedback_bun_only]]). |
-| **Python** | Tooling de build interne uniquement, jamais distribué. |
-| **PowerShell 7+** | Scripts d'installation et de maintenance Windows. |
-| **Bash** | Scripts d'installation et de maintenance Linux. |
+| **JS/TS/Node/Bun** | **Bannis** (policy 100 % Rust). Plus aucune invocation `bun`/`node`/`npm`/`tsc` dans la CI. |
+| **Python** | **Banni** (scripts `.py` migrés en Rust ou supprimés). |
+| **PowerShell 7+ / Bash** | Wrappers d'install/déploiement uniquement (`scripts/deploy.{ps1,sh}`). |
 
 ## 5. Commandes critiques
 
@@ -206,10 +189,9 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 ### Ce qui reste
 
 - Architecture workspace + supply-chain + FFI zero-copy.
-- Tous les crates métier (`a2a*`, `google_mcp`, `google_kv`, `n2b`,
-  `python_ffi`, `gui`, `backend`).
-- Politique Bun + node interdit + PowerShell pour Windows.
-- Stack 2026 (Rust nightly 1.97, Edition 2024, mimalloc, sccache).
+- Les crates métier conservés (`a2a*`, `google_mcp`, `backend`, `mrx`, …).
+- Politique 100 % Rust (node/bun/python bannis).
+- Stack 2026 (Rust nightly, Edition 2024, mimalloc, sccache).
 
 ### Ce qui est abandonné
 
@@ -228,7 +210,7 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 | `rand 0.8` imposé par `denokv_proto` | Ne pas migrer vers 0.9 avant que `denokv_proto` accepte. |
 | GTK3 CVE (RUSTSEC-2024-04xx) | Ignorés dans `deny.toml`. `cli` n'est PAS lié à GTK ; seul `gui` l'est. |
 | `tokio` ne compile pas sur wasm | Utiliser features sélectives (`tokio-stream` + `js-sys` + `wasm-bindgen-futures`). |
-| `node-pty` cassé sur Node v26 | Utiliser Bun à la place (cf. `docs/terminal/GEMINI_CLI.md`). |
+| pty cross-platform | `portable-pty` (ConPTY Windows / openpty Unix) dans `aphrody-terminal-backend`. Pas de `node-pty`. |
 
 ## 9. Roadmap (post-pivot)
 
@@ -272,17 +254,16 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 | Doc | Contenu |
 |---|---|
 | `CLAUDE.md` | Directives Claude Code (résumé opérationnel). |
-| `GEMINI.md` | Directives Gemini (résumé stratégique). |
+| `docs/ARCHITECTURE.md` | Carte du workspace (57 membres) + diagrammes. |
 | `docs/PLAN.md` | Plan d'exécution détaillé. |
-| `docs/DESIGN.md` | Décisions d'architecture historiques. |
-| `docs/SUMMARY.md` | mdBook ToC global. |
+| `docs/SUMMARY.md` | mdBook ToC global (auto-généré par `aphrody-summary`). |
+| `docs/cargo/CRATES.md` | Inventaire par crate. |
 | `docs/cargo/CROSS_PLATFORM.md` | Stratégie multi-target Cargo. |
 | `docs/cargo/CHROMIUM_ANDROID_PATTERNS.md` | Patterns Google-grade. |
 | `docs/cargo/SKILLS.md` | Catalogue agents + skills. |
 | `docs/cargo/SUPPLY_CHAIN.md` | Détails cargo-vet / cargo-deny. |
 | `docs/cargo/WORKSPACE.md` | Description fine du workspace. |
 | `docs/cargo/FFI_POLICY.md` | Règles FFI strictes. |
-| `docs/terminal/GEMINI_CLI.md` | Workarounds node-pty / Bun. |
 
 ## 11. Convention de contribution
 
@@ -295,5 +276,5 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 
 ---
 
-*Cette source de vérité remplace les sections redondantes des anciens docs
-(CLAUDE, GEMINI, PLAN, DESIGN). En cas de divergence, ce fichier prime.*
+*Cette source de vérité remplace les sections redondantes des autres docs.
+En cas de divergence, ce fichier prime.*

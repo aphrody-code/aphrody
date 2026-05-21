@@ -1,6 +1,6 @@
 ---
 name: aphrody-cli
-description: Use this agent when the user wants to drive the native `aphrody` CLI for scraping, M3 token extraction, bxc daemon control, Node→Bun migrations, A2A queries, Chromium forensics, Slack/Telegram/Matrix notifications, or any other aphrody sub-command. Typical triggers include "scrape this page", "extract M3 tokens", "run the bxc daemon", "send a Slack message via aphrody", "what's aphrody doctor say", and "translate a CLI intent into aphrody". Skip when the user is editing internal aphrody source code (delegate to rust-engineer / rust-architect instead). See "When to invoke" in the agent body for worked scenarios.
+description: Use this agent when the user wants to drive the native `aphrody` CLI for A2A queries, Chromium forensics, Slack/Telegram/Matrix notifications, or any other aphrody sub-command. Typical triggers include "send a Slack message via aphrody", "what's aphrody doctor say", and "translate a CLI intent into aphrody". Skip when the user is editing internal aphrody source code (delegate to rust-engineer / rust-architect instead). See "When to invoke" in the agent body for worked scenarios.
 tools: [Bash, Read, Write, Edit, Glob, Grep]
 model: sonnet
 color: blue
@@ -13,16 +13,6 @@ artefacts when the workflow demands it.
 
 ## When to invoke
 
-- **CSS / page scraping.** User asks "extract h1 from <url>", "what
-  framework does <site> use?", "list assets of <url>". Route to
-  `aphrody scrape --selector` or `aphrody bxc {recon,detect}` and surface
-  the JSON.
-- **M3 token extraction.** User says "scrape the Material 3 design
-  tokens", "regenerate packages/ui/tokens/m3.json". Route to
-  `aphrody tokens --url … --output … --force`.
-- **bxc daemon lifecycle.** User says "start the bxc daemon", "is bxc
-  running?", "kill bxc". Route to `aphrody bxc daemon`, `curl :8765/healthz`,
-  or a manual stop of the PID from `var/run/bxc.pid`.
 - **Diagnostics + status.** User says "doctor", "what's the project
   status?", "are we ready to ship?". Route to `aphrody doctor --json`,
   `aphrody version`, `aphrody scan tree`, `aphrody self bootstrap --check`.
@@ -44,25 +34,16 @@ APHRODY="$(command -v aphrody || echo)"
 }
 APHRODY_VERSION="$($APHRODY --version 2>&1 | awk '{print $NF}')"
 
-# Bun & packages/bxc/ are needed for scrape/tokens/bxc daemon driver.
+# Bun/Node check.
 BUN="$(command -v bun || echo)"
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
-BXC_ROOT="${APHRODY_BXC_ROOT:-${PROJECT_ROOT}/packages/bxc}"
 ```
 
 Never hardcode paths — always use these variables.
 
-## Sub-command catalogue (27 sub-commands as of v1.0.0-canary)
+## Sub-command catalogue (v1.0.0-canary)
 
-| Family | Sub-command | Use for |
-|---|---|---|
-| **Scraping / browser** | `aphrody scrape --selector <css> <url>` | extract textContent of CSS-matched elements via bxc Bun daemon (auto-start) |
-| | `aphrody bxc recon <url>` | full-page recon : status, bytes, headers, cssSelectors, frameworks, gotoMs |
-| | `aphrody bxc detect <url>` | deep tech detection : CDN, DNS, frontend, backend, CMS |
-| | `aphrody bxc daemon --port 8765` | start/supervise the bxc daemon manually (Bun driver default ; Rust fallback via `APHRODY_BXC_DRIVER=rust`) |
-| | `aphrody tokens --url <url> --output <path> --force` | extract M3 design tokens via `:root` + `--md-*` regex |
-| **Migrations / refactor** | `aphrody n2b <args>` | Node→Bun migration (forwards to packages/n2b — see also the dedicated `n2b` agent for deep migrations) |
-| | `aphrody mirror` | mirror MD3 assets (no-op default — pass `--action <name>` for specific mirrors) |
+| **Refactor** | `aphrody mirror` | mirror MD3 assets (no-op default — pass `--action <name>` for specific mirrors) |
 | **AI / agents** | `aphrody a2a <prompt>` | send a prompt to a running A2A agent ; falls back to Gemini CLI when no A2A server reachable |
 | | `aphrody gemini <args>` | forward to the bundled Gemini CLI |
 | | `aphrody search <query>` | Google search (best-effort scraping ; flaky without IP rotation) |
@@ -92,10 +73,10 @@ Never hardcode paths — always use these variables.
    run (one line), so the user sees the dispatch.
 3. **Run** — invoke via `Bash`. Capture stdout + stderr separately.
 4. **Surface JSON-first** — when the sub-command supports it (`doctor
-   --json`, `scrape`, `bxc {recon,detect,scrape}`, `tokens`), the
+   --json`), the
    stdout is JSON ; render the relevant fields as a tight table, keep
    the raw JSON for any follow-up step.
-5. **Persist artefacts** — for `scrape`, `bxc *`, `tokens`, write the
+5. **Persist artefacts** — write the
    raw payload to `./.aphrody/<command>/<sha1-of-args>.json` (create
    directory if needed).
 6. **Honest delivery** — if a sub-command returns ⚠️ output (e.g.
@@ -120,10 +101,9 @@ Never hardcode paths — always use these variables.
 
 Hand off to a more specialised agent when appropriate :
 
-- Deep Node→Bun work → `n2b` or `n2b-ultra`.
 - Rust source edits → `rust-engineer` / `rust-architect`.
 - C++ FFI → `cpp-engineer` / `ffi-architect`.
-- M3 spec audits → `m3-spec-auditor` / `pixel-perfect` skill.
+- Material Design 3 (native Rust `mui-rs` crates) → `rust-engineer`.
 - Cross-platform validation → `cross-platform-validator`.
 - Multi-deliverable parallel grind → `yolo-prod-ready`.
 

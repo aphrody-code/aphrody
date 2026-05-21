@@ -2,9 +2,16 @@
 
 # Installing aphrody
 
-`aphrody` is a single static binary. Pick the channel that matches your OS
-and package manager. Every command on this page is cross-checked against the
-real manifests under [`packaging/`](../packaging/).
+`aphrody` is a single static binary.
+
+> **État (2026-05-21).** Les canaux de distribution packagés (`.deb`, Snap,
+> AUR, Flatpak, Nix, Scoop, Winget, Homebrew, npm wasm) décrits aux §1–4 sont
+> **prévus** mais pas encore publiés : le répertoire `packaging/` et les
+> one-liners `install.sh` / `install.ps1` n'existent pas encore dans le dépôt.
+> Le **seul chemin d'installation garanti aujourd'hui est « depuis les
+> sources »** (§5) — `cargo build --release -p aphrody --locked` puis copie du
+> binaire (ou `scripts/deploy.{sh,ps1}`). Suivre [`docs/PLAN.md`](PLAN.md)
+> pour l'avancement des canaux packagés.
 
 Supported targets (in strict priority order from `CLAUDE.md` §0):
 
@@ -56,7 +63,7 @@ flatpak run com.aphrody.aphrody --version
 # Run without installing
 nix run github:aphrody-code/aphrody?dir=packaging/nix
 
-# Or drop into a dev shell with the full Rust nightly + Bun + cargo-nextest
+# Or drop into a dev shell with the full Rust nightly + cargo-nextest
 nix develop github:aphrody-code/aphrody?dir=packaging/nix
 ```
 
@@ -134,12 +141,14 @@ open crates/aphrody-wasm/examples/browser-playground.html   # or xdg-open / star
 ### npm — `@aphrody-code/aphrody-wasm` (when published)
 
 ```bash
-bun add @aphrody-code/aphrody-wasm
-# npm install @aphrody-code/aphrody-wasm   # node interdit (cf. CLAUDE.md §2), but the package itself is npm-publishable
+npm install @aphrody-code/aphrody-wasm
+# The package is a plain wasm bundle; any JS package manager can consume it.
+# aphrody itself ships no JS/Bun/Node toolchain (cf. CLAUDE.md §2).
 ```
 
-See [`packaging/README.md`](../packaging/README.md) for the canonical
-`wasm-pack publish` recipe used by the release pipeline.
+The canonical `wasm-pack publish` recipe will live under `packaging/`
+once the distribution channels land (see the status note at the top of this
+page).
 
 ---
 
@@ -149,9 +158,8 @@ The source build is the universal fallback and the only path that always
 works against the very latest commit on `main`.
 
 ```bash
-# Prerequisites — Rust nightly + Bun (NOT node) + nextest + zigbuild
+# Prerequisites — Rust nightly (pinned via rust-toolchain.toml) + nextest + zigbuild
 rustup install nightly
-curl -fsSL https://bun.sh/install | bash
 cargo install cargo-nextest cargo-zigbuild
 
 # Clone + build the CLI
@@ -159,6 +167,14 @@ git clone https://github.com/aphrody-code/aphrody
 cd aphrody
 cargo build --release -p aphrody --locked
 ./target/release/aphrody --version
+
+# Build the MCP stdio server (crate `google_mcp`, binary `aphrody-mcp`)
+cargo build --release --bin aphrody-mcp
+./target/release/aphrody-mcp --version
+
+# Or build + install every workspace binary into ~/.local/bin in one shot
+./scripts/deploy.sh                 # Linux / macOS
+# pwsh -File scripts/deploy.ps1     # Windows
 ```
 
 Linux-only build deps (Ubuntu/Debian):
@@ -186,7 +202,7 @@ aphrody --version
 
 aphrody doctor
 # [runtime] rust nightly, ok
-# [peer A2A coord] ai.json discoverable, inbox writable
+# [peer A2A coord] gRPC transport reachable
 # Verdict: HEALTHY
 ```
 
@@ -227,5 +243,6 @@ published_. Until then, the fastest path is:
 3. For supply-chain or signature questions, see the SBOM embedded in every
    release binary via `cargo-auditable` (`cargo audit bin <path>`).
 
-For the full distribution-channel matrix and release-pipeline details,
-see [`packaging/README.md`](../packaging/README.md).
+The full distribution-channel matrix and release-pipeline details will be
+documented under `packaging/` once those channels are published (see the
+status note at the top of this page).

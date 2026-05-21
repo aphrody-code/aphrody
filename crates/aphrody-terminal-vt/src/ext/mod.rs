@@ -18,10 +18,10 @@
 //! - [`decstbm`] — DEC top/bottom scroll margins parser.
 //!
 //! These mirror semantics established by the reference parsers in
-//! `C:/worktree/wterm/packages/vt-decoder` (Vercel) and
-//! `C:/worktree/terminal/src/terminal/parser` (Microsoft) — read for
-//! algorithmic guidance only; the Microsoft sources are never linked on
-//! Linux/WASM per the project's terminal-integration policy.
+//! wterm's `packages/vt-decoder` (Vercel) and Windows Terminal's
+//! `src/terminal/parser` (Microsoft) — read for algorithmic guidance only;
+//! the Microsoft sources are never linked on Linux/WASM per the project's
+//! terminal-integration policy.
 
 pub mod alt_screen;
 pub mod bracketed_paste;

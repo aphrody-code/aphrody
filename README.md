@@ -217,7 +217,7 @@ changent, le cache aval est bust.
 |---|---|
 | **Systems** | Rust nightly 1.97 + **Edition 2024**, `windows-rs` (Win) / `libc` + `nix` (Linux) / `wasm-bindgen` (wasm) |
 | **Runtime** | **mimalloc** global allocator, `tokio` portable, `io_uring` (Linux) / IOCP (Win) |
-| **Scripting** | **Bun** (TypeScript / MCP / tooling — **node interdit**) |
+| **Scripting** | **Rust native** (100% — no Bun/Node/Python) |
 | **Build** | sparse registry, sccache, `cargo zigbuild` cross-compile, `cargo-auditable` SBOM |
 | **Supply-chain** | `cargo deny` + `cargo vet` (feeds Google / Mozilla / Fuchsia / ChromeOS) |
 
@@ -228,28 +228,22 @@ changent, le cache aval est bust.
 Un workspace Rust nightly cross-platform centré sur **un binaire `aphrody`
 distribuable sur Linux/Windows/wasm** :
 
-1. **Workspace Rust nightly** (`crates/`) — 17 membres : `cli`, `gui`, `backend`,
-   `base`, `google_mcp`, `a2a` × 5 (protocole agent-to-agent : `a2a`, `a2a-client`,
-   `a2a-server`, `a2a-grpc`, `a2a-pb`), `mrx-*` × 5 (Monorepo Real-time X-platform
-   mapper : `mrx-core`, `mrx-detect`, `mrx-audit`, `mrx-watch`, `mrx-cli`),
-   `aphrody-translate`, `aphrody-wasm`. Build hermétique avec lockfile pin SHA-256.
-2. **Bun + TypeScript** (`packages/`, `bun.lock`) — scripting, FFI bridge,
-   serveurs MCP. **node interdit** : tout passe par bun.
-3. **Bridges natifs vendored** (`vendor/bun/`, `vendor/electron-prebuilt/`,
-   `vendor/coreutils/`, `vendor/util-linux/`) — sub-projets externes
-   conservés en read-only, hors workspace members.
+1. **Workspace Rust nightly** (`crates/`) — 40+ membres incluant : `cli` (main binary), `google_mcp` (MCP server),
+   `base` (primitives no_std), `backend` (network/forensics), `mrx-*` (monorepo scanner),
+   `a2a-*` (agent-to-agent protocol), `aphrody-terminal-*` (LLM-first terminal),
+   `aphrody-chat`, `aphrody-sdk`, `aphrody-translate`, `aphrody-wasm`, et plus.
+   Build hermétique avec lockfile pin SHA-256, zéro Bun/Node/Python dans le workflow.
+2. **Bridges natifs vendored** (`vendor/coreutils/`, `vendor/util-linux/`) — sub-projets externes
+   conservés en read-only, hors workspace members (Bun/Electron archives supprimées).
 
-## Ce qu'il deviendra
+## Roadmap 2026
 
-- **Le binaire `aphrody` distribué nativement sur Linux/Windows/wasm**, via les
-  aliases `cargo build-linux-x64` / `cargo build-win-x64` / `cargo build-wasm`.
-- **a2a / google_mcp** : adaptés cross-platform pur, retrait des dépendances
-  Windows-only.
-- **CI Linux first** : `ubuntu-26.04` runner dès disponibilité, sinon
-  `ubuntu-latest`.
-- **Distribution** : crates.io (`aphrody`), Homebrew (`brew install aphrody`),
-  scoop (Windows), `apt`/`deb` PPA, packages wasm sur npm.
-- **path-bases (RFC 3529)** activé workspace-wide quand stable Cargo 1.98+.
+- **Deployment distribution** : GitHub Releases (Linux x64/ARM64, Windows x64/ARM64, macOS x64/ARM64),
+  Homebrew (`brew install aphrody-code/tap/aphrody`), Scoop (Windows), apt/deb PPA (Linux).
+- **crates.io publication** : `aphrody` + public SDK/tools once `base`/`backend` stabilize.
+- **CI Linux-first** : primary validation on Ubuntu 26.04 (cible #1), fallback to Ubuntu latest.
+- **path-bases (RFC 3529)** : enable workspace-wide when stable Cargo 1.98+.
+- **Aphrody-terminal** : full LLM-first terminal, WebAssembly output, integrated with Claude Code.
 
 ## Pré-requis détaillés
 
@@ -261,8 +255,7 @@ distribuable sur Linux/Windows/wasm** :
 | **gcc / clang** | latest | Compilateur C pour deps natives |
 | **pkg-config** | latest | Discovery de deps système |
 | **libssl-dev** | latest | OpenSSL (alternative à aws-lc-sys) |
-| **Bun** | latest | CLI TypeScript, FFI bridge |
-| **sccache** | 0.15+ | Cache compilation partagé |
+| **sccache** | 0.15+ | Cache compilation partagé (optionnel) |
 
 ### Windows 11 Insider Canary
 
@@ -274,7 +267,6 @@ distribuable sur Linux/Windows/wasm** :
 | **LLVM/Clang** | 22.1+ | Linker `lld-link` |
 | **CMake** + **Ninja** | latest | Build natif (aws-lc-sys) |
 | **NASM** | latest | aws-lc-sys prebuilt asm |
-| **Bun** | latest | CLI TypeScript |
 
 Installation automatique : `winget configure .config/configuration.winget`.
 
@@ -285,7 +277,29 @@ rustup target add wasm32-unknown-unknown wasm32-wasip1
 cargo install wasm-bindgen-cli wasm-pack
 ```
 
-## Build
+## Build & Deploy
+
+### Quick Release Build + Install (all platforms)
+
+```bash
+# Linux / macOS
+./scripts/deploy.sh                    # build release + install to ~/.local/bin
+./scripts/deploy.sh --dry-run          # preview without install
+./scripts/deploy.sh --prefixes aphrody # install only aphrody* binaries
+
+# Windows (PowerShell 7+)
+.\scripts\deploy.ps1                   # build release + install to ~/.local\bin
+.\scripts\deploy.ps1 -DryRun           # preview without install
+.\scripts\deploy.ps1 -Prefixes aphrody # install only aphrody* binaries
+```
+
+The `deploy` scripts automatically discover and install:
+- `aphrody` — main CLI binary
+- `aphrody-mcp` — Google MCP server
+- `mrx` — monorepo scanner
+- Other binaries matching the prefix filter
+
+### Development & CI validation
 
 ```bash
 # --- Dev (rapide, debug) -------------------------------------------------
@@ -303,14 +317,21 @@ cargo xt-offline     # = nextest run --workspace --locked --offline
 # --- Cross-platform (les 3 cibles prioritaires) --------------------------
 cargo check -p aphrody --target x86_64-unknown-linux-gnu     # #1 Linux
 cargo check -p aphrody --target x86_64-pc-windows-msvc       # #2 Windows
-cargo check -p aphrody --target wasm32-unknown-unknown       # #3 wasm — sur ce repo, scope limité à `cli` ;
-                                                          #         périmètre étendu réservé aux 3 forks
-                                                          #         `aphrody-code/{next.js, ui, A2UI}` (cf. docs/WASM/).
+cargo check -p aphrody --target wasm32-unknown-unknown       # #3 wasm
 
 # --- Supply-chain audits -------------------------------------------------
 cargo deny check     # CVE + licences + bans + sources
 cargo vet            # audits signés
 cargo audit-machete  # unused dependencies
+```
+
+### Building specific binaries
+
+```bash
+# Individual binary builds
+cargo build --release --locked -p aphrody           # CLI main binary
+cargo build --release --locked --bin aphrody-mcp    # MCP server (from google_mcp crate)
+cargo build --release --locked -p mrx               # Monorepo scanner
 ```
 
 ## Structure du dépôt
@@ -325,9 +346,8 @@ cargo audit-machete  # unused dependencies
 | `crates/google_mcp` | Serveur MCP (en cours d'adaptation cross-platform) |
 | `crates/mrx-*` | Monorepo Real-time X-platform mapper (5 crates : core / detect / audit / watch / cli) |
 | `crates/aphrody-translate` | CLI traduction commentaires EN→FR + scrub AI/émoji + style Aphrody |
-| `packages/` | Bun TypeScript packages |
 | `docs/` | Documentation mdBook centralisée |
-| `scripts/` | Tooling Bun + PowerShell |
+| `scripts/` | Deploy & build automation (Rust-native, cross-platform) |
 | `supply-chain/` | `cargo-vet` audits |
 | `deny.toml` | `cargo-deny` policy |
 | `Cargo.toml` (root) | Workspace manifest |
@@ -352,7 +372,7 @@ cargo audit-machete  # unused dependencies
 - [docs/cargo/BUILD-SPEED.md](./docs/cargo/BUILD-SPEED.md) — workspace build-speed tactics and benchmarks
 - [docs/design/aphrody-terminal-spec.md](./docs/design/aphrody-terminal-spec.md) — LLM-first terminal spec (5 pillars)
 - [docs/design/aphrody-terminal-integration-matrix.md](./docs/design/aphrody-terminal-integration-matrix.md) — per-crate contract-of-life matrix
-- [docs/WASM/](./docs/WASM/) — référence WASM (Rust + wgpu + Next.js + Bun)
+- [docs/WASM/](./docs/WASM/) — référence WASM (Rust + wgpu, 100% Rust native)
 - [docs/winget/](./docs/winget/) — WinGet : catalogue 40+ packages, DSC
 - [docs/pwsh/](./docs/pwsh/) — PowerShell 7 : profils, modules
 
@@ -362,17 +382,10 @@ cargo audit-machete  # unused dependencies
 - [`crates/aphrody-terminal-config`](./crates/aphrody-terminal-config/) — `~/.aphrody/terminal.json` strict schema + import shims.
 - [`crates/aphrody-tui`](./crates/aphrody-tui/) — pure Rust ratatui-style DSL, 60fps target.
 
-### Scripts haute-perf (2026-05-18)
-- [`scripts/n2b-batch.ps1`](./scripts/n2b-batch.ps1) + [`scripts/n2b-batch.sh`](./scripts/n2b-batch.sh) — migration parallèle `ForEach-Object -Parallel` / `xargs -P`.
-- [`scripts/bxc-crawl.ps1`](./scripts/bxc-crawl.ps1) + [`scripts/bxc-crawl.sh`](./scripts/bxc-crawl.sh) — crawl parallèle URLs × actions + loop + cache.
-- [`scripts/bxc-supervise.ps1`](./scripts/bxc-supervise.ps1) + [`scripts/bxc-supervise.sh`](./scripts/bxc-supervise.sh) — watchdog daemon bxc auto-restart.
-- `aphrody self install-path` — register the release binary on the user PATH (HKCU on Windows, symlink into `$HOME/.local/bin` on Unix). `--dry-run` previews actions without mutating PATH; `--build` compiles the release binary first.
-- `aphrody self bootstrap [--check]` — inventory rustup/cargo/git/zigbuild and the priority Rust targets (Linux > Windows > wasm); without `--check`, runs `rustup target add` + `rustup component add rust-src` to fill the gaps.
+### Deployment & install scripts (2026-05-21)
+- [`scripts/deploy.ps1`](./scripts/deploy.ps1) — Windows PowerShell: build release binaries (`aphrody`, `mrx`, `aphrody-mcp`, etc.) and install to `~\.local\bin`. Options: `-NoBuild`, `-Prefixes`, `-Dest`, `-Target`, `-DryRun`.
+- [`scripts/deploy.sh`](./scripts/deploy.sh) — Linux/macOS bash: same as above, installs to `~/.local/bin`. Options: `--no-build`, `--prefixes`, `--dest`, `--target`, `--dry-run`.
 
-### Kernel subcommands (depuis 2026-05-18)
-- `aphrody n2b [args]` — façade `packages/n2b/src/cli.ts` via bun.
-- `aphrody n2b watch --interval N --path P` — boucle tokio infinie.
-- `aphrody bxc {daemon,recon,scrape,detect,tokens}` — passthrough bxc-engine.
 
 ### Technical posts
 - [A2A cross-Claude coordination](./docs/posts/2026-05-ai-json.md)

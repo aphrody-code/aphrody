@@ -16,7 +16,6 @@ workspace = true
 
 [dependencies]
 tokio        = { workspace = true, features = ["process", "io-util", "macros", "rt-multi-thread", "sync"] }
-tokio-stream = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
 serde_json   = { workspace = true }
 which        = { workspace = true }
@@ -31,3 +30,6 @@ async-trait  = { workspace = true }
 tokio        = { workspace = true, features = ["macros", "rt-multi-thread"] }
 rustls       = { workspace = true, features = ["ring"] }
 tempfile     = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = []

@@ -50,8 +50,8 @@ Allowed siblings (all optional):
 
 | Skill                         | Trigger                                           | Description                                              |
 |-------------------------------|---------------------------------------------------|----------------------------------------------------------|
-| [`start`](../../.claude/skills/start/SKILL.md)                 | `/start`, "lance", "go"            | Continuous autonomous execution mode (drives PLAN.md)    |
-| [`vps-commander`](../../.claude/skills/vps-commander/SKILL.md) | "start the tunnel"                 | OVH VPS SSH-tunnel operator (chrome/postgres/bun/SOCKS5) |
+| [`start`](../../.claude/plugins/aphrody/skills/start/SKILL.md)                 | `/start`, "lance", "go"            | Continuous autonomous execution mode (drives PLAN.md)    |
+| [`vps-commander`](../../.claude/plugins/aphrody/skills/vps-commander/SKILL.md) | "start the tunnel"                 | OVH VPS SSH-tunnel operator (chrome/postgres/bun/SOCKS5) |
 
 ### 3.2 Project agents (`/.claude/agents/`)
 

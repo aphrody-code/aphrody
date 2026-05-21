@@ -331,8 +331,7 @@ fn print_verify_hints() {
     println!();
     println!("Verify:");
     println!("  aphrody --version");
-    println!("  aphrody n2b --help");
-    println!("  aphrody bxc --help");
+    println!("  aphrody doctor");
 }
 
 // ────────────────────────────────────────────────────────────────────────────

@@ -1,10 +1,17 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # PIPELINE-OPTIMIZATION — Aphrody CI + local cargo tuning (2026-05-18)
 
+> **NOTE (2026-05-21) — enregistrement daté, partiellement périmé.** Cette
+> note décrit un tick CI du 2026-05-18 et référence des outils depuis
+> **bannis/supprimés** sous la politique 100 % Rust : `bun`/`bunx`, `turbo` /
+> `turbo.json`, `vitest`, et le script `scripts/bunnize-gemini-cli.ts`. Le
+> workspace n'utilise plus de toolchain JS/Bun ni de remote-cache Turbo. Les
+> sections cargo/`sccache` (aliases `[alias]`, `RUSTC_WRAPPER`, fallback
+> `--show-stats`) restent valides ; ignorer les passages bun/turbo.
+
 This document captures the optimization tick performed on 2026-05-18 that
-applied the same surgical pattern proven successful by
-`scripts/bunnize-gemini-cli.ts` (single-purpose, JSON-aware, idempotent,
-dry-run-friendly walker) to the CI workflow + cargo alias surface.
+applied a surgical, JSON-aware, idempotent, dry-run-friendly walker pattern
+to the CI workflow + cargo alias surface.
 
 ## 1. Pattern extraction (from gemini-cli bun migration)
 

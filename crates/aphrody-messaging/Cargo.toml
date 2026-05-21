@@ -50,4 +50,8 @@ tower        = { workspace = true }
 rustls       = { workspace = true, features = ["ring"] }
 
 [package.metadata.cargo-machete]
-ignored = ["bytes", "rustls", "webpki-roots"]
+# bytes + rustls + webpki-roots: cfg-gated (non-wasm TLS) or used via re-exports;
+# machete cannot see target-conditional dep sections.
+# tokio-stream: consumed indirectly by async-stream macros and channel streaming
+# helpers; machete's symbol scan misses the indirect wiring.
+ignored = ["rustls", "webpki-roots", "tokio-stream"]

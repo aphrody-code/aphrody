@@ -10,8 +10,7 @@
 //!   time, matching the project-wide provider whitelist (see top-level docs).
 //! - [`McpServerSpec`] — normalised MCP server entry (transport-tagged) used by the terminal-llm
 //!   probe loop.  This is the *post-shim* shape: every `mcpServers` entry coming out of
-//!   `.mcp.json` / `.claude.json` is lowered to one of these.
-//! - [`BrowserConfig`] — bxc / agent-browser / Edge headless fallback wiring.
+//! - [`BrowserConfig`] — agent-browser / Edge headless fallback wiring.
 
 use std::collections::HashMap;
 
@@ -95,16 +94,16 @@ pub struct McpServerSpec {
 
 // ── BrowserConfig ─────────────────────────────────────────────────────────────
 
-/// Browser-bridge wiring (bxc / agent-browser / Edge headless).
+/// Browser-bridge wiring (agent-browser / Edge headless).
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct BrowserConfig {
-    /// Preferred engine identifier.  Free-form (`"bxc"`, `"agent-browser"`,
+    /// Preferred engine identifier.  Free-form (`"agent-browser"`,
     /// `"edge-headless"`) so the consumer can dispatch without locking the
     /// schema to today's set.
     pub engine: String,
     /// CDP endpoint URL (`http://127.0.0.1:9222` style) — optional because
-    /// bxc / agent-browser spawn their own.
+    /// agent-browser spawns its own.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cdp_endpoint: Option<String>,
 }

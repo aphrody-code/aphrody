@@ -35,7 +35,6 @@ async-trait   = { workspace = true }
 base          = { path = "../base" }
 serde         = { workspace = true }
 serde_json    = { workspace = true }
-anyhow        = { workspace = true }
 chrono        = { workspace = true, features = ["serde"] }
 
 # --- Native targets (Linux/Windows/macOS) ----------------------------------
@@ -116,3 +115,6 @@ criterion     = { workspace = true }
 [[bench]]
 name    = "cold_start"
 harness = false
+
+[package.metadata.cargo-machete]
+ignored = []

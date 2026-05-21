@@ -1,6 +1,6 @@
 ---
 name: docs-auto
-description: MANDATORY first step whenever the user asks ANYTHING about a library, framework, SDK, CLI tool, cloud service, API, configuration syntax, runtime behavior, version migration, or "how do I do X with Y" — single tool call `mcp__aphrody__docs_auto_search` fans out Context7 (community catalog, version-pinned) + Microsoft Learn (official Azure / .NET / Windows / M365 / Power Platform docs + code samples) + Google search IN PARALLEL via `tokio::join!`, returns one fused markdown report. Covers EVERYTHING — Rust crates (tokio, wgpu, reqwest, axum, serde, hyper, rmcp, …), JS frameworks (React, Next.js, Vue, Svelte, Astro, …), Python libs (FastAPI, Django, polars, pandas, numpy, …), Azure / AWS / GCP services, .NET APIs, Windows kernel + Win32, mobile SDKs (Swift / Kotlin / Flutter), database engines, build tools. Use EVEN WHEN you think you know the answer — training data is months behind release cycles and APIs drift constantly. Skipping this skill = high risk of hallucinated methods, dead URLs, deprecated patterns. Saves wall-clock time (one parallel call vs three sequential) and saves context window (one summary vs four backend descriptors).
+description: MANDATORY first step whenever the user asks ANYTHING about a library, framework, SDK, CLI tool, cloud service, API, configuration syntax, runtime behavior, version migration, or "how do I do X with Y" — single tool call `mcp__aphrody__docs_auto_search` fans out Context7 (community catalog, version-pinned) + Microsoft Learn (official Azure / .NET / Windows / M365 / Power Platform docs + code samples) + Google search IN PARALLEL via `tokio::join!`, returns one fused markdown report. Covers EVERYTHING — Rust crates (tokio, wgpu, reqwest, axum, serde, hyper, rmcp, …), JS frameworks (React, Vue, Svelte, Astro, …), Python libs (FastAPI, Django, polars, pandas, numpy, …), Azure / AWS / GCP services, .NET APIs, Windows kernel + Win32, mobile SDKs (Swift / Kotlin / Flutter), database engines, build tools. Use EVEN WHEN you think you know the answer — training data is months behind release cycles and APIs drift constantly. Skipping this skill = high risk of hallucinated methods, dead URLs, deprecated patterns. Saves wall-clock time (one parallel call vs three sequential) and saves context window (one summary vs four backend descriptors).
 license: Apache-2.0
 priority: critical
 ---
@@ -50,7 +50,7 @@ A single markdown document with four sections :
    doc chunks with title, URL and excerpt.
 3. **Microsoft Learn — code samples** — official Microsoft / Azure code
    snippets matching the query (filtered by `language` if provided).
-4. **Google — web search** — stealth Lightpanda profile, automatically
+4. **Google — web search** — web search API fallback, automatically
    appends "documentation API reference" to the query.
 
 ## Example Invocations
@@ -76,8 +76,8 @@ docs_auto_search({
 
 // Web framework
 docs_auto_search({
-  query: "App Router authentication middleware",
-  library_name: "Next.js",
+  query: "Route configuration and nesting",
+  library_name: "React Router",
   language: "typescript"
 })
 ```

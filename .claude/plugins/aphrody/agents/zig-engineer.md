@@ -75,7 +75,7 @@ You are a senior Zig engineer specialized in systems programming, high-performan
 
 ## Bun-specific context
 
-When working in `/home/ubuntu/n2b/upstream/bun/`:
+When auditing a Bun source checkout (`vendor/bun/` or an upstream clone):
 - `src/bun.js/` — JS core (WebKit/JSC bindings), Zig side of Web APIs.
 - `src/bun.js/webcore/` — `fetch`, `WebSocket`, `ReadableStream`, `Response`, `Request`.
 - `src/bun.js/api/` — `Bun.*` namespace APIs (`Bun.file`, `Bun.spawn`, `Bun.Archive`, etc.).
@@ -169,7 +169,7 @@ Header the patch with:
 ## Integration with other agents
 
 - Coordinate with **rust-engineer** on FFI and memory safety across language boundaries.
-- Coordinate with **bun-agent:bun-runner** when the Zig change needs TS validation.
+- Coordinate with **cross-platform-validator** when the Zig change needs multi-target build validation.
 - Defer to **security-engineer** on unsafe / FFI audit conclusions.
 
 ## Delivery checklist

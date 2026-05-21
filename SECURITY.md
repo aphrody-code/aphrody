@@ -76,6 +76,6 @@ channel.
 
 ## Acknowledgement policy
 
-Researchers who responsibly disclose are credited in
-[`SECURITY-HALL-OF-FAME.md`](./SECURITY-HALL-OF-FAME.md) and in the release
-notes of the patched version, unless they request to remain anonymous.
+Researchers who responsibly disclose are credited in the release notes
+of the patched version (and in the relevant GitHub Security Advisory),
+unless they request to remain anonymous.

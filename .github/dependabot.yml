@@ -51,18 +51,5 @@ updates:
       prefix: deps(ci)
       include: scope
 
-  # Bun / npm package.json (root + packages/*)
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: monthly
-      day: monday
-      time: "06:00"
-      timezone: UTC
-    labels:
-      - dependencies
-      - bun
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: deps(bun)
-      include: scope
+  # npm/bun ecosystem removed: Bun/Node/npm are banned per CLAUDE.md §2.
+  # All JS/TS tooling has been migrated to Rust. No package.json to track.

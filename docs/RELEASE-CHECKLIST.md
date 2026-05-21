@@ -3,9 +3,8 @@
 # Release Checklist
 
 Per-release maintainer checklist for `aphrody`. Run through every section
-before invoking [`scripts/release.sh`](../scripts/release.sh) with `--push`.
-Items here are the human-judgement steps that automation cannot
-substitute for.
+before tagging and pushing a release (§5). Items here are the
+human-judgement steps that automation cannot substitute for.
 
 Copy this checklist into the release tracking issue (or PR description)
 and tick boxes as you go.
@@ -38,13 +37,12 @@ and tick boxes as you go.
 ## 3. Docs sync
 
 - [ ] [`CHANGELOG.md`](../CHANGELOG.md) Unreleased section reflects all
-      merged work since last tag (run
-      [`scripts/changelog-since.sh`](../scripts/changelog-since.sh) for preview).
+      merged work since last tag (preview with
+      `git log <last-tag>..HEAD --oneline`).
 - [ ] [`docs/SUMMARY.md`](SUMMARY.md) regenerated
       (`cargo run -p aphrody-summary`).
 - [ ] All cross-links resolve (manual spot-check on
-      [`README.md`](../README.md), [`PLAN.md`](PLAN.md), recent
-      [`docs/posts/`](posts/) entries).
+      [`README.md`](../README.md), [`PLAN.md`](PLAN.md), [`INDEX.md`](INDEX.md)).
 - [ ] No `_pending_` markers for features being released in this version.
 
 ## 4. Version bump
@@ -57,11 +55,14 @@ and tick boxes as you go.
 
 ## 5. Tag and push
 
-- [ ] `./scripts/release.sh <version>` to verify gates and create local
-      commit and tag.
+- [ ] Build + install the release binaries locally with
+      `./scripts/deploy.sh` (Linux/macOS) or `pwsh -File scripts/deploy.ps1`
+      (Windows) and smoke-test `aphrody --version` / `aphrody doctor`.
+- [ ] Create the local commit and annotated tag
+      (`git tag -a v<version> -m "v<version>"`).
 - [ ] Inspect the local diff (`git show v<version>`) before pushing.
-- [ ] `./scripts/release.sh <version> --push` to push (or manual
-      `git push origin main && git push origin v<version>`).
+- [ ] Push: `git push origin main && git push origin v<version>`
+      (the first `v*` tag is human-gated — cf. CLAUDE.md §0.1).
 
 ## 6. Post-tag
 

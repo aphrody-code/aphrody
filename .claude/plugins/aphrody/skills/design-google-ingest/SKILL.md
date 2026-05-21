@@ -18,7 +18,7 @@ canonical references each article exposes.
 
 - **One invocation = one full refresh.** Re-running is idempotent: cached
   URLs are skipped unless `--force` is passed.
-- **SPA-aware crawl.** `design.google` is a Next.js app; most subroutes
+- **SPA-aware crawl.** `design.google` is a Single Page Application; most subroutes
   ship only the empty shell when fetched without JS. The skill uses
   `scripts/edge-mass-scrape.ts` (Microsoft Edge `--headless=new
   --dump-dom --virtual-time-budget=15000`) so every page receives the
@@ -134,9 +134,7 @@ Articles ingested: N / M (M = URLs requested)
 ## When NOT to use
 
 - For *single-URL* scrapes (use `scripts/edge-mass-scrape.ts` directly).
-- For *Linux/Mac native max-power scrape* — use bxc `profile=max` via
-  `scripts/bxc-mass-scrape.ps1` instead. The current skill is Windows-
-  native because Lightpanda is not yet available on win32/x64.
+- For *Linux/Mac native max-power scrape* — use Chrome headless.
 
 ## Related skills / agents / references
 
@@ -145,6 +143,6 @@ Articles ingested: N / M (M = URLs requested)
 - **`scripts/edge-mass-scrape.ts`** — the underlying SPA-aware scraper.
 - **`scripts/m3-coverage-audit.ts`** — coverage snapshot consumed by §9.
 - **`docs/audits/2026-05-17-edge-headless-spa-fallback.md`** — why we
-  use Edge instead of bxc-static for design.google.
+  use Edge instead of a static scraper for design.google.
 - **`docs/audits/2026-05-17-gemini-clone-and-google-sans-flex.md`** —
   prior application of design.google intel to crates/m3-tokens.

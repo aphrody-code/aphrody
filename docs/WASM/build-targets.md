@@ -85,7 +85,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 Or `--exclude` the crate in the wasm CI step :
 
 ```bash
-cargo check --workspace --exclude mrx-watch --exclude mrx-cli --target wasm32-unknown-unknown
+cargo check --workspace --exclude mrx --target wasm32-unknown-unknown
 ```
 
 ## When to NOT build wasm

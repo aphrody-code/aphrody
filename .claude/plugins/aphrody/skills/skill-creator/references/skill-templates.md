@@ -8,7 +8,7 @@ aphrody plugin:
 
 - `mcp__aphrody__*` — Microsoft Learn HTTP MCP (Azure / .NET /
   Windows / M365 / Power Platform).
-- `mcp__aphrody__*` — local stdio MCP (universal_web_fetch, bxc_scrape,
+- `mcp__aphrody__*` — local stdio MCP (universal_web_fetch, agent_browser_scrape,
   google_search, …) for non-Microsoft documentation.
 
 If the user has `context7` MCP installed alongside, prefer it for
@@ -121,7 +121,7 @@ For the full API surface :
 | {Advanced topic 1} | `universal_web_fetch(url="https://docs.rs/{crate}/latest/{crate}/{topic}/")`               |
 | Source             | `universal_web_fetch(url="{github-url}")`                                                  |
 | Crate metadata     | `universal_web_fetch(url="https://crates.io/crates/{crate}")`                              |
-| Examples           | `bxc_scrape(url="https://docs.rs/{crate}/latest/{crate}/", selector=".examples")`          |
+| Examples           | `agent_browser_scrape(url="https://docs.rs/{crate}/latest/{crate}/", selector=".examples")`          |
 ````
 
 ---
@@ -466,12 +466,10 @@ description: Interact with {API/Protocol}. Use when agents need to {primary oper
 
 ## Choosing a Template
 
-| Technology Type                          | Template               | Examples                                       |
-| ---------------------------------------- | ---------------------- | ---------------------------------------------- |
-| Rust crate (crates.io)                   | **Rust Crate**         | `tokio`, `reqwest`, `wgpu`, `bxc-engine`       |
+| Rust crate (crates.io)                   | **Rust Crate**         | `tokio`, `reqwest`, `wgpu`, `axum`             |
 | Client library, NuGet / npm / pip / gem  | SDK / Library          | Semantic Kernel, Azure SDK, MSAL, OpenAI SDK   |
 | Azure resource                           | Azure Service          | Cosmos DB, Azure Functions, App Service        |
-| App development framework                | Framework / Platform   | ASP.NET Core, Blazor, MAUI, Next.js, Tauri     |
+| App development framework                | Framework / Platform   | ASP.NET Core, Blazor, MAUI, Tauri              |
 | REST API, protocol, specification        | API / Protocol         | Microsoft Graph, OOXML, FHIR, MCP, JSON-RPC    |
 
 ## Customization Guidelines

@@ -1,9 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # shadcn-ui ↔ Material Design 3 — Cartographie de refactor
 
-> Document de recherche pour OBJECTIF #2 — refactor aphrody-code/ui@aphrody
-> (fork shadcn-ui/ui) en library Material Design 3 NATIF via wrappers
-> Material Web Components 3.
+> **NOTE (2026-05-21).** Document de recherche historique. La piste JS
+> (`aphrody-code/ui` fork shadcn, `packages/ui`, Material Web Components) a
+> été abandonnée au profit d'une implémentation **MD3 native Rust** :
+> `m3-tokens`, `aphrody-icons`, renderer wgpu `mui-rs*` (exclu du build par
+> défaut), intégration React via `aphrody-react-reconciler`. Le mapping
+> conceptuel shadcn→M3 ci-dessous reste une référence de design utile.
 >
 > Source : agent Explore (2026-05-17).
 

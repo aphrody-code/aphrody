@@ -79,8 +79,8 @@ In order:
   via Conventional Commits trailers.
 - Notable contributions land in `CONTRIBUTORS.md` (_pending — auto-generated
   quarterly once v1.0.0 ships_).
-- Security researchers who responsibly disclose are credited in
-  [`../SECURITY-HALL-OF-FAME.md`](../SECURITY-HALL-OF-FAME.md).
+- Security researchers who responsibly disclose are credited in the release
+  notes and [`../SECURITY.md`](../SECURITY.md).
 
 ## 7. Decision process
 
@@ -88,9 +88,8 @@ In order:
 - Medium changes (new helper, refactor inside one crate): one maintainer
   approval after a Discussion.
 - Large changes (architecture shifts, breaking API, dependency additions,
-  platform support): an ADR is required. Start from
-  [`adr/0000-template.md`](adr/0000-template.md) and read the existing ADRs
-  in [`adr/`](adr/) for the expected depth and tone.
+  platform support): a written design rationale is required in the PR
+  description, cross-referenced from [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md).
 
 ## 8. Mission alignment
 

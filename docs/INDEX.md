@@ -2,107 +2,105 @@
 
 # Documentation Index
 
-Master map of every Markdown document under `docs/` in the aphrody repository.
+Master map of every Markdown / text document under `docs/` in the aphrody
+repository. Updated 2026-05-21 to match the files actually present.
 
 ## 1. How to read this index
 
-This page lists all `docs/**/*.md` files grouped by purpose. Each entry is a one-line description so engineers landing in `docs/` directly can orient themselves. For deep dives, follow the link. For quick orientation, scan the descriptions. Entries are grouped alphabetically within each section. Working/auto-generated docs are flagged in section 11.
+This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line
+description per entry. Working / auto-generated docs are flagged in section 9.
+For the canonical workspace state, start with `SOURCE_OF_TRUTH.md` and
+`ARCHITECTURE.md`.
 
 ## 2. Overview
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — 17-crate workspace map with ASCII diagrams
+- [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md) — consolidated executive summary (read first)
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — 57-member workspace map with ASCII diagrams
 - [`AWESOME.md`](AWESOME.md) — curated catalogue of aphrody ecosystem resources
 - [`COMPARISON.md`](COMPARISON.md) — aphrody vs just, taskfile, gh, devcontainer, asdf
-- [`DESIGN-GOOGLE.md`](DESIGN-GOOGLE.md) — Google design.google reference cache
-- [`EXAMPLES.md`](EXAMPLES.md) — 12 copy-paste recipes for common workflows
-- [`FAQ.md`](FAQ.md) — 12 anticipated questions and crisp answers
-- [`MCP_SETUP.md`](MCP_SETUP.md) — MCP server install/setup matrix
+- [`EXAMPLES.md`](EXAMPLES.md) — copy-paste recipes for common workflows
+- [`FAQ.md`](FAQ.md) — anticipated questions and crisp answers
+- [`GOOGLE.md`](GOOGLE.md) — Google design / m3 reference notes
+- [`MCP_SETUP.md`](MCP_SETUP.md) — native `aphrody-mcp` server setup
 - [`MIGRATION.md`](MIGRATION.md) — moving from competing tools to aphrody
+- [`PROTOCOL.md`](PROTOCOL.md) — normative A2A protocol plus aphrody extensions
+- [`ROADMAP.md`](ROADMAP.md) — milestones
+- [`UI-ARCHITECTURE.md`](UI-ARCHITECTURE.md) — Material Design 3 / UI crate map
+- [`libc.md`](libc.md) — libc / FFI reference notes
+
+## 3. Performance & planning
+
 - [`PERFORMANCE.md`](PERFORMANCE.md) — bench claims with reproducible recipes
 - [`PERFORMANCE-HISTORY.md`](PERFORMANCE-HISTORY.md) — historical perf trend log
+- [`PLAN.md`](PLAN.md) — current work queue
 - [`PLAN-MOONSHOT.md`](PLAN-MOONSHOT.md) — 30-day moonshot star-maximisation plan
-- [`PROTOCOL.md`](PROTOCOL.md) — normative A2A/v0.4 plus aphrody extensions
-- [`ROADMAP.md`](ROADMAP.md) — quarterly milestones Q2 2026 through Q1 2027
-- [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md) — consolidated executive summary
-- [`WINCLEAN-AUDIT.md`](WINCLEAN-AUDIT.md) — cross-repo C:/winclean audit (reuse, skills, licences)
-- [`WORKTREES.md`](WORKTREES.md) — 13 upstream worktrees mining reference
-- [`iecode-public-endpoints.md`](iecode-public-endpoints.md) — public API catalog (azalee, Steam, inagle)
 
-## 2.1 Terminal & design (aphrody-terminal moonshot)
+## 4. Operational runbooks
 
-- [`design/aphrody-terminal-spec.md`](design/aphrody-terminal-spec.md) — LLM-first terminal specification (5 pillars)
-- [`design/aphrody-terminal-integration-matrix.md`](design/aphrody-terminal-integration-matrix.md) — per-crate contract-of-life matrix
-- [`cargo/BUILD-SPEED.md`](cargo/BUILD-SPEED.md) — workspace build-speed tactics and benchmarks
-
-## 3. Architecture decisions (ADRs)
-
-- [`adr/0000-template.md`](adr/0000-template.md) — ADR boilerplate
-- [`adr/0001-cross-platform-rust.md`](adr/0001-cross-platform-rust.md) — Rust-only, gated cfg per OS
-- [`adr/0002-a2a-file-based.md`](adr/0002-a2a-file-based.md) — file-based A2A mailbox rationale
-- [`adr/0003-yolo-parallel-grind.md`](adr/0003-yolo-parallel-grind.md) — 4-agent parallel loop policy
-
-## 4. A2A extensions
-
-- [`extensions/context7-version-pinning-v1.md`](extensions/context7-version-pinning-v1.md) — pin dep versions via context7 MCP
-- [`extensions/file-transport-v1.md`](extensions/file-transport-v1.md) — JSONL mailbox transport semantics
-- [`extensions/honest-delivery-v1.md`](extensions/honest-delivery-v1.md) — non-repudiation and ack rules
-- [`extensions/index.md`](extensions/index.md) — extension registry
-
-## 5. Operational runbooks
-
-- [`cargo/PUBLISH-LADDER.md`](cargo/PUBLISH-LADDER.md) — 9-rung crates.io publish ladder
-- [`cargo/SECURITY-DEEP.md`](cargo/SECURITY-DEEP.md) — supply-chain deep dive
-- [`cargo/SKILLS.md`](cargo/SKILLS.md) — skill ecosystem spec and runtime
-- [`INSTALL.md`](INSTALL.md) — 8 distribution channels
-- [`POST-LAUNCH.md`](POST-LAUNCH.md) — Show HN +24h/+72h/+7d engagement protocol
-- [`pwsh/CHEATSHEET.md`](pwsh/CHEATSHEET.md) — PowerShell one-liners for aphrody ops
-- [`pwsh/MODULES.md`](pwsh/MODULES.md) — required pwsh modules and install order
-- [`pwsh/README.md`](pwsh/README.md) — PowerShell ops overview
-- [`RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) — per-release maintainer checklist
-- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) — 14 common pitfalls and fixes
-- [`WASM/README.md`](WASM/README.md) — WASM target overview
-- [`WASM/build-targets.md`](WASM/build-targets.md) — wasm32-unknown-unknown vs wasm32-wasi
-- [`WASM/bun-native-wasm.md`](WASM/bun-native-wasm.md) — running wasm via Bun
-- [`WASM/nextjs-integration.md`](WASM/nextjs-integration.md) — Next.js + wasm-bindgen
-- [`WASM/rust-wasm-fundamentals.md`](WASM/rust-wasm-fundamentals.md) — wasm-bindgen primer
-- [`WASM/tooling.md`](WASM/tooling.md) — wasm-pack, wasm-opt, twiggy
-- [`WASM/wgpu-webgpu.md`](WASM/wgpu-webgpu.md) — wgpu in browser
-- [`winget/CATALOG.md`](winget/CATALOG.md) — curated winget manifests
-- [`winget/CHEATSHEET.md`](winget/CHEATSHEET.md) — winget one-liners
-- [`winget/README.md`](winget/README.md) — Windows packaging notes
-
-## 6. Security and privacy
-
+- [`INSTALL.md`](INSTALL.md) — distribution channels and install paths
 - [`CI-CD.md`](CI-CD.md) — CI workflows overview
+- [`RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) — per-release maintainer checklist
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) — common pitfalls and fixes
+- [`POST-LAUNCH.md`](POST-LAUNCH.md) — Show HN engagement protocol
+- [`COMMUNITY.md`](COMMUNITY.md) — engagement channels and norms
+
+## 5. Security and privacy
+
 - [`PRIVACY.md`](PRIVACY.md) — zero-telemetry policy
 - [`SECURITY-MODEL.md`](SECURITY-MODEL.md) — STRIDE threat model
 
-## 7. Community
+## 6. Cargo / build (`docs/cargo/`)
 
-- [`COMMUNITY.md`](COMMUNITY.md) — engagement channels and norms
+- [`cargo/README.md`](cargo/README.md) — cargo docs entrypoint
+- [`cargo/WORKSPACE.md`](cargo/WORKSPACE.md) — workspace description (57 members)
+- [`cargo/CRATES.md`](cargo/CRATES.md) — per-crate inventory
+- [`cargo/CROSS_PLATFORM.md`](cargo/CROSS_PLATFORM.md) — multi-target strategy
+- [`cargo/ANDROID_TARGET.md`](cargo/ANDROID_TARGET.md) — Android target notes
+- [`cargo/CHROMIUM_ANDROID_PATTERNS.md`](cargo/CHROMIUM_ANDROID_PATTERNS.md) — Google-grade patterns
+- [`cargo/FFI_POLICY.md`](cargo/FFI_POLICY.md) — FFI rules (`cxx` / `bindgen`)
+- [`cargo/DEPENDENCIES.md`](cargo/DEPENDENCIES.md) — dependency policy
+- [`cargo/DEV-ENV.md`](cargo/DEV-ENV.md) — dev environment setup
+- [`cargo/BUILD-SPEED.md`](cargo/BUILD-SPEED.md) — build-speed tactics
+- [`cargo/PIPELINE-OPTIMIZATION.md`](cargo/PIPELINE-OPTIMIZATION.md) — CI pipeline tuning
+- [`cargo/PROFILES.md`](cargo/PROFILES.md) — cargo profiles
+- [`cargo/LINTS.md`](cargo/LINTS.md) — workspace lint policy
+- [`cargo/CHEATSHEET.md`](cargo/CHEATSHEET.md) — cargo one-liners
+- [`cargo/MIGRATION.md`](cargo/MIGRATION.md) — migration notes
+- [`cargo/GOOGLE_MODE.md`](cargo/GOOGLE_MODE.md) — Google-mode conventions
+- [`cargo/SKILLS.md`](cargo/SKILLS.md) — skill ecosystem spec and runtime
+- [`cargo/SUPPLY_CHAIN.md`](cargo/SUPPLY_CHAIN.md) — cargo-vet / cargo-deny
+- [`cargo/SECURITY-DEEP.md`](cargo/SECURITY-DEEP.md) — supply-chain deep dive
+- [`cargo/PUBLISH-LADDER.md`](cargo/PUBLISH-LADDER.md) — crates.io publish ladder
 
-## 8. Launch material
+## 7. WASM (`docs/WASM/`)
 
-- [`launch/SHOW-HN.md`](launch/SHOW-HN.md) — Show HN title candidates and comment templates
+- [`WASM/README.md`](WASM/README.md) — WASM target overview
+- [`WASM/build-targets.md`](WASM/build-targets.md) — wasm32-unknown-unknown vs wasm32-wasi
+- [`WASM/rust-wasm-fundamentals.md`](WASM/rust-wasm-fundamentals.md) — wasm-bindgen primer
+- [`WASM/tooling.md`](WASM/tooling.md) — wasm-pack, wasm-opt, twiggy
+- [`WASM/wgpu-webgpu.md`](WASM/wgpu-webgpu.md) — wgpu in browser
 
-## 9. Technical posts (chronological)
+## 8. Research (`docs/research/`)
 
-- [`posts/2026-05-ai-json.md`](posts/2026-05-ai-json.md) — cross-Claude A2A file-based protocol
-- [`posts/2026-05-cross-platform-rust.md`](posts/2026-05-cross-platform-rust.md) — Linux + Win + WASM patterns
-- [`posts/2026-05-yolo-grind-loop.md`](posts/2026-05-yolo-grind-loop.md) — 4-agent parallel grind loop
+- [`research/NEXTJS_VERCEL_RUST_CRATES.md`](research/NEXTJS_VERCEL_RUST_CRATES.md) — Vercel Rust crate survey
+- [`research/SHADCN_M3_MAPPING.md`](research/SHADCN_M3_MAPPING.md) — shadcn → MD3 mapping
 
-## 10. Internal audits
+## 9. Internal audits (`docs/audits/`)
 
-- [`audits/2026-05-17-bxc-scrape-request.md`](audits/2026-05-17-bxc-scrape-request.md) — bxc scrape audit
-- [`audits/2026-05-17-mrx-aggressive.md`](audits/2026-05-17-mrx-aggressive.md) — mrx aggressive-scan audit
-- [`audits/2026-05-17-n2b-scan.md`](audits/2026-05-17-n2b-scan.md) — n2b Next.js scan audit
+Dated, point-in-time records (2026-05-17 → 2026-05-19). They describe work as
+it stood on their date and may reference now-removed tooling (`n2b`, `bxc`,
+`xtask`, `mrx-*`); treat them as **historical**. The full list is in the
+auto-generated [`SUMMARY.md`](SUMMARY.md) under the "Audits" section.
 
-## 11. Planning (working docs, may drift)
+## 10. Working / auto-generated (may drift)
 
-- [`DESIGN.md`](DESIGN.md) — original design notes
-- [`PLAN.md`](PLAN.md) — current work queue
-- [`SUMMARY.md`](SUMMARY.md) — auto-generated mdBook table of contents, do not hand-edit
+- [`SUMMARY.md`](SUMMARY.md) — mdBook ToC, **auto-generated** by
+  `cargo run -p aphrody-summary`; do not hand-edit.
+- [`llms.txt`](llms.txt) — flattened corpus, **auto-generated** alongside
+  `SUMMARY.md`.
+- [`PLAN.md`](PLAN.md) — live work queue.
 
-## 12. Sub-project READMEs
+## 11. Sub-project READMEs
 
-For per-crate READMEs, see `crates/<name>/README.md`. Cross-linked from the root [`README.md`](../README.md) doc tree.
+For per-crate READMEs, see `crates/<name>/README.md`. Cross-linked from the
+root [`README.md`](../README.md) doc tree.

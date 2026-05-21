@@ -84,7 +84,7 @@ pub(crate) enum ClientOp {
     /// Prints a single JSON object describing the server + its tool list.
     Probe {
         /// Full command line for the stdio MCP server to probe, e.g.
-        /// `"/path/to/aphrody-mcp"` or `"bxc serve --stdio"`. The first token
+        /// `"/path/to/aphrody-mcp"`. The first token
         /// is the executable; remaining tokens are passed as args.
         #[arg(long)]
         stdio: String,
