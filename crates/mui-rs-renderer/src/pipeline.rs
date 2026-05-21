@@ -1,22 +1,42 @@
 //! Render pipeline — scene graph vello → wgpu draw calls.
 
-use vello::{
-    Scene,
-    kurbo::Affine,
-    peniko::Color,
-};
+use vello::{Scene, kurbo::Affine, peniko::Color};
 
 use crate::surface::RenderSurface;
 use crate::layout::LayoutEngine;
+use crate::text::{TextRenderer, TextStyle};
 
+/// Draw context handed to every [`Widget`]. Bundles the vello [`Scene`] (vector
+/// geometry) and the [`TextRenderer`] (parley-backed glyph runs) so a widget can
+/// paint both shapes and real text in one pass.
+pub struct DrawCx<'a> {
+    pub scene: &'a mut Scene,
+    pub text: &'a mut TextRenderer,
+}
+
+impl DrawCx<'_> {
+    /// Draws `s` at `transform`; returns the laid-out `(width, height)` in px.
+    /// Borrows the two disjoint fields, so widgets can mix shapes and text.
+    pub fn draw_text(&mut self, s: &str, style: TextStyle, transform: Affine) -> (f32, f32) {
+        self.text.draw(self.scene, s, style, transform)
+    }
+
+    /// Measures `s` without painting.
+    pub fn measure_text(&mut self, s: &str, style: TextStyle) -> (f32, f32) {
+        self.text.measure(s, style)
+    }
+}
+
+/// A paintable Material component: vector geometry + text via [`DrawCx`].
 pub trait Widget {
-    fn draw(&self, scene: &mut Scene, transform: Affine);
+    fn draw(&self, cx: &mut DrawCx, transform: Affine);
 }
 
 pub struct RenderPipeline {
     pub scene: Scene,
     pub base_color: Color,
     pub layout: LayoutEngine,
+    pub text: TextRenderer,
 }
 
 impl RenderPipeline {
@@ -25,6 +45,7 @@ impl RenderPipeline {
             scene: Scene::new(),
             base_color: Color::BLACK,
             layout: LayoutEngine::new(),
+            text: TextRenderer::new(),
         }
     }
 
@@ -33,13 +54,15 @@ impl RenderPipeline {
     }
 
     pub fn draw_widget(&mut self, widget: &dyn Widget, transform: Affine) {
-        widget.draw(&mut self.scene, transform);
+        let mut cx = DrawCx { scene: &mut self.scene, text: &mut self.text };
+        widget.draw(&mut cx, transform);
     }
 
     /// Draws a widget using its computed layout position.
     pub fn draw_at_node(&mut self, widget: &dyn Widget, node: taffy::NodeId, offset: Affine) {
         let transform = offset * self.layout.get_transform(node);
-        widget.draw(&mut self.scene, transform);
+        let mut cx = DrawCx { scene: &mut self.scene, text: &mut self.text };
+        widget.draw(&mut cx, transform);
     }
 
     pub fn render_to_surface(&mut self, surface: &mut RenderSurface) -> anyhow::Result<()> {
@@ -84,5 +107,11 @@ impl RenderPipeline {
 
         surface_texture.present();
         Ok(())
+    }
+}
+
+impl Default for RenderPipeline {
+    fn default() -> Self {
+        Self::new()
     }
 }

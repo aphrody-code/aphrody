@@ -27,6 +27,10 @@ members = [
     "crates/ievr-tools", "crates/aphrody-summary",
     # M3 + shadcn pixel-perfect coverage + A2A UI (tick 36 pivot, 2026-05-17)
     "crates/m3-tokens",      # M3 baseline tokens (color/typography/elevation/motion)
+    # mui-rs* — MD3 natif (wgpu/vello/winit/parley). Réintégrés au workspace
+    # 2026-05-22 : durcis production-ready (rendu texte réel, clippy-clean).
+    "crates/mui-rs-core", "crates/mui-rs-macros", "crates/mui-rs-motion",
+    "crates/mui-rs-renderer", "crates/mui-rs-components", "crates/mui-rs",
     "crates/a2a-ui",         # WASM channel viewer for .coord JSONL mailbox
     # antigravity-sdk — native Rust SDK for Antigravity (Google AI Ultra / Gemini):
     # OAuth token extraction from Windows Credential Manager + HTTP client.
@@ -217,12 +221,6 @@ exclude = [
     # ------------------------------------------------------------------------
     "crates/gui",
     "crates/agui-bridge",
-    "crates/mui-rs",
-    "crates/mui-rs-components",
-    "crates/mui-rs-core",
-    "crates/mui-rs-macros",
-    "crates/mui-rs-motion",
-    "crates/mui-rs-renderer",
     "crates/tuono",
     "crates/tuono_internal",
     "crates/tuono_lib",

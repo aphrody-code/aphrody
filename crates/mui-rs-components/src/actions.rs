@@ -98,56 +98,73 @@ impl Button {
     }
 }
 
-use mui_rs_renderer::{
-    pipeline::Widget,
-    vello::{
-        Scene,
-        kurbo::{Affine, RoundedRect},
-        peniko::{Color, Fill},
-    },
-};
+use mui_rs_renderer::pipeline::{DrawCx, Widget};
+use mui_rs_renderer::shadow;
+use mui_rs_renderer::vello::kurbo::{Affine, Rect, RoundedRect, Stroke};
+use mui_rs_renderer::vello::peniko::{Color, Fill};
+use mui_rs_renderer::TextStyle;
+
+/// M3 label-large type face for button text.
+const LABEL_FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
+const LABEL_SIZE: f32 = 14.0;
+const LABEL_WEIGHT: f32 = 500.0;
+
+impl Button {
+    /// Content (label) colour for the variant + disabled state.
+    fn label_color(&self) -> Color {
+        if self.disabled {
+            return Color::from_rgba8(28, 27, 31, 97); // on-surface 38%
+        }
+        match self.variant {
+            ButtonVariant::Filled => Color::WHITE,                       // on-primary
+            ButtonVariant::FilledTonal => Color::from_rgb8(29, 25, 43),  // on-secondary-container
+            ButtonVariant::Outlined | ButtonVariant::Elevated | ButtonVariant::Text => {
+                Color::from_rgb8(103, 80, 164) // primary
+            }
+        }
+    }
+}
 
 impl Widget for Button {
-    fn draw(&self, scene: &mut Scene, transform: Affine) {
-        let (px_left, px_right) = self.horizontal_padding();
-        let width = px_left as f64 + 60.0 + px_right as f64; // approximate width based on label length
-        let height = Button::HEIGHT_DP as f64;
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let height = f64::from(Button::HEIGHT_DP);
+        let style = TextStyle::new(LABEL_FAMILY, LABEL_SIZE, LABEL_WEIGHT, self.label_color());
 
-        let rect = RoundedRect::new(0.0, 0.0, width, height, height / 2.0); // Pill shape (FULL radius)
+        // Real text metrics drive the pill width (replaces the old guess).
+        let (label_w, label_h) = cx.measure_text(&self.label, style);
+        let (px_left, px_right) = (24.0_f64, 24.0_f64);
+        let width = (px_left + f64::from(label_w) + px_right).max(height);
+        let rect = RoundedRect::new(0.0, 0.0, width, height, height / 2.0);
 
-        // Define base color based on variant
+        // Elevated/Filled buttons cast a real M3 shadow at rest.
+        let level = self.elevation_level(InteractionState::Resting);
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, width, height), height / 2.0, level);
+
         let base_color = if self.disabled {
-            Color::from_rgba8(28, 27, 31, 30) // Surface on-variant with 0.12 opacity
+            Color::from_rgba8(28, 27, 31, 30)
         } else {
             match self.variant {
                 ButtonVariant::Filled => Color::from_rgb8(103, 80, 164), // Primary
-                ButtonVariant::FilledTonal => Color::from_rgb8(232, 222, 248), /* Secondary container */
-                ButtonVariant::Elevated => Color::from_rgb8(243, 237, 247), /* Surface container
-                                                                              * low */
+                ButtonVariant::FilledTonal => Color::from_rgb8(232, 222, 248), // Secondary container
+                ButtonVariant::Elevated => Color::from_rgb8(243, 237, 247), // Surface container low
                 ButtonVariant::Outlined | ButtonVariant::Text => Color::TRANSPARENT,
             }
         };
+        cx.scene.fill(Fill::NonZero, transform, base_color, None, &rect);
 
-        // Draw background
-        scene.fill(Fill::NonZero, transform, base_color, None, &rect);
-
-        // Outlined stroke
         if self.variant == ButtonVariant::Outlined {
             let stroke_color = if self.disabled {
-                Color::from_rgba8(28, 27, 31, 30) // disabled outline
+                Color::from_rgba8(28, 27, 31, 30)
             } else {
-                Color::from_rgb8(121, 116, 126) // Outline color
+                Color::from_rgb8(121, 116, 126)
             };
-            scene.stroke(
-                &mui_rs_renderer::vello::kurbo::Stroke::new(1.0),
-                transform,
-                stroke_color,
-                None,
-                &rect,
-            );
+            cx.scene.stroke(&Stroke::new(1.0), transform, stroke_color, None, &rect);
         }
 
-        // TODO: State Layer overlay, Shadow/Elevation, Label Text (requires parley), Icon (requires SVG/font).
+        // Centred label — real glyphs.
+        let tx = (width - f64::from(label_w)) / 2.0;
+        let ty = (height - f64::from(label_h)) / 2.0;
+        cx.draw_text(&self.label, style, transform * Affine::translate((tx, ty)));
     }
 }
 
@@ -156,14 +173,33 @@ pub struct Fab {
     pub icon: String,
 }
 
+impl Fab {
+    pub const SIZE_DP: f64 = 56.0;
+    const RADIUS_DP: f64 = 16.0;
+}
+
 impl Widget for Fab {
-    fn draw(&self, scene: &mut Scene, transform: Affine) {
-        let size = 56.0;
-        let rect = RoundedRect::new(0.0, 0.0, size, size, 16.0); // FAB has 16dp rounding in M3
-        let base_color = Color::from_rgb8(232, 222, 248); // Primary Container
-        
-        scene.fill(Fill::NonZero, transform, base_color, None, &rect);
-        // TODO: Shadow/Icon to be implemented
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let (size, r) = (Fab::SIZE_DP, Fab::RADIUS_DP);
+        let rect = RoundedRect::new(0.0, 0.0, size, size, r);
+
+        // FABs sit at elevation level 3 in M3.
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, size, size), r, 3);
+
+        let base_color = Color::from_rgb8(232, 222, 248); // Primary container
+        cx.scene.fill(Fill::NonZero, transform, base_color, None, &rect);
+
+        // Render the icon glyph centred when it is a single pictographic char
+        // (emoji / symbol). Material Symbol *names* (e.g. "add") need the symbol
+        // font, which is loaded separately — those are skipped rather than drawn
+        // as literal words.
+        if self.icon.chars().count() == 1 && self.icon.chars().all(|c| !c.is_ascii_alphabetic()) {
+            let style = TextStyle::new("Segoe UI Emoji, sans-serif", 24.0, 400.0, Color::from_rgb8(29, 25, 43));
+            let (gw, gh) = cx.measure_text(&self.icon, style);
+            let tx = (size - f64::from(gw)) / 2.0;
+            let ty = (size - f64::from(gh)) / 2.0;
+            cx.draw_text(&self.icon, style, transform * Affine::translate((tx, ty)));
+        }
     }
 }
 
