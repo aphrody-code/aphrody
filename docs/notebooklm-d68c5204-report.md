@@ -21,8 +21,8 @@ dumper brut de re-mapping wire : `crates/notebooklm/examples/nblm_raw.rs`.
   Sans eux, le bootstrap de page renvoie `302 → accounts.google.com/ServiceLogin`
   (`osid=1`). Avec eux : `200`, page de 308 994 octets.
 - **Tokens de session** scrapés du blob `WIZ_global_data` de la page loggée :
-  - `NOTEBOOKLM_AT_TOKEN` = `SNlM0e` (`ABn2ub…`, 42 c) — masqué.
-  - `NOTEBOOKLM_BL_TOKEN` = `cfb2h` (`boq_la…`, 41 c) — masqué.
+  - `NOTEBOOKLM_AT_TOKEN` = `SNlM0e` (42 c) — masqué.
+  - `NOTEBOOKLM_BL_TOKEN` = `cfb2h` (41 c) — masqué.
   - `NOTEBOOKLM_FSID_TOKEN` = `FdrFJe` (19 c) — masqué.
 
 **Verdict : FAIT.**
