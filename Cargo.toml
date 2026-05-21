@@ -107,6 +107,10 @@ members = [
     # and composition (async concurrent download, typed errors, batch generation,
     # data-URI decode). Surpasses the Python NanoBanana client.
     "crates/aphrody-images",
+    # aphrody-firefly — pure-Rust Adobe Firefly Services client: IMS OAuth S2S
+    # token core, v3 async image generation + poll + download. Cross-platform
+    # (rustls), headless; shared auth core for the cloud Photoshop API.
+    "crates/aphrody-firefly",
     # aphrody-logo — canonical icon (assets/aphrody.webp) embedded once ->
     # multi-res .ico, scalable .svg, M3 maskable/shape PNGs, pixel-perfect
     # terminal rendering (Kitty graphics protocol + truecolor half-blocks).

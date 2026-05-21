@@ -5,6 +5,7 @@ mod client_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod voice_tools;
 // Gemini web app tools (gemini_chat 3.5 Flash + gemini_image Nano Banana).
 #[cfg(not(target_arch = "wasm32"))] mod gemini_tools;
+#[cfg(not(target_arch = "wasm32"))] mod firefly_tools;
 
 use std::{
     net::SocketAddr,
@@ -1004,6 +1005,22 @@ impl GoogleMcpServer {
         Parameters(req): Parameters<gemini_tools::GeminiDeepResearchRequest>,
     ) -> String {
         gemini_tools::deep_research(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // firefly_generate — Adobe Firefly Services image generation.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Generate image(s) with Adobe Firefly Services (v3, async). \
+                          OAuth server-to-server: set FIREFLY_CLIENT_ID and \
+                          FIREFLY_CLIENT_SECRET in the environment. Cross-platform, \
+                          headless cloud API (no Photoshop install). Optionally save to \
+                          a directory. Returns { count, outputs:[{ seed, content_type, \
+                          bytes, saved_path? }] }.")]
+    async fn firefly_generate(
+        &self,
+        Parameters(req): Parameters<firefly_tools::FireflyGenerateRequest>,
+    ) -> String {
+        firefly_tools::generate(req).await
     }
 
     // -----------------------------------------------------------------------
