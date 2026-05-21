@@ -10,7 +10,7 @@ members = [
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 80
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -23,11 +23,36 @@ select = [
     "UP",  # pyupgrade
     "PL",  # pylint
     "RUF", # ruff-specific rules
+    "D",   # pydocstyle
 ]
-ignore = []
+ignore = [
+    "E501",    # Line too long (managed by ruff format / formatting and style guides differ on comments/urls/long strings)
+    "D105",    # Missing docstring in magic method
+    "D107",    # Missing docstring in __init__
+    "PLC0415", # Import outside top-level of a file (used for lazy loads and tests)
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value used in comparison
+    "PLW0603", # Using global statement
+    "RUF001",  # Ambiguous unicode character
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.ruff.lint.per-file-ignores]
+"**/*_test.py" = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "PLR2004"]
+"**/test_utils.py" = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+"**/__init__.py" = ["F401", "D104"]
+"examples/**/*.py" = ["D"]
+"libs/antigravity-sdk-python/examples/**/*.py" = ["D"]
+
+
