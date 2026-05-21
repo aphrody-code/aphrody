@@ -44,6 +44,8 @@ backend            = { path = "../backend" }
 gemini-runtime     = { path = "../gemini-runtime" }
 # Gemini web app SDK — backs the gemini_chat / gemini_image MCP tools.
 gemini-web         = { workspace = true }
+# Adobe Firefly Services client — backs the firefly_generate MCP tool.
+aphrody-firefly    = { path = "../aphrody-firefly" }
 # Native screen/window capture — backs the screen_capture MCP tool.
 aphrody-capture    = { path = "../aphrody-capture" }
 

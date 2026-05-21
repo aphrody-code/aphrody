@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-firefly"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Pure-Rust Adobe Firefly Services client for aphrody — IMS OAuth server-to-server token core, v3 async image generation (Image model), job polling and output download. Cross-platform (rustls), headless, in-policy. Backs the `aphrody firefly` CLI and the firefly_generate MCP tool, and is the auth core shared with the cloud Photoshop API."
+
+[lints]
+workspace = true
+
+[dependencies]
+# Async runtime — fs for atomic saves, time for the async-job poll loop.
+tokio        = { workspace = true, features = ["fs", "io-util", "macros", "rt", "time", "sync"] }
+
+# HTTP client (rustls-tls; never native-tls per CLAUDE.md §2 / best-stack).
+reqwest      = { workspace = true }
+
+# Typed request/response structs.
+serde        = { workspace = true, features = ["derive"] }
+serde_json   = { workspace = true }
+
+# Typed errors.
+thiserror    = { workspace = true }
+
+# Structured logging.
+tracing      = { workspace = true }
+
+[dev-dependencies]
+tokio        = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tempfile     = { workspace = true }
+rustls       = { workspace = true }
+
+[package.metadata.cargo-machete]
+# tracing: macro-only usage (tracing::debug!/warn!); machete under-counts macros.
+ignored = ["tracing"]

@@ -43,6 +43,11 @@ index = ["dep:aphrody-fsindex"]
 #   cargo build -p aphrody --features images
 images = ["dep:aphrody-images"]
 
+# Adobe Firefly Services image generation to disk (`aphrody firefly generate`),
+# backed by aphrody-firefly (IMS OAuth S2S + v3 async generate). Host-only.
+#   cargo build -p aphrody --features firefly
+firefly = ["dep:aphrody-firefly"]
+
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
 # - On wasm32-*, only a minimal stub (Version + help) is built, because
@@ -109,6 +114,8 @@ rusqlite                  = { workspace = true, optional = true }
 aphrody-fsindex           = { path = "../aphrody-fsindex", optional = true }
 # `aphrody image generate` — Nano Banana image gen to disk (`--features images`).
 aphrody-images            = { path = "../aphrody-images", optional = true }
+# `aphrody firefly generate` — Adobe Firefly image gen (`--features firefly`).
+aphrody-firefly           = { path = "../aphrody-firefly", optional = true }
 # `aphrody forensics map` — SHA-256 of small files + hex encoding for the
 # `tree.json` map. Optional, gated by the `forensics` feature (shared with the
 # read-only SQLite schema dump). Reuses the workspace pins so no new

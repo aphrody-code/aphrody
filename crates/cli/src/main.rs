@@ -16,6 +16,7 @@
 #[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "images"))] mod image_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))] mod firefly_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
@@ -215,6 +216,17 @@ enum Commands {
     Image {
         #[command(subcommand)]
         action: image_cmd::ImageAction,
+    },
+    /// Adobe Firefly Services image generation to disk.
+    ///
+    /// Built only with `--features firefly`. OAuth server-to-server (IMS):
+    /// reads `FIREFLY_CLIENT_ID` / `FIREFLY_CLIENT_SECRET` from the environment.
+    ///
+    /// Example: aphrody firefly generate "a realistic cat coding" --out ./out
+    #[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))]
+    Firefly {
+        #[command(subcommand)]
+        action: firefly_cmd::FireflyAction,
     },
     /// Tier-1 memory provider operations — migrate, audit, list backends.
     ///
@@ -868,6 +880,10 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         #[cfg(feature = "images")]
         Some(Commands::Image { action }) => {
             image_cmd::run(action).await?;
+        },
+        #[cfg(feature = "firefly")]
+        Some(Commands::Firefly { action }) => {
+            firefly_cmd::run(action).await?;
         },
         #[cfg(feature = "forensics")]
         Some(Commands::Forensics { action }) => {
