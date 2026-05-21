@@ -3,6 +3,8 @@ mod client_cmd;
 // Voice MCP tools (TTS via aphrody-voice + STT via aphrody-voice-stt).
 // Native-only: the module itself is `#[cfg(not(target_arch = "wasm32"))]`.
 #[cfg(not(target_arch = "wasm32"))] mod voice_tools;
+// Gemini web app tools (gemini_chat 3.5 Flash + gemini_image Nano Banana).
+#[cfg(not(target_arch = "wasm32"))] mod gemini_tools;
 
 use std::{
     net::SocketAddr,
@@ -938,6 +940,33 @@ impl GoogleMcpServer {
         Parameters(req): Parameters<voice_tools::VoiceTranscribeRequest>,
     ) -> String {
         voice_tools::transcribe(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // gemini_chat — Gemini web app (3.5 Flash) via cookie auth, no API key.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Chat with the Gemini web app (gemini.google.com) using the signed-in \
+                          Google session cookies (~/.aphrody/google-cookies.json) — no API key. \
+                          Defaults to the 3.5 Flash model; pass model=flash-lite|pro to switch. \
+                          Returns { text, model, conversation_id }.")]
+    async fn gemini_chat(
+        &self,
+        Parameters(req): Parameters<gemini_tools::GeminiChatRequest>,
+    ) -> String {
+        gemini_tools::chat(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // gemini_image — Nano Banana image generation via the Gemini web app.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Generate an image with the Gemini web app's image model (Nano Banana) \
+                          using the signed-in Google session — no API key. Returns { text, \
+                          generated_image_urls, count }.")]
+    async fn gemini_image(
+        &self,
+        Parameters(req): Parameters<gemini_tools::GeminiImageRequest>,
+    ) -> String {
+        gemini_tools::image(req).await
     }
 
     // -----------------------------------------------------------------------
