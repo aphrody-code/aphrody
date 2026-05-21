@@ -149,6 +149,7 @@ sync-packages-lint:
     -cd packages/material-web && oxlint
     -cd packages/ui && oxlint
     -cd packages/tailwindcss && oxlint
+    -cd packages/lit && oxlint
 
 # Check formatting across the 4 packages with oxfmt.
 sync-packages-fmt:
@@ -156,6 +157,7 @@ sync-packages-fmt:
     -cd packages/material-web && oxfmt --check .
     -cd packages/ui && oxfmt --check .
     -cd packages/tailwindcss && oxfmt --check .
+    -cd packages/lit && oxfmt --check .
 
 # Bun→Node migration scan (n2b, via WSL on Windows) — report-only, NDJSON to var/n2b/.
 sync-packages-n2b:
@@ -163,6 +165,7 @@ sync-packages-n2b:
     -WSL_UTF8=1 wsl.exe ./bin/n2b packages/material-web --report jsonl > var/n2b/material-web.jsonl
     -WSL_UTF8=1 wsl.exe ./bin/n2b packages/ui --report jsonl > var/n2b/ui.jsonl
     -WSL_UTF8=1 wsl.exe ./bin/n2b packages/tailwindcss --report jsonl > var/n2b/tailwindcss.jsonl
+    -WSL_UTF8=1 wsl.exe ./bin/n2b packages/lit --report jsonl > var/n2b/lit.jsonl
 
 # Full sync sweep across the 4 packages: lint + format-check + n2b report.
 sync-packages: sync-packages-lint sync-packages-fmt sync-packages-n2b

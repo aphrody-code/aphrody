@@ -385,7 +385,7 @@ pub fn export_css(theme: &ColorRoles) -> std::string::String {
 /// role it aliases. Shared by [`export_shadcn_aliases`] (shadcn/ui variable
 /// names) and [`export_tailwind_theme`] (Tailwind v4 `--color-*` names) so the
 /// two fusion sheets stay in lockstep. See `docs/ui/FUSION-PLAN.md`.
-const FUSION_ALIAS_MAP: &[(&str, &str)] = &[
+pub const FUSION_ALIAS_MAP: &[(&str, &str)] = &[
     ("background", "surface"),
     ("foreground", "on-surface"),
     ("card", "surface-container-low"),
@@ -485,6 +485,69 @@ pub fn export_fusion_css(theme: &ColorRoles) -> std::string::String {
         export_shadcn_aliases(),
         export_tailwind_theme()
     )
+}
+
+/// Returns every M3 system color as `(suffix, "#RRGGBB")` pairs, where `suffix`
+/// is the part after `--md-sys-color-` (e.g. `"primary"`, `"on-surface-variant"`).
+/// Structured counterpart of [`export_css`], consumed by tooling that builds
+/// JSON token catalogs — e.g. the shadcn `registry:theme` generator behind
+/// `aphrody design tokens --format shadcn-registry` (see `docs/ui/FUSION-PLAN.md`).
+/// Order matches [`export_css`].
+///
+/// Only available with the `std` feature.
+///
+/// # Example
+///
+/// ```rust
+/// use m3_tokens::color::{BASELINE, color_vars};
+/// let vars = color_vars(&BASELINE);
+/// assert_eq!(vars.len(), 36);
+/// assert!(vars.iter().any(|(k, v)| *k == "primary" && v == "#6750A4"));
+/// ```
+#[cfg(feature = "std")]
+pub fn color_vars(theme: &ColorRoles) -> std::vec::Vec<(&'static str, std::string::String)> {
+    #[inline]
+    fn hex(argb: u32) -> std::string::String {
+        std::format!("#{:06X}", argb & 0x00FF_FFFF)
+    }
+    std::vec![
+        ("primary", hex(theme.primary)),
+        ("on-primary", hex(theme.on_primary)),
+        ("primary-container", hex(theme.primary_container)),
+        ("on-primary-container", hex(theme.on_primary_container)),
+        ("secondary", hex(theme.secondary)),
+        ("on-secondary", hex(theme.on_secondary)),
+        ("secondary-container", hex(theme.secondary_container)),
+        ("on-secondary-container", hex(theme.on_secondary_container)),
+        ("tertiary", hex(theme.tertiary)),
+        ("on-tertiary", hex(theme.on_tertiary)),
+        ("tertiary-container", hex(theme.tertiary_container)),
+        ("on-tertiary-container", hex(theme.on_tertiary_container)),
+        ("error", hex(theme.error)),
+        ("on-error", hex(theme.on_error)),
+        ("error-container", hex(theme.error_container)),
+        ("on-error-container", hex(theme.on_error_container)),
+        ("background", hex(theme.background)),
+        ("on-background", hex(theme.on_background)),
+        ("surface", hex(theme.surface)),
+        ("on-surface", hex(theme.on_surface)),
+        ("surface-variant", hex(theme.surface_variant)),
+        ("on-surface-variant", hex(theme.on_surface_variant)),
+        ("outline", hex(theme.outline)),
+        ("outline-variant", hex(theme.outline_variant)),
+        ("shadow", hex(theme.shadow)),
+        ("scrim", hex(theme.scrim)),
+        ("inverse-surface", hex(theme.inverse_surface)),
+        ("inverse-on-surface", hex(theme.inverse_on_surface)),
+        ("inverse-primary", hex(theme.inverse_primary)),
+        ("surface-dim", hex(theme.surface_dim)),
+        ("surface-bright", hex(theme.surface_bright)),
+        ("surface-container-lowest", hex(theme.surface_container_lowest)),
+        ("surface-container-low", hex(theme.surface_container_low)),
+        ("surface-container", hex(theme.surface_container)),
+        ("surface-container-high", hex(theme.surface_container_high)),
+        ("surface-container-highest", hex(theme.surface_container_highest)),
+    ]
 }
 
 #[cfg(test)]
