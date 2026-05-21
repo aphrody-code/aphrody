@@ -37,11 +37,13 @@ m3-tokens  = { path = "../m3-tokens" }
 aphrody-icons = { path = "../aphrody-icons" }
 base64.workspace = true
 
-# Native-only deps. Gated off wasm32 — wry/tao/mimalloc all pull native
+# Native-only deps. Gated off wasm32 — winit/wgpu/mimalloc pull native
 # window handles / C source incompatible with `wasm32-unknown-unknown`,
 # so the lib carries a `#![cfg(not(target_arch = "wasm32"))]` gate AND
 # the dep graph is kept clean here so a stray `cargo check -p gui
 # --target wasm32-unknown-unknown` doesn't drag mimalloc.h into wasm-ld.
+# (Desktop window = winit + wgpu/vello; no wry/tao webview — best-stack-2026:
+# tao/wry pull GTK3 CVEs on Linux.)
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit              = { workspace = true }
 pollster           = { workspace = true }
