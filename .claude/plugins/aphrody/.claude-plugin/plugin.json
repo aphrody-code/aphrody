@@ -19,6 +19,7 @@
     "wasm",
     "claude-code"
   ],
+  "icon": "icon.webp",
   "category": "productivity",
   "mcpServers": {
     "aphrody": {
@@ -29,6 +30,7 @@
     }
   },
   "interface": {
+    "icon": "icon.webp",
     "displayName": "Aphrody",
     "shortDescription": "One Rust binary, 20 tools: desktop automation, vision, voice, RE triage, Context7 docs, Microsoft Learn docs.",
     "longDescription": "Single-binary Rust MCP surface fusing 20 tools (forensics, network recon, Material Design 3 vision, ElevenLabs voice, Context7 docs lookup, Microsoft Learn docs lookup, PE/ELF reverse-engineering triage + string extraction + entropy sections, parallel docs aggregation, MCP proxy). Zero JS runtime, zero secondary MCP server. 21 agents, 34 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",

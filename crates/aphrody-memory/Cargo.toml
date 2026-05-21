@@ -81,10 +81,11 @@ criterion    = { workspace = true }
 ignored = ["time"]
 
 # ---------------------------------------------------------------------------
-# Bench harness — R3.7 recall benchmark over 100k records.
+# Bench harness — R3.7 recall benchmark over 100k events.
 # `harness = false` opts out of the default libtest harness so criterion's
-# `criterion_main!` macro owns the entry point.
+# `criterion_main!` macro owns the entry point. The criterion group inside is
+# named `bench_recall_100k`, matching the PLAN verify filter.
 # ---------------------------------------------------------------------------
 [[bench]]
-name    = "recall_100k"
+name    = "recall"
 harness = false

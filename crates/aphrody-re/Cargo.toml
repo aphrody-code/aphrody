@@ -30,6 +30,9 @@ serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 # Structured errors for the public API.
 thiserror  = { workspace = true }
+# Pure-Rust x86/x64 disassembler + Intel formatter. No C, no GPL.
+# Apex Cap R5.4 (Sprint R-E): `disasm()` public API.
+iced-x86   = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

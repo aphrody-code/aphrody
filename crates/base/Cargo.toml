@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name                  = "base"
 publish               = true  # ladder leaf — first crate to ship
 version.workspace     = true
@@ -11,6 +11,7 @@ repository.workspace  = true
 keywords.workspace    = true
 categories.workspace  = true
 description           = "Foundational primitives for Aphrody crates (no_std-compatible)."
+readme                = "README.md"
 
 [lints]
 workspace = true
