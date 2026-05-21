@@ -7,3 +7,7 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
+
+[dependencies]
+# Foundational M3 design tokens (color roles, type/shape/elevation scales).
+m3-tokens = { path = "../m3-tokens" }
