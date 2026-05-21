@@ -46,14 +46,19 @@ pub const EASING_STANDARD_DECELERATE: Easing =
 pub const EASING_STANDARD_ACCELERATE: Easing =
     Easing { name: "standard-accelerate", cubic_bezier: "cubic-bezier(0.3, 0, 1, 1)" };
 
-/// All six standard M3 easing curves in spec order.
-pub const ALL_EASINGS: [Easing; 6] = [
+/// Linear — constant rate; for continuous indicators (progress, scrubbing).
+pub const EASING_LINEAR: Easing =
+    Easing { name: "linear", cubic_bezier: "cubic-bezier(0, 0, 1, 1)" };
+
+/// All seven M3 easing curves in spec order.
+pub const ALL_EASINGS: [Easing; 7] = [
     EASING_EMPHASIZED,
     EASING_EMPHASIZED_DECELERATE,
     EASING_EMPHASIZED_ACCELERATE,
     EASING_STANDARD,
     EASING_STANDARD_DECELERATE,
     EASING_STANDARD_ACCELERATE,
+    EASING_LINEAR,
 ];
 
 // ── Durations ────────────────────────────────────────────────────────────────
@@ -85,25 +90,54 @@ pub const DURATION_MEDIUM1: Duration = Duration { name: "medium1", ms: 250 };
 /// Medium2 — 300 ms.  Navigation transition, sheet.
 pub const DURATION_MEDIUM2: Duration = Duration { name: "medium2", ms: 300 };
 
-/// Long1 — 350 ms.  Complex layout transitions.
-pub const DURATION_LONG1: Duration = Duration { name: "long1", ms: 350 };
+/// Medium3 — 350 ms.  Complex component transitions.
+pub const DURATION_MEDIUM3: Duration = Duration { name: "medium3", ms: 350 };
 
-/// Long2 — 400 ms.  Full-screen transitions.
-pub const DURATION_LONG2: Duration = Duration { name: "long2", ms: 400 };
+/// Medium4 — 400 ms.  Larger component transitions.
+pub const DURATION_MEDIUM4: Duration = Duration { name: "medium4", ms: 400 };
 
-/// All standard M3 duration tokens in ascending order.
-///
-/// The six primary values used throughout the spec are 50, 150, 200, 250,
-/// 300, and 400 ms.  This array includes all eight tokens for completeness.
-pub const ALL_DURATIONS: [Duration; 8] = [
+/// Long1 — 450 ms.  Complex layout transitions.
+pub const DURATION_LONG1: Duration = Duration { name: "long1", ms: 450 };
+
+/// Long2 — 500 ms.  Full-screen transitions.
+pub const DURATION_LONG2: Duration = Duration { name: "long2", ms: 500 };
+
+/// Long3 — 550 ms.
+pub const DURATION_LONG3: Duration = Duration { name: "long3", ms: 550 };
+
+/// Long4 — 600 ms.
+pub const DURATION_LONG4: Duration = Duration { name: "long4", ms: 600 };
+
+/// Extra-long1 — 700 ms.  Large expressive transitions.
+pub const DURATION_EXTRA_LONG1: Duration = Duration { name: "extra-long1", ms: 700 };
+
+/// Extra-long2 — 800 ms.
+pub const DURATION_EXTRA_LONG2: Duration = Duration { name: "extra-long2", ms: 800 };
+
+/// Extra-long3 — 900 ms.
+pub const DURATION_EXTRA_LONG3: Duration = Duration { name: "extra-long3", ms: 900 };
+
+/// Extra-long4 — 1000 ms.  Largest expressive transitions.
+pub const DURATION_EXTRA_LONG4: Duration = Duration { name: "extra-long4", ms: 1000 };
+
+/// All 16 M3 duration tokens in ascending order (short1 → extra-long4).
+pub const ALL_DURATIONS: [Duration; 16] = [
     DURATION_SHORT1,
     DURATION_SHORT2,
     DURATION_SHORT3,
     DURATION_SHORT4,
     DURATION_MEDIUM1,
     DURATION_MEDIUM2,
+    DURATION_MEDIUM3,
+    DURATION_MEDIUM4,
     DURATION_LONG1,
     DURATION_LONG2,
+    DURATION_LONG3,
+    DURATION_LONG4,
+    DURATION_EXTRA_LONG1,
+    DURATION_EXTRA_LONG2,
+    DURATION_EXTRA_LONG3,
+    DURATION_EXTRA_LONG4,
 ];
 
 /// The six primary M3 duration values in milliseconds (50/150/200/250/300/400).
@@ -117,8 +151,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn six_standard_easings() {
-        assert_eq!(ALL_EASINGS.len(), 6);
+    fn seven_standard_easings() {
+        assert_eq!(ALL_EASINGS.len(), 7);
+        assert_eq!(EASING_LINEAR.cubic_bezier, "cubic-bezier(0, 0, 1, 1)");
     }
 
     #[test]
@@ -145,7 +180,10 @@ mod tests {
     }
 
     #[test]
-    fn long2_is_400ms() {
-        assert_eq!(DURATION_LONG2.ms, 400);
+    fn long_and_extra_long_match_spec() {
+        assert_eq!(DURATION_LONG1.ms, 450);
+        assert_eq!(DURATION_LONG2.ms, 500);
+        assert_eq!(DURATION_EXTRA_LONG4.ms, 1000);
+        assert_eq!(ALL_DURATIONS.len(), 16);
     }
 }
