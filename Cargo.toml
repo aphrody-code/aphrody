@@ -163,6 +163,9 @@ members = [
     # boost, snippet highlighting, atomic JSON persistence). Backs the
     # marketplace / memory / skill discovery UIs.
     "crates/aphrody-search",
+    # aphrody-fsindex — persistent local-filesystem SQLite FTS5 search index
+    # (mirrors the Google desktop app's local_files.db; metadata-only).
+    "crates/aphrody-fsindex",
     # aphrody-chat — unified turn-loop REPL composing every other aphrody
     # building block (gemini-runtime + tools + memory + session + permissions
     # + hooks + prompts + router + cost + context + events + cache +
