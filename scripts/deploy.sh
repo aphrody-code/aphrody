@@ -56,15 +56,10 @@ if [ "$NO_BUILD" -eq 0 ]; then
     fi
 fi
 
-# --- Répertoire des artefacts ----------------------------------------------
-if [ -n "$TARGET" ]; then
-    RELEASE_DIR="$REPO_ROOT/target/$TARGET/release"
-else
-    RELEASE_DIR="$REPO_ROOT/target/release"
-fi
-[ -d "$RELEASE_DIR" ] || { echo "Répertoire release introuvable : $RELEASE_DIR (build manqué ?)" >&2; exit 1; }
-
-# --- Découverte : exécutables top-level matchant un préfixe -----------------
+# --- Répertoire(s) des artefacts -------------------------------------------
+# Sans --target explicite, `.cargo/config.toml` peut forcer un `build.target`
+# : les binaires atterrissent alors dans target/<triple>/release et non
+# target/release. On cherche dans tous les candidats plausibles.
 matches_prefix() {
     local name="$1"
     for p in "${PREFIX_ARR[@]}"; do
@@ -73,14 +68,32 @@ matches_prefix() {
     return 1
 }
 
-mapfile -t BINS < <(
-    find "$RELEASE_DIR" -maxdepth 1 -type f -perm -u+x ! -name '*.d' ! -name '*.so' 2>/dev/null \
-        | while read -r f; do
-            base="$(basename "$f")"
-            if matches_prefix "$base"; then echo "$f"; fi
-        done | sort -u
-)
-[ "${#BINS[@]}" -gt 0 ] || { echo "Aucun binaire exécutable matchant $PREFIXES dans $RELEASE_DIR" >&2; exit 1; }
+CANDIDATE_DIRS=()
+if [ -n "$TARGET" ]; then
+    CANDIDATE_DIRS+=("$REPO_ROOT/target/$TARGET/release")
+else
+    CANDIDATE_DIRS+=("$REPO_ROOT/target/release")
+    for d in "$REPO_ROOT"/target/*/release; do
+        [ -d "$d" ] && CANDIDATE_DIRS+=("$d")
+    done
+fi
+
+# --- Découverte : exécutables top-level matchant un préfixe -----------------
+BINS=()
+RELEASE_DIR=""
+for dir in "${CANDIDATE_DIRS[@]}"; do
+    [ -d "$dir" ] || continue
+    mapfile -t found < <(
+        find "$dir" -maxdepth 1 -type f -perm -u+x ! -name '*.d' ! -name '*.so' 2>/dev/null \
+            | while read -r f; do
+                base="$(basename "$f")"
+                if matches_prefix "$base"; then echo "$f"; fi
+            done | sort -u
+    )
+    if [ "${#found[@]}" -gt 0 ]; then BINS=("${found[@]}"); RELEASE_DIR="$dir"; break; fi
+done
+[ "${#BINS[@]}" -gt 0 ] || { echo "Aucun binaire exécutable matchant $PREFIXES dans : ${CANDIDATE_DIRS[*]} (build manqué ?)" >&2; exit 1; }
+echo "[deploy] artefacts depuis $RELEASE_DIR"
 
 [ "$DRY_RUN" -eq 0 ] && mkdir -p "$DEST"
 

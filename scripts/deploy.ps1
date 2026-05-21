@@ -49,20 +49,40 @@ if (-not $NoBuild) {
     }
 }
 
-# --- Répertoire des artefacts ----------------------------------------------
-$releaseDir = if ($Target) {
-    Join-Path (Join-Path (Join-Path $RepoRoot "target") $Target) "release"
+# --- Répertoire(s) des artefacts -------------------------------------------
+# Sans -Target explicite, `.cargo/config.toml` peut forcer un `build.target`
+# (ici x86_64-pc-windows-msvc) : les binaires atterrissent alors dans
+# target/<triple>/release et NON target/release. On cherche donc dans tous les
+# candidats plausibles.
+$targetRoot = Join-Path $RepoRoot "target"
+$candidateDirs = if ($Target) {
+    @(Join-Path (Join-Path $targetRoot $Target) "release")
 } else {
-    Join-Path (Join-Path $RepoRoot "target") "release"
+    $dirs = @(Join-Path $targetRoot "release")
+    # Ajoute chaque target/<triple>/release existant (triple = sous-dossier
+    # contenant un dossier release), trié pour un ordre déterministe.
+    Get-ChildItem -Path $targetRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { Test-Path (Join-Path $_.FullName "release") } |
+        Sort-Object Name |
+        ForEach-Object { $dirs += (Join-Path $_.FullName "release") }
+    $dirs
 }
-if (-not (Test-Path $releaseDir)) { throw "Répertoire release introuvable : $releaseDir (build manqué ?)" }
 
 # --- Découverte des binaires (glob top-level *.exe matchant un préfixe) -----
-$bins = Get-ChildItem -Path $releaseDir -Filter "*.exe" -File | Where-Object {
-    $name = $_.BaseName
-    $prefixList | Where-Object { $name.StartsWith($_) }
+$bins = @()
+$releaseDir = $null
+foreach ($dir in $candidateDirs) {
+    if (-not (Test-Path $dir)) { continue }
+    $found = Get-ChildItem -Path $dir -Filter "*.exe" -File | Where-Object {
+        $name = $_.BaseName
+        $prefixList | Where-Object { $name.StartsWith($_) }
+    }
+    if ($found) { $bins = $found; $releaseDir = $dir; break }
 }
-if (-not $bins) { throw "Aucun binaire *.exe matchant $($prefixList -join ',') dans $releaseDir" }
+if (-not $bins) {
+    throw "Aucun binaire *.exe matchant $($prefixList -join ',') dans : $($candidateDirs -join ', ') (build manqué ?)"
+}
+Write-Host "[deploy] artefacts depuis $releaseDir" -ForegroundColor Cyan
 
 if (-not $DryRun) { New-Item -ItemType Directory -Force -Path $Dest | Out-Null }
 
