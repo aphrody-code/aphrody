@@ -212,7 +212,39 @@ Mirror on Windows runners via the PowerShell installer
 
 ---
 
-## 12. Where to find more
+## 12. Python SDK: WebView2 History Analysis with Magika & LangExtract
+
+Verify and extract structured timeline data from the WebView2 default profile directory using `magika` to classify file formats and `langextract` to format search queries and visited websites:
+
+```bash
+# Verify environment and run the WebView2 deep dive example script
+uv run libs/antigravity-sdk-python/examples/deep_dives/webview2_magika_langextract.py
+# Reading 'gemini:antigravity' from Windows Credential Manager...
+# Successfully loaded Gemini access token for Vertex AI.
+# Found WebView2 user profile: C:\Users\<user>\AppData\Local\Google\Google\latest\default\WebView2\EBWebView\Default
+#
+# Classifying WebView2 profile files using Magika:
+#   - File: History      -> Magika: sqlite (MIME: application/x-sqlite3)
+#   - File: Preferences  -> Magika: json (MIME: application/json)
+#   - File: Web Data     -> Magika: sqlite (MIME: application/x-sqlite3)
+#
+# Reading recent Visited URLs from History database...
+# Retrieved 15 history items.
+#
+# Running LangExtract structure synthesis using Gemini model...
+# Extracted 15 grounded entities:
+#   1. [SearchQuery] text='google chrome download'
+#      Attributes: {'query': 'google chrome download', 'engine': 'Google Search', 'topic': 'browser download'}
+#   ...
+# Saved structured JSONL output to: webview2_analysis_results.jsonl
+# Saved interactive HTML visualization to: webview2_visualization.html
+```
+
+It queries the `History` SQLite database (via a safe temporary copy to bypass file locks) and structures URLs/titles using the `gemini-2.5-flash` model.
+
+---
+
+## 13. Where to find more
 
 - [`PROTOCOL.md`](./PROTOCOL.md) — historical file-based A2A spec (the live
   transport is gRPC; see the `a2a-*` crates).
