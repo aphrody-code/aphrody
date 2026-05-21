@@ -6,6 +6,7 @@ mod client_cmd;
 // Gemini web app tools (gemini_chat 3.5 Flash + gemini_image Nano Banana).
 #[cfg(not(target_arch = "wasm32"))] mod gemini_tools;
 #[cfg(not(target_arch = "wasm32"))] mod firefly_tools;
+#[cfg(not(target_arch = "wasm32"))] mod photoshop_tools;
 
 use std::{
     net::SocketAddr,
@@ -1021,6 +1022,52 @@ impl GoogleMcpServer {
         Parameters(req): Parameters<firefly_tools::FireflyGenerateRequest>,
     ) -> String {
         firefly_tools::generate(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // photoshop_* — headless cloud Photoshop API (image.adobe.io). The
+    // in-policy replacement for the TypeScript photoshop-mcp: no local
+    // Photoshop, no JS. Same IMS auth as Firefly.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Get the layer manifest (tree, dimensions, mode) of a PSD/image via the \
+                          cloud Photoshop API. input_url must be readable by Adobe (presigned S3 / \
+                          Azure SAS / Dropbox / Creative Cloud). Returns the Photoshop job JSON.")]
+    async fn photoshop_manifest(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsManifestRequest>,
+    ) -> String {
+        photoshop_tools::manifest(req).await
+    }
+
+    #[tool(description = "Render a PSD/image to an output URL via the cloud Photoshop API \
+                          (renditionCreate). format = png|jpg|psd|tiff|dng. output_url must be a \
+                          writable destination (presigned PUT / SAS / CC). Returns the job JSON.")]
+    async fn photoshop_rendition(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsRenditionRequest>,
+    ) -> String {
+        photoshop_tools::rendition(req).await
+    }
+
+    #[tool(description = "Apply layer edits (and optionally render) on a PSD via the cloud \
+                          Photoshop API (documentOperations). `options` is the layer-edit JSON \
+                          tree. Returns the job JSON.")]
+    async fn photoshop_document_operations(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsDocOpsRequest>,
+    ) -> String {
+        photoshop_tools::document_operations(req).await
+    }
+
+    #[tool(description = "Bridge: generate an image with Adobe Firefly, then route it through the \
+                          cloud Photoshop API. With output_url it converts the result to that \
+                          URL/format (e.g. an editable PSD); without it, returns the layer \
+                          manifest of the generated image. Set FIREFLY_CLIENT_ID/SECRET.")]
+    async fn firefly_to_photoshop(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::FireflyToPhotoshopRequest>,
+    ) -> String {
+        photoshop_tools::firefly_to_photoshop(req).await
     }
 
     // -----------------------------------------------------------------------

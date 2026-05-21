@@ -101,15 +101,49 @@ Config (a journal URL + org id + api key) is **local-only** — kept under
 `var/` (gitignored), sourced into `FIREFLY_JOURNAL_URL` / `FIREFLY_IMS_ORG_ID`
 / `FIREFLY_CLIENT_ID` / `FIREFLY_CLIENT_SECRET`. Never committed or logged.
 
-## Next extension (same crate, same auth core)
+## Cloud Photoshop API — landed (`aphrody_firefly::photoshop`)
 
-The **cloud Photoshop API** (`photoshopv2-api.json`, base
-`https://image.adobe.io/...`) is the in-policy answer to `photoshop-mcp`'s tool
-surface — document operations, smart-object replace, text-layer edits,
-`renditionCreate`, action playback — all async REST jobs that reuse
-`aphrody_firefly::auth`. Adding a `photoshop` module + `photoshop_*` MCP tools
-gives aphrody headless PSD editing with no Photoshop install and no JS runtime.
-Tracked as the follow-up; the async submit/poll plumbing is already shared.
+The in-policy answer to `photoshop-mcp`'s tool surface: headless PSD editing
+over REST, no Photoshop install, no JS, on the **same IMS token**
+(`TokenCache`).
+
+Verified protocol (Adobe Photoshop API SDK, 2026-05): base
+`https://image.adobe.io/pie/psdService`; ops `documentManifest`,
+`documentOperations`, `smartObject`, `renditionCreate`. Auth headers
+`Authorization: Bearer` + `x-api-key`. Inputs/outputs are `{ href, storage }`
+(+`type`,`overwrite` for outputs); `storage ∈ {aio, adobe, external, azure,
+dropbox}`; output `type ∈ {image/jpeg, image/png, image/vnd.adobe.photoshop,
+image/tiff, image/x-adobe-dng}`. POST returns `{ _links:{ self:{ href }}}`;
+poll until every `outputs[].status` is terminal (`succeeded`/`failed`;
+transient `pending`/`running`/`uploading`).
+
+`PhotoshopClient`: `document_manifest`, `create_rendition`,
+`document_operations` (typed inputs/outputs + passthrough `options` layer
+tree), `smart_object`. Typed `Storage`/`OutputType`/`PsJobStatus` (with
+`Unknown` fallback), `PhotoshopJob::{all_terminal, all_succeeded}`. 42 offline
+tests across the crate.
+
+### MCP endpoint (`google_mcp/src/photoshop_tools.rs`)
+
+Tools on `aphrody-mcp`: `photoshop_manifest`, `photoshop_rendition`,
+`photoshop_document_operations`, and the **`firefly_to_photoshop`** bridge —
+generate with Firefly (whose outputs are presigned, Adobe-readable URLs), then
+feed that URL straight into a Photoshop op (e.g. convert a generated image into
+an editable PSD, or return its layer manifest). `photoshop_manifest` and the
+manifest branch of the bridge need only a readable input URL — no writable
+storage — so they run end-to-end today; rendition/edit ops additionally need a
+writable `output_url` (the user's presigned PUT / SAS / CC destination).
+
+## The "Gemini plugin" and the JS boundary
+
+A literal in-app Photoshop *plugin panel* must be **UXP** (HTML/JS) or a legacy
+C++ `.8bf` — and JS/TS is banned from the aphrody repo (CLAUDE.md §2). So the
+Gemini↔Photoshop capability is delivered **in-policy** as: (1) the Rust bridge
++ `firefly_to_photoshop` MCP tool above, and (2) the `gemini_*` MCP tools. A
+UXP panel that simply calls `aphrody-mcp` is the out-of-policy, **user-owned**
+artifact — its manifest + a thin `fetch()` bridge are documented in
+`docs/integrations/photoshop-uxp-panel.md`; it is intentionally *not* committed
+as source to keep the repo Rust-only. Override only on explicit instruction.
 
 ## Security / privacy
 
