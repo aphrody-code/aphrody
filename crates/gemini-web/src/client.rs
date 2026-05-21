@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use crate::auth::Auth;
 use crate::bootstrap::fetch_session_tokens;
 use crate::error::{GeminiError, Result};
-use crate::payload::{build_send_payload, parse_send_response};
-use crate::rpc_ids::{GET_CONFIG_FLAG, SEND_MESSAGE};
+use crate::payload::{build_send_payload, parse_stream_response};
+use crate::rpc_ids::GET_CONFIG_FLAG;
 use crate::transport::HttpTransport;
 use crate::types::{ChatReply, ConversationMetadata};
 use serde_json::json;
@@ -101,16 +101,14 @@ impl GeminiWebClient {
         meta: &ConversationMetadata,
     ) -> Result<ChatReply> {
         let payload = build_send_payload(prompt, &self.language, meta);
-        // Follow-up turns target the conversation's source-path.
-        let source_path = meta
-            .conversation_id
-            .as_ref()
-            .map(|cid| format!("/app/{cid}"));
-        let inner = self
+        // Follow-up turns are threaded via the inner metadata; the optional
+        // source-path mirrors the web UI for parity.
+        let source_path = meta.conversation_id.as_ref().map(|cid| format!("/app/{cid}"));
+        let raw = self
             .transport
-            .rpc_raw(SEND_MESSAGE, &payload, source_path.as_deref(), model)
+            .stream_generate(&payload, source_path.as_deref(), model)
             .await?;
-        parse_send_response(&inner)
+        parse_stream_response(&raw)
     }
 
     /// Convenience: start a fresh conversation with one prompt.
