@@ -131,6 +131,64 @@ impl HttpTransport {
         Ok(headers)
     }
 
+    /// Send a generate turn to the streaming endpoint
+    /// ([`crate::rpc_ids::URL_STREAM_GENERATE`]) and return the raw streamed
+    /// response text for [`crate::payload::parse_stream_response`].
+    ///
+    /// `inner` is the message list built by
+    /// [`crate::payload::build_send_payload`]; it is wrapped as
+    /// `f.req=[null,"<inner_json>"]&at=<token>` (the `BardFrontendService`
+    /// framing, distinct from `batchexecute`). `model` ships the optional
+    /// model-selector header.
+    ///
+    /// # Errors
+    ///
+    /// [`GeminiError::Auth`] on 401/403, [`GeminiError::Rpc`] on other non-2xx.
+    pub async fn stream_generate(
+        &self,
+        inner: &Value,
+        source_path: Option<&str>,
+        model: Option<&str>,
+    ) -> Result<String> {
+        // f.req envelope is `[null, "<inner json string>"]` (NOT the batchexecute
+        // `[[[rpcid,…]]]` shape).
+        let envelope = Value::Array(vec![Value::Null, Value::String(inner.to_string())]);
+        let body = format!(
+            "f.req={}&at={}",
+            urlencoded(&envelope.to_string()),
+            urlencoded(&self.tokens.at),
+        );
+        let req_id = self.next_req_id();
+        let mut url = url::Url::parse(crate::rpc_ids::URL_STREAM_GENERATE)
+            .map_err(|e| GeminiError::Network(format!("invalid stream URL: {e}")))?;
+        {
+            let mut qp = url.query_pairs_mut();
+            qp.append_pair("bl", &self.tokens.bl);
+            qp.append_pair("hl", self.tokens.language.as_deref().unwrap_or("en"));
+            qp.append_pair("_reqid", &req_id.to_string());
+            qp.append_pair("rt", "c");
+            if let Some(sid) = &self.tokens.fsid {
+                qp.append_pair("f.sid", sid);
+            }
+        }
+        let _ = source_path; // StreamGenerate carries the thread via inner metadata, not the URL.
+        let headers = self.build_headers(body.len(), model)?;
+        let response = self.client.post(url).headers(headers).body(body).send().await?;
+        let status = response.status();
+        let text = response.text().await?;
+        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+            return Err(GeminiError::Auth(format!("{status}: StreamGenerate rejected")));
+        }
+        if !status.is_success() {
+            return Err(GeminiError::Rpc {
+                rpc_id: "StreamGenerate".to_string(),
+                status: status.as_u16(),
+                message: text.chars().take(200).collect(),
+            });
+        }
+        Ok(text)
+    }
+
     /// Execute a single RPC and return the **raw** response body (diagnostics).
     ///
     /// Same request path as [`Self::rpc_raw`] but returns the un-parsed text,
