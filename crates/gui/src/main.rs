@@ -235,6 +235,7 @@ impl<'a> ApplicationHandler for App<'a> {
                     let chip = Button {
                         variant: ButtonVariant::Filled,
                         disabled: true,
+                        // TODO icon: embed assets/aphrody.webp once webp->RGBA decode is wired
                         icon: None,
                         label: status_label,
                         on_click_id: None,

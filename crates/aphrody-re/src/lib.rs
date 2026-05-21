@@ -1,22 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
 //! # aphrody-re — reverse engineering primitives
 //!
-//! Pure-Rust binary triage built on top of [`goblin`]. Exposes a single
-//! observable feature: [`triage`] parses a byte slice and returns a fully
-//! populated [`TriageReport`] describing the detected format, entry point,
-//! sections with per-section Shannon entropy, imports, exports, an
-//! ASCII/UTF-16 strings sample, and a SHA-256 of the whole input.
+//! Pure-Rust binary triage and disassembly built on top of [`goblin`] and
+//! [`iced_x86`]. Exposes two observable features:
 //!
-//! Scope (Sprint R-E, 2026-05-19):
+//! - [`triage`] parses a byte slice and returns a fully populated
+//!   [`TriageReport`] describing the detected format, entry point, sections
+//!   with per-section Shannon entropy, imports, exports, an ASCII/UTF-16
+//!   strings sample, and a SHA-256 of the whole input.
+//!
+//! - [`disasm`] decodes up to [`DISASM_LIMIT`] x86-64 instructions from a
+//!   raw byte slice at a given `rip` base address using `iced-x86`'s
+//!   `IntelFormatter`. Returns a `Vec<DisasmInsn>` ready for JSON
+//!   serialization.
+//!
+//! Scope (Sprint R-E, 2026-05-19 / R5.4, 2026-05-21):
 //!
 //! - ✅ PE32 / PE64 (Windows)
 //! - ✅ ELF32 / ELF64 (Linux + most Unixes)
+//! - ✅ x86-64 disassembly via `iced-x86 1.21` (pure Rust, no C, no GPL)
 //! - ❓ Mach-O — `goblin` exposes it under feature `mach{32,64}` which is
 //!   off in the workspace pin; reports `Format::Unknown` for now.
 //! - ❓ WebAssembly — not yet wired (`goblin` does not parse `.wasm`).
 //!
-//! Disassembly is intentionally out of scope here (Phase 2 = `iced-x86` +
-//! `capstone` wrappers). YARA scanning is also Phase 2 (`yara-x`, BSD-3).
+//! YARA scanning is Phase 3 (`yara-x`, BSD-3).
 //!
 //! ## Quickstart
 //!
@@ -30,16 +37,28 @@
 //! assert!(!report.sha256.is_empty());
 //! ```
 //!
+//! ```
+//! use aphrody_re::disasm;
+//!
+//! // `mov rbp, rsp` encoded as x86-64.
+//! let insns = disasm(&[0x48, 0x89, 0xE5], 0x1000, 8);
+//! assert_eq!(insns.len(), 1);
+//! assert_eq!(insns[0].mnemonic, "mov");
+//! ```
+//!
 //! ## Anti-goal
 //!
 //! `aphrody-re` is **not** a Ghidra/IDA reimplementation. It orchestrates
-//! existing best-of-breed parsers (`goblin`) and surfaces a stable JSON
-//! report for downstream consumers (CLI sub-command, MCP tool, audit
-//! reports). Heavy lifting (decompilation, full disassembly, taint
-//! analysis) is delegated.
+//! existing best-of-breed parsers (`goblin`, `iced-x86`) and surfaces stable
+//! JSON reports for downstream consumers (CLI sub-command, MCP tool, audit
+//! reports). Heavy lifting (decompilation, full disassembly, taint analysis)
+//! is delegated.
 
 #![forbid(unsafe_code)]
 
+use iced_x86::{
+    Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -151,8 +170,117 @@ pub const STRINGS_MIN_LEN: usize = 6;
 /// Keeps the JSON report bounded for downstream consumers.
 pub const STRINGS_SAMPLE_LIMIT: usize = 64;
 
+/// Default maximum number of instructions returned by [`disasm`].
+/// Callers may pass a smaller `limit`; values larger than this are honoured
+/// but the default CLI surface caps at this constant.
+pub const DISASM_LIMIT: usize = 256;
+
 // ---------------------------------------------------------------------------
-// Public API
+// Disassembly types
+// ---------------------------------------------------------------------------
+
+/// One decoded x86-64 instruction as returned by [`disasm`].
+///
+/// All fields are serializable to JSON. The `text` field contains the full
+/// Intel-syntax disassembly line produced by `iced-x86`'s `IntelFormatter`
+/// (e.g. `"mov rbp,rsp"`). `mnemonic` is the bare mnemonic extracted from
+/// that line (everything before the first space or tab), convenient for
+/// filtering without reparsing `text`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DisasmInsn {
+    /// Byte offset of this instruction from the start of the input slice.
+    pub offset: u64,
+    /// Virtual address of this instruction (`rip` base + `offset`).
+    pub address: u64,
+    /// Lowercase hex encoding of the raw instruction bytes (e.g. `"4889e5"`).
+    pub bytes_hex: String,
+    /// Bare mnemonic (e.g. `"mov"`, `"call"`, `"nop"`).
+    pub mnemonic: String,
+    /// Full Intel-syntax disassembly line (e.g. `"mov rbp,rsp"`).
+    pub text: String,
+}
+
+// ---------------------------------------------------------------------------
+// Disassembly public API
+// ---------------------------------------------------------------------------
+
+/// Disassemble up to `limit` x86-64 instructions from `bytes`.
+///
+/// `rip` is the virtual address of the first byte (used for RIP-relative
+/// operand display and as the base for the `address` field of each
+/// [`DisasmInsn`]). Pass `0` if the absolute address is unknown.
+///
+/// Uses `iced-x86`'s `IntelFormatter` with default options (no decorators,
+/// uppercase mnemonics off). Stops at `limit` instructions, at the end of
+/// the slice, or at the first invalid/incomplete encoding — whichever comes
+/// first. Never panics on arbitrary input.
+///
+/// # Examples
+///
+/// ```
+/// use aphrody_re::disasm;
+///
+/// // `mov rbp, rsp` — 3-byte encoding: REX.W + 0x89 /5
+/// let insns = disasm(&[0x48, 0x89, 0xE5], 0x1000, 8);
+/// assert_eq!(insns.len(), 1);
+/// assert_eq!(insns[0].mnemonic, "mov");
+/// assert_eq!(insns[0].address, 0x1000);
+/// assert_eq!(insns[0].bytes_hex, "4889e5");
+/// ```
+#[must_use]
+pub fn disasm(bytes: &[u8], rip: u64, limit: usize) -> Vec<DisasmInsn> {
+    // `limit` is always respected exactly. `DISASM_LIMIT` is the default used
+    // by the CLI when no `--limit` flag is given; the library itself does not
+    // enforce a hard cap above the caller's request.
+    let cap = limit;
+    let mut out = Vec::with_capacity(cap.min(64));
+
+    let mut decoder = Decoder::with_ip(64, bytes, rip, DecoderOptions::NONE);
+    let mut formatter = IntelFormatter::new();
+    // Suppress "db" invalid-byte fallback mnemonics — stop on first invalid.
+    let mut insn = Instruction::default();
+    let mut text_buf = String::with_capacity(64);
+
+    while decoder.can_decode() && out.len() < cap {
+        decoder.decode_out(&mut insn);
+
+        // iced-x86 emits `db XX` for invalid byte sequences. We stop rather
+        // than emit a misleading "instruction" because the remaining bytes
+        // are uninterpretable as code.
+        if insn.is_invalid() {
+            break;
+        }
+
+        let offset = insn.ip().wrapping_sub(rip);
+        let address = insn.ip();
+        let len = insn.len();
+        let start = offset as usize;
+        let raw = bytes.get(start..start.saturating_add(len)).unwrap_or(&[]);
+        let bytes_hex = hex::encode(raw);
+
+        text_buf.clear();
+        formatter.format(&insn, &mut text_buf);
+
+        // Extract mnemonic: everything before the first ASCII whitespace.
+        let mnemonic = text_buf
+            .split_once(|c: char| c.is_ascii_whitespace())
+            .map_or(text_buf.as_str(), |(m, _)| m)
+            .to_owned();
+
+        out.push(DisasmInsn {
+            offset,
+            address,
+            bytes_hex,
+            mnemonic,
+            text: text_buf.clone(),
+        });
+    }
+
+    out
+}
+
+// ---------------------------------------------------------------------------
+// Public API (triage)
 // ---------------------------------------------------------------------------
 
 /// Triage a binary blob.
@@ -552,5 +680,90 @@ mod tests {
         // rejects). Both are acceptable — what matters is the API contract.
         assert!(matches!(r.format, Format::Pe32 | Format::Pe64 | Format::Unknown));
         assert_eq!(r.size, 64);
+    }
+
+    // -----------------------------------------------------------------------
+    // disasm tests
+    // -----------------------------------------------------------------------
+
+    /// `48 89 E5` = `mov rbp, rsp` (REX.W + MOV r/m64,r64, ModRM 0xE5).
+    #[test]
+    fn disasm_mov_rbp_rsp() {
+        let bytes: &[u8] = &[0x48, 0x89, 0xE5];
+        let insns = disasm(bytes, 0x1000, 8);
+        assert_eq!(insns.len(), 1, "expected exactly 1 instruction, got {insns:?}");
+        assert_eq!(insns[0].mnemonic, "mov");
+        assert_eq!(insns[0].address, 0x1000);
+        assert_eq!(insns[0].offset, 0);
+        assert_eq!(insns[0].bytes_hex, "4889e5");
+        // Full text must contain both operands.
+        assert!(
+            insns[0].text.contains("rbp") && insns[0].text.contains("rsp"),
+            "unexpected text: {}",
+            insns[0].text
+        );
+    }
+
+    /// Multi-instruction sequence: `push rbp` + `mov rbp, rsp` + `nop`.
+    /// Canonical function prologue found in almost every x86-64 binary.
+    #[test]
+    fn disasm_function_prologue_three_insns() {
+        // 55            push rbp
+        // 48 89 E5      mov rbp, rsp
+        // 90            nop
+        let bytes: &[u8] = &[0x55, 0x48, 0x89, 0xE5, 0x90];
+        let insns = disasm(bytes, 0x0, 16);
+        assert_eq!(insns.len(), 3, "expected 3 instructions, got {insns:?}");
+        assert_eq!(insns[0].mnemonic, "push");
+        assert_eq!(insns[1].mnemonic, "mov");
+        assert_eq!(insns[2].mnemonic, "nop");
+        // Offsets must be monotonically increasing and match byte lengths.
+        assert_eq!(insns[0].offset, 0);
+        assert_eq!(insns[1].offset, 1); // `push rbp` is 1 byte
+        assert_eq!(insns[2].offset, 4); // `mov rbp, rsp` is 3 bytes
+    }
+
+    /// `limit` must be respected: decode at most N instructions even if more
+    /// valid bytes remain.
+    #[test]
+    fn disasm_respects_limit() {
+        // 10 consecutive `nop` bytes (0x90).
+        let bytes: Vec<u8> = vec![0x90; 10];
+        let insns = disasm(&bytes, 0x0, 3);
+        assert_eq!(insns.len(), 3, "limit=3 must cap at 3, got {insns:?}");
+    }
+
+    /// Empty slice must produce an empty result without panicking.
+    #[test]
+    fn disasm_empty_bytes_returns_empty() {
+        let insns = disasm(&[], 0x0, DISASM_LIMIT);
+        assert!(insns.is_empty());
+    }
+
+    /// Garbage bytes must not panic; the decoder may emit 0 valid instructions
+    /// or stop at the first invalid encoding.
+    #[test]
+    fn disasm_invalid_bytes_does_not_panic() {
+        // 0xFF 0xFF … is an invalid encoding in x86-64 (no valid 64-bit opcode
+        // starts with FF FF for GRPFF /7 + invalid ModRM).
+        let bytes: &[u8] = &[0xFF, 0xFF, 0xFF, 0xFF];
+        // Must not panic regardless of the output.
+        let _insns = disasm(bytes, 0x4000, DISASM_LIMIT);
+    }
+
+    /// Verify `DisasmInsn` round-trips through JSON without losing fields.
+    #[test]
+    fn disasm_insn_serializes_to_stable_json_shape() {
+        let bytes: &[u8] = &[0x90]; // nop
+        let insns = disasm(bytes, 0x2000, 1);
+        assert_eq!(insns.len(), 1);
+        let json = serde_json::to_value(&insns[0]).expect("serialize");
+        assert!(json["offset"].is_number());
+        assert!(json["address"].is_number());
+        assert!(json["bytes_hex"].is_string());
+        assert!(json["mnemonic"].is_string());
+        assert!(json["text"].is_string());
+        assert_eq!(json["address"], 0x2000u64);
+        assert_eq!(json["mnemonic"], "nop");
     }
 }

@@ -67,6 +67,9 @@ gemini-runtime            = { path = "../gemini-runtime" }
 # `aphrody re triage` — reverse engineering primitives (pure Rust, goblin-based,
 # zero GPL). Native-only because it reads binaries from disk (std::fs::read).
 aphrody-re                = { path = "../aphrody-re" }
+# `aphrody logo` — canonical icon (assets/aphrody.webp) -> .ico / .svg / M3
+# maskable PNG + pixel-perfect terminal rendering. Native-only (image+ico).
+aphrody-logo              = { path = "../aphrody-logo" }
 # `aphrody chat` — unified turn-loop REPL composing every aphrody building
 # block (gemini-runtime + tools + memory + session + permissions + hooks +
 # prompts + router + cost + context + events). Phase 1 wires --prompt
