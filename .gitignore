@@ -48,6 +48,7 @@ out/
 build/
 .turbo/
 .cache/
+.uv-cache/
 .parcel-cache/
 .vite/
 .swc/

@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Any
 from aphrody.auth import credentials as _credentials
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from google.oauth2.credentials import Credentials
 
 #: Vertex project bound to the Antigravity account (overridable via env).
@@ -144,6 +146,47 @@ class GeminiVertex:
             contents=contents,
             config=config,
         )
+
+    def stream(
+        self,
+        contents: Any,
+        *,
+        model: str | None = None,
+        system_instruction: str | None = None,
+        temperature: float | None = None,
+    ) -> Iterator[str]:
+        """Yield text deltas from a streaming ``generate_content`` (keyless).
+
+        This is the reusable building block behind the voice loop's brain: a
+        synchronous generator of text chunks, suitable for running in a
+        thread-pool executor from async code.
+
+        Args:
+            contents: Any value accepted by google-genai ``contents`` (a
+                string, parts, or a multi-turn message list).
+            model: Override the default model.
+            system_instruction: Optional system prompt.
+            temperature: Optional sampling temperature.
+
+        Yields:
+            Non-empty text deltas as they stream from the model.
+        """
+        config = None
+        if system_instruction is not None or temperature is not None:
+            from google.genai import types as gx
+
+            config = gx.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=temperature,
+            )
+        for chunk in self._client.models.generate_content_stream(
+            model=model or self.model,
+            contents=contents,
+            config=config,
+        ):
+            text = getattr(chunk, "text", None)
+            if text:
+                yield text
 
 
 def generate(prompt: str, *, model: str = DEFAULT_MODEL) -> str:

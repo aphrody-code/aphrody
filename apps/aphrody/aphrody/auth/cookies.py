@@ -11,9 +11,11 @@ from a Cookie-Editor export or — best effort — straight from a local Chrome
 profile.
 
 Storage:
-    ``~/.aphrody/google-cookies.json`` (override with ``APHRODY_COOKIES_PATH``),
-    written ``0o600``. The file holds only the user's own cookies and is never
-    committed; values are never logged or printed by :func:`status`.
+    ``<repo>/var/secrets/google-cookies.json`` when run inside the repo, else
+    ``~/.aphrody/google-cookies.json`` (override with ``APHRODY_COOKIES_PATH``
+    or ``APHRODY_SECRETS_DIR``), written ``0o600``. The file holds only the
+    user's own cookies and is never committed; values are never logged or
+    printed by :func:`status`.
 
 Note on Chrome App-Bound Encryption (ABE):
     Recent Chrome builds wrap the cookie key with ABE, which defeats library
@@ -29,6 +31,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from aphrody import _paths
 from aphrody.errors import AphrodyError
 
 
@@ -51,7 +54,8 @@ RECOMMENDED_COOKIES: tuple[str, ...] = (
 def cookies_path() -> Path:
     """Return the path of the private cookie store.
 
-    Honors ``APHRODY_COOKIES_PATH``; otherwise ``~/.aphrody/google-cookies.json``.
+    Honors ``APHRODY_COOKIES_PATH``; otherwise the file ``google-cookies.json``
+    inside :func:`aphrody._paths.secrets_dir` (``var/secrets`` in-repo).
 
     Returns:
         The resolved store path (the file may not yet exist).
@@ -59,7 +63,7 @@ def cookies_path() -> Path:
     override = os.environ.get("APHRODY_COOKIES_PATH")
     if override:
         return Path(override).expanduser()
-    return Path.home() / ".aphrody" / "google-cookies.json"
+    return _paths.secret_file("google-cookies.json")
 
 
 def _domain_match(cookie_domain: str, host: str) -> bool:

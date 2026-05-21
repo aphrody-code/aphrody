@@ -1,10 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 aphrody contributors
-"""Voice server backend and static UI runner for aphrody voice command.
+"""Local voice-to-voice loop for the ``aphrody voice`` command.
 
-Bridges the browser audio stream (Web Audio API) with local Whisper STT,
-Kokoro TTS, and the Antigravity Agent connection.
+Bridges a browser audio stream (Web Audio API) with local Whisper STT, a keyless
+Gemini brain (aphrody's :class:`~aphrody.vertex.GeminiVertex` over Vertex AI —
+**no API key, no external harness**) and local Kokoro TTS, then serves a small
+web UI.
+
+Pipeline::
+
+    browser mic ─ws→ Whisper STT ─→ VoiceBrain (Vertex, keyless) ─→ Kokoro TTS ─ws→ browser
+
+The brain keeps a per-connection message history and streams replies
+sentence-by-sentence for low-latency speech, with barge-in (a new utterance
+cancels the in-flight reply).
 """
+
+from __future__ import annotations
 
 import asyncio
 import http.server
@@ -13,28 +25,86 @@ import os
 import sys
 import urllib.request
 import webbrowser
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import websockets
-from google.antigravity import Agent, LocalAgentConfig
-from google.antigravity.types import Content
 from google.antigravity.voice import (
     LocalKokoroTextToSpeech,
     LocalWhisperSpeechToText,
 )
 
-# Constants for default models
+from aphrody.vertex import DEFAULT_MODEL, GeminiVertex
+
+# Default model directory (Kokoro weights live here, not under var/secrets —
+# they are public model files, not credentials).
+DEFAULT_MODELS_DIR = os.path.join(os.path.expanduser("~"), ".aphrody", "models")
+
 KOKORO_MODEL_URL = (
     "https://huggingface.co/thewh1teagle/Kokoro/resolve/main/kokoro-v0_19.onnx"
 )
-KOKORO_VOICES_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
-DEFAULT_MODELS_DIR = os.path.join(os.path.expanduser("~"), ".aphrody", "models")
+KOKORO_VOICES_URL = (
+    "https://github.com/thewh1teagle/kokoro-onnx/releases/download/"
+    "model-files-v1.0/voices-v1.0.bin"
+)
+
+# Voice persona system instructions, keyed by Kokoro voice-name prefix.
+SYSTEM_INSTRUCTIONS_EN = (
+    "You are a helpful and friendly voice assistant. Respond very concisely, "
+    "directly, and naturally in English. Avoid bullet points, markdown "
+    "formatting, or long paragraphs. Keep sentences short and conversational, "
+    "optimized for text-to-speech."
+)
+SYSTEM_INSTRUCTIONS_FR = (
+    "Tu es un assistant vocal intelligent, chaleureux et utile. Réponds de "
+    "manière extrêmement concise, directe et naturelle en français. Évite "
+    "absolument les listes à puces, le markdown et les longs paragraphes. "
+    "Rédige des phrases très courtes adaptées à la synthèse vocale."
+)
+SYSTEM_INSTRUCTIONS_JA = (
+    "あなたは親切な音声アシスタントです。日本語で非常に簡潔かつ自然に答えてください。"
+    "長い文章やリスト、マークダウン装飾は避け、音声合成に適した短い文で返答してください。"
+)
+
+
+def system_instruction_for(voice_profile: str) -> str:
+    """Return the persona system instruction for a Kokoro *voice_profile*.
+
+    Args:
+        voice_profile: A Kokoro voice name (e.g. ``"ff_siwis"``); its language
+            prefix (``ff``/``fm`` ▸ French, ``jf``/``jm`` ▸ Japanese, else
+            English) selects the persona.
+
+    Returns:
+        The system instruction string for that language.
+    """
+    if voice_profile.startswith(("ff", "fm")):
+        return SYSTEM_INSTRUCTIONS_FR
+    if voice_profile.startswith(("jf", "jm")):
+        return SYSTEM_INSTRUCTIONS_JA
+    return SYSTEM_INSTRUCTIONS_EN
+
+
+def whisper_language_for(voice_profile: str) -> str:
+    """Return the Whisper language code matching a Kokoro *voice_profile*."""
+    if voice_profile.startswith(("ff", "fm")):
+        return "fr"
+    if voice_profile.startswith(("jf", "jm")):
+        return "ja"
+    return "en"
 
 
 def ensure_models_exist(models_dir: str) -> tuple[str, str]:
-    """Ensure Kokoro ONNX model and voices.bin exist locally. Downloads if missing."""
+    """Ensure the Kokoro ONNX model and voices file exist, downloading if not.
+
+    Args:
+        models_dir: Directory to hold the model files.
+
+    Returns:
+        ``(model_path, voices_path)``.
+    """
     os.makedirs(models_dir, exist_ok=True)
     model_path = os.path.join(models_dir, "kokoro-v0_19.onnx")
     voices_path = os.path.join(models_dir, "voices.bin")
@@ -45,46 +115,75 @@ def ensure_models_exist(models_dir: str) -> tuple[str, str]:
         print("Kokoro model download complete.")
 
     if not os.path.exists(voices_path):
-        print(
-            f"Kokoro voices.bin not found at {voices_path}. Auto-downloading..."
-        )
+        print(f"Kokoro voices not found at {voices_path}. Auto-downloading...")
         urllib.request.urlretrieve(KOKORO_VOICES_URL, voices_path)
-        print("Kokoro voices.bin download complete.")
+        print("Kokoro voices download complete.")
 
     return model_path, voices_path
 
 
-# System instructions templates for voice personas
-SYSTEM_INSTRUCTIONS_EN = (
-    "You are a helpful and friendly voice assistant. Respond very concisely, directly, and naturally in English. "
-    "Avoid bullet points, markdown formatting, or long paragraphs. Keep sentences short and conversational, optimized for text-to-speech."
-)
+class VoiceBrain:
+    """Keyless conversational brain for the voice loop, backed by Vertex AI.
 
-SYSTEM_INSTRUCTIONS_FR = (
-    "Tu es un assistant vocal intelligent, chaleureux et utile. Réponds de manière extrêmement concise, "
-    "directe et naturelle en français. Évite absolument les listes à puces, le markdown et les longs paragraphes. "
-    "Rédige des phrases très courtes adaptées à la synthèse vocale."
-)
+    Holds the per-session message history and a system persona, and streams
+    replies through aphrody's keyless :class:`~aphrody.vertex.GeminiVertex` —
+    no API key and no Antigravity harness binary required.
+    """
 
-SYSTEM_INSTRUCTIONS_JA = (
-    "あなたは親切な音声アシスタントです。日本語で非常に簡潔かつ自然に答えてください。長い文章やリスト、 "
-    "マークダウン装飾は避け、音声合成に適した短い文で返答してください。"
-)
+    def __init__(
+        self,
+        system_instruction: str,
+        *,
+        model: str = DEFAULT_MODEL,
+        temperature: float = 0.7,
+    ) -> None:
+        """Initialize the brain.
+
+        Args:
+            system_instruction: The persona/system prompt.
+            model: Gemini model id.
+            temperature: Sampling temperature.
+        """
+        self._system_instruction = system_instruction
+        self._temperature = temperature
+        self._history: list[dict[str, Any]] = []
+        self._gemini = GeminiVertex(model=model)
+
+    @property
+    def history(self) -> list[dict[str, Any]]:
+        """The running conversation history (user/model turns)."""
+        return self._history
+
+    def stream_reply(self, user_text: str) -> Iterator[str]:
+        """Append *user_text*, stream the model's reply, and record it.
+
+        Args:
+            user_text: The transcribed user utterance.
+
+        Yields:
+            Reply text deltas as they stream from the model.
+        """
+        self._history.append({"role": "user", "parts": [{"text": user_text}]})
+        accumulated = ""
+        for delta in self._gemini.stream(
+            list(self._history),
+            system_instruction=self._system_instruction,
+            temperature=self._temperature,
+        ):
+            accumulated += delta
+            yield delta
+        if accumulated:
+            self._history.append(
+                {"role": "model", "parts": [{"text": accumulated}]}
+            )
 
 
-def get_agent_config(voice_profile: str) -> LocalAgentConfig:
-    """Resolve the Agent Config and system instructions based on selected voice language."""
-    if voice_profile.startswith("ff") or voice_profile.startswith("fm"):
-        sys_inst = SYSTEM_INSTRUCTIONS_FR
-    elif voice_profile.startswith("jf") or voice_profile.startswith("jm"):
-        sys_inst = SYSTEM_INSTRUCTIONS_JA
-    else:
-        sys_inst = SYSTEM_INSTRUCTIONS_EN
-    return LocalAgentConfig(system_instructions=sys_inst)
+# Punctuation that flushes the sentence buffer to TTS for low latency.
+_TTS_FLUSH_CHARS = (".", "?", "!", "\n", ",", ";")
 
 
 class VoiceServer:
-    """Handles WebSocket connections and proxies audio streams between client and SDK."""
+    """Serves the voice loop over a WebSocket, proxying STT ▸ brain ▸ TTS."""
 
     def __init__(
         self,
@@ -92,65 +191,49 @@ class VoiceServer:
         tts: LocalKokoroTextToSpeech,
         voice_name: str = "ff_siwis",
     ) -> None:
+        """Initialize the server.
+
+        Args:
+            stt: A loaded local Whisper speech-to-text engine.
+            tts: A loaded local Kokoro text-to-speech engine.
+            voice_name: Default Kokoro voice when the client sends none.
+        """
         self.stt = stt
         self.tts = tts
         self.voice_name = voice_name
 
     async def handle_connection(self, websocket: Any) -> None:
-        """Process incoming WebSocket messages from a client connection."""
+        """Process WebSocket messages for one client connection."""
         print(f"New client connected: {websocket.remote_address}")
 
-        # Active conversation state variables
         audio_buffer: list[np.ndarray] = []
         is_user_speaking = False
         voice_profile = self.voice_name
-        active_turn_task = None
-
-        voice_agent = None
-        conversation = None
+        active_turn_task: asyncio.Task | None = None
+        brain: VoiceBrain | None = None
 
         try:
             async for message in websocket:
-                # Handle incoming binary audio frames
                 if isinstance(message, bytes):
                     if is_user_speaking:
-                        # Convert incoming bytes (PCM float32) to numpy array
                         chunk = np.frombuffer(message, dtype=np.float32)
                         audio_buffer.append(chunk)
                     continue
 
-                # Handle incoming JSON command messages
                 try:
                     data = json.loads(message)
                 except json.JSONDecodeError:
-                    print(
-                        "Warning: Received invalid JSON string.",
-                        file=sys.stderr,
-                    )
+                    print("Warning: invalid JSON string.", file=sys.stderr)
                     continue
 
                 msg_type = data.get("type")
 
                 if msg_type == "start":
                     voice_profile = data.get("voice", self.voice_name)
-                    print(
-                        f"Client started/updated session. Selected voice: {voice_profile}"
-                    )
-
-                    # Close existing agent if open
-                    if voice_agent:
-                        if active_turn_task and not active_turn_task.done():
-                            active_turn_task.cancel()
-                        await voice_agent.__aexit__(None, None, None)
-                        voice_agent = None
-                        conversation = None
-
-                    # Initialize agent session dynamically matching the language
-                    agent_config = get_agent_config(voice_profile)
-                    voice_agent = Agent(agent_config)
-                    await voice_agent.__enter__()
-                    conversation = voice_agent.conversation
-
+                    print(f"Session start. Voice: {voice_profile}")
+                    if active_turn_task and not active_turn_task.done():
+                        active_turn_task.cancel()
+                    brain = VoiceBrain(system_instruction_for(voice_profile))
                     await websocket.send(
                         json.dumps({"type": "status", "status": "idle"})
                     )
@@ -159,16 +242,9 @@ class VoiceServer:
                     print("\n[VAD] User started speaking...")
                     is_user_speaking = True
                     audio_buffer = []
-
-                    # Immediate barge-in interrupt: Cancel active agent outputs
                     if active_turn_task and not active_turn_task.done():
-                        print(
-                            "[Barge-in] Interrupting active agent generation."
-                        )
+                        print("[Barge-in] Interrupting active generation.")
                         active_turn_task.cancel()
-                        if conversation:
-                            await conversation.cancel()
-
                     await websocket.send(
                         json.dumps({"type": "status", "status": "listening"})
                     )
@@ -180,36 +256,15 @@ class VoiceServer:
                     await websocket.send(
                         json.dumps({"type": "status", "status": "thinking"})
                     )
-
                     if not audio_buffer:
-                        print(
-                            "Warning: Audio buffer is empty.", file=sys.stderr
-                        )
                         await websocket.send(
                             json.dumps({"type": "status", "status": "idle"})
                         )
                         continue
 
-                    # Transcribe the accumulated audio data
                     audio_data = np.concatenate(audio_buffer)
                     audio_buffer = []
-
-                    # Map voice_profile to language code for Whisper
-                    stt_lang = (
-                        "fr"
-                        if (
-                            voice_profile.startswith("ff")
-                            or voice_profile.startswith("fm")
-                        )
-                        else "ja"
-                        if (
-                            voice_profile.startswith("jf")
-                            or voice_profile.startswith("jm")
-                        )
-                        else "en"
-                    )
-
-                    # Execute transcription in a separate thread to prevent blocking the async loop
+                    stt_lang = whisper_language_for(voice_profile)
                     loop = asyncio.get_running_loop()
                     transcription = await loop.run_in_executor(
                         None,
@@ -217,9 +272,8 @@ class VoiceServer:
                             audio_data, language=stt_lang, beam_size=1
                         ),
                     )
-
                     if not transcription or not transcription.strip():
-                        print("[STT] No speech detected in audio.")
+                        print("[STT] No speech detected.")
                         await websocket.send(
                             json.dumps({"type": "status", "status": "idle"})
                         )
@@ -235,32 +289,20 @@ class VoiceServer:
                             }
                         )
                     )
-
-                    if conversation:
-                        # Trigger agent generation task
-                        active_turn_task = asyncio.create_task(
-                            self.process_agent_turn(
-                                websocket,
-                                conversation,
-                                transcription,
-                                voice_profile,
-                            )
+                    if brain is None:
+                        brain = VoiceBrain(
+                            system_instruction_for(voice_profile)
                         )
-                    else:
-                        print(
-                            "Error: Conversation not initialized.",
-                            file=sys.stderr,
+                    active_turn_task = asyncio.create_task(
+                        self.process_turn(
+                            websocket, brain, transcription, voice_profile
                         )
-                        await websocket.send(
-                            json.dumps({"type": "status", "status": "idle"})
-                        )
+                    )
 
                 elif msg_type == "interrupt":
-                    print("[Command] Interrupt received from client.")
+                    print("[Command] Interrupt from client.")
                     if active_turn_task and not active_turn_task.done():
                         active_turn_task.cancel()
-                        if conversation:
-                            await conversation.cancel()
                     await websocket.send(
                         json.dumps({"type": "status", "status": "idle"})
                     )
@@ -270,77 +312,69 @@ class VoiceServer:
         finally:
             if active_turn_task and not active_turn_task.done():
                 active_turn_task.cancel()
-            if voice_agent:
-                await voice_agent.__aexit__(None, None, None)
 
-    async def process_agent_turn(
+    async def process_turn(
         self,
         websocket: Any,
-        conversation: Any,
+        brain: VoiceBrain,
         transcription: str,
         voice_profile: str,
     ) -> None:
-        """Sends the user message to the agent, receives streams, and sends audio/text to client."""
+        """Stream the brain's reply to the client, synthesizing per sentence."""
         try:
-            print("[Agent] Generating response...")
-            await websocket.send(
-                json.dumps({"type": "status", "status": "thinking"})
+            print("[Brain] Generating response...")
+            loop = asyncio.get_running_loop()
+            stream = await loop.run_in_executor(
+                None, brain.stream_reply, transcription
             )
 
-            sentence_buffer = []
+            def next_delta(iterator: Iterator[str]) -> str | None:
+                try:
+                    return next(iterator)
+                except StopIteration:
+                    return None
 
-            async for chunk in conversation.chat(Content(text=transcription)):
-                if not chunk.text:
-                    continue
-
-                text_delta = chunk.text
-                print(text_delta, end="", flush=True)
-                sentence_buffer.append(text_delta)
-
+            sentence_buffer: list[str] = []
+            while True:
+                delta = await loop.run_in_executor(None, next_delta, stream)
+                if delta is None:
+                    break
+                print(delta, end="", flush=True)
+                sentence_buffer.append(delta)
                 await websocket.send(
                     json.dumps(
                         {
                             "type": "transcript",
                             "role": "agent",
-                            "text": text_delta,
+                            "text": delta,
                             "is_delta": True,
                         }
                     )
                 )
-
-                # Process TTS concurrently on sentence boundaries (including commas and semicolons) for lower latency
-                full_text = "".join(sentence_buffer)
-                if any(
-                    punct in text_delta
-                    for punct in [".", "?", "!", "\n", ",", ";"]
-                ):
-                    # Strip whitespace and check if it contains actual words
-                    stripped_text = full_text.strip()
-                    if stripped_text:
+                if any(p in delta for p in _TTS_FLUSH_CHARS):
+                    stripped = "".join(sentence_buffer).strip()
+                    if stripped:
                         await self.synthesize_and_stream(
-                            websocket, stripped_text, voice_profile
+                            websocket, stripped, voice_profile
                         )
                     sentence_buffer = []
 
-            # Handle any remaining text in the buffer
-            if sentence_buffer:
-                remaining_text = "".join(sentence_buffer).strip()
-                if remaining_text:
-                    await self.synthesize_and_stream(
-                        websocket, remaining_text, voice_profile
-                    )
+            remaining = "".join(sentence_buffer).strip()
+            if remaining:
+                await self.synthesize_and_stream(
+                    websocket, remaining, voice_profile
+                )
 
-            print("\n[Agent] Response finished.")
+            print("\n[Brain] Response finished.")
             await websocket.send(
                 json.dumps({"type": "status", "status": "idle"})
             )
-
         except asyncio.CancelledError:
-            print("\n[Agent] Turn processing cancelled.")
-        except Exception as e:  # pylint: disable=broad-except
-            print(f"\nError processing agent turn: {e}", file=sys.stderr)
+            print("\n[Brain] Turn cancelled (barge-in).")
+        except Exception as exc:
+            print(f"\nError in turn: {exc}", file=sys.stderr)
             await websocket.send(
-                json.dumps({"type": "error", "message": str(e)})
+                json.dumps({"type": "error", "message": str(exc)})
             )
             await websocket.send(
                 json.dumps({"type": "status", "status": "idle"})
@@ -349,40 +383,24 @@ class VoiceServer:
     async def synthesize_and_stream(
         self, websocket: Any, text: str, voice_profile: str
     ) -> None:
-        """Runs TTS on the text chunk and streams the generated PCM binary to client."""
+        """Synthesize *text* with Kokoro and stream raw PCM to the client."""
         try:
             await websocket.send(
                 json.dumps({"type": "status", "status": "speaking"})
             )
             loop = asyncio.get_running_loop()
-
-            # Run synthesis in a thread pool executor to avoid freezing the event loop
-            samples, sr = await loop.run_in_executor(
+            samples, sample_rate = await loop.run_in_executor(
                 None, self.tts.synthesize, text, voice_profile
             )
-
-            # Send headers indicating start of audio chunk
             await websocket.send(
-                json.dumps(
-                    {
-                        "type": "audio_start",
-                        "sample_rate": sr,
-                    }
-                )
+                json.dumps({"type": "audio_start", "sample_rate": sample_rate})
             )
-
-            # Send the raw PCM float32 bytes as a binary message
             await websocket.send(samples.tobytes())
-
-            # Send end headers
             await websocket.send(json.dumps({"type": "audio_end"}))
-
         except asyncio.CancelledError:
             raise
-        except Exception as e:  # pylint: disable=broad-except
-            print(
-                f"TTS Synthesis error for text '{text}': {e}", file=sys.stderr
-            )
+        except Exception as exc:
+            print(f"TTS error for {text!r}: {exc}", file=sys.stderr)
 
 
 def run_ui_http_server(
@@ -392,50 +410,48 @@ def run_ui_http_server(
     websocket_port: int,
     launch_browser: bool,
 ) -> None:
-    """Serve the static voice UI and open it in the default web browser."""
+    """Serve the static voice UI and optionally open it in a browser."""
     ui_dir = Path(__file__).parent / "ui"
 
     class UIHandler(http.server.SimpleHTTPRequestHandler):
+        """Serves the UI, injecting the live WebSocket address into index.html."""
+
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             super().__init__(*args, directory=str(ui_dir), **kwargs)
 
         def do_GET(self) -> None:
+            """Serve index.html with the WebSocket URL templated in."""
             if self.path in {"/", "/index.html"}:
                 try:
                     content = (ui_dir / "index.html").read_text(
                         encoding="utf-8"
                     )
-                    # Inject current websocket coordinates
                     content = content.replace(
                         "ws://127.0.0.1:8789",
                         f"ws://{websocket_host}:{websocket_port}",
                     )
+                    encoded = content.encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
-                    encoded = content.encode("utf-8")
                     self.send_header("Content-Length", str(len(encoded)))
                     self.end_headers()
                     self.wfile.write(encoded)
                     return
-                except Exception as e:
-                    print(
-                        f"Error serving index.html template: {e}",
-                        file=sys.stderr,
-                    )
+                except OSError as exc:
+                    print(f"Error serving index.html: {exc}", file=sys.stderr)
             super().do_GET()
 
         def log_message(self, format: str, *args: Any) -> None:
-            # Suppress HTTP traffic noise on stdout
-            pass
+            """Suppress per-request HTTP logging noise."""
 
     try:
         server = http.server.HTTPServer((host, ui_port), UIHandler)
-        print(f"Serving localized French voice UI at http://{host}:{ui_port}")
+        print(f"Serving voice UI at http://{host}:{ui_port}")
         if launch_browser:
             webbrowser.open(f"http://{host}:{ui_port}")
         server.serve_forever()
-    except Exception as e:
-        print(f"Warning: Failed to start web UI server: {e}", file=sys.stderr)
+    except OSError as exc:
+        print(f"Warning: failed to start web UI server: {exc}", file=sys.stderr)
 
 
 async def start_voice_server(
@@ -449,10 +465,20 @@ async def start_voice_server(
     ui: bool = True,
     ui_port: int = 8790,
 ) -> None:
-    """Start the WebSocket and optionally the HTTP server for the French UI."""
-    target_models_dir = models_dir or DEFAULT_MODELS_DIR
+    """Start the WebSocket voice server (and optionally the web UI).
 
-    # Automatically resolve or download Kokoro models
+    Args:
+        host: Bind address.
+        port: WebSocket port.
+        whisper_model: Whisper model size or path.
+        kokoro_model: Kokoro ONNX path (auto-resolved/downloaded if omitted).
+        voices_path: Kokoro voices path (auto-resolved/downloaded if omitted).
+        voice_name: Default Kokoro voice.
+        models_dir: Directory for auto-downloaded models.
+        ui: Whether to serve and open the web UI.
+        ui_port: Web UI port.
+    """
+    target_models_dir = models_dir or DEFAULT_MODELS_DIR
     if not kokoro_model or not voices_path:
         print(f"Resolving Kokoro model in {target_models_dir}...")
         resolved_model, resolved_voices = ensure_models_exist(target_models_dir)
@@ -466,34 +492,30 @@ async def start_voice_server(
     print(f"Using Kokoro model: {kokoro_model_path}")
     print(f"Using voices file: {kokoro_voices_path}")
 
-    # Load local Speech-to-Text
     print("Loading local Whisper model...")
     stt = LocalWhisperSpeechToText(
         model_size_or_path=whisper_model,
         device="cpu",
         compute_type="int8",
     )
-
-    # Load local Text-to-Speech
     print("Loading local Kokoro TTS...")
     tts = LocalKokoroTextToSpeech(
         model_path=kokoro_model_path,
         voices_path=kokoro_voices_path,
     )
 
-    voice_server = VoiceServer(stt, tts, voice_name)
+    server = VoiceServer(stt, tts, voice_name)
 
-    # Serve UI in background thread if requested
     if ui:
         import threading
 
-        t = threading.Thread(
+        thread = threading.Thread(
             target=run_ui_http_server,
             args=(host, ui_port, host, port, True),
             daemon=True,
         )
-        t.start()
+        thread.start()
 
     print(f"Starting WebSocket server on ws://{host}:{port}")
-    async with websockets.serve(voice_server.handle_connection, host, port):
-        await asyncio.Future()  # run forever
+    async with websockets.serve(server.handle_connection, host, port):
+        await asyncio.Future()

@@ -8,9 +8,36 @@ members = [
     "apps/*",
     "libs/*",
 ]
+# Non-Python siblings under apps/* that must not be treated as uv members.
+# The peer's Photoshop integration ships JS/UXP dirs (photoshop-uxp panel,
+# photoshop-remote WS bridge) with no pyproject.toml — exclude the family.
+exclude = [
+    "apps/photoshop-*",
+]
 
 [tool.uv.sources]
 langextract = { workspace = true }
+google-antigravity = { workspace = true }
+
+[tool.pytest.ini_options]
+# Keep pytest's defaults (*.egg, .* → .venv/.uv-cache, build, dist,
+# node_modules, venv) and additionally skip `var/` (uv archive cache writes
+# vendored package test suites under var/cache/archive-v0/) and `target/`
+# (Rust build dir). Without this, a bare `pytest` from the workspace root
+# collects setuptools/jsonschema test modules and aborts on import mismatch.
+norecursedirs = [
+    "*.egg",
+    ".*",
+    "_darcs",
+    "build",
+    "CVS",
+    "dist",
+    "node_modules",
+    "venv",
+    "{arch}",
+    "var",
+    "target",
+]
 
 [tool.ruff]
 line-length = 80
@@ -53,8 +80,13 @@ line-ending = "auto"
 
 [tool.ruff.lint.per-file-ignores]
 "**/*_test.py" = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "PLR2004"]
+"**/tests/**/*.py" = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "PLR2004"]
 "**/test_utils.py" = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
 "**/__init__.py" = ["F401", "D104"]
+# Blender add-ons follow Blender's required conventions: bl_info before imports
+# (E402), CATEGORY_TYPE_name operator/panel class names (N801), bl_options sets
+# (RUF012), and class-level operator docstrings instead of per-method (D102).
+"**/blender_addon/**" = ["E402", "N801", "D102", "RUF012"]
 "examples/**/*.py" = ["D"]
 "libs/antigravity-sdk-python/examples/**/*.py" = ["D"]
 
