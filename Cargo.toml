@@ -448,8 +448,9 @@ arrow-array        = { version = "58" }
 arrow-schema       = { version = "58" }
 
 # --- UI / desktop ---------------------------------------------------------
-wry                = { version = "0.55" }
-tao                = { version = "0.35" }
+# (Removed dead `wry`/`tao` workspace deps — no crate used them; the desktop
+# GUI runs on the pure-Rust winit + wgpu/vello path, avoiding the GTK3 CVE
+# surface tao/wry pull on Linux. See best-stack-2026 anti-patterns.)
 
 # --- Python FFI -----------------------------------------------------------
 pyo3               = { version = "0.24", features = ["auto-initialize", "abi3-py311"] }
