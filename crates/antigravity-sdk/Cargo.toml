@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "antigravity-sdk"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Native Rust SDK for Antigravity (Google AI Ultra / Gemini) — token extraction from Windows Credential Manager, OAuth refresh, typed HTTP client."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+tokio       = { workspace = true, features = ["macros", "rt"] }
+reqwest     = { workspace = true }
+
+# --- Windows-only: Credential Manager (CredReadW) ----------------------------
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Security_Credentials",
+] }
+
+[dev-dependencies]
+tokio             = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+pretty_assertions = { workspace = true }
+# rustls CryptoProvider must be installed before the first reqwest::Client
+# (rustls 0.23 requirement, cf. CLAUDE.md section 7).  Listed here so the
+# integration test can call `ring::default_provider().install_default()`.
+rustls            = { workspace = true }
+
+[package.metadata.cargo-machete]
+# tracing: macro-only usage (debug!/warn!/error!); machete under-counts.
+ignored = ["tracing"]

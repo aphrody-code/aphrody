@@ -28,6 +28,9 @@ members = [
     # M3 + shadcn pixel-perfect coverage + A2A UI (tick 36 pivot, 2026-05-17)
     "crates/m3-tokens",      # M3 baseline tokens (color/typography/elevation/motion)
     "crates/a2a-ui",         # WASM channel viewer for .coord JSONL mailbox
+    # antigravity-sdk — native Rust SDK for Antigravity (Google AI Ultra / Gemini):
+    # OAuth token extraction from Windows Credential Manager + HTTP client.
+    "crates/antigravity-sdk",
     # "crates/a2a-slimrpc",
     # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
     #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM

@@ -295,6 +295,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "antigravity-sdk"
+version = "1.0.0-canary"
+dependencies = [
+ "pretty_assertions",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,6 +652,8 @@ dependencies = [
  "goblin",
  "hex",
  "iced-x86",
+ "memchr",
+ "regex",
  "serde",
  "serde_json",
  "sha2",
