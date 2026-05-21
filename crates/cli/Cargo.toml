@@ -31,7 +31,7 @@ magika = ["aphrody-re/magika", "dep:ort"]
 # not wasm). The command maps + classifies + dumps schema ONLY; it never
 # emits secret values (tokens / cookie bytes / `secret://` rows). Build with:
 #   cargo build -p aphrody --features forensics
-forensics = ["dep:rusqlite"]
+forensics = ["dep:rusqlite", "dep:sha2", "dep:hex"]
 
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
@@ -94,6 +94,12 @@ ort                       = { version = "=2.0.0-rc.12", optional = true }
 # (cargo-deny bans duplicates). The DB is opened SQLITE_OPEN_READ_ONLY and only
 # the `sqlite_master` schema is read — value columns are NEVER selected.
 rusqlite                  = { workspace = true, optional = true }
+# `aphrody forensics map` — SHA-256 of small files + hex encoding for the
+# `tree.json` map. Optional, gated by the `forensics` feature (shared with the
+# read-only SQLite schema dump). Reuses the workspace pins so no new
+# supply-chain surface is introduced.
+sha2                      = { workspace = true, optional = true }
+hex                       = { workspace = true, optional = true }
 # `aphrody logo` — canonical icon (assets/aphrody.webp) -> .ico / .svg / M3
 # maskable PNG + pixel-perfect terminal rendering. Native-only (image+ico).
 aphrody-logo              = { path = "../aphrody-logo" }

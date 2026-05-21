@@ -62,6 +62,41 @@ pub(crate) enum ForensicsAction {
     },
 }
 
+/// Files at or below this size are SHA-256 hashed in `map.json`. Larger files
+/// (and any whose path matches the secret denylist) record `sha256: null`.
+/// 1 MiB keeps the map cheap and avoids hashing multi-hundred-MB stores.
+const MAX_HASH_BYTES: u64 = 1_048_576;
+
+/// Path substrings (matched case-insensitively against the FULL path) that
+/// mark an artefact as secret-bearing. Such files are recorded metadata-only:
+/// they are NEVER opened, so they are never hashed. Mirrors the
+/// Chromium/Electron secret stores documented in
+/// `docs/research/google-local-install-map.md` §4.
+const SECRET_PATTERNS: &[&str] = &[
+    "cookies",
+    "login data",
+    "web data",
+    "credential",
+    "token",
+    "local state",
+    "leveldb",
+    ".ldb",
+    "session storage",
+    "local storage",
+    "indexeddb",
+    "autofill",
+    "password",
+    "user_history",
+    "preferences.txtpb",
+    "global_preferences",
+];
+
+/// `true` if `path` matches the secret denylist and must stay metadata-only.
+fn is_secret_path(path: &std::path::Path) -> bool {
+    let lower = path.to_string_lossy().to_ascii_lowercase();
+    SECRET_PATTERNS.iter().any(|p| lower.contains(p))
+}
+
 /// One filesystem entry in the `map.json` output.
 #[derive(Serialize, Debug)]
 struct MapEntry {
@@ -71,6 +106,18 @@ struct MapEntry {
     size: u64,
     /// Lower-cased file extension (without the dot), or `null` if none.
     ext: Option<String>,
+    /// SHA-256 hex digest of the file contents, for non-secret files at or
+    /// below [`MAX_HASH_BYTES`]. `null` for larger files, read errors, or any
+    /// file on the secret denylist (which is never opened).
+    sha256: Option<String>,
+    /// Last-modified time as an RFC 3339 string (UTC), or `null` if the
+    /// platform/filesystem does not expose it.
+    modified: Option<String>,
+    /// Last-modified time as Unix epoch seconds, or `null` if unavailable.
+    mtime_unix: Option<i64>,
+    /// `true` when the path matched the secret denylist and only metadata was
+    /// recorded (contents never opened, so `sha256` is always `null`).
+    secret_meta_only: bool,
 }
 
 /// Top-level `map.json` document.
@@ -80,6 +127,14 @@ struct MapReport {
     target: String,
     /// Total number of regular files mapped.
     file_count: usize,
+    /// Number of files for which a SHA-256 was computed (non-secret, at or
+    /// below [`MAX_HASH_BYTES`]).
+    hashed_count: usize,
+    /// Number of files recorded metadata-only because their path matched the
+    /// secret denylist (contents never opened).
+    secret_meta_only_count: usize,
+    /// Size cap (bytes) above which files are not hashed.
+    max_hash_bytes: u64,
     /// Per-file entries.
     files: Vec<MapEntry>,
 }
@@ -141,27 +196,56 @@ fn map(target: &std::path::Path, out: &std::path::Path) -> miette::Result<()> {
         }
     }
 
-    // Second pass (parallel): metadata + extension. No content reads.
+    // Second pass (parallel): metadata + extension + mtime + (non-secret,
+    // small-file) SHA-256. Secret-denylisted files are NEVER opened, so they
+    // never contribute hash bytes — they record metadata only.
     let files: Vec<MapEntry> = entries
         .par_iter()
         .map(|entry| {
             let path = entry.path();
-            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+            let meta = entry.metadata().ok();
+            let size = meta.as_ref().map(std::fs::Metadata::len).unwrap_or(0);
             let ext = path
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|s| s.to_ascii_lowercase());
+
+            let (modified, mtime_unix) = match meta.as_ref().and_then(|m| m.modified().ok()) {
+                Some(t) => {
+                    let dt: chrono::DateTime<chrono::Utc> = t.into();
+                    (Some(dt.to_rfc3339()), Some(dt.timestamp()))
+                },
+                None => (None, None),
+            };
+
+            let secret_meta_only = is_secret_path(path);
+            let sha256 = if !secret_meta_only && size <= MAX_HASH_BYTES {
+                hash_file(path)
+            } else {
+                None
+            };
+
             MapEntry {
                 path: path.display().to_string(),
                 size,
                 ext,
+                sha256,
+                modified,
+                mtime_unix,
+                secret_meta_only,
             }
         })
         .collect();
 
+    let hashed_count = files.iter().filter(|f| f.sha256.is_some()).count();
+    let secret_meta_only_count = files.iter().filter(|f| f.secret_meta_only).count();
+
     let report = MapReport {
         target: target.display().to_string(),
         file_count: files.len(),
+        hashed_count,
+        secret_meta_only_count,
+        max_hash_bytes: MAX_HASH_BYTES,
         files,
     };
 
@@ -179,9 +263,33 @@ fn map(target: &std::path::Path, out: &std::path::Path) -> miette::Result<()> {
     let summary = serde_json::json!({
         "wrote": out_file.display().to_string(),
         "file_count": report.file_count,
+        "hashed_count": report.hashed_count,
+        "secret_meta_only_count": report.secret_meta_only_count,
     });
     println!("{summary}");
     Ok(())
+}
+
+/// SHA-256 hex digest of a file's contents, streamed in fixed-size chunks so a
+/// (capped, non-secret) file is hashed without holding it all in memory.
+/// Returns `None` on any read error. Callers gate this on the size cap +
+/// secret denylist, so it is only ever invoked on small, non-secret files.
+fn hash_file(path: &std::path::Path) -> Option<String> {
+    use std::io::Read as _;
+
+    use sha2::{Digest, Sha256};
+
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 64 * 1024];
+    loop {
+        let n = file.read(&mut buf).ok()?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Some(hex::encode(hasher.finalize()))
 }
 
 /// Read-only SQLite schema dump.
