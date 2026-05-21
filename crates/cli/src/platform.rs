@@ -166,6 +166,7 @@ pub(crate) fn chrome_canary_user_data() -> Option<PathBuf> {
     }
 }
 
+
 /// Ensure a directory exists (creating it recursively if needed).
 #[allow(dead_code)]
 pub(crate) fn ensure_dir(path: &Path) -> Result<()> {
