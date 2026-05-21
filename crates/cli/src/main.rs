@@ -14,6 +14,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
 #[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
@@ -190,6 +191,18 @@ enum Commands {
     Forensics {
         #[command(subcommand)]
         action: forensics_cmd::ForensicsAction,
+    },
+    /// Persistent local-filesystem search index (SQLite FTS5).
+    ///
+    /// Built only with `--features index`; mirrors the Google desktop app's
+    /// local_files.db (metadata-only). `build` walks a root; `search` runs an
+    /// FTS5 prefix query.
+    ///
+    /// Example: aphrody index search "readme" --limit 20
+    #[cfg(all(not(target_arch = "wasm32"), feature = "index"))]
+    Index {
+        #[command(subcommand)]
+        action: index_cmd::IndexAction,
     },
     /// Tier-1 memory provider operations — migrate, audit, list backends.
     ///
@@ -835,6 +848,10 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     ));
                 }
             },
+        },
+        #[cfg(feature = "index")]
+        Some(Commands::Index { action }) => {
+            index_cmd::run(action).await?;
         },
         #[cfg(feature = "forensics")]
         Some(Commands::Forensics { action }) => {

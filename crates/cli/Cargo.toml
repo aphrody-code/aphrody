@@ -33,6 +33,11 @@ magika = ["aphrody-re/magika", "dep:ort"]
 #   cargo build -p aphrody --features forensics
 forensics = ["dep:rusqlite", "dep:sha2", "dep:hex"]
 
+# Persistent local-filesystem search index (`aphrody index build/search`),
+# backed by aphrody-fsindex (SQLite FTS5, bundled libsqlite3 — host-only, not
+# wasm). Build with: cargo build -p aphrody --features index
+index = ["dep:aphrody-fsindex"]
+
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
 # - On wasm32-*, only a minimal stub (Version + help) is built, because
@@ -94,6 +99,9 @@ ort                       = { version = "=2.0.0-rc.12", optional = true }
 # (cargo-deny bans duplicates). The DB is opened SQLITE_OPEN_READ_ONLY and only
 # the `sqlite_master` schema is read — value columns are NEVER selected.
 rusqlite                  = { workspace = true, optional = true }
+# `aphrody index build/search` — persistent local-filesystem FTS5 index
+# (`--features index`). Bundled libsqlite3 via the workspace rusqlite.
+aphrody-fsindex           = { path = "../aphrody-fsindex", optional = true }
 # `aphrody forensics map` — SHA-256 of small files + hex encoding for the
 # `tree.json` map. Optional, gated by the `forensics` feature (shared with the
 # read-only SQLite schema dump). Reuses the workspace pins so no new
