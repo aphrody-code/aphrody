@@ -1,0 +1,14 @@
+{
+  "name": "aphrody-photoshop-uxp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "aphrody Photoshop UXP bridge panel — exposes the running Photoshop from the inside (batchPlay/eval) to aphrody-mcp over a local WebSocket.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "uxp": {
+    "manifest": "manifest.json"
+  },
+  "scripts": {
+    "check": "bun -e \"new Bun.Transpiler({loader:'js'}).transformSync(await Bun.file('main.js').text()); console.log('ok')\""
+  }
+}
