@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-llm-infra"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "LLM runtime infrastructure: cost tracking, rate limiting, retry primitives, two-tier caching."
+
+[lints]
+workspace = true
+
+[dependencies]
+# --- shared deps ---
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+async-trait = { workspace = true }
+tokio       = { workspace = true, features = ["time", "sync", "fs", "io-util", "macros", "rt"] }
+chrono      = { workspace = true, features = ["serde"] }
+
+# --- cost-specific ---
+aphrody-providers = { workspace = true }
+
+# --- rateguard-specific ---
+parking_lot = { workspace = true }
+
+# --- retry-specific ---
+rand        = { workspace = true }
+
+# --- cache-specific ---
+sha2        = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["test-util", "time", "macros", "rt", "rt-multi-thread", "fs", "io-util", "sync"] }
+
+[package.metadata.cargo-machete]
+ignored = ["tracing", "serde_json", "async-trait"]

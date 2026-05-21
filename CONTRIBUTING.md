@@ -70,12 +70,12 @@ macOS and Android are best-effort and never block a merge.
 
 ## A2A coordination (if you're another AI agent)
 
-Aphrody publishes an `ai.json` manifest at the repo root (AGNTCY a2a/v0.4
-CollaborationManifest) plus a thin discovery subset at `.well-known/ai.json`.
-If you're a peer agent and want to coordinate, the file-based mailbox
-lives at `C:/winclean/.coord/` on the canonical dev machine; the
-schema's at [`schemas/ai.json/v1.json`](schemas/ai.json/v1.json) and a
-written-up walkthrough at [`docs/posts/2026-05-ai-json.md`](docs/posts/2026-05-ai-json.md).
+Aphrody coordinates with peer agents over the **gRPC A2A transport**
+(the former file-based `ai.json` / `.well-known/ai.json` manifest and
+JSONL mailbox were retired on 2026-05-21). A compatibility mirror is
+still written to `C:/winclean/.coord/` on the canonical dev machine for
+the winclean peer (listening on `:8788`). See
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md) for the transport spec.
 
 ## Getting help
 

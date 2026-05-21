@@ -274,7 +274,7 @@ fn draw_list(frame: &mut Frame, area: Rect, state: &mut DrawState) {
             let ts_short: &str = env.ts.find('T').map(|p| &env.ts[p + 1..]).unwrap_or(&env.ts);
 
             let line = Line::from(vec![
-                Span::styled(format!("{:<8}", &env.kind), Style::default().fg(kc)),
+                Span::styled(format!("{:<8}", env.kind), Style::default().fg(kc)),
                 Span::raw(" "),
                 Span::styled(
                     format!("{:<20}", from_to),

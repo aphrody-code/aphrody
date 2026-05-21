@@ -1,120 +1,130 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Crates — 16 members du workspace
+# Crates — 57 membres du workspace
 
 > Réf. : `Cargo.toml` racine, `crates/*/Cargo.toml`.
-> Dernière mise à jour : 2026-05-16.
+> Dernière mise à jour : 2026-05-21.
 
-## Crates de base (`crates/base`, `crates/bun_ffi`)
+Le workspace compte **57 membres actifs**. Au total **71 crates existent sur
+disque** : 57 dans `members`, 14 dans `exclude` (clusters UI/web lourds). Tous
+nos crates internes ont `publish = false`.
 
-### `base` — no_std primitives
-- Crypto DPAPI (Windows), AES-GCM, zeroize.
-- Tracing infrastructure.
-- Réutilisable across tous les autres crates.
-- **Statut : Stable.**
+## Cœur
 
-### `bun_ffi` — Zero-copy FFI V8↔Rust
-- `wc_alloc(size)` / `wc_free(ptr, size)` — allocation partagée via mimalloc.
-- `[lib] crate-type = ["cdylib", "rlib"]` → produit `bun_ffi.dll` consommable par Bun.
-- Garantie zero-copy : ownership transféré entre Rust et V8 via raw pointers encapsulés.
-- **Statut : Stable.**
-
-## Noyau (`crates/google_os`)
-
-### `google_os` — Noyau hybride POSIX↔NT
-- **Modules** : `kernel/` (process, ipc, ebpf, vfs, io_uring, mman), `libc/` (50+ glibc-spec funcs), `ntdll/`, `firewall`.
-- **Bindings** : `windows-rs` v0.61 avec ~30 features Win32 activées (Console, Direct2D, DirectWrite, Dxgi, Direct3D, WinSock, etc.).
-- **Build** : `[lib] crate-type = ["cdylib", "rlib"]` → produit `google_os.dll` + librairie Rust.
-- **Tests** : rstest + proptest + criterion benchmarks.
-- **Action requise** : finir DxEngine, brancher io_uring sur Windows IoRing API.
-
-## CLI / UI
-
-### `cli` — Binary entrypoint
-- `clap` derive, mimalloc global, miette pour les erreurs.
-- A2A natif : intercepte les prompts NL via `AutoCommand` → streaming zero-buffering.
-- `indicatif` + `colored` pour l'UX.
-- Path deps : `backend`, `base`, `n2b`, `a2a`, `a2a-client`.
-- **Statut : Stable.**
-
-### `gui` — Desktop wry + tao
-- `wry = 0.47`, `tao = 0.31` (webview wrapping WebKit).
-- `mimalloc` global, lien vers `backend` + `base`.
-- **Action requise** : migration GTK4 quand wry 1.0 ships (CVE GTK3 actifs).
-
-### `backend` — Forensics & network
-- HTTP via reqwest (rustls-tls + ring).
-- Chromium parser (DPAPI decryption via `base`).
-- DNS recon, SQLite via rusqlite bundled.
-- **Action requise** : suite de tests intégration.
+| Crate (dir) | Package | Rôle |
+|---|---|---|
+| `cli` | `aphrody` | Binaire principal. `clap` derive, mimalloc, miette. |
+| `base` | `base` | Primitives no_std partagées (IDs, erreurs, time). |
+| `backend` | `backend` | Forensics, DNS recon, réseau, parser Chromium. |
+| `mrx` | `mrx` | Monorepo mapper unifié (ex `mrx-{core,detect,audit,watch,cli}`). |
 
 ## Agent-to-Agent (A2A)
 
-### `a2a` — Protocol core (`package = "a2a-lf"`)
-- A2AError, types métier, agent_card normalization (gRPC URL fix).
-- **Statut : Stable.**
-
-### `a2a-client` — Async client (`package = "a2a-client-lf"`)
-- Factory pattern pour binding multi-protocols (HTTP, gRPC, SlimRPC).
-- Features : `rustls-tls` (ring), `native-tls`.
-- Optional dep : `rustls = features = ["ring"]`.
-- **Statut : Stable.**
-
-### `a2a-server` — Async server (`package = "a2a-server-lf"`)
-- axum + tokio.
-- Crypto provider : `rustls::crypto::ring`.
-- **Statut : Stable.**
-
-### `a2a-pb` — Protobuf generated types (`package = "a2a-pb"`)
-- Code généré par prost-build / pbjson-build.
-- `#[allow(clippy::all, warnings)]` sur les modules `proto` / `protojson`.
-- **Statut : Stable.**
-
-### `a2a-grpc` — gRPC binding
-- Pont tonic + tokio-rustls.
-- Crypto provider : `tokio_rustls::rustls::crypto::ring`.
-- **Statut : Stable.**
-
-### `a2a-slimrpc` — SlimRPC binding **(exclu actuellement)**
-- Bloqué upstream `agntcy-slim-mls` nightly issue.
-- Ré-intégration prévue (cf. `docs/PLAN.md` P7).
-
-## Bridges spécialisés
-
-### `google_mcp` — Serveur MCP (Model Context Protocol)
-- `rmcp` git dep (modelcontextprotocol/rust-sdk).
-- Features : `server`, `transport-io`, `macros`, `schemars`.
-- Path deps : `backend`, `base`, `google_os`.
-- **Statut : Stable.**
-
-### `google_kv` — Deno KV-compatible, SQLite-backed
-- `denokv_sqlite` + `denokv_proto` + `deno_error`.
-- `rusqlite` bundled.
-- `rand 0.8` (imposé par denokv_proto).
-- Path deps vendor : `bun_jsc`, `bun_jsc_macros`.
-- **Statut : Stable.**
-
-### `n2b` — Natural language → bash
-- `oxc_*` (parser TS), `clap`, `octocrab` (GitHub API), `regex`, `walkdir`.
-- `fastembed` optionnel (feature `ai`) — pull native-tls/openssl transitivement (auditté & toléré).
-- `reqwest = { ..., features = ["blocking"] }` pour requêtes synchrones.
-- **Statut : Stable.**
-
-### `python_ffi` — PyO3 bridge
-- `pyo3 = 0.21` avec features `auto-initialize`, `abi3-py311`.
-- `[lib] crate-type = ["cdylib", "rlib"]`.
-- Path deps vendor : `bun_jsc`, `bun_jsc_macros`.
-- **Action requise** : upgrade pyo3 0.22 (CVE PyString 0.21).
-
-## Hors workspace (`exclude`)
-
-| Crate | Localisation | Raison de l'exclusion |
+| Crate (dir) | Package | Rôle |
 |---|---|---|
-| `coreutils` | `crates/coreutils/` | Userland GNU en référence, build via Makefile externe |
-| `util-linux` | `crates/util-linux/` | Idem |
-| `a2a-slimrpc` | `crates/a2a-slimrpc/` | Bloqué upstream (mls-rs nightly issue) |
-| `bun_*` (107 sub-crates) | `vendor/bun/src/*/` | Sub-projet Bun runtime fork, hors workspace mais accessible via path deps |
-| `electron-prebuilt` | `vendor/electron-prebuilt/` | Binaires Electron |
+| `a2a` | `a2a-lf` | Protocol core (types, A2AError, agent_card). |
+| `a2a-client` | `a2a-client-lf` | Client async multi-transport. |
+| `a2a-server` | `a2a-server-lf` | Serveur axum + tokio. |
+| `a2a-pb` | `a2a-pb` | Types protobuf générés (prost/pbjson). |
+| `a2a-grpc` | `a2a-grpc` | Binding gRPC (tonic + tokio-rustls). |
+| `a2a-ui` | `a2a-ui` | Viewer WASM des canaux. |
+| `google_mcp` | `google_mcp` | Serveur MCP natif ; produit le binaire **`aphrody-mcp`**. |
 
-## Visibilité publish
+> Le transport file-based historique (`ai.json` + dossier `ai/`) a été supprimé
+> en 2026 ; seul subsiste le miroir de compatibilité `C:\winclean\.coord\`.
 
-Tous nos crates internes ont `publish = false` — empêche un `cargo publish` accidentel et signale à `cargo-deny` qu'ils sont privés (skip license check).
+## Infrastructure LLM / agent
+
+| Crate | Rôle |
+|---|---|
+| `aphrody-llm-infra` | Runtime LLM unifié : cost + rateguard + retry + cache (ex `aphrody-{cost,rateguard,retry,cache}`). |
+| `aphrody-router` | Routeur LLM, whitelist 3-only (anthropic/gemini/antigravity). |
+| `aphrody-providers` | Enum `Provider` canonique + `ProviderError`. |
+| `aphrody-gateway` | AI gateway OpenAI-compatible, provider-agnostique. |
+| `aphrody-mcp` | Client OAuth 2.1 MCP HTTP/SSE (RFC 9728/8414/7591/7636). |
+| `aphrody-mcp-smoke` | Harness smoke E2E pour `aphrody-mcp` (handshake + tools sweep). |
+| `aphrody-prompts` | Registre de templates minijinja + scrubber PII. |
+| `aphrody-context` | Gestion de la fenêtre de contexte (trim, summarization). |
+| `aphrody-session` | Suivi de session (turns, tool calls, tokens, coût). |
+| `aphrody-tools` | Registre de tool descriptors (Anthropic/Gemini/MCP). |
+| `aphrody-memory` | MemoryBackend async (JSONL/HNSW/SQLite/LanceDB). |
+| `aphrody-chat` | REPL turn-loop composant les autres briques. |
+| `aphrody-sdk` | SDK public d'embarquement (Agent + Session + Tools). |
+| `gemini-runtime` | Adaptateur runtime Gemini CLI (detect + version + stream). |
+| `notebooklm` | Client Rust pur NotebookLM Boq RPC. |
+
+## Skills / marketplace / orchestration
+
+| Crate | Rôle |
+|---|---|
+| `aphrody-skills` | Infra skills unifiée : runtime + hooks + permissions (ex `aphrody-{skills-runtime,hooks,permissions}`). |
+| `aphrody-skills-forge` | Scaffolding/registry/lint des `SKILL.md`. |
+| `aphrody-marketplace` | Index skills/MCP/hooks/themes (embedded + file + http). |
+| `aphrody-task-runner` | Exécuteur DAG parallèle (topo-sort + timeout/retry). |
+| `aphrody-cron` | Scheduler interval/daily/cron avec job store JSON. |
+| `aphrody-events` | Bus pub-sub in-process (topic filtering + NDJSON sink). |
+
+## Plateforme / système
+
+| Crate | Rôle |
+|---|---|
+| `aphrody-secrets` | Secret-store (env + fichier chiffré AES-256-GCM/Argon2id). |
+| `aphrody-settings` | Loader JSON hiérarchique (user/project/local/env). |
+| `aphrody-telemetry` | Spans/compteurs/histogrammes + exporteur NDJSON. |
+| `aphrody-search` | Full-text in-memory (BM25-lite, EN+FR stop words). |
+| `aphrody-re` | Reverse engineering (PE/ELF via goblin, entropy, strings). |
+| `aphrody-messaging` | Connecteurs sortants + canaux bidirectionnels (ex `aphrody-channels`). |
+| `aphrody-voice` | TTS + STT (ElevenLabs/Whisper, ex `aphrody-voice-stt`). |
+| `ievr-tools` | Analyse d'inventaire binaire IEVR. |
+| `aphrody-translate` | Traduction FR + scrub AI-isms (style Aphrody). |
+| `aphrody-summary` | Génère `docs/SUMMARY.md` + `docs/llms.txt`. |
+
+## Design / UI / terminal
+
+| Crate | Rôle |
+|---|---|
+| `aphrody-design` | Infra design unifiée : sidecar + daemon (ex `aphrody-design-{sidecar,daemon}`). |
+| `aphrody-design-agents` | Spawner CLI agents (Claude/Gemini/Antigravity, ACP/Stdio). |
+| `m3-tokens` | Tokens Material Design 3 (color/typo/elevation/motion). |
+| `aphrody-icons` | Font + CSS icônes Material Symbols. |
+| `aphrody-react-reconciler` | Reconciler React host-side (primitives). |
+| `aphrody-tui` | DSL TUI pur Rust (style ratatui, cible 60 fps). |
+| `aphrody-terminal-vt` | Parser VT (22 séquences essentielles). |
+| `aphrody-terminal-wasm` | Renderer WASM. |
+| `aphrody-terminal-backend` | Backend pty (portable-pty : ConPTY/openpty). |
+| `aphrody-terminal-llm` | Bus d'événements LLM↔terminal. |
+| `aphrody-terminal-browser` | Bridge browser/agent-browser. |
+| `aphrody-terminal-json-out` | Sortie JSON. |
+| `aphrody-terminal-markdown` | Rendu markdown inline (comrak). |
+| `aphrody-terminal-config` | Config JSON full. |
+
+## WASM
+
+| Crate | Rôle |
+|---|---|
+| `aphrody-wasm` | Wrapper wasm-bindgen des primitives `base`. |
+| (`aphrody-terminal-wasm`, `a2a-ui`) | également ciblés `wasm32-unknown-unknown`. |
+
+## Exclus du workspace (`exclude`, présents sur disque)
+
+Clusters UI/web lourds sortis du build par défaut (perf) ; le binaire `aphrody`
+n'en dépend pas. Voir [`WORKSPACE.md`](./WORKSPACE.md) pour la justification.
+
+| Path | Raison |
+|---|---|
+| `crates/gui/` | Desktop wry + tao ; agrège `mui-rs*` + `tuono*`. |
+| `crates/agui-bridge/` | Consomme `mui-rs-components`. |
+| `crates/mui-rs{,-core,-components,-macros,-motion,-renderer}/` | Renderer MD3 (wgpu, vello, winit, wasmtime). |
+| `crates/tuono{,_internal,_lib,_lib_macros}/` | Next.js SSR (swc_core, lightningcss, mdxjs, napi). |
+| `crates/aphrody-x-client/` | Workspace auto-rooté (agent-twitter-client). |
+| `crates/a2a-slimrpc/` | Bloqué upstream `agntcy-slim-mls` (nightly). |
+
+> `crates/coreutils/` et `crates/util-linux/` figurent encore dans `exclude`
+> mais n'existent plus sur disque.
+
+## Supprimés (historique)
+
+`google_os`, `bun_ffi`, `google_kv`, `python_ffi` (pivot 2026-05-17), puis le
+2026-05-21 : les 11 `n2b-*`, `bxc-engine`, `aphrody-xtask`, et 18 doublons
+fusionnés dans `aphrody-llm-infra` / `aphrody-messaging` / `aphrody-skills` /
+`aphrody-design` / `aphrody-voice` / `mrx` (+ orphelins `aphrody-shell`,
+`aphrody-sandbox`).

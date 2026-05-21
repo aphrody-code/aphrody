@@ -34,7 +34,7 @@ pub mod backend;
 pub mod osc;
 pub mod proto;
 
-use backend::{agent_browser::AgentBrowserBackend, bxc::BxcBackend, edge::EdgeBackend};
+use backend::{agent_browser::AgentBrowserBackend, edge::EdgeBackend};
 pub use proto::{BrowserRequest, BrowserResponse, RecordState, ScreenshotArea};
 use thiserror::Error;
 use tracing::{info, instrument};
@@ -132,11 +132,10 @@ pub trait BrowserBackend: Send + Sync {
 
 /// The currently active browser backend.
 ///
-/// Wraps one of the three concrete backend types.  Use [`Active::probe`] to
+/// Wraps one of the two concrete backend types.  Use [`Active::probe`] to
 /// auto-select based on binary availability, or construct a specific variant
 /// directly.
 pub enum Active {
-    Bxc(Box<BxcBackend>),
     AgentBrowser(Box<AgentBrowserBackend>),
     Edge(Box<EdgeBackend>),
 }
@@ -145,25 +144,13 @@ impl Active {
     /// Probe binary availability and return the best available backend.
     ///
     /// Priority order:
-    /// 1. `bxc` — fast, lightweight, no GPU dependency.
-    /// 2. `agent-browser` — full Chromium, heavier.
-    /// 3. `msedge --headless` — Windows-only DOM snapshot fallback.
+    /// 1. `agent-browser` — full Chromium, heavier.
+    /// 2. `msedge --headless` — Windows-only DOM snapshot fallback.
     ///
-    /// Returns an error only if none of the three backends can be started.
+    /// Returns an error only if none of the backends can be started.
     #[instrument]
     pub async fn probe() -> Result<Self, BrowserError> {
-        // 1. Try bxc
-        match BxcBackend::spawn().await {
-            Ok(b) => {
-                info!(backend = "bxc", "selected browser backend");
-                return Ok(Active::Bxc(Box::new(b)));
-            },
-            Err(e) => {
-                tracing::debug!(error = %e, "bxc not available");
-            },
-        }
-
-        // 2. Try agent-browser
+        // 1. Try agent-browser
         match AgentBrowserBackend::spawn().await {
             Ok(b) => {
                 info!(backend = "agent-browser", "selected browser backend");
@@ -174,7 +161,7 @@ impl Active {
             },
         }
 
-        // 3. Try msedge fallback
+        // 2. Try msedge fallback
         match EdgeBackend::spawn().await {
             Ok(b) => {
                 info!(backend = "edge", "selected browser backend (fallback)");
@@ -188,7 +175,7 @@ impl Active {
         Err(BrowserError::Unsupported {
             method: "probe".into(),
             backend: "none".into(),
-            reason: "no browser backend available: install bxc, agent-browser, or msedge \
+            reason: "no browser backend available: install agent-browser or msedge \
                      (Windows) and ensure the binary is on PATH"
                 .into(),
         })
@@ -197,7 +184,6 @@ impl Active {
     /// Return the name of the active backend.
     pub fn name(&self) -> &'static str {
         match self {
-            Active::Bxc(b) => b.name(),
             Active::AgentBrowser(b) => b.name(),
             Active::Edge(b) => b.name(),
         }
@@ -228,7 +214,6 @@ impl BrowserBackend for Active {
 
     async fn navigate(&mut self, url: &str) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.navigate(url).await,
             Active::AgentBrowser(b) => b.navigate(url).await,
             Active::Edge(b) => b.navigate(url).await,
         }
@@ -236,7 +221,6 @@ impl BrowserBackend for Active {
 
     async fn eval_js(&mut self, src: &str) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.eval_js(src).await,
             Active::AgentBrowser(b) => b.eval_js(src).await,
             Active::Edge(b) => b.eval_js(src).await,
         }
@@ -244,7 +228,6 @@ impl BrowserBackend for Active {
 
     async fn query_selector(&mut self, sel: &str) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.query_selector(sel).await,
             Active::AgentBrowser(b) => b.query_selector(sel).await,
             Active::Edge(b) => b.query_selector(sel).await,
         }
@@ -252,7 +235,6 @@ impl BrowserBackend for Active {
 
     async fn screenshot(&mut self, area: ScreenshotArea) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.screenshot(area).await,
             Active::AgentBrowser(b) => b.screenshot(area).await,
             Active::Edge(b) => b.screenshot(area).await,
         }
@@ -263,7 +245,6 @@ impl BrowserBackend for Active {
         schema: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.extract(schema).await,
             Active::AgentBrowser(b) => b.extract(schema).await,
             Active::Edge(b) => b.extract(schema).await,
         }
@@ -274,7 +255,6 @@ impl BrowserBackend for Active {
         rule: &serde_json::Value,
     ) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.intercept(rule).await,
             Active::AgentBrowser(b) => b.intercept(rule).await,
             Active::Edge(b) => b.intercept(rule).await,
         }
@@ -286,7 +266,6 @@ impl BrowserBackend for Active {
         state: RecordState,
     ) -> Result<BrowserResponse, BrowserError> {
         match self {
-            Active::Bxc(b) => b.record(id, state).await,
             Active::AgentBrowser(b) => b.record(id, state).await,
             Active::Edge(b) => b.record(id, state).await,
         }

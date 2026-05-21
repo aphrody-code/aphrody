@@ -122,10 +122,10 @@ jobs:
           tool: nextest
       - name: Install system deps
         run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
-      - name: cargo build --release -p cli
-        run: cargo build --release -p cli --target x86_64-unknown-linux-gnu --locked
-      - name: cargo nextest run -p cli
-        run: cargo nextest run -p cli --target x86_64-unknown-linux-gnu --locked
+      - name: cargo build --release -p aphrody
+        run: cargo build --release -p aphrody --target x86_64-unknown-linux-gnu --locked
+      - name: cargo nextest run -p aphrody
+        run: cargo nextest run -p aphrody --target x86_64-unknown-linux-gnu --locked
       - name: smoke test — binary boots
         run: |
           ./target/x86_64-unknown-linux-gnu/release/aphrody --version
@@ -242,10 +242,10 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: nextest
-      - name: cargo build --release -p cli
-        run: cargo build --release -p cli --target x86_64-pc-windows-msvc --locked
-      - name: cargo nextest run -p cli
-        run: cargo nextest run -p cli --target x86_64-pc-windows-msvc --locked
+      - name: cargo build --release -p aphrody
+        run: cargo build --release -p aphrody --target x86_64-pc-windows-msvc --locked
+      - name: cargo nextest run -p aphrody
+        run: cargo nextest run -p aphrody --target x86_64-pc-windows-msvc --locked
       - name: smoke test — binary boots
         run: |
           .\target\x86_64-pc-windows-msvc\release\aphrody.exe --version
@@ -286,8 +286,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.target }}
-      - name: cargo check -p cli --target ${{ matrix.target }}
-        run: cargo check -p cli --target ${{ matrix.target }} --locked
+      - name: cargo check -p aphrody --target ${{ matrix.target }}
+        run: cargo check -p aphrody --target ${{ matrix.target }} --locked
       - name: sccache stats (non-fatal)
         if: always()
         run: sccache --show-stats || true
@@ -347,10 +347,10 @@ jobs:
           tool: nextest
       - name: cargo check
         if: ${{ matrix.build_cmd == 'check' }}
-        run: cargo check -p cli --target ${{ matrix.target }} --locked
+        run: cargo check -p aphrody --target ${{ matrix.target }} --locked
       - name: cargo nextest
         if: ${{ matrix.build_cmd == 'test' }}
-        run: cargo nextest run -p cli --target ${{ matrix.target }} --locked
+        run: cargo nextest run -p aphrody --target ${{ matrix.target }} --locked
       - name: sccache stats (non-fatal)
         if: always()
         shell: bash
@@ -428,7 +428,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: android-${{ matrix.target }}
-      - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p cli --locked
+      - run: cargo ndk --platform 28 --target ${{ matrix.target }} check -p aphrody --locked
 
   # --------------------------------------------------------------------------
   # 8. Docs drift check (Rust-only — cargo run -p aphrody-summary --check)

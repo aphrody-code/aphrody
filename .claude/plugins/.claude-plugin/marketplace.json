@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "aphrody-local",
+  "description": "Local marketplace for the aphrody plugin (development install).",
+  "owner": {
+    "name": "aphrody-code",
+    "email": "37252373+aphrody-code@users.noreply.github.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "plugins": [
+    {
+      "name": "aphrody",
+      "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (6.5 MB, sub-millisecond cold-start) fuses 15 tools — 8 from ex-google_mcp (coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard) + 2 voice (voice_synthesize, voice_transcribe) + 2 Context7 (context7_resolve_library_id, context7_query_docs, native Rust port of the upstream Bun bridge) + 3 Microsoft Learn (microsoft_docs_search, microsoft_docs_fetch, microsoft_code_sample_search — native Rust HTTP MCP proxy onto learn.microsoft.com/api/mcp) + 1 re_triage (PE/ELF binary triage via aphrody-re). Zero JS runtime, zero subprocess relay. 1 slash command (/status). 28 agents, 41 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+      "author": {
+        "name": "aphrody-code",
+        "email": "37252373+aphrody-code@users.noreply.github.com",
+        "url": "https://github.com/aphrody-code"
+      },
+      "category": "productivity",
+      "source": "./aphrody",
+      "homepage": "https://github.com/aphrody-code/aphrody"
+    }
+  ]
+}

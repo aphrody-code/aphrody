@@ -27,7 +27,9 @@ anyhow     = { workspace = true }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 clap       = { workspace = true, features = ["derive"] }
-tracing    = { workspace = true }
 goblin     = { workspace = true }
 byteorder  = { workspace = true }
 hex        = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = []

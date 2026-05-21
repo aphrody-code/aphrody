@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-sdk"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Public Rust SDK for aphrody — programmatic embedding surface (Agent, Session, ToolRegistry, Skills, FS, Shell). Port of packages/gemini-cli/packages/sdk (~300 LoC TS)."
+
+[lib]
+crate-type = ["rlib"]
+name       = "aphrody_sdk"
+path       = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+# --- async runtime & primitives -------------------------------------------
+tokio        = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "sync", "time", "fs"] }
+tokio-stream = { workspace = true }
+futures-util = { workspace = true }
+async-trait  = { workspace = true }
+
+# --- serde / errors / logging ---------------------------------------------
+serde        = { workspace = true, features = ["derive"] }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+tracing      = { workspace = true }
+
+# --- building blocks (path deps so SDK consumers re-export real types) ----
+# `gemini-runtime` is the canonical model backend adapter (Gemini CLI
+# subprocess, stream-json output). Lives in crates/gemini-runtime.
+gemini-runtime         = { path = "../gemini-runtime" }
+# JSONL conversation session log with atomic persistence.
+aphrody-session        = { path = "../aphrody-session" }
+# Vendor-neutral tool descriptor registry (Anthropic / Gemini / MCP shapes).
+aphrody-tools          = { path = "../aphrody-tools" }
+# SKILL.md aggregator (frontmatter parser + discovery + manifest).
+aphrody-skills         = { path = "../aphrody-skills" }
+# Tier-1 MemoryProvider trait (Mem0 / Honcho / SqliteLocal).
+aphrody-memory         = { path = "../aphrody-memory" }
+# NOTE: `aphrody-chat` is being authored in parallel (see CLAUDE.md mega-batch).
+# It exposes the high-level `ChatLoop` / `single_turn` orchestrator the SDK
+# would otherwise re-implement. The dep is intentionally NOT wired here — it
+# will be re-introduced at the mega-batch when `aphrody-chat` lands its
+# concrete modules (`backend`, `turn_loop`, `types`). For now the SDK ships a
+# self-contained stub backend (see `agent::StubBackend`) so the public API is
+# usable end-to-end without `aphrody-chat`.
+
+# --- filesystem helpers (cross-platform) ----------------------------------
+# Used by `fs.rs` for safe glob walking. `glob` is in the workspace dep set
+# already (cf. workspace.dependencies in root Cargo.toml).
+glob         = { workspace = true }
+
+[dev-dependencies]
+tokio    = { workspace = true, features = ["rt-multi-thread", "macros", "test-util", "io-util", "fs", "sync"] }
+tempfile = { workspace = true }
+chrono   = { workspace = true }
+serde_json = { workspace = true }
+
+[package.metadata.cargo-machete]
+# `tracing` is consumed via `tracing::debug!` / `tracing::info!` macros only
+# and may be inlined out in release; keep the explicit ignore so machete does
+# not misfire on a fresh check.
+# `aphrody-memory` and `aphrody-skills-runtime` are re-exported through this
+# crate's public API (lib.rs `pub use`) — machete cannot see re-exports when
+# the consumer pattern is structural, so we pin them down.
+ignored = [
+    "tracing",
+    "aphrody-memory",
+    "aphrody-skills",
+    "futures-util",
+]

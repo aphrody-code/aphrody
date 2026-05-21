@@ -17,9 +17,9 @@ through the **native Rust port** of the Context7 client embedded in the
 /docs <library> [query]
 ```
 
-- **library** : The library name (e.g. `react`, `tokio`, `next.js`,
+- **library** : The library name (e.g. `react`, `tokio`, `svelte`,
   `prisma`) **or** a Context7 ID starting with `/` (e.g.
-  `/vercel/next.js`, `/tokio-rs/tokio/v1.45.0`).
+  `/sveltejs/svelte`, `/tokio-rs/tokio/v1.45.0`).
 - **query** : What you're looking for (optional but **strongly
   recommended** — affects relevance ranking).
 
@@ -27,10 +27,10 @@ through the **native Rust port** of the Context7 client embedded in the
 
 ```
 /docs react hooks cleanup
-/docs next.js app router authentication middleware
+/docs svelte layout load server side load
 /docs tokio spawn current_thread runtime
 /docs prisma one-to-many relations cascade delete
-/docs /vercel/next.js/v15.1.8 app router
+/docs /sveltejs/svelte/v5.0.0 runes state
 /docs /supabase/supabase row level security
 ```
 
@@ -43,7 +43,7 @@ through the **native Rust port** of the Context7 client embedded in the
    Microsoft Learn search, Microsoft code-sample search, and Google web
    search. Returns one fused markdown report (~4 sections).
 2. **Explicit Context7 ID path** — if the library argument **starts with
-   `/`** (e.g. `/vercel/next.js/v15.1.8`), call
+   `/`** (e.g. `/sveltejs/svelte/v5.0.0`), call
    `mcp__aphrody__context7_query_docs` directly with that ID — no
    resolution, no fanout (the user already knows what they want).
 3. **Drill-down** — if the fused report surfaces a single canonical URL
@@ -56,7 +56,7 @@ through the **native Rust port** of the Context7 client embedded in the
 Include the version in the library ID for pinned documentation :
 
 ```
-/docs /vercel/next.js/v15.1.8 middleware
+/docs /sveltejs/svelte/v5.0.0 runes
 /docs /facebook/react/v19.0.0 use hook
 /docs /tokio-rs/tokio/v1.45.0 JoinSet
 ```

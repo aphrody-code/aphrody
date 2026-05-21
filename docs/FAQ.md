@@ -20,20 +20,19 @@ and `asdf`.
 ### What is AGNTCY `a2a/v0.4` and why should I care?
 
 AGNTCY (Agent Network Connectivity) is a consortium spec for agent-to-agent
-message exchange and capability discovery. aphrody embeds an `ai.json`
-manifest at the repo root and exposes it via `.well-known/ai.json` so peer
-agents (Claude Code, MCP clients, custom HTTP consumers) can negotiate
-channels without out-of-band config. The manifest is parsed by `serde` at
-compile time, so a malformed schema fails the build rather than crashing
-at runtime.
+message exchange and capability discovery. aphrody implements A2A through the
+typed **gRPC transport** crates (`a2a-pb` / `a2a` / `a2a-client` /
+`a2a-server`), so peer agents can negotiate capabilities and exchange
+envelopes over a strongly-typed wire contract. (The earlier file-based
+`ai.json` manifest / JSONL-mailbox transport was removed in 2026; only the
+winclean compatibility mirror under `C:\winclean\.coord\` remains.)
 
-### Is the file-based protocol actually durable?
+### How does cross-agent coordination work today?
 
-Yes. Each peer writes append-only JSONL into the other peer's `inbox-from-*`
-file with a three-deep ack handshake (offer, accept, settle). Crashes on
-either side leave the mailbox replayable; no broker, no socket lifecycle,
-no race window between durable write and ack. The full design write-up
-lives in [`posts/2026-05-ai-json.md`](./posts/2026-05-ai-json.md).
+Over gRPC. Envelopes are encoded by `a2a-pb` (Protocol Buffers, committed
+`src/gen/`), surfaced by `a2a`, and exchanged via `a2a-client` /
+`a2a-server`. There is no broker to operate; the transport is part of the
+binary.
 
 ### Does it work on Windows?
 
@@ -81,16 +80,15 @@ nothing to opt out of.
 Under 50ms on a warm cache for the standard diagnostic profile. For the
 broader monorepo scan via `mrx`, the production benchmark is 1.4 seconds
 across 19,213 files on a stock Ryzen 7 laptop. The full numbers and the
-methodology are in [`BENCHMARKS.md`](../BENCHMARKS.md).
+methodology are in [`PERFORMANCE.md`](./PERFORMANCE.md) and
+[`PERFORMANCE-HISTORY.md`](./PERFORMANCE-HISTORY.md).
 
 ### What is the parallel YOLO grind loop?
 
 A four-subagent autonomous Claude Code orchestration mode. Each tick
 dispatches four background agents in parallel, each driving one
-`PLAN.md` ⏳ item toward production-ready. The design rationale, the
-contention model, and the failure modes we hit getting there are
-documented in
-[`posts/2026-05-yolo-grind-loop.md`](./posts/2026-05-yolo-grind-loop.md).
+`PLAN.md` ⏳ item toward production-ready. The mode is implemented as the
+`/aphrody-yolo-grind` skill under `.claude/skills/`.
 
 ### How do I contribute?
 

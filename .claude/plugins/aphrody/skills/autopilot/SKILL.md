@@ -1,6 +1,6 @@
 ---
 name: autopilot
-description: "Launch the aphrody autopilot loop — Claude Code + Gemini CLI pilot the repo in parallel, infinitely, zero human-in-loop. Use whenever the user says 'lance l'autopilot', 'autopilot', 'duel infini', 'go forever', 'pilote claude et gemini', 'tu pilotes en boucle', 'fais tourner', 'mode auto', 'autonome', or any variant that means 'keep working on aphrody by yourself without me'. Spawns `scripts/autopilot.sh` in the background ; the loop picks the next ⏳ item from `docs/PLAN.md`, dispatches it to Claude (`claude -p`) and Gemini (`bunx @google/gemini-cli`) in parallel each tick, logs NDJSON to `var/log/autopilot.jsonl`, bumps `ai/heartbeat.txt`. Stop with `kill $(cat var/run/autopilot.pid)`."
+description: "Launch the aphrody autopilot loop — Claude Code + Gemini CLI pilot the repo in parallel, infinitely, zero human-in-loop. Use whenever the user says 'lance l'autopilot', 'autopilot', 'duel infini', 'go forever', 'pilote claude et gemini', 'tu pilotes en boucle', 'fais tourner', 'mode auto', 'autonome', or any variant that means 'keep working on aphrody by yourself without me'. Spawns `scripts/autopilot.sh` in the background ; the loop picks the next ⏳ item from `docs/PLAN.md`, dispatches it to Claude (`claude -p`) and Gemini (`aphrody gemini` / resolved `gemini` binary) in parallel each tick, logs NDJSON to `var/log/autopilot.jsonl`, bumps `ai/heartbeat.txt`. Stop with `kill $(cat var/run/autopilot.pid)`."
 license: Apache-2.0
 metadata:
   version: 1.0.0
@@ -15,8 +15,9 @@ end-to-end. Two LLM lanes run in parallel every tick :
 - **Claude lane** : `claude -p` with a prompt to pick the highest-leverage
   `⏳` item from `docs/PLAN.md` and ship it (implement → `cargo check` →
   Conventional Commit, no AI co-author trailer per `AGENTS.md`).
-- **Gemini lane** : `bunx @google/gemini-cli --prompt` (or global `gemini`
-  if installed) — independent audit of the most recent commit, fact-checks
+- **Gemini lane** : `aphrody gemini --prompt` (resolves the `gemini` binary
+  per CLAUDE.md §0.4, no Bun/npx) — independent audit of the most recent
+  commit, fact-checks
   against the `best-stack-2026` skill (canonical Rust 2026 crates, no GPL
   leak, cross-platform). Outputs JSON verdict, never modifies files.
 

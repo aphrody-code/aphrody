@@ -28,7 +28,6 @@ tokio         = { workspace = true, features = ["sync", "rt", "macros", "process
 anyhow        = { workspace = true }
 tracing       = { workspace = true }
 base64        = { workspace = true }
-thiserror     = { workspace = true }
 
 # reqwest: HTTP probe for McpTransport::Http servers.
 reqwest       = { workspace = true }
@@ -57,3 +56,8 @@ aphrody-mcp   = { path = "../aphrody-mcp", optional = true }
 [dev-dependencies]
 tokio    = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
 tempfile = { workspace = true }
+
+[package.metadata.cargo-machete]
+# aphrody-mcp: optional dep behind feature `mcp-default-servers`; machete
+# cannot resolve optional dep usage and incorrectly flags it as unused.
+ignored = ["aphrody-mcp"]

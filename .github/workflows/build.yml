@@ -6,9 +6,9 @@ name: Build aphrody
 
 on:
   push:
-    branches: [master, stable, dev, windows, linux]
+    branches: [main, stable, dev, windows, linux]
   pull_request:
-    branches: [master, stable]
+    branches: [main, stable]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

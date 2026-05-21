@@ -1,117 +1,84 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # MCP servers — team setup
 
-aphrody ships **3 MCP servers** for the team. Two are project-scoped
-(auto-loaded with the repo), one is user-installed.
+aphrody ships **one native Rust MCP server** plus an optional remote GitHub
+MCP. There is no Bun/Node MCP relay anymore — the entire surface is a single
+`aphrody-mcp` binary.
 
-## Project-scoped MCPs (auto-loaded)
+## The `aphrody` MCP server (native Rust, plugin-loaded)
 
-### `github` (via `.mcp.json` at repo root)
+The Claude Code plugin (`.claude/plugins/aphrody/`) declares a single stdio
+MCP server:
 
-Official GitHub MCP server (remote `streamable-http`, no Docker). Lets
-you ask Claude to manage issues / PRs / Actions on
-`aphrody-code/{aphrody, n2b, bxc, ui, next.js}` using natural language.
+```jsonc
+// .claude/plugins/aphrody/.claude-plugin/plugin.json
+"mcpServers": {
+  "aphrody": { "type": "stdio", "command": "aphrody-mcp", "args": [], "env": {} }
+}
+```
 
-**Setup** (one time, per developer):
+`aphrody-mcp` is a single ~7 MB native binary (sub-millisecond cold start, zero
+JS runtime) exposing **15 tools** across 5 capability groups:
+
+- forensics / recon (8): `coding_style_guide`, `universal_web_fetch`,
+  `dns_recon`, `auth_extract`, `chrome_autopsy`, `advanced_recon`,
+  `native_hooks`, `start_dashboard`;
+- voice (2): `voice_synthesize`, `voice_transcribe`;
+- Context7 docs (2): `context7_resolve_library_id`, `context7_query_docs`
+  (native Rust port — no Bun bridge);
+- Microsoft Learn docs (3): `microsoft_docs_search`, `microsoft_docs_fetch`,
+  `microsoft_code_sample_search`;
+- reverse engineering (1): `re_triage` (PE/ELF triage via `aphrody-re`).
+
+### Build & install
+
+The `aphrody-mcp` binary is produced by the `google_mcp` crate. There is **no
+automatic install hook** — rebuild it manually after touching MCP code:
 
 ```bash
-# Option A — reuse the gh CLI token (recommended; same scopes as gh CLI)
+# Build the binary (package google_mcp, binary aphrody-mcp)
+cargo build --release --bin aphrody-mcp        # equivalently: -p google_mcp
+
+# Copy it onto PATH so the plugin can spawn it
+cp target/release/aphrody-mcp ~/.local/bin/    # Linux/macOS
+# Windows: copy target\release\aphrody-mcp.exe into a PATH directory
+```
+
+Restart your Claude Code session, then verify:
+
+```
+/mcp list
+→ aphrody    (stdio, native Rust)
+```
+
+## Optional — remote GitHub MCP
+
+The official GitHub MCP server (remote `streamable-http`, no Docker) lets you
+manage issues / PRs / Actions on `aphrody-code/aphrody` via natural language.
+
+```bash
+# Reuse the gh CLI token (recommended; same scopes as gh CLI)
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
-
-# Option B — generate a fresh fine-scoped PAT for MCP use
-#   GitHub → Settings → Developer settings → Personal access tokens (classic)
-#   Scopes needed: repo, workflow, read:org
-#   Then:
-export GITHUB_PERSONAL_ACCESS_TOKEN="ghp_…"
 ```
 
-Persist the export in your shell rc (`~/.bashrc`, `~/.zshrc`, or for
-PowerShell `$PROFILE`) so every Claude Code session picks it up.
+Persist the export in your shell rc (`~/.bashrc`, `~/.zshrc`, or PowerShell
+`$PROFILE`) and restart Claude Code.
 
-Restart your Claude Code session after setting the env var. Verify the
-MCP loaded:
+## Plugin surface
 
-```
-/mcp list
-```
+The aphrody plugin exposes:
 
-You should see `github` with the 50+ tools (create_issue, get_pr, etc.).
-
-### `bxc-scrapper` (via `.claude/plugins/aphrody/`)
-
-Auto-loaded with the aphrody plugin. Local stdio Bun server. Tools:
-`bxc_scrape`, `bxc_recon`, `bxc_detect`, `google_search`,
-`google_atlas_route`, `extract_structured`, `vision_analyze`.
-
-**Setup**:
-
-```bash
-cd .claude/plugins/aphrody/mcp/bxc-scrapper
-bun install
-```
-
-Restart Claude Code. The MCP server boots on demand.
-
-Optional — if the bxc daemon is running at `http://127.0.0.1:8765`,
-the MCP routes there for performance; otherwise it spawns `bxc-engine`
-per call.
-
-## User-installed MCPs (recommended)
-
-These are Claude Code plugins, not in `.mcp.json`. Install via the
-plugin marketplace.
-
-### `context7`
-
-Live documentation fetching for any library/framework/SDK. Critical for
-fact-checking dep versions and API signatures before adding to
-`Cargo.toml`. See `feedback_context7_for_docs` memory.
-
-```
-/plugin install context7
-```
-
-### `playwright`
-
-Real browser automation. Used by the `m3-spec-auditor` agent to
-screenshot M3 components and diff against the live spec page on
-`m3.material.io`.
-
-```
-/plugin install playwright
-```
-
-Then once installed:
-
-```bash
-bunx playwright install chromium
-```
-
-## Verification
-
-After installing all three, you should have:
-
-```
-/mcp list
-→ github               (remote streamable-http)
-→ bxc-scrapper         (stdio bun)
-→ context7             (plugin)
-→ playwright           (plugin)
-```
-
-And the aphrody plugin should expose:
-
-- 3 skills: `pixel-perfect`, `rust-target-check`, `m3-component`
-- 3 agents: `n2b-ultra`, `cross-platform-validator`, `m3-spec-auditor`
-- 2 commands: `/scrape`, `/tokens`
-- 3 hooks (PostToolUse): `oxlint`, `cargo-check`, `cargo-toml-validate`
+- **1 MCP server**: `aphrody` (15 tools, see above);
+- **slash commands**: `/status`, `/docs`;
+- a catalogue of agents and skills (see `docs/cargo/SKILLS.md` and
+  `.claude/skills/README.md`).
 
 ## Security notes
 
-- **Never commit `GITHUB_PERSONAL_ACCESS_TOKEN`**. The `.mcp.json` file
-  uses `${VAR}` references which Claude Code resolves at runtime from
-  your shell env — the token never touches the repo.
-- `.env` files are gitignored (`.gitignore` section 7).
+- **Never commit `GITHUB_PERSONAL_ACCESS_TOKEN`**. Reference it via `${VAR}`
+  so Claude Code resolves it at runtime from your shell env.
+- `.env` files are gitignored.
 - If you accidentally commit a token: rotate it immediately at
   <https://github.com/settings/tokens>.
-- The `bxc-scrapper` MCP does NOT need any token (local-only).
+- `aphrody-mcp` itself needs no token (forensics/recon/docs tools are
+  local or use their own provider keys via env).

@@ -2,11 +2,18 @@
 
 # PLAN-MOONSHOT — 30 jours pour maximiser les stars d'aphrody
 
+> **NOTE (2026-05-21) — planning doc daté, partiellement périmé.** Cette
+> stratégie de lancement a été écrite le 2026-05-17 et s'appuie sur des
+> primitives depuis **supprimées** : les repos `n2b` / `bxc`, le manifest
+> file-based `ai.json` (+ `schemas/ai.json/v1.json`, `docs/posts/2026-05-ai-json.md`),
+> et le layout de worktrees `C:/worktree/` (l'ancien `docs/WORKTREES.md` a été
+> supprimé le 2026-05-21). Le positionnement « owns ai.json » et les angles
+> marketing n2b/bxc ne sont plus valides ; l'A2A passe par gRPC et le tooling
+> est 100 % Rust. À ré-évaluer avant tout lancement. Le reste (cadence,
+> canaux, risques génériques) demeure utile.
+>
 > Sibling document to `docs/PLAN.md`. The orchestrator reconciles the two.
-> Revision: **2026-05-17 (mining of 13 upstream worktrees + aphrody self-audit)**.
-> Source readings: `docs/WORKTREES.md`, every `C:/worktree/<slug>/README.md`,
-> `.claude/skills/start/references/playbook.md`, `docs/audits/aphrody-completeness.md`,
-> `docs/PLAN.md`, `docs/launch/SHOW-HN.md`, `assets/`, `crates/`, `packages/`.
+> Revision originale : **2026-05-17**.
 
 > **Calibration honnête.** The literal "most-starred repo of all history" is
 > openclaw at 372 670 stars (observed 2026-05-17 via `gh repo view`). Surpassing

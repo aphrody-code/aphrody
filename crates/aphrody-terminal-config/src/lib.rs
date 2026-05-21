@@ -163,7 +163,7 @@ pub struct TerminalConfig {
     /// LLM provider configuration (whitelist enforced at deserialise time).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub llm_config: Option<LlmConfig>,
-    /// Browser-bridge configuration (bxc / agent-browser / Edge fallback).
+    /// Browser-bridge configuration (agent-browser / Edge fallback).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub browser: Option<BrowserConfig>,
 }

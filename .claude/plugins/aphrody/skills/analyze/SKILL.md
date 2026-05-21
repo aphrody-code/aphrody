@@ -1,5 +1,5 @@
 ---
-name: bun-analyze
+name: analyze
 description: "Analyze project health, dependencies, code quality, and structure. TRIGGER when: user asks about project status, health, dependency audit, dead code, bundle size, outdated packages, architecture overview, or says 'analyze', 'audit', 'health check'."
 allowed-tools: Read, Bash, Glob, Grep
 model: inherit
@@ -21,24 +21,27 @@ git log --oneline -5
 
 ### 2. Dependencies
 ```bash
-# Check for outdated packages
-bun outdated 2>/dev/null || npm outdated 2>/dev/null || echo "No package manager detected"
+# Check for outdated crates
+cargo outdated --workspace 2>/dev/null || echo "cargo-outdated not installed"
+# Detect unused dependencies
+cargo machete 2>/dev/null || echo "cargo-machete not installed"
 ```
 
-### 3. Type Safety
+### 3. Compilation & Lints
 ```bash
-bunx tsc --noEmit 2>&1 | tail -20
+cargo check --workspace --locked 2>&1 | tail -20
+cargo clippy --workspace --all-targets --locked -- -D warnings 2>&1 | tail -20
 ```
 
 ### 4. Code Quality
-- Search for TODOs/FIXMEs: `grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.ts" --include="*.tsx" src/ | head -20`
-- Check for console.log in production code
-- Look for unused exports
+- Search for TODOs/FIXMEs: `rg -n "TODO|FIXME|HACK|XXX" -g "*.rs" crates/ | head -20`
+- Look for `dbg!` / `println!` left in production code
+- Look for `unwrap()` / `expect()` on fallible paths
 
 ### 5. Security Quick Scan
 - Check for hardcoded secrets patterns
-- Verify .env files are gitignored
-- Check dependency vulnerabilities: `bun audit 2>/dev/null || npm audit 2>/dev/null`
+- Verify `.env` files are gitignored
+- Check dependency vulnerabilities + licenses: `cargo deny check 2>/dev/null && cargo audit 2>/dev/null`
 
 ### 6. Bundle / Build
 - Verify build succeeds

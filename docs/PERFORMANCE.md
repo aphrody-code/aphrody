@@ -2,9 +2,9 @@
 # Performance
 
 Performance claims for `aphrody` with reproducible recipes. Complements
-[`../BENCHMARKS.md`](../BENCHMARKS.md) (mrx scanner focus) by covering the
-wider workspace: CLI cold start, criterion micro-benchmarks in `backend`,
-A2A coordination latency, WASM artifact size, and memory footprint.
+[`PERFORMANCE-HISTORY.md`](PERFORMANCE-HISTORY.md) (historical trend log) by
+covering the wider workspace: CLI cold start, criterion micro-benchmarks in
+`backend`, A2A coordination latency, WASM artifact size, and memory footprint.
 
 Numbers are honest priors from a 2024-class x86_64 laptop (~4.0 GHz, AES-NI,
 NVMe SSD), Windows 11 Insider Canary, Rust nightly 1.97 release profile
@@ -15,7 +15,7 @@ NVMe SSD), Windows 11 Insider Canary, Rust nightly 1.97 release profile
 - `aphrody doctor` cold start: **< 100 ms** on a warm filesystem.
 - `aphrody --version`: **< 30 ms** cold, **< 10 ms** warm.
 - `mrx scan` on this repo (~19,213 files, 482 MB): **~1.4 s** warm cache,
-  **~3 s** cold (see [`../BENCHMARKS.md`](../BENCHMARKS.md) for the full table).
+  **~3 s** cold (see §4 below for the full table).
 - AES-256-GCM decrypt of a 1 KiB Chromium-format payload: **< 50 µs**.
 - A2A `file_jsonl` inbox poll with 100 envelopes (~50 KB): **< 5 ms**.
 - WASM bundle (`aphrody-wasm` release, `wasm-pack --target web`): **~91 KB**
@@ -66,7 +66,7 @@ of magnitude off — that usually points at a build-flag regression.
 ## 4. mrx scan performance
 
 `mrx` walks polyglot monorepos and emits two JSON snapshots in one shot.
-Numbers below are reproduced from [`../BENCHMARKS.md`](../BENCHMARKS.md) and
+Numbers below are reproduced from
 the [aggressive scan audit](audits/2026-05-17-mrx-aggressive.md):
 
 - Target repo: **19,213 files, 482 MB**, 53 workspaces, 9 submodules.
@@ -180,6 +180,5 @@ threshold catches real algorithmic regressions while tolerating noise from
 shared CI runners.
 
 For deeper investigations, cross-reference
-[`../BENCHMARKS.md`](../BENCHMARKS.md) (mrx-focused, with throughput tables)
-and [`audits/2026-05-17-mrx-aggressive.md`](audits/2026-05-17-mrx-aggressive.md)
+[`audits/2026-05-17-mrx-aggressive.md`](audits/2026-05-17-mrx-aggressive.md)
 (audit of the aggressive scan mode and its cost model).

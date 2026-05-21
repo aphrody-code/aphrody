@@ -11,9 +11,10 @@ aphrody is a cross-platform Rust CLI (Linux, Windows, WASM) with an embedded
 AGNTCY a2a/v0.4 manifest for cross-agent coordination. It ships a parallel
 YOLO grind loop (4 subagents per tick driving items to production-ready),
 Chromium / DNS / scrape forensics, MRX (Monorepo Real-time X-platform mapper),
-and bun-only JS/TS scripting hooks. The same binary discovers peer agents
-through `.well-known/ai.json`, runs file-based mailbox channels, and exposes
-itself to Claude Code, MCP clients, and arbitrary HTTP consumers — without
+and a single native Rust MCP server (`aphrody-mcp`). The same binary
+coordinates with peer agents over the typed gRPC A2A transport (crates
+`a2a-*`) and exposes itself to Claude Code, MCP clients, and arbitrary HTTP
+consumers — without
 any container, daemon, or vendor-lock-in. Linux 26.04 is the primary build
 target; Windows 11 Canary and `wasm32-unknown-unknown` are first-class.
 
@@ -23,7 +24,7 @@ target; Windows 11 Canary and `wasm32-unknown-unknown` are first-class.
 |---|---|---|---|---|---|---|
 | Cross-platform binary | ✅ Linux+Win+WASM | ✅ | ✅ | ✅ | ❌ (container only) | ✅ |
 | Embedded agent manifest (AGNTCY a2a/v0.4) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Cross-agent coordination (`ai.json`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Cross-agent coordination (gRPC A2A) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Subagent parallel orchestration | ✅ (4-agent grind) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Web scraping / DNS forensics | ✅ | ❌ | ❌ | partial | ❌ | ❌ |
 | Monorepo real-time scan | ✅ (mrx) | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -88,7 +89,5 @@ forensics, WASM), aphrody is overkill — pick the focused tool.
 See also:
 
 - [`README.md`](../README.md) — install, quickstart, architecture overview.
-- [`docs/posts/2026-05-ai-json.md`](posts/2026-05-ai-json.md) — design notes
-  on the A2A file-based protocol (channels, envelopes, 3-deep handshake).
-- [`docs/launch/SHOW-HN.md`](launch/SHOW-HN.md) — Show HN launch post
-  (_when published_).
+- [`PROTOCOL.md`](PROTOCOL.md) — A2A protocol notes (now gRPC-based; the
+  file-based mailbox was removed in 2026).

@@ -23,7 +23,7 @@ by Claude Code's skill loader.
 
 Synced from the WinClean plugin (`C:\winclean\plugins\winclean\skills\`).
 Kept under a single namespace to preserve provenance and simplify mass
-re-sync via `aphrody xtask skills-sync winclean`.
+re-sync by copying the upstream `skills/` tree under this directory.
 
 ## Cross-reference
 
