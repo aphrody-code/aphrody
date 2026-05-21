@@ -48,6 +48,7 @@
 
 pub mod auth;
 pub mod client;
+pub mod endpoints;
 pub mod error;
 
 // ---------------------------------------------------------------------------
@@ -56,4 +57,5 @@ pub mod error;
 
 pub use auth::{ANTIGRAVITY_CLIENT_ID, ANTIGRAVITY_SCOPES, OAuthToken, token_from_credential_manager};
 pub use client::AntigravityClient;
+pub use endpoints::{CloudCodeEndpoint, GEMINI_API_HOST, VERTEX_AI_HOST};
 pub use error::SdkError;

@@ -142,4 +142,68 @@ impl AntigravityClient {
         let value: serde_json::Value = serde_json::from_str(&body_text)?;
         Ok(value)
     }
+
+    // -- Typed API surface ---------------------------------------------------
+
+    /// Fetch the signed-in user's profile (email + name) from Google's OpenID
+    /// `userinfo` endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`AntigravityClient::get_json`].
+    pub async fn userinfo(&self) -> Result<serde_json::Value, SdkError> {
+        self.get_json(crate::endpoints::OAUTH_USERINFO_ENDPOINT).await
+    }
+
+    /// Call a Cloud Code `v1internal` method, composing the URL from a
+    /// [`CloudCodeEndpoint`](crate::endpoints::CloudCodeEndpoint) and a
+    /// `METHOD_*` path constant.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`AntigravityClient::post_json`].
+    pub async fn cloud_code(
+        &self,
+        endpoint: crate::endpoints::CloudCodeEndpoint,
+        method: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, SdkError> {
+        self.post_json(&endpoint.url(method), body).await
+    }
+
+    /// `loadCodeAssist` — bootstrap the Code Assist session for the user on the
+    /// production Cloud Code endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`AntigravityClient::post_json`].
+    pub async fn load_code_assist(
+        &self,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, SdkError> {
+        self.cloud_code(
+            crate::endpoints::CloudCodeEndpoint::Prod,
+            crate::endpoints::METHOD_LOAD_CODE_ASSIST,
+            body,
+        )
+        .await
+    }
+
+    /// `fetchAvailableModels` — list models available to the user's tier on the
+    /// production Cloud Code endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`AntigravityClient::post_json`].
+    pub async fn fetch_available_models(
+        &self,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, SdkError> {
+        self.cloud_code(
+            crate::endpoints::CloudCodeEndpoint::Prod,
+            crate::endpoints::METHOD_FETCH_AVAILABLE_MODELS,
+            body,
+        )
+        .await
+    }
 }
