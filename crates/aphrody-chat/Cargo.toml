@@ -32,6 +32,8 @@ futures-util = { workspace = true }
 # --- Building blocks ------------------------------------------------------
 # The Gemini CLI subprocess adapter (text + tool-call + done stream events).
 gemini-runtime         = { path = "../gemini-runtime" }
+# Native Gemini web app (gemini.google.com) backend — 3.5 Flash via cookie auth.
+gemini-web             = { workspace = true }
 # Vendor-neutral tool descriptor registry (Anthropic / Gemini / MCP shapes).
 aphrody-tools          = { path = "../aphrody-tools" }
 # JSONL conversation session log (Turn + ToolCall + lifecycle events).
