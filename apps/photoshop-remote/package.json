@@ -11,7 +11,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "ps": "bun src/cli.ts"
+    "ps": "bun src/cli.ts",
+    "probe": "bun scripts/live-probe.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
