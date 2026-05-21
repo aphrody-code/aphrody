@@ -80,6 +80,22 @@ pub struct ColorRoles {
     pub inverse_on_surface: u32,
     /// Accent color used on inverse surface.
     pub inverse_primary: u32,
+
+    // ── Expanded surfaces (M3 2023+) ─────────────────────────────────────────
+    /// Dimmest neutral surface tone (lowest in the surface set).
+    pub surface_dim: u32,
+    /// Brightest neutral surface tone.
+    pub surface_bright: u32,
+    /// Lowest-emphasis surface container (furthest back).
+    pub surface_container_lowest: u32,
+    /// Low-emphasis surface container.
+    pub surface_container_low: u32,
+    /// Default surface container.
+    pub surface_container: u32,
+    /// High-emphasis surface container.
+    pub surface_container_high: u32,
+    /// Highest-emphasis surface container (closest to foreground).
+    pub surface_container_highest: u32,
 }
 
 /// M3 baseline light-theme color roles (Purple seed `#6750A4`).
@@ -126,6 +142,15 @@ pub const BASELINE: ColorRoles = ColorRoles {
     inverse_surface: 0xFF313033,
     inverse_on_surface: 0xFFF4EFF4,
     inverse_primary: 0xFFD0BCFF,
+
+    // Expanded surfaces
+    surface_dim: 0xFFDED8E1,
+    surface_bright: 0xFFFEF7FF,
+    surface_container_lowest: 0xFFFFFFFF,
+    surface_container_low: 0xFFF7F2FA,
+    surface_container: 0xFFF3EDF7,
+    surface_container_high: 0xFFECE6F0,
+    surface_container_highest: 0xFFE6E0E9,
 };
 
 /// M3 baseline dark-theme color roles (Purple seed `#6750A4`).
@@ -168,6 +193,100 @@ pub const BASELINE_DARK: ColorRoles = ColorRoles {
     inverse_surface: 0xFFE6E1E5,
     inverse_on_surface: 0xFF313033,
     inverse_primary: 0xFF6750A4,
+
+    // Expanded surfaces
+    surface_dim: 0xFF141218,
+    surface_bright: 0xFF3B383E,
+    surface_container_lowest: 0xFF0F0D13,
+    surface_container_low: 0xFF1D1B20,
+    surface_container: 0xFF211F26,
+    surface_container_high: 0xFF2B2930,
+    surface_container_highest: 0xFF36343B,
+};
+
+/// aphrody brand light-theme color roles (rust seed `#CE422B`).
+///
+/// Generated with the M3 `SchemeTonalSpot` algorithm
+/// (`@material/material-color-utilities`, the Material Theme Builder engine)
+/// from aphrody's brand seed. See `docs/design/aphrody-m3-theme.json`.
+pub const APHRODY: ColorRoles = ColorRoles {
+    primary: 0xFF904B3E,
+    on_primary: 0xFFFFFFFF,
+    primary_container: 0xFFFFDAD3,
+    on_primary_container: 0xFF733428,
+    secondary: 0xFF775650,
+    on_secondary: 0xFFFFFFFF,
+    secondary_container: 0xFFFFDAD3,
+    on_secondary_container: 0xFF5D3F3A,
+    tertiary: 0xFF6F5C2E,
+    on_tertiary: 0xFFFFFFFF,
+    tertiary_container: 0xFFFAE0A6,
+    on_tertiary_container: 0xFF554519,
+    error: 0xFFBA1A1A,
+    on_error: 0xFFFFFFFF,
+    error_container: 0xFFFFDAD6,
+    on_error_container: 0xFF93000A,
+    background: 0xFFFFF8F6,
+    on_background: 0xFF231918,
+    surface: 0xFFFFF8F6,
+    on_surface: 0xFF231918,
+    surface_variant: 0xFFF5DDD9,
+    on_surface_variant: 0xFF534340,
+    outline: 0xFF85736F,
+    outline_variant: 0xFFD8C2BD,
+    shadow: 0xFF000000,
+    scrim: 0xFF000000,
+    inverse_surface: 0xFF392E2C,
+    inverse_on_surface: 0xFFFFEDE9,
+    inverse_primary: 0xFFFFB4A6,
+    surface_dim: 0xFFE8D6D3,
+    surface_bright: 0xFFFFF8F6,
+    surface_container_lowest: 0xFFFFFFFF,
+    surface_container_low: 0xFFFFF0EE,
+    surface_container: 0xFFFCEAE6,
+    surface_container_high: 0xFFF7E4E1,
+    surface_container_highest: 0xFFF1DFDB,
+};
+
+/// aphrody brand dark-theme color roles (rust seed `#CE422B`). Dark-first
+/// default for aphrody UIs. See `docs/design/aphrody-m3-tokens.md`.
+pub const APHRODY_DARK: ColorRoles = ColorRoles {
+    primary: 0xFFFFB4A6,
+    on_primary: 0xFF561E14,
+    primary_container: 0xFF733428,
+    on_primary_container: 0xFFFFDAD3,
+    secondary: 0xFFE7BDB5,
+    on_secondary: 0xFF442A24,
+    secondary_container: 0xFF5D3F3A,
+    on_secondary_container: 0xFFFFDAD3,
+    tertiary: 0xFFDCC48C,
+    on_tertiary: 0xFF3D2E04,
+    tertiary_container: 0xFF554519,
+    on_tertiary_container: 0xFFFAE0A6,
+    error: 0xFFFFB4AB,
+    on_error: 0xFF690005,
+    error_container: 0xFF93000A,
+    on_error_container: 0xFFFFDAD6,
+    background: 0xFF1A1110,
+    on_background: 0xFFF1DFDB,
+    surface: 0xFF1A1110,
+    on_surface: 0xFFF1DFDB,
+    surface_variant: 0xFF534340,
+    on_surface_variant: 0xFFD8C2BD,
+    outline: 0xFFA08C89,
+    outline_variant: 0xFF534340,
+    shadow: 0xFF000000,
+    scrim: 0xFF000000,
+    inverse_surface: 0xFFF1DFDB,
+    inverse_on_surface: 0xFF392E2C,
+    inverse_primary: 0xFF904B3E,
+    surface_dim: 0xFF1A1110,
+    surface_bright: 0xFF423735,
+    surface_container_lowest: 0xFF140C0B,
+    surface_container_low: 0xFF231918,
+    surface_container: 0xFF271D1C,
+    surface_container_high: 0xFF322826,
+    surface_container_highest: 0xFF3D3230,
 };
 
 /// Emits a CSS `:root` block containing all M3 `--md-sys-color-*` variables.
@@ -215,7 +334,14 @@ pub fn export_css(theme: &ColorRoles) -> std::string::String {
          {outline_variant};\n\x20 --md-sys-color-shadow: {shadow};\n\x20 --md-sys-color-scrim: \
          {scrim};\n\x20 --md-sys-color-inverse-surface: {inverse_surface};\n\x20 \
          --md-sys-color-inverse-on-surface: {inverse_on_surface};\n\x20 \
-         --md-sys-color-inverse-primary: {inverse_primary};\n}}",
+         --md-sys-color-inverse-primary: {inverse_primary};\n\x20 \
+         --md-sys-color-surface-dim: {surface_dim};\n\x20 --md-sys-color-surface-bright: \
+         {surface_bright};\n\x20 --md-sys-color-surface-container-lowest: \
+         {surface_container_lowest};\n\x20 --md-sys-color-surface-container-low: \
+         {surface_container_low};\n\x20 --md-sys-color-surface-container: \
+         {surface_container};\n\x20 --md-sys-color-surface-container-high: \
+         {surface_container_high};\n\x20 --md-sys-color-surface-container-highest: \
+         {surface_container_highest};\n}}",
         primary = hex(theme.primary),
         on_primary = hex(theme.on_primary),
         primary_container = hex(theme.primary_container),
@@ -245,6 +371,13 @@ pub fn export_css(theme: &ColorRoles) -> std::string::String {
         inverse_surface = hex(theme.inverse_surface),
         inverse_on_surface = hex(theme.inverse_on_surface),
         inverse_primary = hex(theme.inverse_primary),
+        surface_dim = hex(theme.surface_dim),
+        surface_bright = hex(theme.surface_bright),
+        surface_container_lowest = hex(theme.surface_container_lowest),
+        surface_container_low = hex(theme.surface_container_low),
+        surface_container = hex(theme.surface_container),
+        surface_container_high = hex(theme.surface_container_high),
+        surface_container_highest = hex(theme.surface_container_highest),
     )
 }
 
@@ -282,9 +415,34 @@ mod tests {
 
     #[cfg(feature = "std")]
     #[test]
-    fn css_export_contains_all_29_variables() {
+    fn css_export_contains_all_36_variables() {
         let css = export_css(&BASELINE);
         let count = css.matches("--md-sys-color-").count();
-        assert_eq!(count, 29, "expected 29 color variables, found {count}");
+        assert_eq!(count, 36, "expected 36 color variables, found {count}");
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn css_export_contains_expanded_surfaces() {
+        let css = export_css(&BASELINE);
+        for var in [
+            "--md-sys-color-surface-dim:",
+            "--md-sys-color-surface-bright:",
+            "--md-sys-color-surface-container-lowest:",
+            "--md-sys-color-surface-container-highest:",
+        ] {
+            assert!(css.contains(var), "missing {var}");
+        }
+    }
+
+    #[test]
+    fn aphrody_theme_is_rust_seeded_and_distinct() {
+        // Dark-first brand: aphrody primary differs from the purple baseline.
+        assert_eq!(APHRODY_DARK.primary, 0xFFFFB4A6);
+        assert_ne!(APHRODY_DARK.primary, BASELINE_DARK.primary);
+        // tertiary is the auto-derived gold.
+        assert_eq!(APHRODY_DARK.tertiary, 0xFFDCC48C);
+        // expanded surfaces populated.
+        assert_eq!(APHRODY_DARK.surface_container, 0xFF271D1C);
     }
 }

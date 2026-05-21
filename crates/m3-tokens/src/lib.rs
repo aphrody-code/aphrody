@@ -28,7 +28,10 @@
 
 pub mod color;
 pub mod hct;
-#[cfg(test)] pub mod dynamic;
+/// Dynamic color — HCT seed → 13-tone tonal palette generation (the M3
+/// `material-color-utilities` algorithm). Derive a tonal palette from an
+/// arbitrary brand seed at runtime via [`dynamic::seed_to_palette`].
+pub mod dynamic;
 pub mod elevation;
 pub mod gemini_brand;
 pub mod google_sans_flex;
