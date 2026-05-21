@@ -337,6 +337,7 @@ dependencies = [
  "a2a-lf",
  "antigravity-sdk",
  "aphrody-chat",
+ "aphrody-firefly",
  "aphrody-fsindex",
  "aphrody-images",
  "aphrody-logo",
@@ -490,6 +491,20 @@ version = "1.0.0-canary"
 dependencies = [
  "async-trait",
  "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-firefly"
+version = "1.0.0-canary"
+dependencies = [
+ "reqwest 0.13.3",
+ "rustls",
  "serde",
  "serde_json",
  "tempfile",
@@ -4443,6 +4458,7 @@ version = "1.0.0-canary"
 dependencies = [
  "anyhow",
  "aphrody-capture",
+ "aphrody-firefly",
  "aphrody-re",
  "aphrody-voice",
  "axum",
