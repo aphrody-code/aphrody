@@ -173,7 +173,27 @@ tolerates a top-level `status` (Lightroom/Sensei single-status shape) in
 addition to the per-output array. `productCrop`/`depthBlur` are Adobe
 "coming-soon" surfaces — wired and ready, return the API's status verbatim.
 
+### Generative expand + fill (Firefly v3, landed)
+
+Two more callable Firefly Services edit ops, same async submit→poll→download
+machinery as `generate`:
+
+| Capability | REST op (verified) | SDK | MCP tool |
+|---|---|---|---|
+| Generative expand (enlarge canvas, AI-fill) | `POST firefly-api.adobe.io/v3/images/expand-async` | `FireflyClient::expand` (`ExpandRequest`) | `firefly_generative_expand` |
+| Generative fill (replace masked region) | `POST .../v3/images/fill-async` | `FireflyClient::fill` (`FillRequest`) | `firefly_generative_fill` |
+
+Wire shape (verified): expand body `{ image:{ source:{url|uploadId} }, size:{width,height},
+numVariations?, prompt? }`; fill body `{ image:{ source, mask }, prompt?,
+numVariations? }`. `ImageSourceRef` serializes either a presigned `url` (our
+headless path) or a Firefly storage `uploadId`. Both return the standard
+`{ jobId, statusUrl }` and resolve to `result.outputs[].image.url`.
+
 ## RE: the official "Adobe for creativity" connector (Claude Desktop)
+
+The full captured corpus (6 skills + manifests) lives under
+[`adobe-connector/`](./adobe-connector/) with its provenance/attribution
+(Apache-2.0, © Adobe, `github.com/adobe/skills`) and a verb→REST mapping table.
 
 Reverse-engineered from the locally-installed connector plugin (read-only):
 `…\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\local-agent-mode-sessions\…\rpm\plugin_017FSfZwAM3GF7xTpsbDUHoA\`.
