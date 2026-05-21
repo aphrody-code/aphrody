@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Minimal, hand-written subset of the Codeium `exa.language_server_pb`
+// gRPC surface used by the Antigravity desktop client's local
+// `language_server.exe`.
+//
+// Provenance: the service name `exa.language_server_pb.LanguageServerService`
+// and the RPC names (FetchUserInfo, GetAuthStatus, GetLocalUserInfo,
+// GetGrantedScopes, GetAvailableModels, GetModelResponse, AuthLogout,
+// AcceptTermsOfService) were recovered by reverse-engineering the shipped
+// `languageServer.js` launcher and the Go binary's embedded symbols
+// (`codeium_common_go_proto`).  The *message field layouts* below are an
+// INFERRED, deliberately small subset — enough to compile a usable, extensible
+// client.  They are NOT a faithful descriptor dump; a full
+// `google.protobuf.FileDescriptorSet` extraction via GoReSym is documented as
+// optional / NON_FAIT in docs/plans/antigravity-exploitation.md (WS4).
+//
+// No secrets are encoded here: only public RPC/field names and shapes.
+
+syntax = "proto3";
+
+package exa.language_server_pb;
+
+// LanguageServerService is the local gRPC service exposed by the Codeium
+// language server over self-signed HTTPS on 127.0.0.1.  Only the auth /
+// metadata RPCs needed by aphrody are declared; the surface is intentionally
+// extensible — add RPCs/messages as they are reverse-engineered.
+service LanguageServerService {
+  // Returns the signed-in user's cloud profile (email, name, tier).
+  rpc FetchUserInfo(FetchUserInfoRequest) returns (FetchUserInfoResponse);
+
+  // Returns whether the server currently holds a valid auth session.
+  rpc GetAuthStatus(GetAuthStatusRequest) returns (GetAuthStatusResponse);
+
+  // Lists the models available to the signed-in user's account / tier.
+  rpc GetAvailableModels(GetAvailableModelsRequest)
+      returns (GetAvailableModelsResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Common metadata
+// ---------------------------------------------------------------------------
+
+// Metadata echoed back to the language server on most RPCs (IDE identity,
+// session correlation).  All fields optional in practice.
+message Metadata {
+  string ide_name = 1;
+  string ide_version = 2;
+  string extension_name = 3;
+  string extension_version = 4;
+  string session_id = 5;
+  string request_id = 6;
+  string locale = 7;
+}
+
+// ---------------------------------------------------------------------------
+// FetchUserInfo
+// ---------------------------------------------------------------------------
+
+message FetchUserInfoRequest {
+  Metadata metadata = 1;
+  // When true the server refreshes from the cloud rather than serving cache.
+  bool force_refresh = 2;
+}
+
+message FetchUserInfoResponse {
+  UserInfo user_info = 1;
+}
+
+message UserInfo {
+  string email = 1;
+  string name = 2;
+  // Account tier string as reported by Cloud Code (e.g. "free", "ultra").
+  string tier = 3;
+  // OAuth subject identifier.
+  string subject = 4;
+  bool email_verified = 5;
+}
+
+// ---------------------------------------------------------------------------
+// GetAuthStatus
+// ---------------------------------------------------------------------------
+
+message GetAuthStatusRequest {
+  Metadata metadata = 1;
+}
+
+message GetAuthStatusResponse {
+  AuthState state = 1;
+  // Optional human-readable detail when not AUTH_STATE_AUTHENTICATED.
+  string message = 2;
+  // Unix-seconds expiry of the current access token, 0 when unknown.
+  int64 expiry_unix_seconds = 3;
+}
+
+enum AuthState {
+  AUTH_STATE_UNSPECIFIED = 0;
+  AUTH_STATE_UNAUTHENTICATED = 1;
+  AUTH_STATE_AUTHENTICATED = 2;
+  AUTH_STATE_EXPIRED = 3;
+}
+
+// ---------------------------------------------------------------------------
+// GetAvailableModels
+// ---------------------------------------------------------------------------
+
+message GetAvailableModelsRequest {
+  Metadata metadata = 1;
+}
+
+message GetAvailableModelsResponse {
+  repeated Model models = 1;
+  // Identifier of the model selected by default for this user.
+  string default_model = 2;
+}
+
+message Model {
+  // Stable model identifier (e.g. "gemini-2.5-pro").
+  string name = 1;
+  // Human-friendly display label.
+  string display_name = 2;
+  // Provider / publisher (e.g. "google", "anthropic").
+  string provider = 3;
+  // Whether the model is selectable for the current account / tier.
+  bool available = 4;
+  // Maximum context window in tokens, 0 when unknown.
+  int64 max_context_tokens = 5;
+}

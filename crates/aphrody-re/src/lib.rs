@@ -56,7 +56,19 @@
 
 #![forbid(unsafe_code)]
 
+/// Native Electron `app.asar` archive reader (list + extract, no execution).
+pub mod asar;
+/// Electron binary analyser — fuses wire, V8 snapshot/code-cache, Electron /
+/// Node / Chromium versions.
+pub mod electron;
 pub mod google;
+
+/// Read-only Chromium LevelDB enumerator (opt-in `leveldb` feature, host-only).
+///
+/// Pulls a pure-Rust LevelDB reader + a scratch temp copy to keep the source
+/// bytes untouched. Excluded from default + wasm builds.
+#[cfg(feature = "leveldb")]
+pub mod leveldb;
 
 /// Native Magika file-type classification (opt-in `magika` feature).
 ///
