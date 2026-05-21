@@ -126,3 +126,45 @@ impl TextRenderer {
         self.draw(scene, text, style, Affine::translate((x, y0)))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SANS: &str = "Roboto, Segoe UI, Arial, sans-serif";
+
+    #[test]
+    fn measure_nonempty_is_positive() {
+        let mut tr = TextRenderer::new();
+        let style = TextStyle::new(SANS, 16.0, 400.0, Color::BLACK);
+        let (w, h) = tr.measure("Hello", style);
+        assert!(w > 0.0, "width should be positive, got {w}");
+        assert!(h > 0.0, "height should be positive, got {h}");
+    }
+
+    #[test]
+    fn longer_text_is_wider() {
+        let mut tr = TextRenderer::new();
+        let style = TextStyle::new(SANS, 16.0, 400.0, Color::BLACK);
+        let (short, _) = tr.measure("I", style);
+        let (long, _) = tr.measure("Filled tonal button", style);
+        assert!(long > short, "‘…button’ ({long}) should be wider than ‘I’ ({short})");
+    }
+
+    #[test]
+    fn bigger_size_is_taller() {
+        let mut tr = TextRenderer::new();
+        let small = tr.measure("Ag", TextStyle::new(SANS, 12.0, 400.0, Color::BLACK)).1;
+        let big = tr.measure("Ag", TextStyle::new(SANS, 32.0, 400.0, Color::BLACK)).1;
+        assert!(big > small, "32px ({big}) should be taller than 12px ({small})");
+    }
+
+    #[test]
+    fn draw_into_scene_does_not_panic() {
+        let mut tr = TextRenderer::new();
+        let mut scene = Scene::new();
+        let style = TextStyle::new(SANS, 14.0, 500.0, Color::WHITE);
+        let (w, h) = tr.draw(&mut scene, "aphrody", style, Affine::IDENTITY);
+        assert!(w > 0.0 && h > 0.0);
+    }
+}
