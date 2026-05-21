@@ -1070,6 +1070,83 @@ impl GoogleMcpServer {
         photoshop_tools::firefly_to_photoshop(req).await
     }
 
+    #[tool(description = "Auto-tone an image via the cloud Lightroom API (AI exposure, contrast, \
+                          highlights, shadows, whites, blacks, vibrance). input_url readable by \
+                          Adobe; output_url writable. format = png|jpg|psd|tiff|dng. Job JSON.")]
+    async fn photoshop_auto_tone(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::auto_tone(req).await
+    }
+
+    #[tool(description = "Auto-straighten (Upright perspective correction) via the cloud Lightroom \
+                          API. input_url readable, output_url writable. Returns the job JSON.")]
+    async fn photoshop_auto_straighten(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::auto_straighten(req).await
+    }
+
+    #[tool(description = "Apply explicit Camera-Raw adjustments via the cloud Lightroom API (edit): \
+                          exposure, contrast, highlights, shadows, whites, blacks, temperature, \
+                          tint, vibrance, saturation, clarity, dehaze, texture, sharpness. Only \
+                          the set fields are applied. Returns the job JSON.")]
+    async fn photoshop_edit(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsAdjustRequest>,
+    ) -> String {
+        photoshop_tools::edit(req).await
+    }
+
+    #[tool(description = "Remove the background of an image (Sensei cutout), returning a \
+                          transparent cut-out. input_url readable, output_url writable (png \
+                          recommended). Returns the job JSON.")]
+    async fn photoshop_remove_background(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::remove_background(req).await
+    }
+
+    #[tool(description = "Create a subject/background alpha mask for an image (Sensei mask). \
+                          input_url readable, output_url writable. Returns the job JSON.")]
+    async fn photoshop_create_mask(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::create_mask(req).await
+    }
+
+    #[tool(description = "Content-aware product crop via the cloud Photoshop API (productCrop). \
+                          input_url readable, output_url writable. Returns the job JSON.")]
+    async fn photoshop_product_crop(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::product_crop(req).await
+    }
+
+    #[tool(description = "Depth-of-field blur via the cloud Photoshop API (depthBlur Neural \
+                          Filter). input_url readable, output_url writable. Returns the job JSON.")]
+    async fn photoshop_depth_blur(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsEditRequest>,
+    ) -> String {
+        photoshop_tools::depth_blur(req).await
+    }
+
+    #[tool(description = "Play an actionJSON program (a recorded Photoshop action set as JSON) over \
+                          a PSD/image via the cloud Photoshop API (documentOperations). `actions` \
+                          is the actionJSON array. Returns the job JSON.")]
+    async fn photoshop_action_json(
+        &self,
+        Parameters(req): Parameters<photoshop_tools::PsActionJsonRequest>,
+    ) -> String {
+        photoshop_tools::action_json(req).await
+    }
+
     // -----------------------------------------------------------------------
     // screen_capture — capture the screen (or a window) as a PNG for vision.
     // -----------------------------------------------------------------------
