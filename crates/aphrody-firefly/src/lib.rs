@@ -67,7 +67,8 @@ pub mod photoshop;
 
 pub use auth::{AccessToken, ImsCredentials, TokenCache, FIREFLY_SCOPE, IMS_TOKEN_ENDPOINT};
 pub use client::{
-    FireflyClient, FireflyImage, PollConfig, FIREFLY_API_BASE, GENERATE_ASYNC_ENDPOINT,
+    FireflyClient, FireflyImage, PollConfig, EXPAND_ASYNC_ENDPOINT, FILL_ASYNC_ENDPOINT,
+    FIREFLY_API_BASE, GENERATE_ASYNC_ENDPOINT,
 };
 pub use error::{FireflyError, Result};
 pub use events::{
@@ -78,6 +79,7 @@ pub use photoshop::{
     PhotoshopClient, PhotoshopJob, PsJobStatus, Storage,
 };
 pub use models::{
-    AsyncJobSubmission, ContentClass, GenerateImageRequest, GenerateResult, ImageRef, JobStatus,
-    JobStatusEnvelope, Output, Size,
+    AsyncJobSubmission, ContentClass, ExpandImage, ExpandRequest, FillImage, FillRequest,
+    GenerateImageRequest, GenerateResult, ImageRef, ImageSourceRef, JobStatus, JobStatusEnvelope,
+    Output, Size,
 };

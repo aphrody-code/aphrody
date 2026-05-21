@@ -6,8 +6,10 @@
 use crate::auth::{self, ImsCredentials, TokenCache};
 use crate::error::{FireflyError, Result};
 use crate::models::{
-    AsyncJobSubmission, GenerateImageRequest, GenerateResult, JobStatusEnvelope,
+    AsyncJobSubmission, ExpandRequest, FillRequest, GenerateImageRequest, GenerateResult,
+    JobStatusEnvelope,
 };
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -17,6 +19,12 @@ pub const FIREFLY_API_BASE: &str = "https://firefly-api.adobe.io";
 /// Submit endpoint for async text-to-image generation (Firefly v3).
 pub const GENERATE_ASYNC_ENDPOINT: &str =
     "https://firefly-api.adobe.io/v3/images/generate-async";
+
+/// Submit endpoint for async generative expand (Firefly v3).
+pub const EXPAND_ASYNC_ENDPOINT: &str = "https://firefly-api.adobe.io/v3/images/expand-async";
+
+/// Submit endpoint for async generative fill (Firefly v3).
+pub const FILL_ASYNC_ENDPOINT: &str = "https://firefly-api.adobe.io/v3/images/fill-async";
 
 /// Polling configuration for async jobs.
 #[derive(Debug, Clone, Copy)]
@@ -156,12 +164,64 @@ impl FireflyClient {
         self.download_outputs(&result).await
     }
 
-    /// Submit the async job (returns immediately with a job handle).
+    /// Generative **expand**: enlarge the canvas of an image, AI-filling the new
+    /// area. Submit → poll → returns the [`GenerateResult`] (output URLs).
+    ///
+    /// # Errors
+    ///
+    /// As [`FireflyClient::generate`].
+    pub async fn expand(&self, req: &ExpandRequest) -> Result<GenerateResult> {
+        let submission = self.submit_to(EXPAND_ASYNC_ENDPOINT, req).await?;
+        self.await_job(&submission).await
+    }
+
+    /// Generative expand, then download every variation into memory.
+    ///
+    /// # Errors
+    ///
+    /// As [`FireflyClient::expand`], plus [`FireflyError::Http`] on download.
+    pub async fn expand_and_download(&self, req: &ExpandRequest) -> Result<Vec<FireflyImage>> {
+        let result = self.expand(req).await?;
+        self.download_outputs(&result).await
+    }
+
+    /// Generative **fill**: replace the masked region of an image with
+    /// prompt-guided content. Submit → poll → returns the [`GenerateResult`].
+    ///
+    /// # Errors
+    ///
+    /// As [`FireflyClient::generate`].
+    pub async fn fill(&self, req: &FillRequest) -> Result<GenerateResult> {
+        let submission = self.submit_to(FILL_ASYNC_ENDPOINT, req).await?;
+        self.await_job(&submission).await
+    }
+
+    /// Generative fill, then download every variation into memory.
+    ///
+    /// # Errors
+    ///
+    /// As [`FireflyClient::fill`], plus [`FireflyError::Http`] on download.
+    pub async fn fill_and_download(&self, req: &FillRequest) -> Result<Vec<FireflyImage>> {
+        let result = self.fill(req).await?;
+        self.download_outputs(&result).await
+    }
+
+    /// Submit the async generate job (returns immediately with a job handle).
     async fn submit(&self, req: &GenerateImageRequest) -> Result<AsyncJobSubmission> {
+        self.submit_to(GENERATE_ASYNC_ENDPOINT, req).await
+    }
+
+    /// Submit any async-image job to `endpoint`, returning its job handle. The
+    /// generate / expand / fill endpoints all share this submission shape.
+    async fn submit_to<B: Serialize + ?Sized>(
+        &self,
+        endpoint: &str,
+        req: &B,
+    ) -> Result<AsyncJobSubmission> {
         let token = self.bearer().await?;
         let resp = self
             .http
-            .post(GENERATE_ASYNC_ENDPOINT)
+            .post(endpoint)
             .header("x-api-key", self.tokens.client_id())
             .bearer_auth(&token)
             .header(reqwest::header::ACCEPT, "application/json")
@@ -174,12 +234,12 @@ impl FireflyClient {
         if !status.is_success() {
             return Err(FireflyError::Api {
                 status: status.as_u16(),
-                endpoint: GENERATE_ASYNC_ENDPOINT.to_string(),
+                endpoint: endpoint.to_string(),
                 body: auth::truncate(&body, 512),
             });
         }
         serde_json::from_str(&body).map_err(|source| FireflyError::Decode {
-            endpoint: GENERATE_ASYNC_ENDPOINT.to_string(),
+            endpoint: endpoint.to_string(),
             source,
         })
     }
@@ -320,6 +380,10 @@ mod tests {
     fn endpoints_are_v3() {
         assert!(GENERATE_ASYNC_ENDPOINT.starts_with(FIREFLY_API_BASE));
         assert!(GENERATE_ASYNC_ENDPOINT.ends_with("/v3/images/generate-async"));
+        assert!(EXPAND_ASYNC_ENDPOINT.ends_with("/v3/images/expand-async"));
+        assert!(FILL_ASYNC_ENDPOINT.ends_with("/v3/images/fill-async"));
+        assert!(EXPAND_ASYNC_ENDPOINT.starts_with(FIREFLY_API_BASE));
+        assert!(FILL_ASYNC_ENDPOINT.starts_with(FIREFLY_API_BASE));
     }
 
     #[test]
