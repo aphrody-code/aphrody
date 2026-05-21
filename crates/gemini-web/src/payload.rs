@@ -56,6 +56,7 @@ fn collect_image_urls_into(v: &Value, out: &mut Vec<String>) {
             if (s.starts_with("https://lh3.googleusercontent.com")
                 || s.starts_with("https://www.gstatic.com")
                 || s.contains("googleusercontent.com/"))
+                && !s.contains(".mp4")
                 && !out.iter().any(|u| u == s)
             {
                 out.push(s.clone());
@@ -69,6 +70,39 @@ fn collect_image_urls_into(v: &Value, out: &mut Vec<String>) {
         Value::Object(o) => {
             for item in o.values() {
                 collect_image_urls_into(item, out);
+            }
+        },
+        _ => {},
+    }
+}
+
+/// Recursively collect video URLs (Veo output) from a JSON subtree.
+fn collect_video_urls(v: &Value) -> Vec<String> {
+    let mut out = Vec::new();
+    collect_video_urls_into(v, &mut out);
+    out
+}
+
+fn collect_video_urls_into(v: &Value, out: &mut Vec<String>) {
+    match v {
+        Value::String(s) => {
+            let is_video = s.starts_with("https://")
+                && (s.contains(".mp4")
+                    || s.contains("/video/")
+                    || s.contains("videoplayback")
+                    || (s.contains("googleusercontent.com") && s.contains("video")));
+            if is_video && !out.iter().any(|u| u == s) {
+                out.push(s.clone());
+            }
+        },
+        Value::Array(a) => {
+            for item in a {
+                collect_video_urls_into(item, out);
+            }
+        },
+        Value::Object(o) => {
+            for item in o.values() {
+                collect_video_urls_into(item, out);
             }
         },
         _ => {},
@@ -143,11 +177,16 @@ fn extract_reply(inner: &Value) -> Option<ChatReply> {
         .map(collect_image_urls)
         .unwrap_or_default();
 
+    // Generated videos (Veo). Scan the whole candidate subtree for video URLs —
+    // the leaf path varies and videos may be delivered as a late streamed chunk.
+    let generated_video_urls = first.get(12).map(collect_video_urls).unwrap_or_default();
+
     Some(ChatReply {
         text,
         metadata: ConversationMetadata { conversation_id, response_id, choice_id },
         web_image_urls,
         generated_image_urls,
+        generated_video_urls,
         candidate_count,
     })
 }

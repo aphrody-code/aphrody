@@ -970,6 +970,32 @@ impl GoogleMcpServer {
     }
 
     // -----------------------------------------------------------------------
+    // gemini_video — Veo 3 video generation via the Gemini web app.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Generate a video with the Gemini web app's Veo model using the signed-in \
+                          Google session — no API key. Video generation is async (minutes); \
+                          re-issue to poll. Returns { text, generated_video_urls, count, note }.")]
+    async fn gemini_video(
+        &self,
+        Parameters(req): Parameters<gemini_tools::GeminiVideoRequest>,
+    ) -> String {
+        gemini_tools::video(req).await
+    }
+
+    // -----------------------------------------------------------------------
+    // gemini_deep_research — multi-step Deep Research via the Gemini web app.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Run a Deep Research investigation with the Gemini web app (Pro model) \
+                          using the signed-in Google session — no API key. Returns a thorough \
+                          cited report as { report, model }.")]
+    async fn gemini_deep_research(
+        &self,
+        Parameters(req): Parameters<gemini_tools::GeminiDeepResearchRequest>,
+    ) -> String {
+        gemini_tools::deep_research(req).await
+    }
+
+    // -----------------------------------------------------------------------
     // 18. re_triage — reverse engineering triage via aphrody-re. Single MCP tool covers the full
     //     PE/ELF triage surface (format, entry_point, sections + per-section Shannon entropy,
     //     imports, exports, ASCII/UTF-16LE strings sample, SHA-256). Separate re_disasm /
