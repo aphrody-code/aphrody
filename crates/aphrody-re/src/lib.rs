@@ -67,6 +67,13 @@ pub mod asar;
 /// Node / Chromium versions.
 pub mod electron;
 pub mod google;
+/// Go binary analyser — pure-Rust detection of Go runtime structures.
+///
+/// Extracts Go version (buildinfo), function table (pclntab), package names,
+/// and best-effort type samples. Handles Go 1.18+ and 1.20+ layouts.
+///
+/// Entry point: [`golang::analyze_go`].
+pub mod golang;
 
 /// Read-only Chromium LevelDB enumerator (opt-in `leveldb` feature, host-only).
 ///
