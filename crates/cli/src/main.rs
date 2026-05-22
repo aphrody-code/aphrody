@@ -9,6 +9,7 @@
 // a2a transports) cannot be linked on wasm and live behind
 // `cfg(not(target_arch = "wasm32"))`.
 
+#[cfg(not(target_arch = "wasm32"))] mod agent_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod agy_backend;
 #[cfg(not(target_arch = "wasm32"))] mod antigravity_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
@@ -85,6 +86,15 @@ pub(crate) enum NotifyChannel {
     /// Matrix Client-Server API v3. Reads `MATRIX_HOMESERVER`, `MATRIX_ACCESS_TOKEN`,
     /// `MATRIX_USER_ID` + `MATRIX_ROOM_ID`.
     Matrix,
+}
+
+/// Channel selector for `aphrody hermes`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum HermesChannelArg {
+    /// Discord (REST v10 bot). Reads `DISCORD_BOT_TOKEN`.
+    Discord,
+    /// X / Twitter (cookie-auth `aphrody-x`). Reads `X_HANDLE`.
+    X,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -281,6 +291,40 @@ enum Commands {
         /// cookie jar) instead of the default `agy` (Antigravity) token path.
         #[arg(long, short = 'w')]
         web: bool,
+    },
+    /// Agent multi-canaux voice-to-voice (Discord + X) — surpasse hermes-agent.
+    ///
+    /// Écoute un canal, répond via Gemini 3.5 Flash (token agy keyless), et —
+    /// avec `--voice` — transcrit l'audio entrant (Whisper) et synthétise la
+    /// réponse en audio (ElevenLabs) : boucle voice-to-voice complète, là où
+    /// hermes-agent ne fait que transcrire. Le canal X n'existe pas chez hermes.
+    ///
+    /// Credentials via env : `DISCORD_BOT_TOKEN` / `X_HANDLE`,
+    /// `OPENAI_API_KEY` (STT), `ELEVENLABS_API_KEY` (TTS).
+    #[cfg(not(target_arch = "wasm32"))]
+    Hermes {
+        /// Canal d'écoute.
+        #[arg(long, value_enum)]
+        channel: HermesChannelArg,
+        /// Active la boucle voice-to-voice (STT entrant + TTS sortant).
+        #[arg(long)]
+        voice: bool,
+        /// Ne répondre qu'aux messages contenant ce trigger (ex. `@aphrody`).
+        /// Vide = répondre à tout.
+        #[arg(long, default_value = "")]
+        trigger: String,
+        /// Id de modèle (défaut : flash tier via agy ; `flash` = Gemini 3.5 Flash en `--web`).
+        #[arg(long, short)]
+        model: Option<String>,
+        /// Transport keyless Gemini 3.5 Flash web app (cookie jar) au lieu du token agy.
+        #[arg(long, short = 'w')]
+        web: bool,
+        /// Backend stub déterministe (aucun LLM live) — pour CI / smoke headless.
+        #[arg(long)]
+        stub: bool,
+        /// Traite un message synthétique et sort (vérification headless, sans token canal).
+        #[arg(long)]
+        simulate: Option<String>,
     },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
@@ -1160,6 +1204,14 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
+        },
+        #[cfg(not(target_arch = "wasm32"))]
+        Some(Commands::Hermes { channel, voice, trigger, model, web, stub, simulate }) => {
+            let ch = match channel {
+                HermesChannelArg::Discord => agent_cmd::HermesChannel::Discord,
+                HermesChannelArg::X => agent_cmd::HermesChannel::X,
+            };
+            agent_cmd::run(ch, voice, trigger, model, web, stub, simulate).await?;
         },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();

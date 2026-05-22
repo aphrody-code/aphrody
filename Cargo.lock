@@ -397,6 +397,7 @@ dependencies = [
  "aphrody-messaging",
  "aphrody-re",
  "aphrody-terminal-backend",
+ "aphrody-voice",
  "assert_cmd",
  "async-trait",
  "backend",
