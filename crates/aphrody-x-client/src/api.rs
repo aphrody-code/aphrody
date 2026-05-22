@@ -51,6 +51,24 @@ pub struct UserInfo {
     pub friends_count: Option<u64>,
 }
 
+/// A Twitter list (from `ListOwnerships` / `ListMemberships`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListInfo {
+    /// Numeric list id.
+    pub id: String,
+    /// List name.
+    pub name: String,
+    /// Member count, when present.
+    #[serde(default)]
+    pub member_count: Option<u64>,
+    /// Subscriber count, when present.
+    #[serde(default)]
+    pub subscriber_count: Option<u64>,
+    /// Visibility mode (e.g. "Public" / "Private").
+    #[serde(default)]
+    pub mode: Option<String>,
+}
+
 /// A tweet entry from the home timeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimelineTweet {
@@ -1002,6 +1020,33 @@ impl XClient {
             .await
     }
 
+    /// List the lists owned by (or that include) a user.
+    ///
+    /// `member_of = false` → `ListOwnerships` (lists the user owns);
+    /// `member_of = true` → `ListMemberships` (lists the user belongs to).
+    pub async fn lists(
+        &self,
+        user_id: &str,
+        member_of: bool,
+        count: u32,
+    ) -> Result<Vec<ListInfo>> {
+        let op = if member_of {
+            "ListMemberships"
+        } else {
+            "ListOwnerships"
+        };
+        // `isListMemberTargetUserId` is a required variable (X 422s with
+        // "must be defined" without it).
+        let variables = json!({
+            "userId": user_id,
+            "count": count,
+            "isListMemberTargetUserId": false
+        });
+        let features = crate::features::default_features();
+        let json = self.graphql(op, variables, Some(features)).await?;
+        Ok(parse_lists(&json))
+    }
+
     /// Resolve the authenticated account (whoami) via the `Viewer` GraphQL op.
     ///
     /// Returns the logged-in user the cookies belong to.
@@ -1048,6 +1093,45 @@ impl XClient {
             friends_count: legacy.get("friends_count").and_then(Value::as_u64),
         })
     }
+}
+
+/// Walk a list-timeline response and extract [`ListInfo`] entries.
+///
+/// List entries appear as `itemContent.list` objects (with `id_str`, `name`,
+/// `member_count`, …) inside the timeline instruction tree.
+fn parse_lists(root: &Value) -> Vec<ListInfo> {
+    let mut out = Vec::new();
+    // Iterative traversal with an explicit work stack — no recursion, so a
+    // deeply-nested response can never overflow the thread stack.
+    let mut stack: Vec<&Value> = vec![root];
+    while let Some(v) = stack.pop() {
+        match v {
+            Value::Object(map) => {
+                if let (Some(id), Some(name)) = (
+                    map.get("id_str").and_then(Value::as_str),
+                    map.get("name").and_then(Value::as_str),
+                ) && (map.contains_key("member_count")
+                    || map.contains_key("mode")
+                    || map.contains_key("subscriber_count"))
+                {
+                    out.push(ListInfo {
+                        id: id.to_owned(),
+                        name: name.to_owned(),
+                        member_count: map.get("member_count").and_then(Value::as_u64),
+                        subscriber_count: map.get("subscriber_count").and_then(Value::as_u64),
+                        mode: map.get("mode").and_then(Value::as_str).map(ToOwned::to_owned),
+                    });
+                }
+                stack.extend(map.values());
+            }
+            Value::Array(arr) => stack.extend(arr.iter()),
+            _ => {}
+        }
+    }
+    // Deduplicate by id (a list can appear under multiple keys).
+    let mut seen = std::collections::HashSet::new();
+    out.retain(|l| seen.insert(l.id.clone()));
+    out
 }
 
 /// Generate a hex UUID-v4-like nonce for DM `request_id`.
