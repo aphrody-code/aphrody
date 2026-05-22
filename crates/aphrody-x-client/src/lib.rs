@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: Apache-2.0
+//! aphrody-x-client — native X / Twitter control module.
+//!
+//! Communicates with X's private web API (GraphQL + REST v1.1) using cookie
+//! authentication. Requires a valid `auth_token` + `ct0` pair extracted from
+//! a logged-in X session. No X developer portal registration needed.
+//!
+//! # Auth
+//!
+//! X's private web API authenticates requests with three cooperating signals:
+//!
+//! 1. `Cookie: auth_token=<value>; ct0=<value>` — session cookies.
+//! 2. `X-CSRF-Token: <ct0>` — the `ct0` cookie value also sent as a header
+//!    (CSRF double-submit pattern). These two must match exactly.
+//! 3. `Authorization: Bearer <web_bearer>` — a static public bearer token
+//!    embedded in X's web bundle (not a personal token; the same value for
+//!    all browsers).
+//!
+//! On a 401 `{"errors":[{"code":32}]}` response, the typical root cause is:
+//! - `ct0` cookie value differs from `X-CSRF-Token` value.
+//! - `auth_token` cookie is expired or belongs to a different domain.
+//! - Missing required headers (user-agent, origin, referer).
+//!
+//! # Transaction-ID note
+//!
+//! X has progressively rolled out `x-client-transaction-id` enforcement on
+//! some GraphQL mutations (CreateTweet, FavoriteTweet, etc.). This header is
+//! computed client-side via a keyed HMAC over the endpoint path + nonce,
+//! using a rotating key that X embeds in the main JS bundle. Reverse-
+//! engineered implementations exist (Python: `xflux`, JS: `twitter-api-client`)
+//! but no stable public Rust port exists yet. Without it, X may return
+//! `{"errors":[{"code":353,"message":"..."}]}` on some accounts/IPs.
+//!
+//! This crate sets a placeholder `x-client-transaction-id` header on write
+//! operations. If you hit code 353, extract the real value from a browser
+//! session (DevTools → Network → CreateTweet request headers) and pass it
+//! via the `XSession::transaction_id` field.
+
+pub mod api;
+pub mod client;
+pub mod session;
+
+pub use api::{TimelineTweet, TweetResult, UserInfo};
+pub use client::XClient;
+pub use session::XSession;
+
+use thiserror::Error;
+
+/// All errors produced by this crate.
+#[derive(Debug, Error)]
+pub enum XError {
+    /// HTTP transport error (connection refused, timeout, TLS, etc.).
+    #[error("HTTP transport error: {0}")]
+    Http(#[from] reqwest::Error),
+
+    /// X API returned a structured error object (`errors[].code`).
+    #[error("X API error {code}: {message}")]
+    Api { code: i64, message: String },
+
+    /// Authentication problem (missing credentials, format error, etc.).
+    #[error("authentication error: {0}")]
+    Auth(String),
+
+    /// JSON deserialisation failure.
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    /// I/O error (reading session file, etc.).
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+/// Convenience alias used throughout the crate.
+pub type Result<T> = std::result::Result<T, XError>;
