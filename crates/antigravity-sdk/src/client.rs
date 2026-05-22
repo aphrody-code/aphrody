@@ -296,4 +296,29 @@ impl AntigravityClient {
         let value = self.post_json(&url, &body).await?;
         Ok(serde_json::from_value(value)?)
     }
+
+    /// Run `generateContent` against the **regional Vertex AI** endpoint.
+    ///
+    /// Unlike [`generate_content`](Self::generate_content) (which targets the
+    /// public `generativelanguage` host and is rejected by the agy OAuth token
+    /// with `401 ACCESS_TOKEN_TYPE_UNSUPPORTED`), this routes through
+    /// `{location}-aiplatform.googleapis.com`, which accepts the Antigravity
+    /// access token scoped to `project` + `location`. Mirrors the working
+    /// Python keyless path (`google-genai` with `vertexai=True`).
+    ///
+    /// # Errors
+    /// [`SdkError`] on transport failure, a non-2xx Vertex envelope, or a
+    /// response body that does not deserialise into [`GenerateContentResponse`].
+    pub async fn generate_content_vertex(
+        &self,
+        model: &str,
+        project: &str,
+        location: &str,
+        req: &GenerateContentRequest,
+    ) -> Result<GenerateContentResponse, SdkError> {
+        let url = crate::endpoints::vertex_generate_content_url(project, location, model);
+        let body = serde_json::to_value(req)?;
+        let value = self.post_json(&url, &body).await?;
+        Ok(serde_json::from_value(value)?)
+    }
 }
