@@ -1,65 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
-// aphrody-x — X (Twitter) client cookie-based (no API key required).
-//
-// Wraps `agent-twitter-client = "0.1.2"` (Rust port de ai16z/agent-twitter-
-// client TS, 11k★ upstream). Auth via cookies seulement — pas besoin de
-// X dev portal, pas de free-tier cap 50req/24h.
-//
-// ⚠ STATUS (2026-05-18, validé par test live avec cookies frais) :
-// La crate `agent-twitter-client 0.1.2` (upstream cornip/agent-twitter-
-// client, repo DELETED) ne fonctionne PAS out-of-the-box pour X :
-//
-// Bug #1 — `domain("twitter.com")` hard-codé (Dec 2024, pre-rebrand)
-//   Symptôme : cookies .x.com pas envoyés → 401 Unauthorized
-//   Fork qui le fixe : `distrihub/agent-twitter-client` (Nov 2025,
-//   `.domain("x.com")` lignes 515/581/616/637). Cargo.toml de cette
-//   crate pointe sur ce fork via git dep.
-//
-// Bug #2 (PERSISTANT même avec le fork distrihub) :
-//   Même avec cookies frais `auth_token + ct0 + twid + kdt + guest_id
-//   + personalization_id + __cf_bm` injectés, l'API X retourne
-//   `{"errors":[{"message":"Could not authenticate you","code":32}]}`
-//   sur tous les endpoints GraphQL. Suggère que la lib oublie un header
-//   ou que la signature ct0 n'est pas calculée correctement (CSRF
-//   format X interne). Pas réparable depuis cette crate sans patcher
-//   la lib sous-jacente.
-//
-// **Path de prod recommandé pour scraping X chez aphrody :**
-//   → `bxc fetch <url> --cookies-file <file>` (commit 2481a5d9b, GREEN
-//     test ultime : user-id + display name + handle extraits du HTML).
-//   → Pour post / actions write : passer par X Premium API officiel
-//     (Bearer Token v2 sur api.x.com/2/*) plutôt que cookie scraping
-//     (TOS-clean + plus stable).
-//
-// Cette crate est conservée comme placeholder du jour où une lib Rust
-// auth-correct sera dispo (suivre rig-twitter ou edisontim fork).
-//
-// Auth lookup order :
-//   1. CLI flag `--cookie-string "auth_token=...; ct0=...; ..."`
-//   2. Env `X_COOKIE_STRING` (loaded depuis `.env` via dotenvy)
-//   3. Env `X_AUTH_TOKEN` + `X_CT0` (compose la cookie string)
-//
-// Usage :
-//     aphrody-x whoami                # verify_credentials équivalent
-//     aphrody-x profile aphrody_code  # fetch profil public d'un handle
-//     aphrody-x post "<text>"         # post un tweet
-//     aphrody-x latest aphrody_code   # 20 derniers tweets
+//! aphrody-x — X / Twitter control CLI (cookie auth, no API key required).
+//!
+//! Auth lookup order:
+//!   1. CLI flag `--cookie-string "auth_token=...; ct0=..."`
+//!   2. Session file `~/.aphrody/x-session.json`
+//!   3. Env vars `X_AUTH_TOKEN` + `X_CT0`
+//!
+//! Usage examples:
+//!   aphrody-x post "Hello from aphrody"
+//!   aphrody-x reply 1234567890 "great thread"
+//!   aphrody-x like 1234567890
+//!   aphrody-x user aphrody_code
+//!   aphrody-x timeline --count 10
+//!   aphrody-x dm 2244994945 "hi"
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
-use agent_twitter_client::scraper::Scraper;
-use agent_twitter_client::search::SearchMode;
+use aphrody_x_client::{XClient, XSession};
 
 #[derive(Parser)]
 #[command(
     name = "aphrody-x",
     version,
-    about = "X (Twitter) client cookie-based (no API key required)"
+    about = "X / Twitter control CLI — cookie auth, no API key required"
 )]
 struct Cli {
-    /// Cookie string complet "auth_token=...; ct0=...; ...". Overrides env.
-    #[arg(long, global = true)]
+    /// Cookie string `auth_token=<val>; ct0=<val>` (overrides session file and env).
+    #[arg(long, global = true, env = "X_COOKIE_STRING")]
     cookie_string: Option<String>,
 
     #[command(subcommand)]
@@ -68,118 +36,171 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Op {
-    /// Imprime le profil de l'utilisateur authentifié (équiv. verify_credentials).
-    Whoami,
-
-    /// Fetch le profil public d'un handle.
-    Profile { handle: String },
-
-    /// Post un nouveau tweet.
+    /// Post a new tweet.
     Post {
-        /// Texte du tweet (max 280 chars sauf compte X Premium).
+        /// Tweet text (max 280 chars unless X Premium subscriber).
         text: String,
     },
-
-    /// Liste les N derniers tweets d'un handle.
-    Latest {
+    /// Reply to an existing tweet.
+    Reply {
+        /// Numeric tweet ID to reply to.
+        tweet_id: String,
+        /// Reply text.
+        text: String,
+    },
+    /// Delete a tweet by its numeric ID.
+    Delete {
+        /// Numeric tweet ID.
+        id: String,
+    },
+    /// Like (favorite) a tweet.
+    Like {
+        /// Numeric tweet ID.
+        id: String,
+    },
+    /// Unlike (remove favorite) a tweet.
+    Unlike {
+        /// Numeric tweet ID.
+        id: String,
+    },
+    /// Retweet a tweet.
+    Retweet {
+        /// Numeric tweet ID.
+        id: String,
+    },
+    /// Remove a retweet.
+    Unretweet {
+        /// Numeric tweet ID.
+        id: String,
+    },
+    /// Follow a user by their numeric user ID.
+    Follow {
+        /// Numeric user ID (not the handle — use `user <handle>` to resolve it).
+        user_id: String,
+    },
+    /// Unfollow a user by their numeric user ID.
+    Unfollow {
+        /// Numeric user ID.
+        user_id: String,
+    },
+    /// Look up a user by their handle (without @).
+    User {
+        /// X handle, e.g. `aphrody_code`.
         handle: String,
+    },
+    /// Fetch the authenticated user's home timeline.
+    Timeline {
+        /// Number of tweets to fetch (default: 20).
         #[arg(long, default_value_t = 20)]
         count: u32,
     },
-
-    /// Recherche full-text "Latest" sur X.
-    Search {
-        query: String,
-        #[arg(long, default_value_t = 20)]
-        count: u32,
+    /// Send a direct message.
+    Dm {
+        /// Numeric recipient user ID.
+        user_id: String,
+        /// Message text.
+        text: String,
     },
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Tente .env (silencieux si absent — env vars peuvent venir du shell).
-    let _ = dotenvy::dotenv();
     let cli = Cli::parse();
 
-    let cookie_string = resolve_cookie_string(cli.cookie_string.as_deref())?;
-
-    let mut scraper = Scraper::new()
-        .await
-        .map_err(|e| anyhow!("Scraper::new failed: {e}"))?;
-    scraper
-        .set_from_cookie_string(&cookie_string)
-        .await
-        .map_err(|e| anyhow!("set_from_cookie_string failed: {e}"))?;
+    let session = resolve_session(cli.cookie_string.as_deref())?;
+    let client = XClient::new(session).context("failed to build X HTTP client")?;
 
     match cli.op {
-        Op::Whoami => {
-            // agent-twitter-client expose `me()` ou équivalent ; à défaut
-            // on utilise `profile()` sur le handle stocké dans env.
-            let handle = std::env::var("X_HANDLE").unwrap_or_else(|_| "aphrody_code".into());
-            let profile = scraper
-                .get_profile(&handle)
-                .await
-                .map_err(|e| anyhow!("get_profile({handle}) failed: {e}"))?;
-            println!("{}", serde_json::to_string_pretty(&profile)?);
-        }
-        Op::Profile { handle } => {
-            let profile = scraper
-                .get_profile(&handle)
-                .await
-                .map_err(|e| anyhow!("get_profile({handle}) failed: {e}"))?;
-            println!("{}", serde_json::to_string_pretty(&profile)?);
-        }
         Op::Post { text } => {
-            let resp = scraper
-                .send_tweet(&text, None, None)
+            let result = client
+                .create_tweet(&text, None)
                 .await
-                .map_err(|e| anyhow!("send_tweet failed: {e}"))?;
-            println!("{}", serde_json::to_string_pretty(&resp)?);
+                .context("create_tweet failed")?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
         }
-        Op::Latest { handle, count } => {
-            // get_user_tweets prend un user_id numérique, pas un handle —
-            // on résout le profil d'abord pour obtenir l'id.
-            let profile = scraper
-                .get_profile(&handle)
+        Op::Reply { tweet_id, text } => {
+            let result = client
+                .create_tweet(&text, Some(&tweet_id))
                 .await
-                .map_err(|e| anyhow!("get_profile({handle}) failed: {e}"))?;
-            let user_id = profile.id.clone();
-            if user_id.is_empty() {
-                return Err(anyhow!("profile({handle}) returned empty user id"));
-            }
-            let tweets = scraper
-                .get_user_tweets(&user_id, count as i32, None)
+                .context("create_tweet (reply) failed")?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
+        }
+        Op::Delete { id } => {
+            client
+                .delete_tweet(&id)
                 .await
-                .map_err(|e| anyhow!("get_user_tweets({user_id}) failed: {e}"))?;
+                .context("delete_tweet failed")?;
+            println!("{{\"deleted\":\"{id}\"}}");
+        }
+        Op::Like { id } => {
+            client.like(&id).await.context("like failed")?;
+            println!("{{\"liked\":\"{id}\"}}");
+        }
+        Op::Unlike { id } => {
+            client.unlike(&id).await.context("unlike failed")?;
+            println!("{{\"unliked\":\"{id}\"}}");
+        }
+        Op::Retweet { id } => {
+            client.retweet(&id).await.context("retweet failed")?;
+            println!("{{\"retweeted\":\"{id}\"}}");
+        }
+        Op::Unretweet { id } => {
+            client.unretweet(&id).await.context("unretweet failed")?;
+            println!("{{\"unretweeted\":\"{id}\"}}");
+        }
+        Op::Follow { user_id } => {
+            client
+                .follow(&user_id)
+                .await
+                .context("follow failed")?;
+            println!("{{\"followed\":\"{user_id}\"}}");
+        }
+        Op::Unfollow { user_id } => {
+            client
+                .unfollow(&user_id)
+                .await
+                .context("unfollow failed")?;
+            println!("{{\"unfollowed\":\"{user_id}\"}}");
+        }
+        Op::User { handle } => {
+            let info = client
+                .user_by_screen_name(&handle)
+                .await
+                .context("user_by_screen_name failed")?;
+            println!("{}", serde_json::to_string_pretty(&info)?);
+        }
+        Op::Timeline { count } => {
+            let tweets = client
+                .home_timeline(count)
+                .await
+                .context("home_timeline failed")?;
             println!("{}", serde_json::to_string_pretty(&tweets)?);
         }
-        Op::Search { query, count } => {
-            let results = scraper
-                .search_tweets(&query, count as i32, SearchMode::Latest, None)
+        Op::Dm { user_id, text } => {
+            client
+                .send_dm(&user_id, &text)
                 .await
-                .map_err(|e| anyhow!("search_tweets failed: {e}"))?;
-            println!("{}", serde_json::to_string_pretty(&results)?);
+                .context("send_dm failed")?;
+            println!("{{\"dm_sent_to\":\"{user_id}\"}}");
         }
     }
+
     Ok(())
 }
 
-fn resolve_cookie_string(flag: Option<&str>) -> Result<String> {
-    if let Some(s) = flag {
-        return Ok(s.to_string());
+/// Resolve an `XSession` from the most specific credential source available.
+///
+/// Priority:
+/// 1. `--cookie-string` CLI flag (or `X_COOKIE_STRING` env via clap).
+/// 2. `~/.aphrody/x-session.json`.
+/// 3. `X_AUTH_TOKEN` + `X_CT0` env vars.
+fn resolve_session(cookie_string: Option<&str>) -> Result<XSession> {
+    if let Some(cs) = cookie_string {
+        return XSession::from_cookie_string(cs)
+            .context("failed to parse --cookie-string");
     }
-    if let Ok(s) = std::env::var("X_COOKIE_STRING") {
-        if !s.is_empty() {
-            return Ok(s);
-        }
-    }
-    // Fallback : compose depuis auth_token + ct0 (les 2 cookies vraiment
-    // essentiels pour X). Les autres (twid, kdt, __cf_bm) sont automatiques.
-    let auth = std::env::var("X_AUTH_TOKEN").context(
-        "no cookie source — set --cookie-string flag, X_COOKIE_STRING env, \
-         or X_AUTH_TOKEN + X_CT0 envs (typically loaded from .env)",
-    )?;
-    let ct0 = std::env::var("X_CT0")
-        .context("X_AUTH_TOKEN set but X_CT0 missing — both required for write actions")?;
-    Ok(format!("auth_token={auth}; ct0={ct0}"))
+    XSession::load_or_env().context(
+        "no X credentials found — provide --cookie-string, \
+         ~/.aphrody/x-session.json, or X_AUTH_TOKEN + X_CT0 env vars",
+    )
 }
