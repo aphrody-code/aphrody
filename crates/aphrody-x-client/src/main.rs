@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // aphrody-x — X (Twitter) client cookie-based (no API key required).
 //
 // Wraps `agent-twitter-client = "0.1.2"` (Rust port de ai16z/agent-twitter-

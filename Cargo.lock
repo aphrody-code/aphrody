@@ -610,12 +610,10 @@ dependencies = [
  "reqwest 0.13.3",
  "rustls",
  "serde",
- "serde_json",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -8453,8 +8451,6 @@ dependencies = [
 name = "obscura-runtime"
 version = "1.0.0-canary"
 dependencies = [
- "serde",
- "serde_json",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
