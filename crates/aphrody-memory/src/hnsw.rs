@@ -45,7 +45,7 @@ use serde_json::Deserializer;
 use tokio::fs;
 use tracing::{debug, trace};
 
-use crate::{Embedding, MemoryBackend, MemoryError, MemoryRecord, cosine_similarity};
+use crate::{Embedding, MemoryBackend, MemoryError, MemoryRecord};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -155,26 +155,81 @@ impl HnswBackend {
 
     /// Brute-force nearest-neighbour scan over embedded records.
     ///
-    /// Time complexity: O(n * d) where n = number of embedded records and
-    /// d = embedding dimensionality.  Correct (not approximate) for any n.
+    /// Exact (not approximate) for any `n`. Time complexity is `O(n · d)` for
+    /// scoring plus `O(n)` quickselect for the top-`k` cut — never the
+    /// `O(n · log n)` of a full sort.
+    ///
+    /// Three constant-factor wins over the naive "score-clone-sort-all" form
+    /// keep the 100k-record p95 under the R3.7 budget without an ANN index:
+    ///
+    /// 1. The **query norm is hoisted out of the loop** (`cosine_similarity`
+    ///    recomputes it per record; here it is computed once and the per-record
+    ///    work is one fused dot-and-norm pass — see [`Self::scaled_cosine`]).
+    /// 2. **Scoring borrows** records (`&MemoryRecord`) rather than cloning all
+    ///    `n`; only the `k` survivors are cloned at the very end.
+    /// 3. **`select_nth_unstable_by`** (quickselect) partitions the `k` best in
+    ///    linear time; only that `k`-slice is then sorted for stable ordering.
     fn brute_force_search(&self, query: &Embedding, top_k: usize) -> Vec<(MemoryRecord, f32)> {
-        let mut scored: Vec<(MemoryRecord, f32)> = self
-            .index
-            .values()
-            .filter_map(|r| {
-                let emb = r.embedding.as_deref()?;
-                if emb.len() != query.len() {
-                    return None;
-                }
-                let score = cosine_similarity(query, emb);
-                Some((r.clone(), score))
-            })
-            .collect();
+        // Hoist the query norm: identical for every record, so paying it once
+        // turns the per-record cost from two norms + a dot into one norm + a
+        // dot. A zero-magnitude query yields all-zero cosines (matching
+        // `cosine_similarity`), so there is nothing to rank.
+        let query_norm = l2_norm(query);
+        if query_norm == 0.0 {
+            return Vec::new();
+        }
 
-        scored.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
-        scored.truncate(top_k);
-        scored
+        let mut scored: Vec<(f32, &MemoryRecord)> = Vec::with_capacity(self.index.len());
+        for r in self.index.values() {
+            let Some(emb) = r.embedding.as_deref() else { continue };
+            if emb.len() != query.len() {
+                continue;
+            }
+            scored.push((Self::scaled_cosine(query, query_norm, emb), r));
+        }
+
+        // Descending order: best (highest similarity) first. NaN scores are
+        // treated as equal, matching the previous `partial_cmp` fallback.
+        let desc =
+            |a: &(f32, &MemoryRecord), b: &(f32, &MemoryRecord)| {
+                b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
+            };
+
+        let k = top_k.min(scored.len());
+        if k == 0 {
+            return Vec::new();
+        }
+        // Quickselect partitions so the k highest-scoring entries occupy
+        // [0, k) (unordered among themselves) in O(n); only that prefix is
+        // then sorted, so the full O(n log n) sort is avoided for large n.
+        if k < scored.len() {
+            scored.select_nth_unstable_by(k - 1, desc);
+        }
+        let top = &mut scored[..k];
+        top.sort_unstable_by(desc);
+        top.iter().map(|(score, r)| ((*r).clone(), *score)).collect()
     }
+
+    /// Cosine similarity with the query's L2 norm supplied by the caller.
+    ///
+    /// `query_norm` must equal `l2_norm(query)` and be non-zero. Folds the dot
+    /// product and the candidate norm into a single pass over `embedding`.
+    #[inline]
+    fn scaled_cosine(query: &[f32], query_norm: f32, embedding: &[f32]) -> f32 {
+        let mut dot = 0.0_f32;
+        let mut norm_sq = 0.0_f32;
+        for (q, e) in query.iter().zip(embedding.iter()) {
+            dot += q * e;
+            norm_sq += e * e;
+        }
+        if norm_sq == 0.0 { 0.0 } else { dot / (query_norm * norm_sq.sqrt()) }
+    }
+}
+
+/// L2 (Euclidean) norm of a vector.
+#[inline]
+fn l2_norm(v: &[f32]) -> f32 {
+    v.iter().map(|x| x * x).sum::<f32>().sqrt()
 }
 
 // ---------------------------------------------------------------------------
@@ -339,6 +394,37 @@ mod tests {
         let fetched = b2.get(&key).await.unwrap().expect("must survive reopen");
         assert_eq!(fetched.content, "durable content");
         assert!(fetched.embedding.is_some());
+    }
+
+    #[test]
+    fn scaled_cosine_matches_reference() {
+        // The optimised per-record scorer must agree with the canonical
+        // `cosine_similarity` so the quickselect path returns identical ranks.
+        let cases: &[(&[f32], &[f32])] = &[
+            (&[1.0, 0.0, 0.0], &[1.0, 0.0, 0.0]),
+            (&[1.0, 0.0, 0.0], &[0.0, 1.0, 0.0]),
+            (&[0.3, 0.7, 0.1], &[0.9, 0.2, 0.4]),
+            (&[2.0, 2.0, 2.0], &[1.0, 1.0, 1.0]),
+        ];
+        for (q, e) in cases {
+            let reference = crate::cosine_similarity(q, e);
+            let scaled = HnswBackend::scaled_cosine(q, l2_norm(q), e);
+            assert!(
+                (reference - scaled).abs() < 1e-6,
+                "scaled_cosine diverged: ref={reference} scaled={scaled} for {q:?} vs {e:?}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn zero_query_returns_empty() {
+        // A zero-magnitude query has undefined direction; cosine is 0 for every
+        // record, so there is nothing meaningful to rank.
+        let (mut b, _dir) = make_backend().await;
+        let r = MemoryRecord::new("vec", "x").with_embedding(vec![1.0, 2.0, 3.0]);
+        b.put(&format!("vec/{}", r.id), r).await.unwrap();
+        let results = b.search(&vec![0.0_f32, 0.0, 0.0], 5).await.unwrap();
+        assert!(results.is_empty(), "zero query must rank nothing, got {results:?}");
     }
 
     #[tokio::test]
