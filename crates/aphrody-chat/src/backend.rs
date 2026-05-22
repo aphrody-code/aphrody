@@ -336,6 +336,24 @@ impl GeminiWebBackend {
         Self::connect(gemini_web::GeminiModel::Flash).await
     }
 
+    /// Connect using a free-form model slug (`flash`, `flash-lite`, `pro`, or
+    /// any [`gemini_web::GeminiModel::from_id`]-accepted alias). Unknown or
+    /// `None` slugs fall back to the verified **3.5 Flash** default.
+    ///
+    /// This is the constructor the CLI uses so callers never have to name the
+    /// `gemini_web::GeminiModel` enum directly (keeps the `gemini-web` dep out
+    /// of the `aphrody` binary crate's public surface).
+    ///
+    /// # Errors
+    ///
+    /// See [`Self::connect`].
+    pub async fn connect_for(model: Option<&str>) -> Result<Self, ChatError> {
+        let model = model
+            .and_then(gemini_web::GeminiModel::from_id)
+            .unwrap_or(gemini_web::GeminiModel::Flash);
+        Self::connect(model).await
+    }
+
     /// Build the single prompt for one turn. On the first turn (no thread yet)
     /// any `System` messages are prepended so the model sees the instructions;
     /// later turns rely on Gemini's server-side conversation memory and send

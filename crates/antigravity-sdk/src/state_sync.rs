@@ -366,6 +366,75 @@ fn short_preview(s: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// state.vscdb reader (non-wasm only — requires rusqlite + bundled libsqlite3)
+// ---------------------------------------------------------------------------
+
+/// Read all rows from the `ItemTable` of a `state.vscdb` database.
+///
+/// Opens the database strictly read-only (`SQLITE_OPEN_READ_ONLY`) and reads
+/// only the `key` + `value` columns.  Values are returned as opaque strings;
+/// callers must pass them to [`parse_item_table`] / [`decode_unified_state`]
+/// which enforce the security invariant (no raw token material emitted).
+///
+/// Returns an empty map when `ItemTable` does not exist (new or uninitialized
+/// database).
+///
+/// # Errors
+///
+/// Propagates `rusqlite::Error` on open failure or query failure.  A missing
+/// `ItemTable` is not an error — the map is simply empty.
+///
+/// # Security
+///
+/// This function does **not** filter values.  The caller is responsible for
+/// passing the returned map only to [`parse_item_table`] (structural summary)
+/// or [`decode_unified_state`] (structural decode).  Never log or print raw
+/// values from this map.
+#[cfg(not(target_family = "wasm"))]
+pub fn read_state_db(
+    db_path: &std::path::Path,
+) -> Result<serde_json::Map<String, serde_json::Value>, rusqlite::Error> {
+    let conn = rusqlite::Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )?;
+
+    // Check whether ItemTable exists; gracefully return empty map if not.
+    let table_exists: bool = conn
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='ItemTable'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .map(|n| n > 0)
+        .unwrap_or(false);
+
+    if !table_exists {
+        return Ok(serde_json::Map::new());
+    }
+
+    let mut stmt = conn.prepare("SELECT key, value FROM ItemTable")?;
+    let mut map = serde_json::Map::new();
+
+    let rows = stmt.query_map([], |row| {
+        let key: String = row.get(0)?;
+        let value: Option<String> = row.get(1)?;
+        Ok((key, value))
+    })?;
+
+    for row in rows.flatten() {
+        let (key, value) = row;
+        let json_val = match value {
+            Some(s) => serde_json::Value::String(s),
+            None => serde_json::Value::Null,
+        };
+        map.insert(key, json_val);
+    }
+
+    Ok(map)
+}
+
+// ---------------------------------------------------------------------------
 // Tests (synthetic fixtures only — no real secrets)
 // ---------------------------------------------------------------------------
 
