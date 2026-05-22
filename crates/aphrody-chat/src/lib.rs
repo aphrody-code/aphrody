@@ -75,6 +75,7 @@
 
 pub mod backend;
 pub mod error;
+pub mod slash;
 pub mod turn_loop;
 pub mod types;
 

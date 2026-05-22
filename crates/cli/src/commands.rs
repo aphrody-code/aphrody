@@ -1705,9 +1705,10 @@ impl TerminalCommand for ChatCommand {
 
         let Some(prompt) = self.prompt.clone() else {
             return Err(miette::miette!(
-                "interactive REPL not yet wired — Phase 1 requires `aphrody chat \
-                 --prompt <text>` for one-shot mode (ratatui REPL + slash-commands \
-                 land in Phase 2)"
+                "interactive REPL not yet wired — use `aphrody chat --prompt <text>` \
+                 for one-shot mode. Slash commands work in one-shot too: \
+                 `--prompt /help` lists them, `--prompt \"/explain <…>\"` runs a \
+                 Cascade-style template (the ratatui REPL lands in a later sprint)"
             ));
         };
 
@@ -1718,6 +1719,51 @@ impl TerminalCommand for ChatCommand {
         if let Some(sys) = self.system.clone() {
             config.system_prompt = sys;
         }
+
+        // ── Slash-command surface ───────────────────────────────────────────
+        // Reproduces the agent IDE / Cascade in-chat commands. A `--prompt`
+        // starting with `/` is parsed here: meta commands resolve locally (no
+        // LLM call); template commands (`/explain`, `/fix`, …) expand into a
+        // prompt that the normal turn loop then runs.
+        let effective_prompt = match aphrody_chat::slash::parse(&prompt) {
+            Some(parsed) => match parsed.spec.kind {
+                aphrody_chat::slash::SlashKind::Meta => {
+                    match parsed.spec.name {
+                        "model" => println!(
+                            "active model: {}\n(switch with `--model <vendor/id>`, e.g. \
+                             `--model gemini-2.5-pro` or `--model anthropic/claude-opus-4-7`)",
+                            config.model
+                        ),
+                        "tools" => {
+                            let probe = ChatLoop::builder(config.clone())
+                                .with_boxed_backend(Box::new(StubBackend::with_reply("")))
+                                .build()
+                                .map_err(|e| miette::miette!("ChatLoop build failed: {e}"))?;
+                            let reg = probe.tools();
+                            if reg.is_empty() {
+                                println!("(no tools wired into one-shot chat)");
+                            } else {
+                                for d in reg.list() {
+                                    println!("{:<24} {}", d.name, d.description);
+                                }
+                            }
+                        },
+                        // "help" and any other meta default to the listing.
+                        _ => print!("{}", aphrody_chat::slash::help_text()),
+                    }
+                    return Ok(());
+                },
+                aphrody_chat::slash::SlashKind::Template => {
+                    parsed.expanded_prompt().unwrap_or_else(|| prompt.clone())
+                },
+            },
+            None if prompt.trim_start().starts_with('/') => {
+                eprintln!("unknown slash command — try /help");
+                print!("{}", aphrody_chat::slash::help_text());
+                return Ok(());
+            },
+            None => prompt.clone(),
+        };
 
         // Backend selection order — aphrody uses the `agy` (Antigravity) CLI's
         // OAuth token by default; the legacy `gemini` CLI is never bootstrapped:
@@ -1772,7 +1818,7 @@ impl TerminalCommand for ChatCommand {
             .map_err(|e| miette::miette!("ChatLoop build failed: {e}"))?;
 
         let turn = chat
-            .single_turn(&prompt)
+            .single_turn(&effective_prompt)
             .await
             .map_err(|e| miette::miette!("chat turn failed: {e}"))?;
 
