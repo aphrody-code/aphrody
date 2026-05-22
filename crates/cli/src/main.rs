@@ -9,6 +9,7 @@
 // a2a transports) cannot be linked on wasm and live behind
 // `cfg(not(target_arch = "wasm32"))`.
 
+#[cfg(not(target_arch = "wasm32"))] mod agy_backend;
 #[cfg(not(target_arch = "wasm32"))] mod antigravity_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
 #[cfg(not(target_arch = "wasm32"))] mod commands;
@@ -22,6 +23,7 @@
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod design_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod ide_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
@@ -152,6 +154,14 @@ enum Commands {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
+    /// Forward vers le binaire natif Antigravity CLI (`agy`).
+    ///
+    /// Résolution : $APHRODY_AGY_BIN > %LOCALAPPDATA%\agy\bin\agy.exe > PATH.
+    /// Pour la surface API pure (token + RPC, sans binaire), voir `antigravity`.
+    Agy {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
     /// Pont WebSocket-PTY pour le frontend WASM (localhost uniquement)
     Term {
         /// Adresse d'écoute du serveur WebSocket (host:port)
@@ -235,14 +245,11 @@ enum Commands {
     /// records can be copied between Mem0 / Honcho / SqliteLocal without
     /// custom glue. HTTP providers read their credentials from
     /// `MEM0_API_KEY` / `HONCHO_API_KEY` (cf. per-provider modules).
-    // `Memory` variant temporarily disabled: `MemoryAction` was added by an
-    // autopilot tick without the matching enum definition + dispatch arm.
-    // Re-enable once `MemoryAction` and its `MemoryCommand` land.
-    // #[cfg(not(target_arch = "wasm32"))]
-    // Memory {
-    //     #[command(subcommand)]
-    //     action: MemoryAction,
-    // },
+    #[cfg(not(target_arch = "wasm32"))]
+    Memory {
+        #[command(subcommand)]
+        action: MemoryAction,
+    },
     /// Run the unified turn-loop chat agent (one-shot mode).
     ///
     /// Composes every aphrody building block (gemini-runtime + tools +
@@ -266,9 +273,13 @@ enum Commands {
         #[arg(long)]
         system: Option<String>,
         /// Force the in-process stub backend (skip live LLM detection).
-        /// Useful for CI / smoke runs that must not require a `gemini` binary.
+        /// Useful for CI / smoke runs that must not require any LLM backend.
         #[arg(long)]
         stub: bool,
+        /// Use the keyless Gemini **web app** transport (signed-in Google
+        /// cookie jar) instead of the default `agy` (Antigravity) token path.
+        #[arg(long, short = 'w')]
+        web: bool,
     },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
@@ -423,6 +434,18 @@ enum Commands {
         #[command(subcommand)]
         action: DesignActions,
     },
+    /// Antigravity IDE installation inspector — info, extensions, RE, state,
+    /// and launch.
+    ///
+    /// All sub-commands are read-only except `launch`. Resolution order for
+    /// the install dir: env `APHRODY_IDE_DIR` > OS default paths.
+    ///
+    /// Example: aphrody ide info --json | jq '.ideVersion'
+    #[cfg(not(target_arch = "wasm32"))]
+    Ide {
+        #[command(subcommand)]
+        action: ide_cmd::IdeAction,
+    },
     /// Exécution automatique (Bun, Uv, ou scripts)
     #[command(external_subcommand)]
     // On wasm the inner Vec is consumed only at the type level by clap; the
@@ -439,7 +462,7 @@ pub(crate) enum DesignActions {
     ///
     /// Default: the M3 `--md-sys-color-*` `:root` block only. With `--fusion`,
     /// also emit the shadcn/ui alias block and the Tailwind v4 `@theme inline`
-    /// block — the materialised three-way UI fusion (see docs/ui/FUSION-PLAN.md).
+    /// block — the materialised three-way UI fusion (see docs/design/FUSION-PLAN.md).
     Tokens {
         /// Output format: raw CSS, or a shadcn `registry:theme` item (JSON).
         #[arg(long, value_enum, default_value_t = TokensFormat::Css)]
@@ -649,6 +672,53 @@ pub(crate) enum McpAction {
     },
 }
 
+/// Actions for the `memory` kernel subcommand (Tier-1 provider operations).
+///
+/// Currently ships a single action: `migrate` — copy records between any pair
+/// of Tier-1 providers (`mem0`, `honcho`, `sqlite-local`). Future actions
+/// (list, audit, gc) follow the same pattern.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Subcommand, Debug, Clone)]
+pub(crate) enum MemoryAction {
+    /// Copy all records for `--agent-id` from one provider to another.
+    ///
+    /// With `--dry-run` the source is fully enumerated but no write is
+    /// issued — a JSON diff is emitted on stdout instead (set `--json` to
+    /// parse it programmatically). Skipped records (per-item write errors)
+    /// are collected and never abort the sweep.
+    ///
+    /// Example (offline test):
+    ///   aphrody memory migrate --from sqlite-local --to sqlite-local \
+    ///     --from-sqlite-path a.sqlite --to-sqlite-path b.sqlite \
+    ///     --agent-id agent-A --dry-run --json
+    Migrate {
+        /// Source provider.
+        #[arg(long, value_enum)]
+        from: memory_cmd::MemoryProviderArg,
+        /// Target provider.
+        #[arg(long, value_enum)]
+        to: memory_cmd::MemoryProviderArg,
+        /// Logical owner — all records outside this scope are untouched.
+        #[arg(long)]
+        agent_id: String,
+        /// Preview only: enumerate source but perform zero writes.
+        #[arg(long)]
+        dry_run: bool,
+        /// Emit diff as a compact JSON object on stdout (parseable by jq).
+        #[arg(long)]
+        json: bool,
+        /// Pretty-print the JSON diff (implies `--json`).
+        #[arg(long)]
+        pretty: bool,
+        /// Filesystem path for the source SQLite store (sqlite-local only).
+        #[arg(long)]
+        from_sqlite_path: Option<PathBuf>,
+        /// Filesystem path for the target SQLite store (sqlite-local only).
+        #[arg(long)]
+        to_sqlite_path: Option<PathBuf>,
+    },
+}
+
 /// Actions for the `re` kernel subcommand (Reverse engineering).
 ///
 /// Backed by the `aphrody-re` crate (pure Rust, goblin + sha2). Output is
@@ -816,6 +886,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Gemini { args }) => {
             commands::GeminiCommand { args }.execute(ctx).await?;
         },
+        Some(Commands::Agy { args }) => {
+            commands::AgyCommand { args }.execute(ctx).await?;
+        },
         Some(Commands::Term { addr, shell, cwd }) => {
             commands::TermCommand { addr, shell, cwd }.execute(ctx).await?;
         },
@@ -825,6 +898,31 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             },
             McpAction::Call { config, server, tool, args } => {
                 mcp_cmd::McpCallCommand { config, server, tool, args }.execute(ctx).await?;
+            },
+        },
+        Some(Commands::Memory { action }) => match action {
+            MemoryAction::Migrate {
+                from,
+                to,
+                agent_id,
+                dry_run,
+                json,
+                pretty,
+                from_sqlite_path,
+                to_sqlite_path,
+            } => {
+                memory_cmd::MigrateCommand {
+                    from,
+                    to,
+                    agent_id,
+                    dry_run,
+                    json: json || pretty,
+                    pretty,
+                    from_sqlite_path,
+                    to_sqlite_path,
+                }
+                .execute(ctx)
+                .await?;
             },
         },
         Some(Commands::Re { action }) => match action {
@@ -935,8 +1033,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Forensics { action }) => {
             forensics_cmd::run(action).await?;
         },
-        Some(Commands::Chat { prompt, model, system, stub }) => {
-            commands::ChatCommand { prompt, model, system, stub }.execute(ctx).await?;
+        Some(Commands::Chat { prompt, model, system, stub, web }) => {
+            commands::ChatCommand { prompt, model, system, stub, web }.execute(ctx).await?;
         },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
@@ -1033,6 +1131,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             }
         },
         Some(Commands::Design { action }) => design_cmd::run(action)?,
+        Some(Commands::Ide { action }) => ide_cmd::run(action).await?,
         Some(Commands::Auto(args)) => {
             // Route NL prompts to the native A2A JSON-RPC client; defer to
             // the legacy bun/uv/cargo engine dispatcher only for tokens
@@ -1123,6 +1222,7 @@ fn main() {
                 Commands::Cros { .. } => "cros",
                 Commands::Search { .. } => "search",
                 Commands::Gemini { .. } => "gemini",
+                Commands::Agy { .. } => "agy",
                 Commands::Doctor { .. } => "doctor",
                 Commands::Term { .. } => "term",
                 Commands::Notify { .. } => "notify",

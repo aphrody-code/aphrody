@@ -55,6 +55,10 @@ data-encoding = { workspace = true }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio         = { workspace = true, features = ["macros", "rt", "net", "io-util", "time"] }
 reqwest       = { workspace = true }
+# `state_sync::read_state_db` — reads ItemTable from state.vscdb read-only.
+# Shares the workspace-pinned rusqlite (bundled libsqlite3) with aphrody-memory;
+# same `links = "sqlite3"` instance so cargo-deny sees no duplicate.
+rusqlite      = { workspace = true }
 
 # --- Optional: local language_server gRPC bridge (feature `local-ls`) ---------
 prost        = { workspace = true, optional = true }

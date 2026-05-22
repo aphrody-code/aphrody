@@ -323,9 +323,25 @@ pub fn disasm(bytes: &[u8], rip: u64, limit: usize) -> Vec<DisasmInsn> {
 /// looked valid by magic but had internally inconsistent offsets. Truly
 /// arbitrary garbage falls into the `Format::Unknown` path with `Ok`.
 pub fn triage(bytes: &[u8]) -> Result<TriageReport, ReError> {
+    triage_bounded(bytes, STRINGS_SAMPLE_LIMIT)
+}
+
+/// Triage a binary blob with a configurable strings-sample limit.
+///
+/// `strings_limit = 0` suppresses string extraction entirely (fastest path for
+/// large sidecars when string content is not required). For the default
+/// behaviour use [`triage`] which passes [`STRINGS_SAMPLE_LIMIT`].
+///
+/// Never panics. Returns [`ReError::Parse`] only on internally inconsistent
+/// binary headers.
+pub fn triage_bounded(bytes: &[u8], strings_limit: usize) -> Result<TriageReport, ReError> {
     let size = bytes.len();
     let sha256 = hex::encode(Sha256::digest(bytes));
-    let strings_sample = extract_strings(bytes, STRINGS_MIN_LEN, STRINGS_SAMPLE_LIMIT);
+    let strings_sample = if strings_limit > 0 {
+        extract_strings(bytes, STRINGS_MIN_LEN, strings_limit)
+    } else {
+        Vec::new()
+    };
 
     // `goblin::Object` requires the `te` feature which is intentionally
     // off in the workspace pin (Terse Executable is niche). We dispatch by

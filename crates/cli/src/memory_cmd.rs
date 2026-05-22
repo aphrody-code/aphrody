@@ -41,7 +41,6 @@ pub(crate) enum MemoryProviderArg {
 }
 
 /// `aphrody memory migrate` dispatch.
-#[allow(dead_code)]
 pub(crate) struct MigrateCommand {
     pub from: MemoryProviderArg,
     pub to: MemoryProviderArg,
@@ -134,7 +133,6 @@ impl TerminalCommand for MigrateCommand {
 /// HTTP providers read their credentials from env vars (documented per module
 /// in `aphrody-memory`); failure to find a key surfaces as a structured
 /// `MemoryError::MissingConfig` that bubbles up here as a `miette::Report`.
-#[allow(dead_code)]
 fn build_provider(
     kind: MemoryProviderArg,
     sqlite_path: Option<&Path>,
@@ -173,7 +171,6 @@ fn build_provider(
 /// Default offline store location — `$HOME/.aphrody/memory.sqlite` on every
 /// supported target. Falls back to `./memory.sqlite` if the home directory
 /// cannot be resolved (CI containers without `$HOME`).
-#[allow(dead_code)]
 fn default_sqlite_path() -> PathBuf {
     dirs::home_dir()
         .map(|h| h.join(".aphrody").join("memory.sqlite"))

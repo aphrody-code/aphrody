@@ -102,7 +102,27 @@ pub struct GoogleReport {
 // Main public entry point
 // ---------------------------------------------------------------------------
 
+/// Default string-corpus extraction limit for [`analyze_google`].
+///
+/// At 8 192 entries the corpus is large enough to find all OAuth IDs /
+/// endpoints in typical small binaries while remaining fast on host builds
+/// with regular-sized binaries (< 20 MB). For large Go sidecars (> 100 MB,
+/// e.g. `language_server_*.exe` at ~133 MB) the corpus traversal dominates
+/// latency — use [`analyze_google_bounded`] with a smaller limit.
+pub const GOOGLE_STRINGS_LIMIT_DEFAULT: usize = 8_192;
+
+/// Bounded string-corpus limit used by `aphrody ide re` for the Go language
+/// server sidecar (~133 MB). 512 entries is sufficient to capture all
+/// `exa.*` service paths, OAuth IDs, and Cloud endpoints embedded near the
+/// binary's string-rich regions while completing in < 200 ms on both Windows
+/// and Linux.
+pub const GOOGLE_STRINGS_LIMIT_SIDECAR: usize = 512;
+
 /// Analyse a raw binary blob for Google-specific artefacts.
+///
+/// Uses [`GOOGLE_STRINGS_LIMIT_DEFAULT`] for the string corpus extraction.
+/// For large binaries (> 50 MB) prefer [`analyze_google_bounded`] with a
+/// smaller limit to keep latency bounded.
 ///
 /// Never panics on arbitrary input; all regex / memchr calls are applied to
 /// controlled byte ranges only.
@@ -120,11 +140,40 @@ pub struct GoogleReport {
 /// ```
 #[must_use]
 pub fn analyze_google(bytes: &[u8]) -> GoogleReport {
+    analyze_google_bounded(bytes, GOOGLE_STRINGS_LIMIT_DEFAULT)
+}
+
+/// Analyse a raw binary blob for Google-specific artefacts with an explicit
+/// string-corpus extraction limit.
+///
+/// `strings_limit` caps the number of ASCII / UTF-16LE strings extracted from
+/// `bytes` for the regex-based passes (OAuth IDs, endpoints, updater URLs, gRPC
+/// verb-noun allowlist). The byte-level needle passes (family detection, gRPC
+/// routing paths, Chromium version, code-sign subject) always scan the **full**
+/// byte slice regardless of this limit, so the critical structured data is never
+/// missed.
+///
+/// Use [`GOOGLE_STRINGS_LIMIT_SIDECAR`] (512) for the Antigravity / Codeium
+/// `language_server_*.exe` (~133 MB) to keep end-to-end latency under 200 ms.
+///
+/// # Example
+///
+/// ```
+/// use aphrody_re::google::{analyze_google_bounded, BinaryFamily, GOOGLE_STRINGS_LIMIT_SIDECAR};
+///
+/// let buf = b"runtime.goexit\x00go:buildid\x00";
+/// let r = analyze_google_bounded(buf, GOOGLE_STRINGS_LIMIT_SIDECAR);
+/// assert_eq!(r.family, BinaryFamily::GoBinary);
+/// ```
+#[must_use]
+pub fn analyze_google_bounded(bytes: &[u8], strings_limit: usize) -> GoogleReport {
     let mut indicators: Vec<String> = Vec::new();
 
     // --- 1. Extract the string corpus (ASCII + UTF-16LE) once; everything
     //         below operates on this corpus + raw byte needles.
-    let strings = extract_strings(bytes, 4, 8192);
+    //         Byte-level needle passes (family, Chromium version, code-sign,
+    //         gRPC routing paths) always scan the full slice — not bounded.
+    let strings = extract_strings(bytes, 4, strings_limit);
 
     // --- 2. Detect BinaryFamily via byte-level needle search -----------------
     let family = detect_family(bytes, &mut indicators);

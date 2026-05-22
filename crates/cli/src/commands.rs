@@ -842,6 +842,84 @@ impl TerminalCommand for GeminiCommand {
     }
 }
 
+// ===========================================================================
+// `aphrody agy` — forward to the native Antigravity CLI (`agy`) binary.
+// ===========================================================================
+
+/// Env override pointing directly at the `agy` binary. Highest precedence.
+pub(crate) const ENV_AGY_BIN: &str = "APHRODY_AGY_BIN";
+
+/// Resolve the `agy` (Antigravity CLI) binary, first match wins:
+/// 1. `$APHRODY_AGY_BIN` (must exist).
+/// 2. `%LOCALAPPDATA%\agy\bin\agy.exe` on Windows — the path the official
+///    Antigravity `install.ps1` writes.
+/// 3. `$HOME/.local/share/agy/bin/agy` / `$HOME/.agy/bin/agy` on Unix.
+/// 4. `which("agy")` — PATH lookup.
+pub(crate) fn resolve_agy_bin() -> Option<std::path::PathBuf> {
+    if let Ok(explicit) = std::env::var(ENV_AGY_BIN) {
+        let p = std::path::PathBuf::from(explicit.trim());
+        if !explicit.trim().is_empty() && p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let p = std::path::Path::new(&local).join("agy").join("bin").join("agy.exe");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    if let Some(home) = std::env::var_os("HOME") {
+        for rel in [["agy", "bin", "agy"], [".local", "share/agy", "bin/agy"]] {
+            let mut p = std::path::PathBuf::from(&home);
+            for seg in rel {
+                p.push(seg);
+            }
+            if p.exists() {
+                return Some(p);
+            }
+        }
+    }
+
+    which::which("agy").ok()
+}
+
+/// Implementation of `aphrody agy <args…>` — a thin, scriptable forwarder to
+/// the Antigravity CLI. Stdio is inherited and the child's exit code is
+/// propagated verbatim via [`SubprocessExit`].
+pub(crate) struct AgyCommand {
+    pub args: Vec<String>,
+}
+
+#[async_trait]
+impl TerminalCommand for AgyCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        let bin_path = resolve_agy_bin().ok_or_else(|| {
+            miette::miette!(
+                "Antigravity CLI (`agy`) introuvable.\n\n\
+                 Résolution tentée : $APHRODY_AGY_BIN > \
+                 %LOCALAPPDATA%\\agy\\bin\\agy.exe > PATH.\n\
+                 • Installer l'Antigravity CLI, puis re-run, ou\n\
+                 • Override : `APHRODY_AGY_BIN=/abs/path aphrody agy …`.\n\
+                 Pour la surface API pure (sans binaire), voir `aphrody antigravity`."
+            )
+        })?;
+
+        let status = std::process::Command::new(&bin_path)
+            .args(&self.args)
+            .status()
+            .map_err(|e| miette::miette!("Échec du spawn `{}`: {e}", bin_path.display()))?;
+
+        if !status.success() {
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
+        }
+        Ok(())
+    }
+}
+
 pub(crate) struct SearchCommand {
     pub query: Vec<String>,
 }
@@ -1612,13 +1690,18 @@ pub(crate) struct ChatCommand {
     pub model: Option<String>,
     pub system: Option<String>,
     pub stub: bool,
+    /// Use the keyless Gemini web app transport instead of the default `agy`
+    /// (Antigravity) credential-store token path.
+    pub web: bool,
 }
 
 #[async_trait]
 impl TerminalCommand for ChatCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        use aphrody_chat::backend::{GeminiBackend, ModelBackend, StubBackend};
+        use aphrody_chat::backend::{GeminiWebBackend, ModelBackend, StubBackend};
         use aphrody_chat::{ChatConfig, ChatLoop};
+
+        use crate::agy_backend::AgyBackend;
 
         let Some(prompt) = self.prompt.clone() else {
             return Err(miette::miette!(
@@ -1636,24 +1719,48 @@ impl TerminalCommand for ChatCommand {
             config.system_prompt = sys;
         }
 
-        // Backend selection: --stub → always StubBackend; otherwise try
-        // GeminiBackend first and degrade gracefully to StubBackend with a
-        // tracing diagnostic when the `gemini` binary is missing from PATH.
+        // Backend selection order — aphrody uses the `agy` (Antigravity) CLI's
+        // OAuth token by default; the legacy `gemini` CLI is never bootstrapped:
+        //   1. `--stub`                   → deterministic StubBackend.
+        //   2. `--web` / `-w`             → keyless Gemini web app transport
+        //      (signed-in Google cookie jar). Opt-in alternative to agy.
+        //   3. default → AgyBackend       → agy OAuth token read at runtime from
+        //      the platform credential store (`gemini:antigravity`), driving
+        //      Gemini `generateContent`. No external binary, no PATH probe.
+        //   4. StubBackend                → last resort when the chosen live
+        //      backend cannot authenticate (with a diagnostic).
         let backend: Box<dyn ModelBackend> = if self.stub {
             Box::new(StubBackend::with_reply(
                 "(stub backend reply — `aphrody chat --stub` mode, no live LLM call)",
             ))
-        } else {
-            match GeminiBackend::detect().await {
-                Ok(gemini) => Box::new(gemini.with_model(Some(config.model.clone()))),
-                Err(e) => {
+        } else if self.web {
+            match GeminiWebBackend::connect_for(Some(config.model.as_str())).await {
+                Ok(web) => Box::new(web),
+                Err(web_err) => {
                     eprintln!(
-                        "[chat] gemini-runtime detect failed ({e}); falling back to \
-                         stub backend. Re-run with `aphrody chat --stub` to \
-                         silence this warning, or install `gemini` on PATH."
+                        "[chat] keyless Gemini web transport unavailable ({web_err}). Sign in \
+                         to gemini.google.com and export the cookie jar to \
+                         ~/.aphrody/google-cookies.json, or drop `--web` to use the agy token. \
+                         Falling back to the stub backend."
                     );
                     Box::new(StubBackend::with_reply(
-                        "(stub backend reply — gemini binary not found on PATH)",
+                        "(stub backend reply — keyless web transport unavailable)",
+                    ))
+                },
+            }
+        } else {
+            match AgyBackend::connect(Some(config.model.as_str())) {
+                Ok(agy) => Box::new(agy),
+                Err(agy_err) => {
+                    eprintln!(
+                        "[chat] agy (Antigravity) token unavailable ({agy_err}). Sign in via the \
+                         agy CLI (%LOCALAPPDATA%\\agy\\bin\\agy.exe) so it writes the \
+                         `gemini:antigravity` credential, pass `--web` for the keyless web \
+                         transport, or `--stub` for an offline reply. Falling back to the stub \
+                         backend."
+                    );
+                    Box::new(StubBackend::with_reply(
+                        "(stub backend reply — agy token not available)",
                     ))
                 },
             }
