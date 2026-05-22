@@ -17,35 +17,24 @@ use aphrody_chat::error::ChatError;
 use aphrody_chat::{Message, MessageRole};
 use async_trait::async_trait;
 
-/// Default bare Gemini model id used when `--model` is not supplied. Mirrors
-/// the proven Python keyless path (`aphrody.vertex.DEFAULT_MODEL`); the Vertex
-/// `:generateContent` path expects the bare id (no `models/` prefix).
+/// Default bare Gemini model id used when `--model` is not supplied. Mirrors the
+/// Code Assist default; the Cloud Code `:generateContent` envelope expects the
+/// bare id (no `models/` prefix).
 const DEFAULT_AGY_MODEL: &str = "gemini-2.5-flash";
 
 /// Chat backend authenticating via the agy (Antigravity) token and dispatching
-/// turns through Vertex AI `generateContent` (the agy OAuth token is rejected by
-/// the public `generativelanguage` host, so we route through regional Vertex —
-/// the same endpoint the Python forensic synthesis uses).
+/// turns through the **Cloud Code modelbackend** (`cloudcode-pa.googleapis.com/
+/// v1internal:generateContent`) — the exact path agy.exe uses. The agy OAuth
+/// token is scoped for this host (the public `generativelanguage` host rejects
+/// it with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`), and it carries the account's
+/// Code Assist tier (e.g. Google One AI Ultra).
 pub(crate) struct AgyBackend {
     client: AntigravityClient,
     model: String,
-    project: String,
-    location: String,
-}
-
-/// Resolve the Vertex project id (env override → Antigravity-bound default),
-/// mirroring `aphrody.vertex.resolve_project`.
-fn resolve_project() -> String {
-    std::env::var("APHRODY_VERTEX_PROJECT")
-        .or_else(|_| std::env::var("GOOGLE_CLOUD_PROJECT"))
-        .unwrap_or_else(|_| antigravity_sdk::endpoints::DEFAULT_VERTEX_PROJECT.to_owned())
-}
-
-/// Resolve the Vertex region (env override → default), mirroring
-/// `aphrody.vertex.resolve_location`.
-fn resolve_location() -> String {
-    std::env::var("APHRODY_VERTEX_LOCATION")
-        .unwrap_or_else(|_| antigravity_sdk::endpoints::DEFAULT_VERTEX_LOCATION.to_owned())
+    /// Cloud AI Companion project. Resolved lazily on first turn via
+    /// `loadCodeAssist` (like agy's startup bootstrap) unless preset from the
+    /// `APHRODY_CLOUDCODE_PROJECT` / `GOOGLE_CLOUD_PROJECT` env override.
+    project: tokio::sync::OnceCell<String>,
 }
 
 impl AgyBackend {
@@ -66,12 +55,38 @@ impl AgyBackend {
         let client = AntigravityClient::from_credential_manager()
             .map_err(|e| ChatError::BackendFailure(format!("agy credential store: {e}")))?;
 
-        Ok(Self {
-            client,
-            model: normalise_model(model),
-            project: resolve_project(),
-            location: resolve_location(),
-        })
+        // Env override skips the loadCodeAssist round-trip (lower latency).
+        let project = tokio::sync::OnceCell::new();
+        if let Ok(p) = std::env::var("APHRODY_CLOUDCODE_PROJECT")
+            .or_else(|_| std::env::var("GOOGLE_CLOUD_PROJECT"))
+        {
+            if !p.is_empty() {
+                let _ = project.set(p);
+            }
+        }
+
+        Ok(Self { client, model: normalise_model(model), project })
+    }
+
+    /// Resolve (and cache) the Cloud AI Companion project for this account,
+    /// mirroring agy's `loadCodeAssist` bootstrap.
+    async fn project(&self) -> Result<&str, ChatError> {
+        self.project
+            .get_or_try_init(|| async {
+                self.client
+                    .resolve_cloudcode_project()
+                    .await
+                    .map_err(|e| ChatError::BackendFailure(format!("loadCodeAssist: {e}")))?
+                    .ok_or_else(|| {
+                        ChatError::BackendFailure(
+                            "no cloudaicompanionProject for this account (run \
+                             `aphrody antigravity onboard` first)"
+                                .to_owned(),
+                        )
+                    })
+            })
+            .await
+            .map(String::as_str)
     }
 }
 
@@ -127,9 +142,15 @@ impl ModelBackend for AgyBackend {
 
         let req = GenerateContentRequest { contents, generation_config: None, system_instruction };
 
+        let project = self.project().await?;
         let resp = self
             .client
-            .generate_content_vertex(&self.model, &self.project, &self.location, &req)
+            .generate_content_cloud_code(
+                antigravity_sdk::endpoints::CloudCodeEndpoint::Prod,
+                &self.model,
+                project,
+                &req,
+            )
             .await
             .map_err(|e| ChatError::BackendFailure(format!("agy generateContent: {e}")))?;
 

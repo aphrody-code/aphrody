@@ -10,9 +10,9 @@ use tracing::debug;
 use crate::auth::{OAuthToken, token_from_credential_manager};
 use crate::error::SdkError;
 use crate::models::{
-    FetchAvailableModelsRequest, FetchAvailableModelsResponse, GenerateContentRequest,
-    GenerateContentResponse, LoadCodeAssistRequest, LoadCodeAssistResponse, OnboardUserRequest,
-    OnboardUserResponse,
+    CloudCodeGenerateContentResponse, FetchAvailableModelsRequest, FetchAvailableModelsResponse,
+    GenerateContentRequest, GenerateContentResponse, LoadCodeAssistRequest, LoadCodeAssistResponse,
+    OnboardUserRequest, OnboardUserResponse,
 };
 
 /// Authenticated HTTP client for the Antigravity (Google AI Ultra / Gemini)
@@ -320,5 +320,54 @@ impl AntigravityClient {
         let body = serde_json::to_value(req)?;
         let value = self.post_json(&url, &body).await?;
         Ok(serde_json::from_value(value)?)
+    }
+
+    /// Run `generateContent` against the **Cloud Code modelbackend** — the exact
+    /// path agy.exe uses (`cloudcode-pa.googleapis.com/v1internal:generateContent`).
+    ///
+    /// The agy OAuth token is scoped for this host, so this is the faithful
+    /// reproduction of agy's LLM access (it carries the account's Code Assist
+    /// tier, e.g. Google One AI Ultra). The request is wrapped in the
+    /// `{ model, project, request }` envelope and the reply is unwrapped from
+    /// its `response` field.
+    ///
+    /// # Errors
+    /// [`SdkError`] on transport failure, a non-2xx Cloud Code envelope, or a
+    /// response body that does not deserialise into the expected shape.
+    pub async fn generate_content_cloud_code(
+        &self,
+        endpoint: crate::endpoints::CloudCodeEndpoint,
+        model: &str,
+        project: &str,
+        req: &GenerateContentRequest,
+    ) -> Result<GenerateContentResponse, SdkError> {
+        let body = serde_json::json!({
+            "model": model,
+            "project": project,
+            "request": req,
+        });
+        let value = self
+            .cloud_code(endpoint, crate::endpoints::METHOD_GENERATE_CONTENT, &body)
+            .await?;
+        let wrapped: CloudCodeGenerateContentResponse = serde_json::from_value(value)?;
+        Ok(wrapped.response)
+    }
+
+    /// Resolve the Cloud AI Companion project bound to the signed-in account via
+    /// `loadCodeAssist` (the same bootstrap agy.exe performs at startup).
+    ///
+    /// Posts an empty body (the server resolves the user's default project) and
+    /// returns the `cloudaicompanionProject` field, or `None` when the account
+    /// has no resolved project yet (needs onboarding).
+    ///
+    /// # Errors
+    /// Any [`SdkError`] from [`load_code_assist`](Self::load_code_assist) or a
+    /// response that does not parse as JSON object.
+    pub async fn resolve_cloudcode_project(&self) -> Result<Option<String>, SdkError> {
+        let value = self.load_code_assist(&serde_json::json!({})).await?;
+        Ok(value
+            .get("cloudaicompanionProject")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned))
     }
 }
