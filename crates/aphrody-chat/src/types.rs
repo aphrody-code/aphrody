@@ -257,6 +257,20 @@ pub struct Turn {
 // ChatConfig — orchestrator construction parameters
 // ---------------------------------------------------------------------------
 
+/// Minimal default system prompt: keeps the agent in **goal mode** — it treats
+/// every request as an objective to complete fully and autonomously, decides
+/// and acts without asking, verifies its own work, and does not consider itself
+/// done until the objective holds. Mirrors the `/goal` Stop-hook discipline.
+///
+/// Deliberately short (one tight paragraph) so it costs almost no context
+/// budget; callers override it via `--system` or [`ChatConfig::system_prompt`].
+pub const DEFAULT_SYSTEM_PROMPT: &str = "You are aphrody, a goal-driven CLI \
+    agent. Treat every request as an objective: infer the goal, pursue it \
+    end-to-end, and keep working until it is fully met — never stop half-done. \
+    Decide and act autonomously instead of asking; make reasonable assumptions \
+    and state them. Verify your own work before claiming success, and report \
+    honestly what is done versus pending. Be concise.";
+
 /// Knobs that govern the behaviour of a [`crate::turn_loop::ChatLoop`].
 ///
 /// Constructed via [`ChatConfig::default`] or
@@ -304,9 +318,7 @@ impl Default for ChatConfig {
         Self {
             agent_id: "aphrody-default".to_string(),
             model: "gemini/default".to_string(),
-            system_prompt:
-                "You are aphrody, a precise cross-platform CLI assistant. Be concise."
-                    .to_string(),
+            system_prompt: DEFAULT_SYSTEM_PROMPT.to_string(),
             max_turns: 0,
             tools_enabled: true,
             context_max_utilisation: 0.85,
@@ -381,5 +393,21 @@ mod tests {
         assert!(c.context_max_utilisation > 0.0 && c.context_max_utilisation <= 1.0);
         assert!(c.session_dir.is_none());
         assert!(!c.system_prompt.is_empty());
+    }
+
+    #[test]
+    fn default_system_prompt_is_goal_mode() {
+        let c = ChatConfig::default();
+        assert_eq!(c.system_prompt, DEFAULT_SYSTEM_PROMPT);
+        // Goal-mode invariants: pursue end-to-end, act autonomously, verify.
+        let p = c.system_prompt.to_lowercase();
+        assert!(p.contains("goal"), "must frame work as a goal");
+        assert!(p.contains("autonomously"), "must push autonomy");
+        assert!(
+            p.contains("until it is fully met") || p.contains("never stop"),
+            "must push relentless completion"
+        );
+        // "Minimal": one tight paragraph, not a wall of text.
+        assert!(c.system_prompt.len() < 600, "default prompt must stay minimal");
     }
 }
