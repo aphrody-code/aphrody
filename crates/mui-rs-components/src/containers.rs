@@ -99,6 +99,9 @@ use mui_rs_renderer::pipeline::{DrawCx, Widget};
 use mui_rs_renderer::shadow;
 use mui_rs_renderer::vello::kurbo::{Affine, Rect, RoundedRect, Stroke};
 use mui_rs_renderer::vello::peniko::{Color, Fill};
+use mui_rs_renderer::TextStyle;
+
+const FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
 
 #[derive(Debug, Clone)]
 pub struct Tooltip {
@@ -137,5 +140,77 @@ impl Widget for Card {
             };
             cx.scene.stroke(&Stroke::new(1.0), transform, outline, None, &rect);
         }
+    }
+}
+
+impl BottomSheet {
+    pub const WIDTH_DP: f64 = 360.0;
+    pub const HEIGHT_DP: f64 = 220.0;
+}
+
+impl Widget for BottomSheet {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        if !self.open {
+            return;
+        }
+        let (w, h) = (BottomSheet::WIDTH_DP, BottomSheet::HEIGHT_DP);
+        // Top-rounded surface-container-low sheet with a drag handle.
+        let rect = RoundedRect::new(0.0, 0.0, w, h, 28.0);
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, w, h), 28.0, 1);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(247, 242, 250), None, &rect);
+        let handle = RoundedRect::new(w / 2.0 - 16.0, 12.0, w / 2.0 + 16.0, 16.0, 2.0);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgba8(73, 69, 79, 102), None, &handle); // on-surface-variant 40%
+    }
+}
+
+impl BottomAppBar {
+    pub const WIDTH_DP: f64 = 412.0;
+    pub const HEIGHT_DP: f64 = 80.0;
+}
+
+impl Widget for BottomAppBar {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let (w, h) = (BottomAppBar::WIDTH_DP, BottomAppBar::HEIGHT_DP);
+        let rect = RoundedRect::new(0.0, 0.0, w, h, 0.0);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(247, 242, 250), None, &rect); // surface-container
+        let style = TextStyle::new(FAMILY, 14.0, 400.0, Color::from_rgb8(73, 69, 79));
+        let (_tw, th) = cx.measure_text(&self.content, style);
+        cx.draw_text(&self.content, style, transform * Affine::translate((16.0, (h - f64::from(th)) / 2.0)));
+    }
+}
+
+impl Dialog {
+    pub const WIDTH_DP: f64 = 312.0;
+    pub const HEIGHT_DP: f64 = 180.0;
+}
+
+impl Widget for Dialog {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        if !self.open {
+            return;
+        }
+        let (w, h) = (Dialog::WIDTH_DP, Dialog::HEIGHT_DP);
+        let rect = RoundedRect::new(0.0, 0.0, w, h, 28.0);
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, w, h), 28.0, 3);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(236, 230, 240), None, &rect); // surface-container-high
+        let title_style = TextStyle::new(FAMILY, 24.0, 400.0, Color::from_rgb8(28, 27, 31)); // headline-small / on-surface
+        cx.draw_text(&self.title, title_style, transform * Affine::translate((24.0, 24.0)));
+    }
+}
+
+impl Tooltip {
+    const PAD_X: f64 = 8.0;
+    pub const HEIGHT_DP: f64 = 24.0;
+}
+
+impl Widget for Tooltip {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let h = Tooltip::HEIGHT_DP;
+        let style = TextStyle::new(FAMILY, 12.0, 400.0, Color::from_rgb8(245, 239, 247)); // inverse-on-surface
+        let (tw, th) = cx.measure_text(&self.text, style);
+        let w = f64::from(tw) + Tooltip::PAD_X * 2.0;
+        let rect = RoundedRect::new(0.0, 0.0, w, h, 4.0);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(50, 47, 53), None, &rect); // inverse-surface
+        cx.draw_text(&self.text, style, transform * Affine::translate((Tooltip::PAD_X, (h - f64::from(th)) / 2.0)));
     }
 }
