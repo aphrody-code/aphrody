@@ -24,7 +24,7 @@ workspace = true
 
 [dependencies]
 # --- async runtime ----------------------------------------------------------
-tokio        = { workspace = true, features = ["fs", "macros", "rt", "rt-multi-thread", "io-util", "sync"] }
+tokio        = { workspace = true, features = ["fs", "macros", "rt", "rt-multi-thread", "io-util", "sync", "time"] }
 async-trait  = { workspace = true }
 futures      = { workspace = true }
 
