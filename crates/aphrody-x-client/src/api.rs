@@ -125,15 +125,33 @@ impl XClient {
     /// - `XError::Api { code: 353 }` — `x-client-transaction-id` enforcement.
     /// - `XError::Api { code: 344 }` — daily tweet cap (hard server-side limit).
     pub async fn create_tweet(&self, text: &str, reply_to: Option<&str>) -> Result<TweetResult> {
+        self.create_tweet_with_media(text, reply_to, &[]).await
+    }
+
+    /// Post a tweet with attached media ids (from [`XClient::upload_media`]).
+    ///
+    /// Up to 4 images/GIFs or 1 video. Pass an empty slice for a text-only
+    /// tweet (equivalent to [`XClient::create_tweet`]).
+    pub async fn create_tweet_with_media(
+        &self,
+        text: &str,
+        reply_to: Option<&str>,
+        media_ids: &[String],
+    ) -> Result<TweetResult> {
         // Use the known-good feature blob for CreateTweet.
         let extra_features: Value = serde_json::from_str(CREATE_TWEET_FEATURES_KNOWN_GOOD)
             .expect("CREATE_TWEET_FEATURES_KNOWN_GOOD is valid JSON");
+
+        let media_entities: Vec<Value> = media_ids
+            .iter()
+            .map(|id| json!({ "media_id": id, "tagged_users": [] }))
+            .collect();
 
         let mut variables = json!({
             "tweet_text": text,
             "dark_request": false,
             "media": {
-                "media_entities": [],
+                "media_entities": media_entities,
                 "possibly_sensitive": false
             },
             "semantic_annotation_ids": []

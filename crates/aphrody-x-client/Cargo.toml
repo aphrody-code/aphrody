@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # HTTP — rustls-tls for zero-system-tls dependency, cookies for jar support.
-reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies"] }
+reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies", "multipart"] }
 # Async runtime.
 tokio       = { version = "1.52", features = ["full"] }
 # Serde / JSON.
