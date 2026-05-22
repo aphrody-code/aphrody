@@ -263,17 +263,78 @@ impl XClient {
             .graphql_send(op_name, op.op_type, &query_id, &feat, &variables)
             .await;
 
-        // Auto-recovery: an invalid queryId surfaces as HTTP 404. Refresh the
-        // live mapping once and retry, exactly like the reference client.
+        // Auto-recovery: HTTP 404 means either a rotated queryId or an
+        // operation that X only serves over the POST-hybrid form (variables in
+        // the URL, `{features, queryId}` in the body — e.g. SearchTimeline).
+        // Refresh the live queryId once, then retry: queries fall back to the
+        // POST-hybrid form (which works for both causes), mutations re-POST.
         match first {
-            Err(XError::Api { code: 404, .. }) => {
-                let _ = self.query_ids.refresh(&[op_name], true).await;
-                let retry_qid = self.resolve_query_id(op_name, &op.query_id);
-                self.graphql_send(op_name, op.op_type, &retry_qid, &feat, &variables)
-                    .await
-            }
+            Err(XError::Api { code: 404, .. }) => match op.op_type {
+                OpType::Query => {
+                    // First try the POST-hybrid with the same queryId (cheap):
+                    // covers ops X only serves over POST. Only if that also
+                    // 404s do we pay for a live queryId refresh and retry.
+                    let post = self
+                        .graphql_send_query_post(op_name, &query_id, &feat, &variables)
+                        .await;
+                    if let Err(XError::Api { code: 404, .. }) = post {
+                        let _ = self.query_ids.refresh(&[op_name], true).await;
+                        let retry_qid = self.resolve_query_id(op_name, &op.query_id);
+                        self.graphql_send_query_post(op_name, &retry_qid, &feat, &variables)
+                            .await
+                    } else {
+                        post
+                    }
+                }
+                OpType::Mutation | OpType::Subscription => {
+                    let _ = self.query_ids.refresh(&[op_name], true).await;
+                    let retry_qid = self.resolve_query_id(op_name, &op.query_id);
+                    self.graphql_send(op_name, op.op_type, &retry_qid, &feat, &variables)
+                        .await
+                }
+            },
             other => other,
         }
+    }
+
+    /// POST-hybrid form for read operations X refuses over GET.
+    ///
+    /// `variables` go in the URL query string; `{ features, queryId }` go in the
+    /// JSON body. This is the shape X's web client uses for `SearchTimeline`
+    /// and friends, and it also works for ordinary queries — so it is our
+    /// universal 404 fallback for `OpType::Query`.
+    async fn graphql_send_query_post(
+        &self,
+        op_name: &str,
+        query_id: &str,
+        feat: &Value,
+        variables: &Value,
+    ) -> Result<Value> {
+        let vars_str = serde_json::to_string(variables)?;
+        let url = format!("{API_BASE}/graphql/{query_id}/{op_name}");
+        let body = serde_json::json!({ "features": feat, "queryId": query_id });
+        let resp = self
+            .inner
+            .post(&url)
+            .header("x-client-transaction-id", self.transaction_id())
+            .query(&[("variables", &vars_str)])
+            .json(&body)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await.unwrap_or(Value::Null);
+        if !status.is_success() {
+            if json.is_object() {
+                check_api_errors(&json)?;
+            }
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status}"),
+            });
+        }
+        check_api_errors(&json)?;
+        Ok(json)
     }
 
     /// Single GraphQL round-trip with an explicit `query_id`. HTTP 404 (invalid

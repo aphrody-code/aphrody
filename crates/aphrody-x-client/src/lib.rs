@@ -40,12 +40,14 @@ pub mod api;
 pub mod catalog;
 pub mod client;
 pub mod features;
+pub mod parse;
 pub mod runtime_query_ids;
 pub mod session;
 
 pub use api::{TimelineTweet, TweetResult, UserInfo};
 pub use catalog::{OpType, Operation};
 pub use client::{RateLimit, XClient};
+pub use parse::{Author, Tweet, TweetPage, User, UserPage};
 pub use runtime_query_ids::{QueryIdStore, Snapshot as QueryIdSnapshot};
 pub use session::XSession;
 
