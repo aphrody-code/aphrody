@@ -9,4 +9,7 @@
 
 go 1.26.3
 
-use ./go/aphrody-tokenizer-go
+use (
+	./go/antigravity-langserver-re
+	./go/aphrody-tokenizer-go
+)
