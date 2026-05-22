@@ -9,7 +9,7 @@ use mui_rs_renderer::vello::kurbo::{Affine, Circle, Line, Rect, RoundedRect, Str
 use mui_rs_renderer::vello::peniko::{Color, Fill};
 use mui_rs_renderer::TextStyle;
 
-const FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
+const FAMILY: &str = mui_rs_renderer::text::FONT_UI;
 // Common M3 baseline roles used across this module.
 const ON_SURFACE: Color = Color::from_rgb8(28, 27, 31);
 const ON_SURFACE_VARIANT: Color = Color::from_rgb8(73, 69, 79);

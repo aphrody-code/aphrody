@@ -5,7 +5,7 @@ use mui_rs_renderer::vello::kurbo::{Affine, BezPath, Circle, Line, RoundedRect, 
 use mui_rs_renderer::vello::peniko::{Color, Fill};
 use mui_rs_renderer::TextStyle;
 
-const FIELD_FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
+const FIELD_FAMILY: &str = mui_rs_renderer::text::FONT_UI;
 
 #[derive(Debug, Clone)]
 pub struct TextField {

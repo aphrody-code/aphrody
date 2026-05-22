@@ -105,7 +105,7 @@ use mui_rs_renderer::vello::peniko::{Color, Fill};
 use mui_rs_renderer::TextStyle;
 
 /// M3 label-large type face for button text.
-const LABEL_FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
+const LABEL_FAMILY: &str = mui_rs_renderer::text::FONT_UI;
 const LABEL_SIZE: f32 = 14.0;
 const LABEL_WEIGHT: f32 = 500.0;
 
