@@ -1,5 +1,6 @@
 #![allow(clippy::new_without_default)]
 
+pub mod gradient;
 pub mod layout;
 pub mod pipeline;
 pub mod shadow;

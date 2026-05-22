@@ -7,7 +7,7 @@ use mui_rs_renderer::vello::kurbo::{Affine, Circle, Rect, RoundedRect};
 use mui_rs_renderer::vello::peniko::{Color, Fill};
 use mui_rs_renderer::TextStyle;
 
-const FAMILY: &str = "Roboto, Segoe UI, Arial, sans-serif";
+const FAMILY: &str = mui_rs_renderer::text::FONT_UI;
 
 /// M3 badge — a small error-coloured dot, or a pill carrying a count/label.
 #[derive(Debug, Clone)]

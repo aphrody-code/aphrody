@@ -22,7 +22,7 @@ impl mui_rs_renderer::pipeline::Widget for Carousel {
         use mui_rs_renderer::TextStyle;
         let h = Self::HEIGHT_DP;
         // Hero carousel: a row of rounded thumbnails, each labelled.
-        let style = TextStyle::new("Roboto, Segoe UI, Arial, sans-serif", 14.0, 500.0, Color::WHITE);
+        let style = TextStyle::new(mui_rs_renderer::text::FONT_UI, 14.0, 500.0, Color::WHITE);
         for (i, item) in self.items.iter().enumerate() {
             let x = i as f64 * (Self::ITEM_W + Self::GAP);
             let cell = RoundedRect::new(x, 0.0, x + Self::ITEM_W, h, 16.0);
