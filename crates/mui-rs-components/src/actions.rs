@@ -186,7 +186,7 @@ impl Widget for Fab {
         // FABs sit at elevation level 3 in M3.
         shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, size, size), r, 3);
 
-        let base_color = Color::from_rgb8(232, 222, 248); // Primary container
+        let base_color = Color::from_rgb8(234, 221, 255); // primary-container
         cx.scene.fill(Fill::NonZero, transform, base_color, None, &rect);
 
         // Render the icon glyph centred when it is a single pictographic char
@@ -194,7 +194,7 @@ impl Widget for Fab {
         // font, which is loaded separately — those are skipped rather than drawn
         // as literal words.
         if self.icon.chars().count() == 1 && self.icon.chars().all(|c| !c.is_ascii_alphabetic()) {
-            let style = TextStyle::new("Segoe UI Emoji, sans-serif", 24.0, 400.0, Color::from_rgb8(29, 25, 43));
+            let style = TextStyle::new("Segoe UI Emoji, sans-serif", 24.0, 400.0, Color::from_rgb8(33, 0, 93)); // on-primary-container
             let (gw, gh) = cx.measure_text(&self.icon, style);
             let tx = (size - f64::from(gw)) / 2.0;
             let ty = (size - f64::from(gh)) / 2.0;
@@ -209,7 +209,70 @@ pub struct ExtendedFab {
     pub icon: String,
 }
 
+impl ExtendedFab {
+    pub const HEIGHT_DP: f64 = 56.0;
+}
+
+impl Widget for ExtendedFab {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let h = ExtendedFab::HEIGHT_DP;
+        let label_style = TextStyle::new(LABEL_FAMILY, 16.0, 500.0, Color::from_rgb8(33, 0, 93)); // on-primary-container
+        let (lw, lh) = cx.measure_text(&self.label, label_style);
+        // 16dp lead pad, optional icon glyph + 8dp gap, label, 24dp trail pad.
+        let has_icon = self.icon.chars().count() == 1 && self.icon.chars().all(|c| !c.is_ascii_alphabetic());
+        let icon_advance = if has_icon { 24.0 + 12.0 } else { 0.0 };
+        let w = 16.0 + icon_advance + f64::from(lw) + 24.0;
+        let rect = RoundedRect::new(0.0, 0.0, w, h, 16.0);
+        shadow::draw_elevation(cx.scene, transform, Rect::new(0.0, 0.0, w, h), 16.0, 3);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(234, 221, 255), None, &rect); // primary-container
+        if has_icon {
+            let istyle = TextStyle::new("Segoe UI Emoji, sans-serif", 24.0, 400.0, Color::from_rgb8(33, 0, 93));
+            let (_iw, ih) = cx.measure_text(&self.icon, istyle);
+            cx.draw_text(&self.icon, istyle, transform * Affine::translate((16.0, (h - f64::from(ih)) / 2.0)));
+        }
+        let ty = (h - f64::from(lh)) / 2.0;
+        cx.draw_text(&self.label, label_style, transform * Affine::translate((16.0 + icon_advance, ty)));
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SegmentedButton {
     pub options: Vec<String>,
+    /// Index of the currently-selected segment.
+    pub selected: usize,
+}
+
+impl SegmentedButton {
+    pub const HEIGHT_DP: f64 = 40.0;
+    const SEG_W: f64 = 96.0;
+}
+
+impl Widget for SegmentedButton {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let h = SegmentedButton::HEIGHT_DP;
+        let n = self.options.len().max(1);
+        let total_w = Self::SEG_W * n as f64;
+        let outline = Color::from_rgb8(121, 116, 126);
+        let selected_bg = Color::from_rgb8(230, 224, 233); // secondary-container
+        // Outer pill outline.
+        let outer = RoundedRect::new(0.0, 0.0, total_w, h, h / 2.0);
+        cx.scene.stroke(&Stroke::new(1.0), transform, outline, None, &outer);
+        for (i, opt) in self.options.iter().enumerate() {
+            let x = i as f64 * Self::SEG_W;
+            if i == self.selected {
+                let seg = RoundedRect::new(x, 0.0, x + Self::SEG_W, h, if i == 0 || i + 1 == n { h / 2.0 } else { 0.0 });
+                cx.scene.fill(Fill::NonZero, transform, selected_bg, None, &seg);
+            }
+            if i > 0 {
+                let div = mui_rs_renderer::vello::kurbo::Line::new((x, 0.0), (x, h));
+                cx.scene.stroke(&Stroke::new(1.0), transform, outline, None, &div);
+            }
+            let color = Color::from_rgb8(29, 25, 43);
+            let style = TextStyle::new(LABEL_FAMILY, 14.0, 500.0, color);
+            let (tw, th) = cx.measure_text(opt, style);
+            let tx = x + (Self::SEG_W - f64::from(tw)) / 2.0;
+            let ty = (h - f64::from(th)) / 2.0;
+            cx.draw_text(opt, style, transform * Affine::translate((tx, ty)));
+        }
+    }
 }

@@ -226,3 +226,88 @@ pub struct TimePicker {
 pub struct SearchBar {
     pub query: String,
 }
+
+/// Shared outlined-field footprint (Select / DatePicker / TimePicker).
+const FIELD_W: f64 = 240.0;
+const FIELD_H: f64 = 56.0;
+
+/// Draws an outlined field box + a value/label and returns nothing.
+fn outlined_field(cx: &mut DrawCx, transform: Affine, text: &str, placeholder_only: bool) {
+    let rect = RoundedRect::new(0.0, 0.0, FIELD_W, FIELD_H, 4.0);
+    cx.scene.stroke(&Stroke::new(1.0), transform, Color::from_rgb8(121, 116, 126), None, &rect);
+    let color = if placeholder_only {
+        Color::from_rgb8(73, 69, 79) // on-surface-variant
+    } else {
+        Color::from_rgb8(28, 27, 31) // on-surface
+    };
+    let style = TextStyle::new(FIELD_FAMILY, 16.0, 400.0, color);
+    let (_tw, th) = cx.measure_text(text, style);
+    cx.draw_text(text, style, transform * Affine::translate((16.0, (FIELD_H - f64::from(th)) / 2.0)));
+}
+
+impl Widget for Select {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let label = self.options.first().map_or("Select", |s| s.as_str());
+        outlined_field(cx, transform, label, self.options.is_empty());
+        // Dropdown chevron at the trailing edge.
+        let mut chevron = BezPath::new();
+        let x = FIELD_W - 28.0;
+        let y = FIELD_H / 2.0 - 3.0;
+        chevron.move_to((x, y));
+        chevron.line_to((x + 6.0, y + 6.0));
+        chevron.line_to((x + 12.0, y));
+        cx.scene.stroke(&Stroke::new(2.0), transform, Color::from_rgb8(73, 69, 79), None, &chevron);
+    }
+}
+
+impl Widget for DatePicker {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let txt = if self.date.is_empty() { "Date" } else { &self.date };
+        outlined_field(cx, transform, txt, self.date.is_empty());
+        // Calendar glyph (square + top ticks) at the trailing edge.
+        let bx = FIELD_W - 32.0;
+        let by = FIELD_H / 2.0 - 8.0;
+        let cal = RoundedRect::new(bx, by, bx + 18.0, by + 18.0, 2.0);
+        cx.scene.stroke(&Stroke::new(1.5), transform, Color::from_rgb8(73, 69, 79), None, &cal);
+        let bar = Line::new((bx, by + 5.0), (bx + 18.0, by + 5.0));
+        cx.scene.stroke(&Stroke::new(1.5), transform, Color::from_rgb8(73, 69, 79), None, &bar);
+    }
+}
+
+impl Widget for TimePicker {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let txt = if self.time.is_empty() { "Time" } else { &self.time };
+        outlined_field(cx, transform, txt, self.time.is_empty());
+        // Clock glyph (circle + hands) at the trailing edge.
+        let cxp = FIELD_W - 23.0;
+        let cyp = FIELD_H / 2.0;
+        cx.scene.stroke(&Stroke::new(1.5), transform, Color::from_rgb8(73, 69, 79), None, &Circle::new((cxp, cyp), 9.0));
+        let hand = Line::new((cxp, cyp), (cxp, cyp - 5.0));
+        cx.scene.stroke(&Stroke::new(1.5), transform, Color::from_rgb8(73, 69, 79), None, &hand);
+    }
+}
+
+impl SearchBar {
+    pub const WIDTH_DP: f64 = 360.0;
+    pub const HEIGHT_DP: f64 = 56.0;
+}
+
+impl Widget for SearchBar {
+    fn draw(&self, cx: &mut DrawCx, transform: Affine) {
+        let (w, h) = (SearchBar::WIDTH_DP, SearchBar::HEIGHT_DP);
+        let pill = RoundedRect::new(0.0, 0.0, w, h, h / 2.0);
+        cx.scene.fill(Fill::NonZero, transform, Color::from_rgb8(236, 230, 240), None, &pill); // surface-container-high
+        // Leading search glyph (circle + diagonal handle).
+        let (gx, gy) = (28.0, h / 2.0);
+        cx.scene.stroke(&Stroke::new(2.0), transform, Color::from_rgb8(73, 69, 79), None, &Circle::new((gx, gy - 1.0), 6.0));
+        let handle = Line::new((gx + 4.0, gy + 3.0), (gx + 9.0, gy + 8.0));
+        cx.scene.stroke(&Stroke::new(2.0), transform, Color::from_rgb8(73, 69, 79), None, &handle);
+        // Query text (or placeholder).
+        let placeholder = self.query.is_empty();
+        let text = if placeholder { "Search" } else { &self.query };
+        let color = if placeholder { Color::from_rgb8(73, 69, 79) } else { Color::from_rgb8(28, 27, 31) };
+        let style = TextStyle::new(FIELD_FAMILY, 16.0, 400.0, color);
+        let (_tw, th) = cx.measure_text(text, style);
+        cx.draw_text(text, style, transform * Affine::translate((52.0, (h - f64::from(th)) / 2.0)));
+    }
+}
