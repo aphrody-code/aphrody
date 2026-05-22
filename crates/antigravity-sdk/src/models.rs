@@ -335,6 +335,33 @@ impl GenerateContentResponse {
     }
 }
 
+/// Request envelope for the Cloud Code `v1internal:generateContent` method —
+/// the **modelbackend** path agy.exe uses. Wraps a standard
+/// [`GenerateContentRequest`] with the resolved Code Assist `project` and the
+/// bare `model` id.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudCodeGenerateContentRequest {
+    /// Bare Gemini model id (e.g. `gemini-2.5-flash`).
+    pub model: String,
+    /// Cloud AI Companion project bound to the account (from `loadCodeAssist`).
+    pub project: String,
+    /// The wrapped generation request (contents, systemInstruction, …).
+    pub request: GenerateContentRequest,
+}
+
+/// Response envelope for the Cloud Code `v1internal:generateContent` method.
+/// The server nests the standard [`GenerateContentResponse`] under `response`
+/// alongside `metadata` / `traceId` (ignored — structs are unknown-field
+/// tolerant).
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudCodeGenerateContentResponse {
+    /// The wrapped standard generate-content response.
+    #[serde(default)]
+    pub response: GenerateContentResponse,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

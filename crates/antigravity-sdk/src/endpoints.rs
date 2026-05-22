@@ -127,6 +127,14 @@ pub const METHOD_FETCH_AVAILABLE_MODELS: &str = "/v1internal:fetchAvailableModel
 /// `POST /v1internal:onboardUser` — onboarding / first-run provisioning.
 pub const METHOD_ONBOARD_USER: &str = "/v1internal:onboardUser";
 
+/// `POST /v1internal:generateContent` — the Cloud Code **modelbackend** path
+/// (`cloud/developer_experience/cloudcode/pa/modelbackend`) that agy.exe uses to
+/// reach Gemini/Anthropic/OpenAI. The agy OAuth token is scoped for this host;
+/// it is rejected (403 `ACCESS_TOKEN_SCOPE_INSUFFICIENT`) by the public
+/// `generativelanguage` host. Body envelope: `{ model, project, request }`;
+/// the reply wraps the standard `GenerateContentResponse` under `response`.
+pub const METHOD_GENERATE_CONTENT: &str = "/v1internal:generateContent";
+
 #[cfg(test)]
 mod tests {
     use super::*;
