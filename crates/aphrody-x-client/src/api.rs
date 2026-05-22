@@ -18,6 +18,7 @@ use serde_json::{json, Value};
 
 use crate::client::{check_api_errors, XClient, API_BASE};
 use crate::features::CREATE_TWEET_FEATURES_KNOWN_GOOD;
+use crate::parse::{self, TweetPage, UserPage};
 use crate::{Result, XError};
 
 // ---------------------------------------------------------------------------
@@ -603,20 +604,25 @@ impl XClient {
                 message: "UserByScreenName response missing data.user.result".into(),
             })?;
         let legacy = result.get("legacy").unwrap_or(&Value::Null);
+        let core = result.get("core").unwrap_or(&Value::Null);
 
         let id = result
             .get("rest_id")
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_owned();
-        let name = legacy
+        // X moved name/screen_name from legacy into a nested `core` object;
+        // prefer core, fall back to legacy.
+        let name = core
             .get("name")
             .and_then(Value::as_str)
+            .or_else(|| legacy.get("name").and_then(Value::as_str))
             .unwrap_or_default()
             .to_owned();
-        let screen_name = legacy
+        let screen_name = core
             .get("screen_name")
             .and_then(Value::as_str)
+            .or_else(|| legacy.get("screen_name").and_then(Value::as_str))
             .unwrap_or(handle)
             .to_owned();
         let followers_count = legacy.get("followers_count").and_then(Value::as_u64);
@@ -728,6 +734,301 @@ impl XClient {
         }
         check_api_errors(&json)?;
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Reading: timelines, threads, search (typed, paginated)
+    // -----------------------------------------------------------------------
+
+    /// Run a timeline-shaped GraphQL query and parse it into a [`TweetPage`].
+    async fn timeline_tweets(
+        &self,
+        op: &str,
+        variables: Value,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let json = self.graphql(op, variables, None).await?;
+        Ok(parse::walk_timeline_tweets(&json, quote_depth))
+    }
+
+    /// Run a user-list GraphQL query and parse it into a [`UserPage`].
+    async fn timeline_users(&self, op: &str, variables: Value) -> Result<UserPage> {
+        let json = self.graphql(op, variables, None).await?;
+        Ok(parse::walk_timeline_users(&json))
+    }
+
+    /// Resolve a handle (without `@`) to its numeric user id.
+    pub async fn user_id_for(&self, handle: &str) -> Result<String> {
+        let info = self.user_by_screen_name(handle).await?;
+        if info.id.is_empty() {
+            return Err(XError::Api {
+                code: -1,
+                message: format!("could not resolve user id for @{handle}"),
+            });
+        }
+        Ok(info.id)
+    }
+
+    /// Fetch a single tweet by id (with its quoted tweet up to `quote_depth`).
+    ///
+    /// Uses `TweetDetail`. Returns `None` if the tweet is not present in the
+    /// response (deleted / protected / tombstoned).
+    pub async fn get_tweet(&self, tweet_id: &str, quote_depth: u32) -> Result<Option<parse::Tweet>> {
+        let json = self.tweet_detail_raw(tweet_id, None).await?;
+        let page = parse::walk_timeline_tweets(&json, quote_depth);
+        Ok(page.tweets.into_iter().find(|t| t.id == tweet_id))
+    }
+
+    /// Fetch the full conversation thread for a tweet as a [`TweetPage`].
+    ///
+    /// Uses `TweetDetail`; replies and ancestor tweets are returned in document
+    /// order. Pass `cursor` to page deeper into long threads.
+    pub async fn thread(
+        &self,
+        tweet_id: &str,
+        cursor: Option<&str>,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let json = self.tweet_detail_raw(tweet_id, cursor).await?;
+        Ok(parse::walk_timeline_tweets(&json, quote_depth))
+    }
+
+    /// Raw `TweetDetail` GraphQL call (shared by `get_tweet` / `thread`).
+    async fn tweet_detail_raw(&self, tweet_id: &str, cursor: Option<&str>) -> Result<Value> {
+        let mut variables = json!({
+            "focalTweetId": tweet_id,
+            "with_rux_injections": false,
+            "includePromotedContent": false,
+            "withCommunity": true,
+            "withQuickPromoteEligibilityTweetFields": true,
+            "withBirdwatchNotes": true,
+            "withVoice": true,
+            "withV2Timeline": true
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.graphql("TweetDetail", variables, None).await
+    }
+
+    /// Search tweets matching `query`.
+    ///
+    /// `product` selects the search tab: `"Latest"`, `"Top"`, `"People"`,
+    /// `"Photos"`, `"Videos"` (defaults to `"Latest"`). Pass `cursor` to page.
+    pub async fn search(
+        &self,
+        query: &str,
+        count: u32,
+        cursor: Option<&str>,
+        product: &str,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let mut variables = json!({
+            "rawQuery": query,
+            "count": count,
+            "querySource": "typed_query",
+            "product": product,
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets("SearchTimeline", variables, quote_depth)
+            .await
+    }
+
+    /// Fetch a user's profile timeline by numeric user id.
+    pub async fn user_tweets(
+        &self,
+        user_id: &str,
+        count: u32,
+        cursor: Option<&str>,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let mut variables = json!({
+            "userId": user_id,
+            "count": count,
+            "includePromotedContent": false,
+            "withQuickPromoteEligibilityTweetFields": true,
+            "withVoice": true,
+            "withV2Timeline": true
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets("UserTweets", variables, quote_depth)
+            .await
+    }
+
+    /// Fetch the home timeline as a paginated [`TweetPage`].
+    ///
+    /// When `latest` is true, uses the chronological "Following" feed
+    /// (`HomeLatestTimeline`); otherwise the algorithmic "For You" feed
+    /// (`HomeTimeline`).
+    pub async fn home(
+        &self,
+        count: u32,
+        cursor: Option<&str>,
+        latest: bool,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let op = if latest {
+            "HomeLatestTimeline"
+        } else {
+            "HomeTimeline"
+        };
+        let mut variables = json!({
+            "count": count,
+            "includePromotedContent": false,
+            "latestControlAvailable": true,
+            "requestContext": "launch",
+            "seenTweetIds": []
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets(op, variables, quote_depth).await
+    }
+
+    /// Fetch a user's liked tweets by numeric user id.
+    pub async fn likes(
+        &self,
+        user_id: &str,
+        count: u32,
+        cursor: Option<&str>,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let mut variables = json!({
+            "userId": user_id,
+            "count": count,
+            "includePromotedContent": false,
+            "withClientEventToken": false,
+            "withVoice": true,
+            "withV2Timeline": true
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets("Likes", variables, quote_depth).await
+    }
+
+    /// Fetch the authenticated user's bookmarks.
+    pub async fn bookmarks(
+        &self,
+        count: u32,
+        cursor: Option<&str>,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let mut variables = json!({
+            "count": count,
+            "includePromotedContent": false
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets("Bookmarks", variables, quote_depth)
+            .await
+    }
+
+    /// List the accounts a user follows (by numeric user id).
+    pub async fn following(
+        &self,
+        user_id: &str,
+        count: u32,
+        cursor: Option<&str>,
+    ) -> Result<UserPage> {
+        let mut variables = json!({
+            "userId": user_id,
+            "count": count,
+            "includePromotedContent": false
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_users("Following", variables).await
+    }
+
+    /// List the accounts that follow a user (by numeric user id).
+    pub async fn followers(
+        &self,
+        user_id: &str,
+        count: u32,
+        cursor: Option<&str>,
+    ) -> Result<UserPage> {
+        let mut variables = json!({
+            "userId": user_id,
+            "count": count,
+            "includePromotedContent": false
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_users("Followers", variables).await
+    }
+
+    /// Fetch tweets from a list timeline (by numeric list id).
+    pub async fn list_timeline(
+        &self,
+        list_id: &str,
+        count: u32,
+        cursor: Option<&str>,
+        quote_depth: u32,
+    ) -> Result<TweetPage> {
+        let mut variables = json!({
+            "listId": list_id,
+            "count": count
+        });
+        if let Some(c) = cursor {
+            variables["cursor"] = json!(c);
+        }
+        self.timeline_tweets("ListLatestTweetsTimeline", variables, quote_depth)
+            .await
+    }
+
+    /// Resolve the authenticated account (whoami) via the `Viewer` GraphQL op.
+    ///
+    /// Returns the logged-in user the cookies belong to.
+    pub async fn whoami(&self) -> Result<UserInfo> {
+        let variables = json!({
+            "withCommunitiesMemberships": false
+        });
+        let json = self.graphql("Viewer", variables, None).await?;
+
+        // Locate the viewer's user_results.result anywhere under data.viewer.
+        let result = json
+            .pointer("/data/viewer/user_results/result")
+            .or_else(|| json.pointer("/data/viewer_v2/user_results/result"))
+            .ok_or_else(|| XError::Api {
+                code: -1,
+                message: "Viewer response missing user_results.result".into(),
+            })?;
+
+        let core = result.get("core").unwrap_or(&Value::Null);
+        let legacy = result.get("legacy").unwrap_or(&Value::Null);
+        let id = result
+            .get("rest_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+        let name = core
+            .get("name")
+            .and_then(Value::as_str)
+            .or_else(|| legacy.get("name").and_then(Value::as_str))
+            .unwrap_or_default()
+            .to_owned();
+        let screen_name = core
+            .get("screen_name")
+            .and_then(Value::as_str)
+            .or_else(|| legacy.get("screen_name").and_then(Value::as_str))
+            .unwrap_or_default()
+            .to_owned();
+
+        Ok(UserInfo {
+            id,
+            name,
+            screen_name,
+            followers_count: legacy.get("followers_count").and_then(Value::as_u64),
+            friends_count: legacy.get("friends_count").and_then(Value::as_u64),
+        })
     }
 }
 
