@@ -627,6 +627,11 @@ enum DbCmd {
         #[arg(long, default_value = "json")]
         format: String,
     },
+    /// Deterministic activity digest (top authors + most-liked tweets).
+    Digest {
+        #[arg(short = 'n', long, default_value_t = 10)]
+        top: u32,
+    },
 }
 
 /// Follow-graph queries.
@@ -1246,6 +1251,10 @@ async fn run() -> Result<()> {
                 DbCmd::Export { format } => {
                     let tweets = store.export_tweets().context("export failed")?;
                     emit_export(&tweets, &format);
+                }
+                DbCmd::Digest { top } => {
+                    let digest = store.digest(top).context("digest failed")?;
+                    output::print_json(&digest);
                 }
             }
         }

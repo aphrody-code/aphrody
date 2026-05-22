@@ -52,6 +52,15 @@ pub struct Stats {
     pub by_kind: Vec<(String, i64)>,
 }
 
+/// A deterministic activity digest over the stored data.
+#[derive(Debug, Clone, Serialize)]
+pub struct Digest {
+    /// Top authors by stored-tweet count: `(handle, count)`.
+    pub top_authors: Vec<(String, i64)>,
+    /// Most-liked stored tweets.
+    pub top_tweets: Vec<StoredTweet>,
+}
+
 /// A stored tweet row (search/export result).
 #[derive(Debug, Clone, Serialize)]
 pub struct StoredTweet {
@@ -314,6 +323,45 @@ impl Store {
             .into_iter()
             .filter_map(|s| serde_json::from_str(&s).ok())
             .collect())
+    }
+
+    /// Build a deterministic activity digest from the stored data.
+    ///
+    /// A local, LLM-free "what happened" over the archive: top authors by
+    /// stored-tweet count and the most-liked stored tweets.
+    pub fn digest(&self, top: u32) -> Result<Digest> {
+        let mut authors_stmt = self.conn.prepare(
+            "SELECT author_username, COUNT(*) AS n FROM tweets
+             WHERE author_username <> ''
+             GROUP BY author_username ORDER BY n DESC LIMIT ?1",
+        )?;
+        let top_authors = authors_stmt
+            .query_map(params![top], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        let mut top_stmt = self.conn.prepare(
+            "SELECT id, author_username, author_name, text, created_at, like_count
+             FROM tweets ORDER BY like_count DESC LIMIT ?1",
+        )?;
+        let top_tweets = top_stmt
+            .query_map(params![top], |r| {
+                Ok(StoredTweet {
+                    id: r.get(0)?,
+                    author_username: r.get(1)?,
+                    author_name: r.get(2)?,
+                    text: r.get(3)?,
+                    created_at: r.get(4)?,
+                    like_count: r.get(5)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(Digest {
+            top_authors,
+            top_tweets,
+        })
     }
 
     /// Mutual follows for `account` (in both `following` and `follower`).
