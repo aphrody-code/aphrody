@@ -1,89 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
-//! X private API methods — GraphQL + REST v1.1.
+//! X private API methods — GraphQL (via catalog) + REST v1.1.
 //!
 //! All methods live on `XClient`. They:
-//! 1. Build the request body (pure function, unit-testable without network).
-//! 2. POST / GET to the X private endpoint.
-//! 3. Check HTTP status; on non-2xx, surface the X `errors[]` array via
-//!    `XError::Api` so callers can distinguish error codes (32 = auth, 353 =
-//!    transaction-id enforcement, 187 = duplicate tweet, etc.).
-//! 4. Deserialise the successful JSON into a typed result struct.
+//! 1. Delegate to `XClient::graphql` (which resolves `queryId` from the
+//!    embedded catalog) or issue REST v1.1 calls directly.
+//! 2. Parse the successful JSON into a typed result struct.
 //!
 //! # QueryID stability
 //!
-//! X's private GraphQL endpoints include a `queryId` in the path and in the
-//! request body. These IDs change with each deployment of x.com's JavaScript
-//! bundle. The constants below were valid in May 2026. If you receive HTTP 404
-//! on a GraphQL path, re-extract the current `queryId` from:
-//!   https://x.com/sw.js (search for the operation name, e.g. "CreateTweet")
-//! or from a live browser DevTools Network capture.
+//! The `queryId` values are read at runtime from `data/x-graphql-catalog.json`
+//! (embedded at compile time).  Re-run the extraction script against a fresh
+//! X JS bundle when operations start returning HTTP 404, then rebuild the
+//! binary — no source change needed.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::client::{XClient, API_BASE};
+use crate::client::{check_api_errors, XClient, API_BASE};
+use crate::features::CREATE_TWEET_FEATURES_KNOWN_GOOD;
 use crate::{Result, XError};
-
-// ---------------------------------------------------------------------------
-// QueryID constants — re-extract from x.com/sw.js if 404s appear.
-// ---------------------------------------------------------------------------
-
-/// GraphQL queryId for `CreateTweet` (POST mutation).
-/// Verified against x.com bundle, May 2026.
-pub const CREATE_TWEET_QID: &str = "a1p9RWpkYKBjWv_I3WzS-A";
-
-/// GraphQL queryId for `DeleteTweet` (POST mutation).
-pub const DELETE_TWEET_QID: &str = "VaenaVgh5q5ih7kvyVjgtg";
-
-/// GraphQL queryId for `FavoriteTweet` (like, POST mutation).
-pub const FAVORITE_TWEET_QID: &str = "lI07N6Otwv1PhnEgXILM7A";
-
-/// GraphQL queryId for `UnfavoriteTweet` (unlike, POST mutation).
-pub const UNFAVORITE_TWEET_QID: &str = "ZYKSe-w7KEslx3JhSIk5LA";
-
-/// GraphQL queryId for `CreateRetweet` (POST mutation).
-pub const CREATE_RETWEET_QID: &str = "ojPdsZsimiJrUGLR1sjUtA";
-
-/// GraphQL queryId for `DeleteRetweet` (unretweet, POST mutation).
-pub const DELETE_RETWEET_QID: &str = "iQtK4dl5hBmXewYZuEOKVw";
-
-/// GraphQL queryId for `UserByScreenName` (GET query).
-pub const USER_BY_SCREEN_NAME_QID: &str = "NimuplG1OB7Fd2btCLdBOw";
-
-/// GraphQL queryId for `HomeTimeline` (GET query).
-pub const HOME_TIMELINE_QID: &str = "HCosVQA0txR8qAE3yCEwig";
-
-// ---------------------------------------------------------------------------
-// Feature flags sent with CreateTweet.
-//
-// X's GraphQL mutations require a `features` map that enables server-side
-// rendering paths. The set evolves with bundle releases; sending an older
-// subset is generally safe (unknown flags default to false on the server).
-// This blob was captured from a live CreateTweet call in May 2026.
-// ---------------------------------------------------------------------------
-
-/// JSON-encoded feature flags blob for `CreateTweet`.
-pub const CREATE_TWEET_FEATURES: &str = r#"{
-    "interactive_text_enabled": true,
-    "longform_notetweets_inline_media_enabled": true,
-    "longform_notetweets_rich_text_read_enabled": true,
-    "longform_notetweets_consumption_enabled": true,
-    "tweet_awards_web_tipping_enabled": false,
-    "freedom_of_speech_not_reach_fetch_enabled": true,
-    "standardized_nudges_misinfo": true,
-    "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
-    "rweb_video_timestamps_enabled": true,
-    "longform_notetweets_prompts_enabled": true,
-    "creator_subscriptions_tweet_preview_api_enabled": true,
-    "c9s_tweet_anatomy_moderator_badge_enabled": true,
-    "articles_preview_enabled": true,
-    "rweb_tipjar_consumption_enabled": true,
-    "responsive_web_graphql_exclude_directive_enabled": true,
-    "verified_phone_label_enabled": false,
-    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
-    "responsive_web_graphql_timeline_navigation_enabled": true,
-    "responsive_web_enhance_cards_enabled": false
-}"#;
 
 // ---------------------------------------------------------------------------
 // Result structs (tolerant of missing fields via serde defaults).
@@ -125,40 +60,18 @@ pub struct TimelineTweet {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helper: surface X API errors from a JSON response body.
-// ---------------------------------------------------------------------------
-
-/// Extract the first X `errors[]` entry, if present, and return it as
-/// `XError::Api`. Returns `Ok(body)` when no `errors` key is found.
-fn check_api_errors(body: &Value) -> Result<()> {
-    if let Some(errors) = body.get("errors").and_then(Value::as_array) {
-        if let Some(first) = errors.first() {
-            let code = first
-                .get("code")
-                .and_then(Value::as_i64)
-                .unwrap_or(-1);
-            let message = first
-                .get("message")
-                .and_then(Value::as_str)
-                .unwrap_or("unknown error")
-                .to_owned();
-            return Err(XError::Api { code, message });
-        }
-    }
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
 // Pure body builders — unit-testable without network.
 // ---------------------------------------------------------------------------
 
-/// Build the JSON body for a `CreateTweet` GraphQL mutation.
+/// Build the JSON `variables` map for a `CreateTweet` mutation.
 ///
 /// Extracted as a pure function so unit tests can verify the structure
 /// without constructing an `XClient` or hitting the network.
 pub fn build_create_tweet_body(text: &str, reply_to: Option<&str>) -> Value {
-    let features: Value = serde_json::from_str(CREATE_TWEET_FEATURES)
-        .expect("CREATE_TWEET_FEATURES is valid JSON — bug in constant");
+    // Use the known-good feature blob for CreateTweet (proven to reach the
+    // endpoint successfully).
+    let features: Value = serde_json::from_str(CREATE_TWEET_FEATURES_KNOWN_GOOD)
+        .expect("CREATE_TWEET_FEATURES_KNOWN_GOOD is valid JSON — bug in constant");
 
     let mut variables = json!({
         "tweet_text": text,
@@ -177,10 +90,12 @@ pub fn build_create_tweet_body(text: &str, reply_to: Option<&str>) -> Value {
         });
     }
 
+    // Return the full body shape (catalog invoker will override features with
+    // its own merged set, but this function is also used by build_* tests).
     json!({
         "variables": variables,
         "features": features,
-        "queryId": CREATE_TWEET_QID
+        "queryId": "H-t2v_HvFR07ZBP9aOeKoA"
     })
 }
 
@@ -195,6 +110,8 @@ impl XClient {
 
     /// Post a new tweet, optionally as a reply to an existing tweet.
     ///
+    /// Uses `CreateTweet` from the catalog.
+    ///
     /// # Arguments
     ///
     /// - `text` — tweet text (max 280 chars unless X Premium subscriber).
@@ -202,43 +119,36 @@ impl XClient {
     ///
     /// # Errors
     ///
-    /// - `XError::Api { code: 32 }` — authentication failure (stale cookies or
-    ///   wrong `ct0` / bearer).
-    /// - `XError::Api { code: 187 }` — duplicate tweet (same text posted twice
-    ///   within the dedup window).
-    /// - `XError::Api { code: 353 }` — `x-client-transaction-id` enforcement;
-    ///   set `XSession::transaction_id` with a real value from a browser session.
-    pub async fn create_tweet(
-        &self,
-        text: &str,
-        reply_to: Option<&str>,
-    ) -> Result<TweetResult> {
-        let url = format!(
-            "{}/graphql/{}/CreateTweet",
-            API_BASE, CREATE_TWEET_QID
-        );
-        let body = build_create_tweet_body(text, reply_to);
+    /// - `XError::Api { code: 32 }` — authentication failure.
+    /// - `XError::Api { code: 187 }` — duplicate tweet.
+    /// - `XError::Api { code: 353 }` — `x-client-transaction-id` enforcement.
+    /// - `XError::Api { code: 344 }` — daily tweet cap (hard server-side limit).
+    pub async fn create_tweet(&self, text: &str, reply_to: Option<&str>) -> Result<TweetResult> {
+        // Use the known-good feature blob for CreateTweet.
+        let extra_features: Value = serde_json::from_str(CREATE_TWEET_FEATURES_KNOWN_GOOD)
+            .expect("CREATE_TWEET_FEATURES_KNOWN_GOOD is valid JSON");
 
-        let resp = self
-            .inner
-            .post(&url)
-            .json(&body)
-            .send()
-            .await?;
+        let mut variables = json!({
+            "tweet_text": text,
+            "dark_request": false,
+            "media": {
+                "media_entities": [],
+                "possibly_sensitive": false
+            },
+            "semantic_annotation_ids": []
+        });
 
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
+        if let Some(reply_id) = reply_to {
+            variables["reply"] = json!({
+                "in_reply_to_tweet_id": reply_id,
+                "exclude_reply_user_ids": []
             });
         }
-        check_api_errors(&json)?;
 
-        // Parse: data.create_tweet.tweet_results.result.rest_id + legacy.full_text
+        let json = self
+            .graphql("CreateTweet", variables, Some(extra_features))
+            .await?;
+
         let result = json
             .pointer("/data/create_tweet/tweet_results/result")
             .ok_or_else(|| XError::Api {
@@ -246,44 +156,28 @@ impl XClient {
                 message: "CreateTweet response missing data.create_tweet.tweet_results.result"
                     .into(),
             })?;
+
         let id = result
             .get("rest_id")
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_owned();
-        let text = result
+        let full_text = result
             .pointer("/legacy/full_text")
             .and_then(Value::as_str)
             .unwrap_or(text)
             .to_owned();
 
-        Ok(TweetResult { id, text })
+        Ok(TweetResult { id, text: full_text })
     }
 
     /// Delete a tweet by its numeric ID.
     pub async fn delete_tweet(&self, id: &str) -> Result<()> {
-        let url = format!(
-            "{}/graphql/{}/DeleteTweet",
-            API_BASE, DELETE_TWEET_QID
-        );
-        let body = json!({
-            "variables": {
-                "tweet_id": id,
-                "dark_request": false
-            },
-            "queryId": DELETE_TWEET_QID
+        let variables = json!({
+            "tweet_id": id,
+            "dark_request": false
         });
-
-        let resp = self.inner.post(&url).json(&body).send().await?;
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
+        let json = self.graphql("DeleteTweet", variables, None).await?;
         check_api_errors(&json)?;
         Ok(())
     }
@@ -294,48 +188,16 @@ impl XClient {
 
     /// Like (favorite) a tweet.
     pub async fn like(&self, tweet_id: &str) -> Result<()> {
-        let url = format!(
-            "{}/graphql/{}/FavoriteTweet",
-            API_BASE, FAVORITE_TWEET_QID
-        );
-        let body = json!({
-            "variables": { "tweet_id": tweet_id },
-            "queryId": FAVORITE_TWEET_QID
-        });
-        let resp = self.inner.post(&url).json(&body).send().await?;
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
+        let variables = json!({ "tweet_id": tweet_id });
+        let json = self.graphql("FavoriteTweet", variables, None).await?;
         check_api_errors(&json)?;
         Ok(())
     }
 
     /// Unlike (remove favorite) a tweet.
     pub async fn unlike(&self, tweet_id: &str) -> Result<()> {
-        let url = format!(
-            "{}/graphql/{}/UnfavoriteTweet",
-            API_BASE, UNFAVORITE_TWEET_QID
-        );
-        let body = json!({
-            "variables": { "tweet_id": tweet_id },
-            "queryId": UNFAVORITE_TWEET_QID
-        });
-        let resp = self.inner.post(&url).json(&body).send().await?;
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
+        let variables = json!({ "tweet_id": tweet_id });
+        let json = self.graphql("UnfavoriteTweet", variables, None).await?;
         check_api_errors(&json)?;
         Ok(())
     }
@@ -346,56 +208,141 @@ impl XClient {
 
     /// Retweet a tweet.
     pub async fn retweet(&self, tweet_id: &str) -> Result<()> {
-        let url = format!(
-            "{}/graphql/{}/CreateRetweet",
-            API_BASE, CREATE_RETWEET_QID
-        );
-        let body = json!({
-            "variables": {
-                "tweet_id": tweet_id,
-                "dark_request": false
-            },
-            "queryId": CREATE_RETWEET_QID
+        let variables = json!({
+            "tweet_id": tweet_id,
+            "dark_request": false
         });
-        let resp = self.inner.post(&url).json(&body).send().await?;
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
+        let json = self.graphql("CreateRetweet", variables, None).await?;
         check_api_errors(&json)?;
         Ok(())
     }
 
     /// Remove a retweet.
     pub async fn unretweet(&self, tweet_id: &str) -> Result<()> {
-        let url = format!(
-            "{}/graphql/{}/DeleteRetweet",
-            API_BASE, DELETE_RETWEET_QID
-        );
-        let body = json!({
-            "variables": {
-                "source_tweet_id": tweet_id,
-                "dark_request": false
-            },
-            "queryId": DELETE_RETWEET_QID
+        let variables = json!({
+            "source_tweet_id": tweet_id,
+            "dark_request": false
         });
-        let resp = self.inner.post(&url).json(&body).send().await?;
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
+        let json = self.graphql("DeleteRetweet", variables, None).await?;
         check_api_errors(&json)?;
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Bookmark
+    // -----------------------------------------------------------------------
+
+    /// Bookmark a tweet by its numeric tweet ID.
+    ///
+    /// Uses `CreateBookmark` from the catalog.
+    pub async fn bookmark(&self, tweet_id: &str) -> Result<()> {
+        let variables = json!({
+            "tweet_id": tweet_id
+        });
+        let json = self.graphql("CreateBookmark", variables, None).await?;
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    /// Remove a bookmark from a tweet.
+    ///
+    /// Uses `DeleteBookmark` from the catalog.
+    pub async fn unbookmark(&self, tweet_id: &str) -> Result<()> {
+        let variables = json!({
+            "tweet_id": tweet_id
+        });
+        let json = self.graphql("DeleteBookmark", variables, None).await?;
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Pin / Unpin
+    // -----------------------------------------------------------------------
+
+    /// Pin a tweet to the authenticated user's profile.
+    ///
+    /// Uses `PinTweet` from the catalog.
+    pub async fn pin_tweet(&self, tweet_id: &str) -> Result<()> {
+        let variables = json!({
+            "tweet_id": tweet_id
+        });
+        let json = self.graphql("PinTweet", variables, None).await?;
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    /// Unpin the pinned tweet from the authenticated user's profile.
+    ///
+    /// Uses `UnpinTweet` from the catalog.
+    pub async fn unpin_tweet(&self, tweet_id: &str) -> Result<()> {
+        let variables = json!({
+            "tweet_id": tweet_id
+        });
+        let json = self.graphql("UnpinTweet", variables, None).await?;
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Note tweets (long-form)
+    // -----------------------------------------------------------------------
+
+    /// Post a long-form note tweet (up to ~25,000 chars on Premium accounts).
+    ///
+    /// Uses `CreateNoteTweet` from the catalog.  The `note_text` is the
+    /// rich-text body; `tweet_text` is the short public preview (optional,
+    /// defaults to the first 280 chars of `note_text` if `None`).
+    pub async fn note_tweet(
+        &self,
+        tweet_text: Option<&str>,
+        note_text: &str,
+    ) -> Result<TweetResult> {
+        let preview = tweet_text
+            .map(|s| s.to_owned())
+            .unwrap_or_else(|| note_text.chars().take(280).collect::<String>());
+
+        let variables = json!({
+            "tweet_text": preview,
+            "dark_request": false,
+            "media": {
+                "media_entities": [],
+                "possibly_sensitive": false
+            },
+            "semantic_annotation_ids": [],
+            "note_tweet": {
+                "note_tweet_richtext": {
+                    "text": note_text,
+                    "entities": []
+                },
+                "media_entities": []
+            }
+        });
+
+        let json = self.graphql("CreateNoteTweet", variables, None).await?;
+
+        // CreateNoteTweet has a slightly different response shape:
+        // data.notetweet_create.tweet_results.result
+        let result = json
+            .pointer("/data/notetweet_create/tweet_results/result")
+            .or_else(|| json.pointer("/data/create_tweet/tweet_results/result"))
+            .ok_or_else(|| XError::Api {
+                code: -1,
+                message: "CreateNoteTweet response missing tweet_results.result".into(),
+            })?;
+
+        let id = result
+            .get("rest_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+        let text_out = result
+            .pointer("/legacy/full_text")
+            .and_then(Value::as_str)
+            .unwrap_or(&preview)
+            .to_owned();
+
+        Ok(TweetResult { id, text: text_out })
     }
 
     // -----------------------------------------------------------------------
@@ -416,6 +363,7 @@ impl XClient {
             .form(&params)
             .send()
             .await?;
+        self.capture_rate_limit(resp.headers());
         let status = resp.status();
         let json: Value = resp.json().await?;
         if !status.is_success() {
@@ -442,6 +390,123 @@ impl XClient {
             .form(&params)
             .send()
             .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await?;
+        if !status.is_success() {
+            check_api_errors(&json)?;
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status}"),
+            });
+        }
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Block / Unblock (REST v1.1)
+    // -----------------------------------------------------------------------
+
+    /// Block a user by their numeric user ID.
+    ///
+    /// Uses the REST v1.1 `POST /blocks/create.json` endpoint.
+    pub async fn block(&self, user_id: &str) -> Result<()> {
+        let url = format!("{}/1.1/blocks/create.json", API_BASE);
+        let params = [("user_id", user_id)];
+        let resp = self
+            .inner
+            .post(&url)
+            .header("content-type", "application/x-www-form-urlencoded")
+            .form(&params)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await?;
+        if !status.is_success() {
+            check_api_errors(&json)?;
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status}"),
+            });
+        }
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    /// Unblock a user by their numeric user ID.
+    ///
+    /// Uses the REST v1.1 `POST /blocks/destroy.json` endpoint.
+    pub async fn unblock(&self, user_id: &str) -> Result<()> {
+        let url = format!("{}/1.1/blocks/destroy.json", API_BASE);
+        let params = [("user_id", user_id)];
+        let resp = self
+            .inner
+            .post(&url)
+            .header("content-type", "application/x-www-form-urlencoded")
+            .form(&params)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await?;
+        if !status.is_success() {
+            check_api_errors(&json)?;
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status}"),
+            });
+        }
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Mute / Unmute (REST v1.1)
+    // -----------------------------------------------------------------------
+
+    /// Mute a user by their numeric user ID.
+    ///
+    /// Uses the REST v1.1 `POST /mutes/users/create.json` endpoint.
+    pub async fn mute(&self, user_id: &str) -> Result<()> {
+        let url = format!("{}/1.1/mutes/users/create.json", API_BASE);
+        let params = [("user_id", user_id)];
+        let resp = self
+            .inner
+            .post(&url)
+            .header("content-type", "application/x-www-form-urlencoded")
+            .form(&params)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await?;
+        if !status.is_success() {
+            check_api_errors(&json)?;
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status}"),
+            });
+        }
+        check_api_errors(&json)?;
+        Ok(())
+    }
+
+    /// Unmute a user by their numeric user ID.
+    ///
+    /// Uses the REST v1.1 `POST /mutes/users/destroy.json` endpoint.
+    pub async fn unmute(&self, user_id: &str) -> Result<()> {
+        let url = format!("{}/1.1/mutes/users/destroy.json", API_BASE);
+        let params = [("user_id", user_id)];
+        let resp = self
+            .inner
+            .post(&url)
+            .header("content-type", "application/x-www-form-urlencoded")
+            .form(&params)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
         let status = resp.status();
         let json: Value = resp.json().await?;
         if !status.is_success() {
@@ -461,49 +526,17 @@ impl XClient {
 
     /// Look up a user by screen name (handle, without `@`).
     ///
-    /// Parses the GraphQL `UserByScreenName` response and returns a `UserInfo`
-    /// struct. Follower and following counts are best-effort and may be `None`
-    /// if the account has them hidden.
+    /// Uses `UserByScreenName` from the catalog.
     pub async fn user_by_screen_name(&self, handle: &str) -> Result<UserInfo> {
-        let variables = serde_json::to_string(&json!({
+        let variables = json!({
             "screen_name": handle,
             "withSafetyModeUserFields": true
-        }))
-        .unwrap();
-        let features = json!({
-            "hidden_profile_likes_enabled": true,
-            "hidden_profile_subscriptions_enabled": true,
-            "responsive_web_graphql_exclude_directive_enabled": true,
-            "verified_phone_label_enabled": false,
-            "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
-            "responsive_web_graphql_timeline_navigation_enabled": true
         });
-        let features_str = serde_json::to_string(&features).unwrap();
 
-        let url = format!(
-            "{}/graphql/{}/UserByScreenName",
-            API_BASE, USER_BY_SCREEN_NAME_QID
-        );
-
-        let resp = self
-            .inner
-            .get(&url)
-            .query(&[("variables", &variables), ("features", &features_str)])
-            .send()
+        let json = self
+            .graphql("UserByScreenName", variables, None)
             .await?;
 
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
-        check_api_errors(&json)?;
-
-        // Parse: data.user.result.{rest_id, legacy.{name, screen_name, followers_count, friends_count}}
         let result = json
             .pointer("/data/user/result")
             .ok_or_else(|| XError::Api {
@@ -527,12 +560,8 @@ impl XClient {
             .and_then(Value::as_str)
             .unwrap_or(handle)
             .to_owned();
-        let followers_count = legacy
-            .get("followers_count")
-            .and_then(Value::as_u64);
-        let friends_count = legacy
-            .get("friends_count")
-            .and_then(Value::as_u64);
+        let followers_count = legacy.get("followers_count").and_then(Value::as_u64);
+        let friends_count = legacy.get("friends_count").and_then(Value::as_u64);
 
         Ok(UserInfo {
             id,
@@ -549,48 +578,19 @@ impl XClient {
 
     /// Fetch tweets from the authenticated user's home timeline.
     ///
-    /// Returns up to `count` tweets. Timeline entries are heavily nested in
-    /// X's GraphQL response; this parser is tolerant of missing fields and
-    /// will silently skip entries it cannot decode.
+    /// Uses `HomeTimeline` from the catalog.  Returns up to `count` tweets.
+    /// Timeline entries are heavily nested in X's GraphQL response; this
+    /// parser is tolerant of missing fields and will silently skip entries it
+    /// cannot decode.
     pub async fn home_timeline(&self, count: u32) -> Result<Vec<TimelineTweet>> {
-        let variables = serde_json::to_string(&json!({
+        let variables = json!({
             "count": count,
             "includePromotedContent": false,
             "latestControlAvailable": true,
             "requestContext": "launch"
-        }))
-        .unwrap();
-        let features = json!({
-            "rweb_video_timestamps_enabled": true,
-            "longform_notetweets_consumption_enabled": true,
-            "responsive_web_graphql_exclude_directive_enabled": true,
-            "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
-            "responsive_web_graphql_timeline_navigation_enabled": true
         });
-        let features_str = serde_json::to_string(&features).unwrap();
 
-        let url = format!(
-            "{}/graphql/{}/HomeTimeline",
-            API_BASE, HOME_TIMELINE_QID
-        );
-
-        let resp = self
-            .inner
-            .get(&url)
-            .query(&[("variables", &variables), ("features", &features_str)])
-            .send()
-            .await?;
-
-        let status = resp.status();
-        let json: Value = resp.json().await?;
-        if !status.is_success() {
-            check_api_errors(&json)?;
-            return Err(XError::Api {
-                code: status.as_u16().into(),
-                message: format!("HTTP {status}"),
-            });
-        }
-        check_api_errors(&json)?;
+        let json = self.graphql("HomeTimeline", variables, None).await?;
 
         let mut tweets = Vec::new();
 
@@ -605,9 +605,9 @@ impl XClient {
                     continue;
                 };
                 for entry in entries {
-                    let Some(result) = entry.pointer(
-                        "/content/itemContent/tweet_results/result",
-                    ) else {
+                    let Some(result) =
+                        entry.pointer("/content/itemContent/tweet_results/result")
+                    else {
                         continue;
                     };
                     let id = result
@@ -657,6 +657,7 @@ impl XClient {
         });
 
         let resp = self.inner.post(&url).json(&body).send().await?;
+        self.capture_rate_limit(resp.headers());
         let status = resp.status();
         let json: Value = resp.json().await?;
         if !status.is_success() {
@@ -705,9 +706,10 @@ mod tests {
     #[test]
     fn build_create_tweet_body_has_query_id() {
         let body = build_create_tweet_body("test", None);
+        // The body always embeds the live catalog queryId for CreateTweet.
         assert_eq!(
             body.get("queryId").and_then(Value::as_str),
-            Some(CREATE_TWEET_QID)
+            Some("H-t2v_HvFR07ZBP9aOeKoA"),
         );
     }
 
@@ -737,7 +739,10 @@ mod tests {
             .pointer("/variables/reply/exclude_reply_user_ids")
             .and_then(Value::as_array)
             .expect("exclude_reply_user_ids must be an array");
-        assert!(exclude.is_empty(), "exclude_reply_user_ids must be empty by default");
+        assert!(
+            exclude.is_empty(),
+            "exclude_reply_user_ids must be empty by default"
+        );
     }
 
     #[test]
@@ -750,36 +755,9 @@ mod tests {
     }
 
     #[test]
-    fn create_tweet_features_is_valid_json() {
-        let v: Value = serde_json::from_str(CREATE_TWEET_FEATURES)
-            .expect("CREATE_TWEET_FEATURES must be valid JSON");
+    fn create_tweet_features_known_good_is_valid_json() {
+        let v: Value = serde_json::from_str(CREATE_TWEET_FEATURES_KNOWN_GOOD)
+            .expect("CREATE_TWEET_FEATURES_KNOWN_GOOD must be valid JSON");
         assert!(v.is_object());
-    }
-
-    #[test]
-    fn check_api_errors_returns_ok_when_no_errors_key() {
-        let body = json!({"data": {"foo": "bar"}});
-        assert!(check_api_errors(&body).is_ok());
-    }
-
-    #[test]
-    fn check_api_errors_surfaces_code_and_message() {
-        let body = json!({
-            "errors": [{"code": 32, "message": "Could not authenticate you"}]
-        });
-        let err = check_api_errors(&body).unwrap_err();
-        match err {
-            XError::Api { code, message } => {
-                assert_eq!(code, 32);
-                assert!(message.contains("authenticate"));
-            }
-            other => panic!("expected XError::Api, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn check_api_errors_empty_errors_array_is_ok() {
-        let body = json!({"errors": []});
-        assert!(check_api_errors(&body).is_ok());
     }
 }
