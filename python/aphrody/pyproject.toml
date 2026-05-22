@@ -52,6 +52,10 @@ icons = ["aphrody[images]", "resvg-py>=0.3", "scour>=0.38", "pyconify>=0.2"]
 # depth) via transformers + torch (CPU-capable, heavy).
 to3d = ["aphrody[images]", "trimesh>=4.4", "numpy>=1.26", "scipy>=1.11"]
 depth = ["aphrody[to3d]", "transformers>=4.44", "torch>=2.2"]
+# `aphrody.antigravity_bridge`: run the google-antigravity SDK (Agent /
+# Conversation) against aphrody's keyless Vertex backend — no local Go harness
+# and no API key. The SDK is a workspace member, so this resolves locally.
+antigravity = ["google-antigravity>=0.1.1"]
 dev = ["pytest>=8.0", "pytest-httpx>=0.35"]
 
 [project.scripts]
