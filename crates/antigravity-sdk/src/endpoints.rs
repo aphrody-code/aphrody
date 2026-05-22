@@ -50,6 +50,29 @@ pub const GEMINI_API_HOST: &str = "https://generativelanguage.googleapis.com";
 /// Vertex AI host (publishers/google + publishers/anthropic models).
 pub const VERTEX_AI_HOST: &str = "https://aiplatform.googleapis.com";
 
+/// Default Vertex project bound to the Antigravity account (mirrors the Python
+/// `aphrody.vertex.DEFAULT_VERTEX_PROJECT`). Override via `APHRODY_VERTEX_PROJECT`
+/// or `GOOGLE_CLOUD_PROJECT`.
+pub const DEFAULT_VERTEX_PROJECT: &str = "rgfr-8927d";
+
+/// Default Vertex region (mirrors the Python `DEFAULT_VERTEX_LOCATION`).
+/// Override via `APHRODY_VERTEX_LOCATION`.
+pub const DEFAULT_VERTEX_LOCATION: &str = "us-central1";
+
+/// Build the regional Vertex AI `generateContent` URL for a Google publisher
+/// model.
+///
+/// The agy OAuth token is accepted at this regional Vertex endpoint, unlike the
+/// public `generativelanguage.googleapis.com` host which rejects it with
+/// `401 ACCESS_TOKEN_TYPE_UNSUPPORTED`. This mirrors the working Python keyless
+/// path (`google-genai` with `vertexai=True`).
+#[must_use]
+pub fn vertex_generate_content_url(project: &str, location: &str, model: &str) -> String {
+    format!(
+        "https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent"
+    )
+}
+
 /// Cloud Code "Private API" host. The desktop client defaults its runtime to
 /// [`Daily`](CloudCodeEndpoint::Daily) but ships [`Prod`](CloudCodeEndpoint::Prod)
 /// as the stable surface.
