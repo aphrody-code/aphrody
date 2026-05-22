@@ -35,6 +35,14 @@ clap        = { version = "4", features = ["derive", "env"] }
 dirs        = { version = "6" }
 # rustls CryptoProvider (ring) — must call install_default() once before Client.
 rustls      = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+# Random UUIDs / transaction-ids for human-looking stealth headers.
+uuid        = { version = "1", features = ["v4", "fast-rng"] }
+# Regex for runtime queryId extraction from X's JS bundles.
+regex       = { version = "1" }
+# Local-first config files (bird-compatible JSON5).
+json5       = { version = "0.4" }
+# Timestamps for the local store and JSONL backups.
+time        = { version = "0.3", features = ["formatting", "parsing", "macros"] }
 
 [dev-dependencies]
 tokio       = { version = "1.52", features = ["full"] }

@@ -30,7 +30,7 @@
 //! you need the real value, set `XSession::transaction_id` and it will be
 //! forwarded as-is. If X returns error code 353, that is the signal.
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -38,6 +38,7 @@ use serde_json::Value;
 
 use crate::catalog::{self, OpType};
 use crate::features;
+use crate::runtime_query_ids::QueryIdStore;
 use crate::session::XSession;
 use crate::{Result, XError};
 
@@ -61,15 +62,19 @@ pub const CHROME_UA: &str =
      AppleWebKit/537.36 (KHTML, like Gecko) \
      Chrome/124.0.0.0 Safari/537.36";
 
-/// Static placeholder for `x-client-transaction-id`.
-///
-/// Most accounts accept this placeholder. If you receive API error code 353,
-/// set `XSession::transaction_id` to a real value extracted from a browser
-/// DevTools session (Network tab → CreateTweet request → x-client-transaction-id).
-const TRANSACTION_ID_PLACEHOLDER: &str = "placeholder-see-session-transaction-id";
-
 /// Base URL prefix for all X private API calls.
 pub const API_BASE: &str = "https://x.com/i/api";
+
+/// Generate a random `x-client-transaction-id` value.
+///
+/// The real X web client derives this from an animation SVG plus a verification
+/// key embedded in the page. Empirically X accepts an opaque random hex value
+/// (the reference `@steipete/bird` client simply sends 16 random bytes), so we
+/// send 32 lowercase hex chars unless the caller pinned a real value on the
+/// session. A fresh value per request mirrors genuine browser traffic.
+pub(crate) fn random_transaction_id() -> String {
+    uuid::Uuid::new_v4().simple().to_string()
+}
 
 // ---------------------------------------------------------------------------
 // Rate-limit snapshot
@@ -104,6 +109,12 @@ pub struct RateLimit {
 pub struct XClient {
     pub(crate) inner: reqwest::Client,
     pub(crate) session: XSession,
+    /// Stable per-client UUID (`x-client-uuid`), generated once at construction.
+    client_uuid: String,
+    /// Stable per-client device id (`x-twitter-client-deviceid`).
+    client_device_id: String,
+    /// Disk-backed runtime queryId cache, shared across clones.
+    query_ids: Arc<QueryIdStore>,
     /// Most recent rate-limit snapshot captured from response headers.
     last_rate_limit: Mutex<Option<RateLimit>>,
 }
@@ -113,6 +124,9 @@ impl Clone for XClient {
         Self {
             inner: self.inner.clone(),
             session: self.session.clone(),
+            client_uuid: self.client_uuid.clone(),
+            client_device_id: self.client_device_id.clone(),
+            query_ids: Arc::clone(&self.query_ids),
             last_rate_limit: Mutex::new(
                 *self.last_rate_limit.lock().unwrap_or_else(|e| e.into_inner()),
             ),
@@ -139,7 +153,10 @@ impl XClient {
         // because another crate may have already installed one.
         let _ = rustls::crypto::ring::default_provider().install_default();
 
-        let headers = auth_headers(&session);
+        let client_uuid = uuid::Uuid::new_v4().to_string();
+        let client_device_id = uuid::Uuid::new_v4().to_string();
+
+        let headers = auth_headers(&session, &client_uuid, &client_device_id);
 
         let inner = reqwest::Client::builder()
             .user_agent(CHROME_UA)
@@ -151,8 +168,33 @@ impl XClient {
         Ok(Self {
             inner,
             session,
+            client_uuid,
+            client_device_id,
+            query_ids: Arc::new(QueryIdStore::default()),
             last_rate_limit: Mutex::new(None),
         })
+    }
+
+    /// Returns the shared runtime queryId store.
+    pub fn query_ids(&self) -> &Arc<QueryIdStore> {
+        &self.query_ids
+    }
+
+    /// Resolve the live `queryId` for an operation: runtime cache first, then
+    /// the embedded catalog snapshot.
+    fn resolve_query_id(&self, op_name: &str, catalog_qid: &str) -> String {
+        self.query_ids
+            .get(op_name)
+            .unwrap_or_else(|| catalog_qid.to_owned())
+    }
+
+    /// Per-request `x-client-transaction-id`: a pinned session value if set,
+    /// otherwise a fresh random one (browser-like rotation).
+    fn transaction_id(&self) -> String {
+        self.session
+            .transaction_id
+            .clone()
+            .unwrap_or_else(random_transaction_id)
     }
 
     /// Returns the underlying `reqwest::Client` for ad-hoc requests.
@@ -204,26 +246,57 @@ impl XClient {
         let op = catalog::operation(op_name)
             .ok_or_else(|| XError::UnknownOperation(op_name.to_owned()))?;
 
-        let url = format!("{}/graphql/{}/{}", API_BASE, op.query_id, op_name);
-
         // Build feature flags: catalog-derived base, then merge caller overrides.
         let mut feat = features::features_for(op);
-        if let Some(extra) = extra_features {
-            if let (Some(base_obj), Some(extra_obj)) =
-                (feat.as_object_mut(), extra.as_object())
-            {
-                for (k, v) in extra_obj {
-                    base_obj.insert(k.clone(), v.clone());
-                }
+        if let Some(extra) = extra_features
+            && let (Some(base_obj), Some(extra_obj)) = (feat.as_object_mut(), extra.as_object())
+        {
+            for (k, v) in extra_obj {
+                base_obj.insert(k.clone(), v.clone());
             }
         }
 
-        let resp = match op.op_type {
+        // First attempt with the currently-resolved queryId (runtime cache, else
+        // embedded catalog).
+        let query_id = self.resolve_query_id(op_name, &op.query_id);
+        let first = self
+            .graphql_send(op_name, op.op_type, &query_id, &feat, &variables)
+            .await;
+
+        // Auto-recovery: an invalid queryId surfaces as HTTP 404. Refresh the
+        // live mapping once and retry, exactly like the reference client.
+        match first {
+            Err(XError::Api { code: 404, .. }) => {
+                let _ = self.query_ids.refresh(&[op_name], true).await;
+                let retry_qid = self.resolve_query_id(op_name, &op.query_id);
+                self.graphql_send(op_name, op.op_type, &retry_qid, &feat, &variables)
+                    .await
+            }
+            other => other,
+        }
+    }
+
+    /// Single GraphQL round-trip with an explicit `query_id`. HTTP 404 (invalid
+    /// queryId) is mapped to `XError::Api { code: 404, .. }` so the caller can
+    /// trigger a queryId refresh + retry.
+    async fn graphql_send(
+        &self,
+        op_name: &str,
+        op_type: OpType,
+        query_id: &str,
+        feat: &Value,
+        variables: &Value,
+    ) -> Result<Value> {
+        let url = format!("{API_BASE}/graphql/{query_id}/{op_name}");
+        let txn = self.transaction_id();
+
+        let resp = match op_type {
             OpType::Query => {
-                let vars_str = serde_json::to_string(&variables)?;
-                let feat_str = serde_json::to_string(&feat)?;
+                let vars_str = serde_json::to_string(variables)?;
+                let feat_str = serde_json::to_string(feat)?;
                 self.inner
                     .get(&url)
+                    .header("x-client-transaction-id", &txn)
                     .query(&[("variables", &vars_str), ("features", &feat_str)])
                     .send()
                     .await?
@@ -232,9 +305,14 @@ impl XClient {
                 let body = serde_json::json!({
                     "variables": variables,
                     "features": feat,
-                    "queryId": op.query_id,
+                    "queryId": query_id,
                 });
-                self.inner.post(&url).json(&body).send().await?
+                self.inner
+                    .post(&url)
+                    .header("x-client-transaction-id", &txn)
+                    .json(&body)
+                    .send()
+                    .await?
             }
         };
 
@@ -242,10 +320,13 @@ impl XClient {
         self.capture_rate_limit(resp.headers());
 
         let status = resp.status();
-        let json: Value = resp.json().await?;
+        let json: Value = resp.json().await.unwrap_or(Value::Null);
 
         if !status.is_success() {
-            check_api_errors(&json)?;
+            // Surface structured errors first (they carry the real X code).
+            if json.is_object() {
+                check_api_errors(&json)?;
+            }
             return Err(XError::Api {
                 code: status.as_u16().into(),
                 message: format!("HTTP {status}"),
@@ -278,25 +359,25 @@ impl XClient {
         max_wait: Duration,
     ) -> Result<Value> {
         // Check whether we already know we are rate-limited.
-        if let Some(rl) = self.last_rate_limit() {
-            if rl.remaining == 0 {
-                let now_epoch = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_secs() as i64)
-                    .unwrap_or(0);
+        if let Some(rl) = self.last_rate_limit()
+            && rl.remaining == 0
+        {
+            let now_epoch = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
 
-                let wait_secs = (rl.reset_epoch - now_epoch).max(0) as u64;
-                let wait = Duration::from_secs(wait_secs);
+            let wait_secs = (rl.reset_epoch - now_epoch).max(0) as u64;
+            let wait = Duration::from_secs(wait_secs);
 
-                if wait > max_wait {
-                    return Err(XError::RateLimited {
-                        reset_epoch: rl.reset_epoch,
-                    });
-                }
+            if wait > max_wait {
+                return Err(XError::RateLimited {
+                    reset_epoch: rl.reset_epoch,
+                });
+            }
 
-                if wait > Duration::ZERO {
-                    tokio::time::sleep(wait).await;
-                }
+            if wait > Duration::ZERO {
+                tokio::time::sleep(wait).await;
             }
         }
 
@@ -346,7 +427,17 @@ impl XClient {
 /// - `X-Twitter-Auth-Type`, `X-Twitter-Active-User`, language headers
 ///   convince X's server-side checks that the request originates from a
 ///   normal browser session.
-pub(crate) fn auth_headers(session: &XSession) -> HeaderMap {
+/// - `X-Client-Uuid` / `X-Twitter-Client-Deviceid` — stable per-session
+///   identifiers the real web client sends; included to look human.
+///
+/// `client_uuid` / `client_device_id` are generated once per [`XClient`] and
+/// kept stable for its lifetime (matching genuine browser behaviour). The
+/// per-request `x-client-transaction-id` is set on each call, not here.
+pub(crate) fn auth_headers(
+    session: &XSession,
+    client_uuid: &str,
+    client_device_id: &str,
+) -> HeaderMap {
     let mut map = HeaderMap::new();
 
     let insert = |map: &mut HeaderMap, k: &'static str, v: &str| {
@@ -385,13 +476,17 @@ pub(crate) fn auth_headers(session: &XSession) -> HeaderMap {
     insert(&mut map, "origin", "https://x.com");
     insert(&mut map, "referer", "https://x.com/");
 
-    // Transaction-ID: use the session-provided value if present, otherwise
-    // the static placeholder. If X returns error 353, override via session.
+    // Browser-like client identifiers (stable per session).
+    insert(&mut map, "x-client-uuid", client_uuid);
+    insert(&mut map, "x-twitter-client-deviceid", client_device_id);
+
+    // Default transaction-id: session-pinned value if present, else a random
+    // one. Per-request calls override this header with a fresh value.
     let txn_id = session
         .transaction_id
-        .as_deref()
-        .unwrap_or(TRANSACTION_ID_PLACEHOLDER);
-    insert(&mut map, "x-client-transaction-id", txn_id);
+        .clone()
+        .unwrap_or_else(random_transaction_id);
+    insert(&mut map, "x-client-transaction-id", &txn_id);
 
     map
 }
@@ -403,19 +498,16 @@ pub(crate) fn auth_headers(session: &XSession) -> HeaderMap {
 /// Extract the first X `errors[]` entry, if present, and return it as
 /// `XError::Api`. Returns `Ok(())` when no `errors` key is found.
 pub(crate) fn check_api_errors(body: &Value) -> Result<()> {
-    if let Some(errors) = body.get("errors").and_then(Value::as_array) {
-        if let Some(first) = errors.first() {
-            let code = first
-                .get("code")
-                .and_then(Value::as_i64)
-                .unwrap_or(-1);
-            let message = first
-                .get("message")
-                .and_then(Value::as_str)
-                .unwrap_or("unknown error")
-                .to_owned();
-            return Err(XError::Api { code, message });
-        }
+    if let Some(errors) = body.get("errors").and_then(Value::as_array)
+        && let Some(first) = errors.first()
+    {
+        let code = first.get("code").and_then(Value::as_i64).unwrap_or(-1);
+        let message = first
+            .get("message")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown error")
+            .to_owned();
+        return Err(XError::Api { code, message });
     }
     Ok(())
 }
@@ -432,10 +524,15 @@ mod tests {
         XSession::new("AUTH_TOKEN_PLACEHOLDER", "CT0_PLACEHOLDER")
     }
 
+    /// Build headers with deterministic client ids for assertions.
+    fn headers_for(session: &XSession) -> HeaderMap {
+        auth_headers(session, "test-uuid", "test-device")
+    }
+
     #[test]
     fn auth_headers_contains_bearer() {
         let session = make_session();
-        let headers = auth_headers(&session);
+        let headers = headers_for(&session);
         let auth = headers
             .get("authorization")
             .expect("authorization header missing")
@@ -451,7 +548,7 @@ mod tests {
     #[test]
     fn auth_headers_csrf_token_equals_ct0() {
         let session = make_session();
-        let headers = auth_headers(&session);
+        let headers = headers_for(&session);
         let csrf = headers
             .get("x-csrf-token")
             .expect("x-csrf-token header missing")
@@ -463,7 +560,7 @@ mod tests {
     #[test]
     fn auth_headers_cookie_contains_auth_token() {
         let session = make_session();
-        let headers = auth_headers(&session);
+        let headers = headers_for(&session);
         let cookie = headers
             .get("cookie")
             .expect("cookie header missing")
@@ -483,7 +580,7 @@ mod tests {
     fn auth_headers_uses_session_transaction_id_when_set() {
         let mut session = make_session();
         session.transaction_id = Some("custom-txn-id".into());
-        let headers = auth_headers(&session);
+        let headers = headers_for(&session);
         let txn = headers
             .get("x-client-transaction-id")
             .expect("x-client-transaction-id missing")
@@ -493,15 +590,42 @@ mod tests {
     }
 
     #[test]
-    fn auth_headers_falls_back_to_placeholder_transaction_id() {
+    fn auth_headers_random_transaction_id_is_32_hex() {
         let session = make_session();
-        let headers = auth_headers(&session);
+        let headers = headers_for(&session);
         let txn = headers
             .get("x-client-transaction-id")
             .expect("x-client-transaction-id missing")
             .to_str()
             .unwrap();
-        assert_eq!(txn, TRANSACTION_ID_PLACEHOLDER);
+        assert_eq!(txn.len(), 32, "random transaction id is a 32-char hex string");
+        assert!(
+            txn.bytes().all(|b| b.is_ascii_hexdigit()),
+            "transaction id must be hex"
+        );
+    }
+
+    #[test]
+    fn auth_headers_includes_client_ids() {
+        let session = make_session();
+        let headers = headers_for(&session);
+        assert_eq!(
+            headers.get("x-client-uuid").unwrap().to_str().unwrap(),
+            "test-uuid"
+        );
+        assert_eq!(
+            headers
+                .get("x-twitter-client-deviceid")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "test-device"
+        );
+    }
+
+    #[test]
+    fn random_transaction_id_is_unique() {
+        assert_ne!(random_transaction_id(), random_transaction_id());
     }
 
     #[test]

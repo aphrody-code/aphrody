@@ -265,6 +265,21 @@ enum Op {
         #[arg(long, default_value = "twitter")]
         handle: String,
     },
+
+    // -----------------------------------------------------------------------
+    // Runtime queryId cache
+    // -----------------------------------------------------------------------
+    /// Inspect or refresh the runtime GraphQL queryId cache.
+    ///
+    /// X rotates queryIds whenever it ships a new web bundle. This command
+    /// scrapes the live values straight from X's public bundles and caches
+    /// them on disk so the client survives rotations without a recompile.
+    #[command(name = "query-ids")]
+    QueryIds {
+        /// Force a fresh scrape of X's web bundles and overwrite the cache.
+        #[arg(long)]
+        refresh: bool,
+    },
 }
 
 #[tokio::main]
@@ -464,10 +479,10 @@ async fn main() -> Result<()> {
 
             let mut count = 0usize;
             for op in ops {
-                if let Some(ref f) = filter_lower {
-                    if !op.name.to_lowercase().contains(f.as_str()) {
-                        continue;
-                    }
+                if let Some(ref f) = filter_lower
+                    && !op.name.to_lowercase().contains(f.as_str())
+                {
+                    continue;
                 }
                 println!(
                     "{:<40} {:>28}  {:?}",
@@ -503,6 +518,30 @@ async fn main() -> Result<()> {
                     println!("{{\"rate_limit\": null}}");
                 }
             }
+        }
+
+        // -------------------------------------------------------------------
+        // Runtime queryId cache
+        // -------------------------------------------------------------------
+        Op::QueryIds { refresh } => {
+            let store = client.query_ids();
+            if refresh {
+                let names: Vec<&str> = catalog::all().iter().map(|o| o.name.as_str()).collect();
+                store
+                    .refresh(&names, true)
+                    .await
+                    .context("queryId refresh failed (network or x.com layout change)")?;
+            }
+            let snap = store.snapshot();
+            let out = serde_json::json!({
+                "cache_path": store.cache_path().display().to_string(),
+                "fresh": snap.as_ref().map(aphrody_x_client::QueryIdSnapshot::is_fresh),
+                "fetched_at": snap.as_ref().map(|s| s.fetched_at),
+                "age_secs": snap.as_ref().map(aphrody_x_client::QueryIdSnapshot::age_secs),
+                "count": snap.as_ref().map_or(0, |s| s.ids.len()),
+                "ids": snap.map(|s| s.ids).unwrap_or_default(),
+            });
+            println!("{}", serde_json::to_string_pretty(&out)?);
         }
     }
 
