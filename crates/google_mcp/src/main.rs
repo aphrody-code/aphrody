@@ -154,6 +154,25 @@ pub struct ReSectionsRequest {
 }
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct ReDisasmRequest {
+    #[schemars(description = "Absolute or workspace-relative path to a binary or raw byte file \
+                              to disassemble. The file is read into memory in full — best for \
+                              files under 100 MB.")]
+    pub path: String,
+    #[schemars(description = "Byte offset into the file at which to start disassembly. Defaults \
+                              to 0 (beginning of file). Useful to target a specific section or \
+                              function without extracting it first.")]
+    pub offset: Option<u64>,
+    #[schemars(description = "Virtual address (RIP base) assigned to the first byte decoded. \
+                              Defaults to 0 when unset. Pass the section virtual address for \
+                              correct RIP-relative operand display.")]
+    pub rip: Option<u64>,
+    #[schemars(description = "Maximum number of instructions to decode. Defaults to 256 when \
+                              unset. Capped at 4096 to bound response size.")]
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct Context7ResolveRequest {
     #[schemars(description = "The task you need help with. Used to rank library results by \
                               relevance (e.g. 'streaming SSR with App Router').")]
@@ -1439,6 +1458,94 @@ impl GoogleMcpServer {
             }))
             .unwrap_or_default(),
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // re_disasm — x86-64 disassembly of a raw binary file via aphrody-re.
+    //
+    // Delegates directly to `aphrody_re::disasm` (iced-x86 IntelFormatter,
+    // pure Rust, no GPL). The caller controls the byte offset into the file,
+    // the virtual RIP base for operand display, and the instruction count cap.
+    // -----------------------------------------------------------------------
+    #[cfg(not(target_arch = "wasm32"))]
+    #[tool(description = "Disassemble x86-64 instructions from a binary file (PE, ELF, raw \
+                          shellcode, firmware dump — any byte sequence). Returns a JSON object \
+                          with `path`, `offset`, `rip`, `limit`, `count`, and an `instructions` \
+                          array. Each instruction entry contains `offset` (byte offset from the \
+                          start of the decoded slice), `address` (virtual address = rip + \
+                          offset), `bytes_hex` (lowercase hex of raw instruction bytes), \
+                          `mnemonic` (bare mnemonic, e.g. `\"mov\"`), and `text` (full \
+                          Intel-syntax line, e.g. `\"mov rbp,rsp\"`). Decoding stops at the \
+                          instruction limit, the end of the slice, or the first invalid/unknown \
+                          encoding — whichever comes first. Errors with a structured envelope on \
+                          read failure, oversized inputs (> 100 MB), or out-of-bounds offset.")]
+    async fn re_disasm(
+        &self,
+        Parameters(ReDisasmRequest { path, offset, rip, limit }): Parameters<ReDisasmRequest>,
+    ) -> String {
+        const MAX_BYTES: u64 = 100 * 1024 * 1024; // 100 MB
+        const DEFAULT_LIMIT: usize = aphrody_re::DISASM_LIMIT; // 256
+        const CAP_LIMIT: usize = 4096;
+
+        let byte_offset = offset.unwrap_or(0);
+        let rip_base = rip.unwrap_or(0);
+        let insn_limit = limit.unwrap_or(DEFAULT_LIMIT).min(CAP_LIMIT);
+
+        let meta = match std::fs::metadata(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_BAD_REQUEST",
+                    "reason": format!("unable to stat '{path}': {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        if meta.len() > MAX_BYTES {
+            return serde_json::to_string_pretty(&json!({
+                "error": "RE_BAD_REQUEST",
+                "reason": format!(
+                    "'{path}' is {} bytes (> {MAX_BYTES} byte cap); refuse to read",
+                    meta.len()
+                ),
+            }))
+            .unwrap_or_default();
+        }
+        let file_bytes = match std::fs::read(&path) {
+            Ok(b) => b,
+            Err(e) => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_IO",
+                    "reason": format!("read '{path}' failed: {e}"),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        let slice = match file_bytes.get(byte_offset as usize..) {
+            Some(s) if !s.is_empty() => s,
+            _ => {
+                return serde_json::to_string_pretty(&json!({
+                    "error": "RE_BAD_REQUEST",
+                    "reason": format!(
+                        "offset {byte_offset} is out of bounds (file is {} bytes)",
+                        file_bytes.len()
+                    ),
+                }))
+                .unwrap_or_default();
+            },
+        };
+        let instructions = aphrody_re::disasm(slice, rip_base, insn_limit);
+        serde_json::to_string_pretty(&json!({
+            "path": path,
+            "offset": byte_offset,
+            "rip": rip_base,
+            "limit": insn_limit,
+            "count": instructions.len(),
+            "instructions": instructions,
+        }))
+        .unwrap_or_else(|e| {
+            format!(r#"{{"error":"RE_ENCODE","reason":"{}"}}"#, e.to_string().replace('"', "'"))
+        })
     }
 
     // -----------------------------------------------------------------------
