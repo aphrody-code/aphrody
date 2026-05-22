@@ -1,28 +1,40 @@
-# Self-rooted workspace pour éviter toute collision avec les agents bg
-# qui éditent simultanément le root Cargo.toml. À folder dans le root
-# workspace.members plus tard, une fois tous les ports stabilisés.
+# Self-rooted workspace — excluded from the root workspace (see root Cargo.toml
+# exclude list). Re-integrate into root workspace members once stabilised.
 [workspace]
 
 [package]
 name        = "aphrody-x-client"
-version     = "0.1.0"
+version     = "0.2.0"
 edition     = "2024"
 license     = "Apache-2.0"
-description = "aphrody — X / Twitter client (cookie-based auth, no API key required, agent-twitter-client wrapper)"
+description = "aphrody — X / Twitter native GraphQL + REST client (cookie auth, no API key required)"
 repository  = "https://github.com/aphrody-code/aphrody"
 
 [[bin]]
 name = "aphrody-x"
 path = "src/main.rs"
 
+[lib]
+name = "aphrody_x_client"
+path = "src/lib.rs"
+
 [dependencies]
-# distrihub fork (Nov 2025) — patché .domain("x.com") sur les 4 sites de
-# cookie injection, contre le cornip/agent-twitter-client 0.1.2 upstream
-# (Dec 2024, repo supprimé) qui hard-codait twitter.com pre-rebrand →
-# 401 Unauthorized sur les cookies modernes .x.com.
-agent-twitter-client = { git = "https://github.com/distrihub/agent-twitter-client.git" }
-tokio                = { version = "1.52", features = ["full"] }
-clap                 = { version = "4", features = ["derive", "env"] }
-anyhow               = "1"
-dotenvy              = "0.15"
-serde_json           = "1"
+# HTTP — rustls-tls for zero-system-tls dependency, cookies for jar support.
+reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies"] }
+# Async runtime.
+tokio       = { version = "1.52", features = ["full"] }
+# Serde / JSON.
+serde       = { version = "1", features = ["derive"] }
+serde_json  = { version = "1" }
+# Error handling.
+thiserror   = { version = "2" }
+anyhow      = { version = "1" }
+# CLI parsing.
+clap        = { version = "4", features = ["derive", "env"] }
+# Home directory resolution for session file.
+dirs        = { version = "6" }
+# rustls CryptoProvider (ring) — must call install_default() once before Client.
+rustls      = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+
+[dev-dependencies]
+tokio       = { version = "1.52", features = ["full"] }
