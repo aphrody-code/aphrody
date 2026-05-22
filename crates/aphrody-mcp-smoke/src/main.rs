@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! End-to-end smoke test for the unified `aphrody-mcp` stdio server.
 //!
 //! Drives the real binary over a child process pipe pair, performs the

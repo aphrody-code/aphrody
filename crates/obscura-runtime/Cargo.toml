@@ -16,13 +16,8 @@ workspace = true
 
 [dependencies]
 tokio      = { workspace = true, features = ["process", "io-util", "macros", "rt"] }
-serde      = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 thiserror  = { workspace = true }
 
 [dev-dependencies]
 tokio    = { workspace = true, features = ["macros", "rt"] }
 tempfile = { workspace = true }
-
-[package.metadata.cargo-machete]
-ignored = []
