@@ -7,7 +7,7 @@ system under the `--gem-sys-*` namespace, plus a canvas/code layer under
 2026-05-22 by reading the cascaded computed values of those custom properties
 (functional token values — colours and corner radii).
 
-- Full token sheet: [`gemini-tokens.css`](gemini-tokens.css) (175 system tokens).
+- Full token sheet: [`tokens-system.css`](tokens-system.css) (175 system tokens).
 - Captured body context: `dark-theme zero-state-theme`; body background
   `#0f0f0f` (= `--lumi-sys-color--surface`), body text `#e3e3e3`.
 - The app also defines ~1700 `--mat-*` Angular Material component tokens; those
@@ -32,7 +32,7 @@ system under the `--gem-sys-*` namespace, plus a canvas/code layer under
 | brand blue / green / red / yellow | `#3186ff` / `#0ebc5f` / `#ff4641` / `#ffcc00` |
 
 The corner-radius scale (`--gem-sys-shape--corner-*`) matches the M3 Expressive
-10-step scale now in [`m3-tokens` `shape.rs`](../../crates/m3-tokens/src/shape.rs)
+10-step scale now in [`m3-tokens` `shape.rs`](../../../crates/m3-tokens/src/shape.rs)
 (none 0 → medium 12 → large 16 → large-increased 20 → extra-large 28 →
 extra-large-increased 32 → extra-extra-large 48 → full 9999), confirming our
 token update against a shipping Google product.

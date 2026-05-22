@@ -8,6 +8,11 @@ defer to the source page for canonical wording. Where a term corresponds to a
 token already defined in [`aphrody-m3-tokens.md`](aphrody-m3-tokens.md), an
 "→ aphrody" cross-reference is added.
 
+> Scrape récursif (2026-05-22) : glossaire + les 35 pages composants liées + pages
+> Styles/Foundations → `var/m3-spec/` (40 fichiers). Synthèse de mise à jour
+> material-web : [`m3-web-update.md`](m3-web-update.md). (bxc visé mais cassé sur
+> cet hôte ; fallback `universal_web_fetch`.)
+
 ## A
 
 ### Adaptive design
@@ -293,3 +298,24 @@ physical world.
 
 Mapped from <https://m3.material.io/foundations/glossary> — fetched 2026-05-21.
 Definitions paraphrased; the source page is authoritative.
+
+## Composants M3 → éléments `md-*` (Material Web)
+
+Cartographie des composants du glossaire vers leur custom element `md-*`
+(`packages/material-web`). Consommé par le framework — cf. [`M3-FRAMEWORK.md`](M3-FRAMEWORK.md).
+
+| Composant M3 | Élément `md-*` | Statut material-web |
+|---|---|---|
+| Button / Extended FAB / FAB | `md-*-button`, `md-fab`, `md-branded-fab` | présent |
+| Checkbox / Radio / Switch / Slider | `md-checkbox`, `md-radio`, `md-switch`, `md-slider` | présent |
+| Chip | `md-*-chip`, `md-chip-set` | présent |
+| Dialog | `md-dialog` | présent |
+| Divider | `md-divider` | présent |
+| List | `md-list`, `md-list-item` | présent |
+| Menu | `md-menu`, `md-menu-item`, `md-sub-menu` | présent |
+| Navigation bar / drawer | `md-navigation-bar`, `md-navigation-drawer`, `md-navigation-tab` | présent |
+| Progress indicator | `md-circular-progress`, `md-linear-progress` | présent |
+| Tabs | `md-tabs`, `md-primary-tab`, `md-secondary-tab` | présent |
+| Text field | `md-filled-text-field`, `md-outlined-text-field` | présent |
+| App bar / Toolbar | `md-*-app-bar` | partiel |
+| Card, Banner, Bottom/Side sheet, Data table, Date/Time picker, Navigation rail, Snackbar | — | manquant (candidats composants custom Lit) |
