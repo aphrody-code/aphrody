@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // `aphrody memory migrate` — Tier-1 provider-to-provider migration (R3.4 wire).
 //
-// Not yet wired into the CLI dispatch (PLAN R3.4 pending). Items are marked
-// `#[allow(dead_code)]` until the `Commands::Memory(Migrate)` variant is added.
-//
 // Wraps the dyn-compatible `aphrody_memory::migrate` lib API into a CLI surface
-// that callers can drive without writing Rust. The three shipped Tier-1
-// providers (Mem0, Honcho, SqliteLocal) all implement `MemoryProvider`, so any
-// pair can be wired up — HTTP creds come from environment variables documented
-// in the per-provider modules.
+// that callers can drive without writing Rust. The four shipped Tier-1
+// providers (Mem0, Honcho, SqliteLocal, LanceDb) all implement `MemoryProvider`,
+// so any pair can be wired up — HTTP creds come from environment variables
+// documented in the per-provider modules.
 //
-// Verify: `aphrody memory migrate --from sqlite-local --to sqlite-local
-//         --from-sqlite-path A.db --to-sqlite-path B.db --agent-id agent-A
-//         --dry-run --json` returns a `MigrationDiff` JSON object on stdout.
+// Verify: `aphrody memory migrate --from lancedb --to honcho
+//         --from-lancedb-path ./var/memory --lancedb-ndims 768
+//         --agent-id agent-A --dry-run` returns a MigrationDiff JSON.
 
 use std::path::{Path, PathBuf};
 
@@ -20,16 +17,17 @@ use async_trait::async_trait;
 use miette::{IntoDiagnostic, WrapErr};
 
 use aphrody_memory::{
-    HonchoProvider, Mem0Provider, MemoryProvider, SqliteLocalProvider, migrate_provider,
+    HonchoProvider, LanceDbAdapter, Mem0Provider, MemoryProvider, SqliteLocalProvider,
+    migrate_provider,
 };
 
 use crate::context::{GoogleContext, TerminalCommand};
 
-/// Picker mirroring the three Tier-1 `MemoryProvider` implementations.
+/// Picker mirroring the four Tier-1 `MemoryProvider` implementations.
 ///
 /// The kebab-case rename matches `aphrody_memory::ProviderKind` snake_case
-/// (`mem0`, `honcho`, `sqlite_local`) so the CLI surface stays consistent with
-/// the discriminator returned by `provider_kind()`.
+/// (`mem0`, `honcho`, `sqlite_local`, `lancedb`) so the CLI surface stays
+/// consistent with the discriminator returned by `provider_kind()`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub(crate) enum MemoryProviderArg {
     /// Hosted Mem0 cloud — reads `MEM0_API_KEY` from the environment.
@@ -38,6 +36,11 @@ pub(crate) enum MemoryProviderArg {
     Honcho,
     /// Offline rusqlite store — `--from-sqlite-path` / `--to-sqlite-path`.
     SqliteLocal,
+    /// Embedded LanceDB vector store — `--from-lancedb-path` / `--to-lancedb-path`
+    /// with `--lancedb-ndims`. Records are stored with `ns = agent_id`;
+    /// embeddings are preserved on copies within LanceDB and dropped (set to
+    /// `None`) when writing to HTTP-backed providers that have no vector column.
+    LanceDb,
 }
 
 /// `aphrody memory migrate` dispatch.
@@ -50,6 +53,13 @@ pub(crate) struct MigrateCommand {
     pub pretty: bool,
     pub from_sqlite_path: Option<PathBuf>,
     pub to_sqlite_path: Option<PathBuf>,
+    /// Filesystem path for the source LanceDB store (lancedb only).
+    pub from_lancedb_path: Option<PathBuf>,
+    /// Filesystem path for the target LanceDB store (lancedb only).
+    pub to_lancedb_path: Option<PathBuf>,
+    /// Embedding dimensionality for LanceDB backends (required when either end
+    /// is `lancedb`; defaults to 768 which matches standard embedding models).
+    pub lancedb_ndims: usize,
 }
 
 #[async_trait]
@@ -70,13 +80,33 @@ impl TerminalCommand for MigrateCommand {
                  distinct files (refusing to copy a sqlite onto itself)"
             ));
         }
+        if self.from == MemoryProviderArg::LanceDb
+            && self.to == MemoryProviderArg::LanceDb
+            && self.from_lancedb_path == self.to_lancedb_path
+        {
+            return Err(miette::miette!(
+                "memory migrate: when --from and --to are both lancedb, \
+                 --from-lancedb-path and --to-lancedb-path must point to \
+                 distinct directories (refusing to copy a lancedb store onto itself)"
+            ));
+        }
 
-        let from: Box<dyn MemoryProvider> =
-            build_provider(self.from, self.from_sqlite_path.as_deref())
-                .wrap_err("failed to build --from provider")?;
-        let to: Box<dyn MemoryProvider> =
-            build_provider(self.to, self.to_sqlite_path.as_deref())
-                .wrap_err("failed to build --to provider")?;
+        let from: Box<dyn MemoryProvider> = build_provider(
+            self.from,
+            self.from_sqlite_path.as_deref(),
+            self.from_lancedb_path.as_deref(),
+            self.lancedb_ndims,
+        )
+        .await
+        .wrap_err("failed to build --from provider")?;
+        let to: Box<dyn MemoryProvider> = build_provider(
+            self.to,
+            self.to_sqlite_path.as_deref(),
+            self.to_lancedb_path.as_deref(),
+            self.lancedb_ndims,
+        )
+        .await
+        .wrap_err("failed to build --to provider")?;
 
         let diff = migrate_provider(from.as_ref(), to.as_ref(), &self.agent_id, self.dry_run)
             .await
@@ -128,14 +158,18 @@ impl TerminalCommand for MigrateCommand {
     }
 }
 
-/// Build a `Box<dyn MemoryProvider>` from a CLI selector + optional sqlite path.
+/// Build a `Box<dyn MemoryProvider>` from a CLI selector + optional backend paths.
 ///
 /// HTTP providers read their credentials from env vars (documented per module
 /// in `aphrody-memory`); failure to find a key surfaces as a structured
 /// `MemoryError::MissingConfig` that bubbles up here as a `miette::Report`.
-fn build_provider(
+///
+/// `lancedb_ndims` is only used when `kind == LanceDb`.
+async fn build_provider(
     kind: MemoryProviderArg,
     sqlite_path: Option<&Path>,
+    lancedb_path: Option<&Path>,
+    lancedb_ndims: usize,
 ) -> miette::Result<Box<dyn MemoryProvider>> {
     match kind {
         MemoryProviderArg::Mem0 => {
@@ -165,16 +199,46 @@ fn build_provider(
                 .map_err(|e| miette::miette!("sqlite_local: {e} (path={})", path.display()))?;
             Ok(Box::new(p))
         }
+        MemoryProviderArg::LanceDb => {
+            let path = lancedb_path
+                .map(Path::to_path_buf)
+                .unwrap_or_else(default_lancedb_path);
+            let ndims = if lancedb_ndims == 0 { 768 } else { lancedb_ndims };
+            // Ensure directory exists before LanceDB tries to create its layout.
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    std::fs::create_dir_all(parent)
+                        .into_diagnostic()
+                        .wrap_err_with(|| {
+                            format!(
+                                "failed to create lancedb parent dir {}",
+                                parent.display()
+                            )
+                        })?;
+                }
+            }
+            let p = LanceDbAdapter::open(&path, ndims)
+                .await
+                .map_err(|e| miette::miette!("lancedb: {e} (path={})", path.display()))?;
+            Ok(Box::new(p))
+        }
     }
 }
 
-/// Default offline store location — `$HOME/.aphrody/memory.sqlite` on every
-/// supported target. Falls back to `./memory.sqlite` if the home directory
-/// cannot be resolved (CI containers without `$HOME`).
+/// Default offline SQLite store location — `$HOME/.aphrody/memory.sqlite`.
+/// Falls back to `./memory.sqlite` if the home directory cannot be resolved.
 fn default_sqlite_path() -> PathBuf {
     dirs::home_dir()
         .map(|h| h.join(".aphrody").join("memory.sqlite"))
         .unwrap_or_else(|| PathBuf::from("memory.sqlite"))
+}
+
+/// Default LanceDB store location — `$HOME/.aphrody/memory-lancedb/`.
+/// Falls back to `./memory-lancedb/` if the home directory cannot be resolved.
+fn default_lancedb_path() -> PathBuf {
+    dirs::home_dir()
+        .map(|h| h.join(".aphrody").join("memory-lancedb"))
+        .unwrap_or_else(|| PathBuf::from("memory-lancedb"))
 }
 
 #[cfg(test)]
@@ -182,10 +246,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_path_under_home_when_available() {
-        // We can't assert the exact value (depends on $HOME), but the file
-        // name should always be `memory.sqlite` and the parent should be
-        // `.aphrody` so the convention is enforced.
+    fn default_sqlite_path_under_home_when_available() {
         let p = default_sqlite_path();
         assert_eq!(
             p.file_name().and_then(|s| s.to_str()),
@@ -193,42 +254,86 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn migrate_rejects_empty_agent_id() {
-        let cmd = MigrateCommand {
-            from: MemoryProviderArg::SqliteLocal,
-            to: MemoryProviderArg::SqliteLocal,
-            agent_id: "   ".into(),
+    #[test]
+    fn default_lancedb_path_under_home_when_available() {
+        let p = default_lancedb_path();
+        assert_eq!(
+            p.file_name().and_then(|s| s.to_str()),
+            Some("memory-lancedb")
+        );
+    }
+
+    fn make_cmd(
+        from: MemoryProviderArg,
+        to: MemoryProviderArg,
+        agent_id: &str,
+        from_sqlite_path: Option<PathBuf>,
+        to_sqlite_path: Option<PathBuf>,
+        from_lancedb_path: Option<PathBuf>,
+        to_lancedb_path: Option<PathBuf>,
+    ) -> MigrateCommand {
+        MigrateCommand {
+            from,
+            to,
+            agent_id: agent_id.into(),
             dry_run: true,
             json: true,
             pretty: false,
-            from_sqlite_path: Some(PathBuf::from("a.db")),
-            to_sqlite_path: Some(PathBuf::from("b.db")),
-        };
-        // We can't easily build GoogleContext here; bypass execute() by
-        // re-asserting the same check inline. Keeps the test free of I/O.
+            from_sqlite_path,
+            to_sqlite_path,
+            from_lancedb_path,
+            to_lancedb_path,
+            lancedb_ndims: 768,
+        }
+    }
+
+    #[tokio::test]
+    async fn migrate_rejects_empty_agent_id() {
+        let cmd = make_cmd(
+            MemoryProviderArg::SqliteLocal,
+            MemoryProviderArg::SqliteLocal,
+            "   ",
+            Some(PathBuf::from("a.db")),
+            Some(PathBuf::from("b.db")),
+            None,
+            None,
+        );
         assert!(cmd.agent_id.trim().is_empty());
     }
 
     #[test]
     fn migrate_rejects_same_sqlite_path_both_ends() {
         let same = PathBuf::from("only.db");
-        let cmd = MigrateCommand {
-            from: MemoryProviderArg::SqliteLocal,
-            to: MemoryProviderArg::SqliteLocal,
-            agent_id: "agent-A".into(),
-            dry_run: false,
-            json: false,
-            pretty: false,
-            from_sqlite_path: Some(same.clone()),
-            to_sqlite_path: Some(same),
-        };
-        // Same shape of assertion as inside execute(): both ends with the
-        // exact same path must trip the guard. The guard runs *before* any
-        // file open, so we can verify the equality predicate directly.
+        let cmd = make_cmd(
+            MemoryProviderArg::SqliteLocal,
+            MemoryProviderArg::SqliteLocal,
+            "agent-A",
+            Some(same.clone()),
+            Some(same),
+            None,
+            None,
+        );
         let both_sqlite = cmd.from == MemoryProviderArg::SqliteLocal
             && cmd.to == MemoryProviderArg::SqliteLocal;
         assert!(both_sqlite);
         assert_eq!(cmd.from_sqlite_path, cmd.to_sqlite_path);
+    }
+
+    #[test]
+    fn migrate_rejects_same_lancedb_path_both_ends() {
+        let same = PathBuf::from("./data/lancedb");
+        let cmd = make_cmd(
+            MemoryProviderArg::LanceDb,
+            MemoryProviderArg::LanceDb,
+            "agent-A",
+            None,
+            None,
+            Some(same.clone()),
+            Some(same),
+        );
+        let both_lance = cmd.from == MemoryProviderArg::LanceDb
+            && cmd.to == MemoryProviderArg::LanceDb;
+        assert!(both_lance);
+        assert_eq!(cmd.from_lancedb_path, cmd.to_lancedb_path);
     }
 }

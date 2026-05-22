@@ -26,6 +26,7 @@
 pub mod hnsw;
 pub mod jsonl;
 pub mod lancedb;
+pub mod lancedb_adapter;
 pub mod sqlite;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ pub use crate::eviction::EvictionPolicy;
 pub use crate::hnsw::HnswBackend;
 pub use crate::honcho::HonchoProvider;
 pub use crate::lancedb::LanceDbBackend;
+pub use crate::lancedb_adapter::LanceDbAdapter;
 pub use crate::mem0::Mem0Provider;
 pub use crate::migrate::{MAX_ID_PREVIEW, MigrationDiff, migrate as migrate_provider};
 pub use crate::provider::MemoryProvider;
