@@ -559,6 +559,15 @@ enum Op {
         #[command(subcommand)]
         what: ImportWhat,
     },
+    /// Print a cross-OS scheduler snippet for periodic `sync` (no system change).
+    Jobs {
+        /// What to sync on each run (default: timeline).
+        #[arg(long, default_value = "timeline")]
+        what: String,
+        /// Interval in minutes between runs.
+        #[arg(long, default_value_t = 30)]
+        every_minutes: u32,
+    },
 }
 
 /// Import sources.
@@ -1269,6 +1278,12 @@ async fn run() -> Result<()> {
             };
             output::print_json(&serde_json::json!({ "account": account, "count": users.len(), "users": users }));
         }
+        Op::Jobs {
+            what,
+            every_minutes,
+        } => {
+            print_jobs_snippet(&what, every_minutes);
+        }
         Op::Import { what } => {
             let store = aphrody_x_client::Store::open_default().context("open store failed")?;
             match what {
@@ -1370,6 +1385,42 @@ async fn run_sync(
         }
     }
     Ok(stored)
+}
+
+/// Print a platform-appropriate scheduler snippet for periodic `sync`.
+///
+/// Generates config only — it never modifies the system. The user installs the
+/// printed snippet themselves (creating scheduled tasks is a system change that
+/// should be done deliberately).
+fn print_jobs_snippet(what: &str, every_minutes: u32) {
+    let exe = std::env::current_exe()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "aphrody-x".to_owned());
+
+    if cfg!(target_os = "windows") {
+        println!("# Windows Task Scheduler — register a periodic sync:");
+        println!(
+            "schtasks /Create /SC MINUTE /MO {every_minutes} /TN \"aphrody-x sync {what}\" \\\n  /TR \"'{exe}' sync {what}\" /F"
+        );
+        println!("# Remove later: schtasks /Delete /TN \"aphrody-x sync {what}\" /F");
+    } else if cfg!(target_os = "macos") {
+        let label = format!("dev.aphrody.x.sync.{what}");
+        let interval = every_minutes as u64 * 60;
+        println!("# macOS launchd — save as ~/Library/LaunchAgents/{label}.plist then `launchctl load`:");
+        println!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict>\n  <key>Label</key><string>{label}</string>\n  <key>ProgramArguments</key><array><string>{exe}</string><string>sync</string><string>{what}</string></array>\n  <key>StartInterval</key><integer>{interval}</integer>\n</dict></plist>"
+        );
+    } else {
+        // Linux / other: systemd --user timer.
+        println!("# Linux systemd --user — write these two files then enable the timer:");
+        println!("# ~/.config/systemd/user/aphrody-x-sync.service");
+        println!("[Unit]\nDescription=aphrody-x sync {what}\n[Service]\nType=oneshot\nExecStart={exe} sync {what}\n");
+        println!("# ~/.config/systemd/user/aphrody-x-sync.timer");
+        println!(
+            "[Unit]\nDescription=Run aphrody-x sync every {every_minutes}m\n[Timer]\nOnUnitActiveSec={every_minutes}min\nOnBootSec=2min\n[Install]\nWantedBy=timers.target\n"
+        );
+        println!("# Enable: systemctl --user enable --now aphrody-x-sync.timer");
+    }
 }
 
 /// Emit exported tweets in the requested format.
