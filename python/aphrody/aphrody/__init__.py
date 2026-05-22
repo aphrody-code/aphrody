@@ -17,12 +17,16 @@ The public surface mirrors the native Rust ``antigravity-sdk`` crate:
 
 from aphrody._version import __version__
 from aphrody.auth.tokens import OAuthToken
+from aphrody.autocomplete import CodeCompleter, Completion, CompletionRequest
 from aphrody.client import AphrodyClient
 from aphrody.gemini_web import GeminiWebClient
 from aphrody.vertex import GeminiVertex
 
 __all__ = [
     "AphrodyClient",
+    "CodeCompleter",
+    "Completion",
+    "CompletionRequest",
     "GeminiVertex",
     "GeminiWebClient",
     "OAuthToken",
