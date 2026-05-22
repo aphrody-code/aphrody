@@ -84,7 +84,7 @@ CLI `aphrody` (piste A) et le câblage shadcn via un item `registry:theme`
    /// Génère le pont M3 ↔ shadcn ↔ Tailwind v4 calculé par `m3-tokens`.
    /// `aphrody design tokens` émet par défaut les `--md-sys-color-*` ; avec
    /// `--fusion`, ajoute le bloc d'alias shadcn et le bloc Tailwind
-   /// `@theme inline`. Cf. docs/ui/FUSION-PLAN.md.
+   /// `@theme inline`. Cf. docs/design/FUSION-PLAN.md.
    #[cfg(not(target_arch = "wasm32"))]
    Design {
        #[command(subcommand)]
