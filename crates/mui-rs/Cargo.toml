@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
+# Canary cluster: internal deps are bare path deps (no version), and the crate
+# is not in the crates.io publish ladder yet. Mark unpublishable so cargo-deny's
+# wildcard-path exemption applies (public crates can't carry path deps).
+publish = false
 
 [features]
 default    = ["desktop"]

@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
+publish = false  # canary: bare path deps; not in the publish ladder (see mui-rs/Cargo.toml)
 
 [dependencies]
 # Foundational M3 design tokens (color roles, type/shape/elevation scales).
