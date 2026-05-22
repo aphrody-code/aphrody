@@ -37,6 +37,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use aphrody_x_client::catalog;
+use aphrody_x_client::output;
 use aphrody_x_client::{TweetPage, UserPage, XClient, XSession};
 
 /// Boxed future returning a tweet page (for the generic paginator).
@@ -144,6 +145,10 @@ struct Cli {
     /// Cookie string `auth_token=<val>; ct0=<val>` (overrides session file and env).
     #[arg(long, global = true, env = "X_COOKIE_STRING")]
     cookie_string: Option<String>,
+
+    /// Plain, stable text output (no JSON, no color, no emoji).
+    #[arg(long, global = true)]
+    plain: bool,
 
     #[command(subcommand)]
     op: Op,
@@ -544,6 +549,9 @@ struct PageArgs {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    let config = aphrody_x_client::Config::load();
+    let mode = aphrody_x_client::OutputMode::resolve(cli.plain, config.output.as_deref());
+
     let session = resolve_session(cli.cookie_string.as_deref())?;
     let client = XClient::new(session).context("failed to build X HTTP client")?;
     // Shadow as a shared reference so paginator closures (FnMut) can capture a
@@ -823,7 +831,7 @@ async fn main() -> Result<()> {
                 .await
                 .context("get_tweet failed")?;
             match tweet {
-                Some(t) => println!("{}", serde_json::to_string_pretty(&t)?),
+                Some(t) => output::print_one_tweet(&t, mode),
                 None => {
                     eprintln!("tweet {id} not found (deleted, protected, or tombstoned)");
                     std::process::exit(1);
@@ -843,7 +851,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("thread failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Replies { target, page } => {
             let id = extract_tweet_id(&target)?;
@@ -864,13 +872,7 @@ async fn main() -> Result<()> {
                 .into_iter()
                 .filter(|t| t.in_reply_to_status_id.as_deref() == Some(id.as_str()))
                 .collect();
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&serde_json::json!({
-                    "tweets": replies,
-                    "next_cursor": result.next_cursor,
-                }))?
-            );
+            output::print_tweets(&replies, result.next_cursor.as_deref(), mode);
         }
         Op::Search { query, top, page } => {
             let product = if top { "Top" } else { "Latest" }.to_owned();
@@ -886,7 +888,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("search failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::UserTweets { handle, page } => {
             let uid = client
@@ -904,7 +906,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("user_tweets failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Home { following, page } => {
             let result = paginate_tweets(page.all, page.max_pages, page.cursor.clone(), |cur| {
@@ -917,7 +919,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("home failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Likes { page } => {
             let uid = client.whoami().await.context("whoami failed")?.id;
@@ -932,7 +934,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("likes failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Bookmarks { page } => {
             let result = paginate_tweets(page.all, page.max_pages, page.cursor.clone(), |cur| {
@@ -945,7 +947,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("bookmarks failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Mentions { user, page } => {
             let handle = match user {
@@ -964,7 +966,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("mentions failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::Following { user, page } => {
             let uid = resolve_user_id(client, user.as_deref()).await?;
@@ -979,7 +981,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("following failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_users(&result.users, result.next_cursor.as_deref(), mode);
         }
         Op::Followers { user, page } => {
             let uid = resolve_user_id(client, user.as_deref()).await?;
@@ -994,7 +996,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("followers failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_users(&result.users, result.next_cursor.as_deref(), mode);
         }
         Op::ListTimeline { target, page } => {
             let list_id = extract_list_id(&target)?;
@@ -1009,7 +1011,7 @@ async fn main() -> Result<()> {
             })
             .await
             .context("list_timeline failed")?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
+            output::print_tweets(&result.tweets, result.next_cursor.as_deref(), mode);
         }
         Op::News {
             count,
@@ -1048,7 +1050,7 @@ async fn main() -> Result<()> {
                 .get_news(count, &opts)
                 .await
                 .context("get_news failed")?;
-            println!("{}", serde_json::to_string_pretty(&items)?);
+            output::print_news(&items, mode);
         }
         Op::UploadMedia { path, alt } => {
             let media_id = client
