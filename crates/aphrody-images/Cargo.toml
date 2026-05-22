@@ -26,7 +26,6 @@ reqwest      = { workspace = true }
 
 # Serde for typed result structs
 serde        = { workspace = true, features = ["derive"] }
-serde_json   = { workspace = true }
 
 # Typed errors
 thiserror    = { workspace = true }
@@ -36,9 +35,6 @@ base64       = { workspace = true }
 
 # Tracing
 tracing      = { workspace = true }
-
-# URL parsing (extension mapping from Content-Type header)
-url          = { workspace = true }
 
 [dev-dependencies]
 tokio        = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

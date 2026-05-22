@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 #  Aphrody — cargo-deny policy (Google-grade)
 #
 #  Run: cargo deny check          → audit licences + CVE + sources + bans
@@ -38,21 +38,6 @@ ignore = [
     # Re-evaluate when reqwest 0.13 lets us disable aws-lc-sys cleanly.
     # 2026-05-17: RUSTSEC-2026-0045/-0046/-0047/-0048 cleared from advisory-db
     # after upstream patch — kept removed; will re-add if regression detected.
-    # GTK3 deprecation — pulled by tao/wry on Linux. Migration to GTK4 happens
-    # when wry 1.0 ships. Not relevant for Windows-first development.
-    { id = "RUSTSEC-2024-0411", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0412", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0413", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0416", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0417", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0414", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0415", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0418", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0419", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    { id = "RUSTSEC-2024-0420", reason = "GTK3 deprecated; wry GTK4 migration tracked upstream" },
-    # Unmaintained proc-macro helpers transitively pulled by widely-used crates.
-    # Migration upstream when alternatives ship; no runtime impact.
-    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error unmaintained; transitive dep from rmcp git or older build deps" },
     # rustls-pemfile unmaintained — used only in a2a-grpc test/TLS paths. The
     # replacement (rustls-pki-types) is not yet integrated upstream. Track when
     # tonic-tls migrates away from rustls-pemfile.
@@ -72,6 +57,13 @@ ignore = [
     # yaml-rust — unmaintained, transitive via serde_yaml 0.9 (aphrody-skills/marketplace).
     # serde_yaml 0.9 bundles its own yaml-rust fork; no safe upgrade path until serde_yaml 1.0.
     { id = "RUSTSEC-2024-0320", reason = "yaml-rust unmaintained; bundled in serde_yaml 0.9 transitive dep, upgrade blocked by upstream" },
+    # async-std -- unmaintained (RUSTSEC-2025-0052). Pulled transitively by dark-light -> mui-rs.
+    # mui-rs is not in the aphrody binary dep chain; tracked for eventual dark-light upgrade.
+    { id = "RUSTSEC-2025-0052", reason = "async-std unmaintained; transitive via dark-light->mui-rs, not reachable from aphrody binary" },
+    # wasmtime RUSTSEC-2026-0114 -- OOM/panic on 32-bit when allocating table exceeding address space.
+    # wasmtime v42.0.2 pulled by mui-rs (wasm component model), not the aphrody binary.
+    # Fix: upgrade to >=36.0.8 or >=43.0.2. Tracked for next mui-rs dependency update.
+    { id = "RUSTSEC-2026-0114", reason = "wasmtime OOM/panic on 32-bit table alloc; transitive via mui-rs, not in aphrody binary path; upgrade tracked" },
 ]
 
 # ----------------------------------------------------------------------------
