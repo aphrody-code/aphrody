@@ -519,6 +519,18 @@ enum Op {
         #[arg(long)]
         alt: Option<String>,
     },
+    /// List the lists you own (or are a member of with --member-of).
+    Lists {
+        /// Show lists you are a member of instead of lists you own.
+        #[arg(long = "member-of")]
+        member_of: bool,
+        /// Inspect another user's lists (handle, default: you).
+        #[arg(long)]
+        user: Option<String>,
+        /// Max lists to return.
+        #[arg(short = 'n', long, default_value_t = 100)]
+        count: u32,
+    },
     /// Print which X account your cookies belong to.
     Whoami,
     /// Show which credential sources are available and where they resolve from.
@@ -628,8 +640,28 @@ struct PageArgs {
     quote_depth: u32,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
+    // The CLI surface is large (30+ subcommands, nested groups). In debug
+    // builds clap's generated command-tree builders are not inlined and can
+    // exhaust the default 1 MiB main-thread stack during `parse()`. Run the
+    // whole program on a worker thread with a generous stack so debug and
+    // release behave identically.
+    let worker = std::thread::Builder::new()
+        .name("aphrody-x".into())
+        .stack_size(32 * 1024 * 1024)
+        .spawn(|| {
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .thread_stack_size(8 * 1024 * 1024)
+                .build()
+                .context("failed to build tokio runtime")?;
+            rt.block_on(run())
+        })
+        .context("failed to spawn worker thread")?;
+    worker.join().map_err(|_| anyhow::anyhow!("worker thread panicked"))?
+}
+
+async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     let config = aphrody_x_client::Config::load();
@@ -1141,6 +1173,18 @@ async fn main() -> Result<()> {
                 .await
                 .context("upload_media failed")?;
             println!("{}", serde_json::json!({ "media_id": media_id }));
+        }
+        Op::Lists {
+            member_of,
+            user,
+            count,
+        } => {
+            let uid = resolve_user_id(client, user.as_deref()).await?;
+            let lists = client
+                .lists(&uid, member_of, count)
+                .await
+                .context("lists failed")?;
+            output::print_json(&lists);
         }
         Op::Whoami => {
             let me = client.whoami().await.context("whoami failed")?;

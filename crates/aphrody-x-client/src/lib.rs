@@ -49,7 +49,7 @@ pub mod runtime_query_ids;
 pub mod session;
 pub mod store;
 
-pub use api::{TimelineTweet, TweetResult, UserInfo};
+pub use api::{ListInfo, TimelineTweet, TweetResult, UserInfo};
 pub use catalog::{OpType, Operation};
 pub use client::{RateLimit, XClient};
 pub use config::Config;
