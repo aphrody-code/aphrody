@@ -2,10 +2,16 @@
 # aphrody plugin — refocus on Google design (proposal)
 
 Goal: pivot the `aphrody` plugin's centre of gravity to **Google / Material 3
-design**, and surface the off-focus surface ("pure Photoshop", Blender, misc)
-for trimming. This is a **proposal** — the removals are destructive (a 12-tool
-MCP surface + a Rust crate + a Python module the user actively built this
-session), so they are listed for explicit go/no-go rather than executed.
+design** — **additively**. The Google-design surface is elevated to the front;
+nothing is removed.
+
+> **Decision (2026-05-22): Photoshop and Blender STAY in the MCP surface.**
+> The `aphrody-adobe` split below is **declined / not executed** — the Adobe
+> (12 cloud + 3 live Photoshop), Firefly, and Blender tools remain first-class
+> MCP tools in the default `aphrody` plugin. The refocus is purely additive
+> (the `google-design` skill, `google-design-researcher` agent and the
+> `docs/design/` package lead the design story); the table below is retained
+> only as historical rationale, not a to-do.
 
 Already shipped this session (the design core): the `google-design` skill, the
 `google-design-researcher` Google-sources-only sub-agent, the full
