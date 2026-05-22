@@ -523,6 +523,89 @@ enum Op {
     Whoami,
     /// Show which credential sources are available and where they resolve from.
     Check,
+
+    // -----------------------------------------------------------------------
+    // Local-first store (birdclaw parity)
+    // -----------------------------------------------------------------------
+    /// Sync live data into the local SQLite store.
+    Sync {
+        #[command(subcommand)]
+        what: SyncWhat,
+    },
+    /// Query the local store (stats / full-text search / export).
+    Db {
+        #[command(subcommand)]
+        cmd: DbCmd,
+    },
+    /// Follow-graph analysis over the local store (run `sync graph` first).
+    Graph {
+        #[command(subcommand)]
+        cmd: GraphCmd,
+    },
+}
+
+/// What to sync into the local store.
+#[derive(Subcommand)]
+enum SyncWhat {
+    /// Your own tweets.
+    Authored {
+        #[arg(short = 'n', long, default_value_t = 200)]
+        limit: u32,
+    },
+    /// Tweets you liked.
+    Likes {
+        #[arg(short = 'n', long, default_value_t = 200)]
+        limit: u32,
+    },
+    /// Your bookmarks.
+    Bookmarks {
+        #[arg(short = 'n', long, default_value_t = 200)]
+        limit: u32,
+    },
+    /// Your home timeline (For You).
+    Timeline {
+        #[arg(short = 'n', long, default_value_t = 200)]
+        limit: u32,
+    },
+    /// Mentions of you.
+    Mentions {
+        #[arg(short = 'n', long, default_value_t = 200)]
+        limit: u32,
+    },
+    /// Your follow graph (following + followers).
+    Graph {
+        #[arg(short = 'n', long, default_value_t = 1000)]
+        limit: u32,
+    },
+}
+
+/// Local store queries.
+#[derive(Subcommand)]
+enum DbCmd {
+    /// Show store statistics.
+    Stats,
+    /// Full-text search stored tweets.
+    Search {
+        /// FTS5 query (e.g. `rust OR gemini`).
+        query: String,
+        #[arg(short = 'n', long, default_value_t = 20)]
+        limit: u32,
+    },
+    /// Export all stored tweets.
+    Export {
+        /// Output format: json | jsonl | md.
+        #[arg(long, default_value = "json")]
+        format: String,
+    },
+}
+
+/// Follow-graph queries.
+#[derive(Subcommand)]
+enum GraphCmd {
+    /// Accounts that follow you back.
+    Mutuals,
+    /// Accounts you follow that do not follow back.
+    NonMutualFollowing,
 }
 
 /// Shared pagination/quote arguments for reading commands.
@@ -1075,9 +1158,156 @@ async fn main() -> Result<()> {
             });
             println!("{}", serde_json::to_string_pretty(&out)?);
         }
+
+        // -------------------------------------------------------------------
+        // Local-first store
+        // -------------------------------------------------------------------
+        Op::Sync { what } => {
+            let store = aphrody_x_client::Store::open_default().context("open store failed")?;
+            let account = client.whoami().await.context("whoami failed")?;
+            let n = run_sync(client, &store, &account, &what).await?;
+            output::print_json(&serde_json::json!({ "synced": n, "account": account.screen_name }));
+        }
+        Op::Db { cmd } => {
+            let store = aphrody_x_client::Store::open_default().context("open store failed")?;
+            match cmd {
+                DbCmd::Stats => {
+                    let stats = store
+                        .stats(&aphrody_x_client::Store::default_path().display().to_string())
+                        .context("stats failed")?;
+                    output::print_json(&stats);
+                }
+                DbCmd::Search { query, limit } => {
+                    let hits = store.search(&query, limit).context("search failed")?;
+                    output::print_json(&hits);
+                }
+                DbCmd::Export { format } => {
+                    let tweets = store.export_tweets().context("export failed")?;
+                    emit_export(&tweets, &format);
+                }
+            }
+        }
+        Op::Graph { cmd } => {
+            let store = aphrody_x_client::Store::open_default().context("open store failed")?;
+            let account = client.whoami().await.context("whoami failed")?.screen_name;
+            let users = match cmd {
+                GraphCmd::Mutuals => store.mutuals(&account).context("mutuals failed")?,
+                GraphCmd::NonMutualFollowing => store
+                    .non_mutual_following(&account)
+                    .context("non_mutual_following failed")?,
+            };
+            output::print_json(&serde_json::json!({ "account": account, "count": users.len(), "users": users }));
+        }
     }
 
     Ok(())
+}
+
+/// Run a `sync` sub-operation, persisting fetched data into the store.
+async fn run_sync(
+    client: &XClient,
+    store: &aphrody_x_client::Store,
+    account: &aphrody_x_client::UserInfo,
+    what: &SyncWhat,
+) -> Result<usize> {
+    use aphrody_x_client::store::edge;
+    let acct = account.screen_name.as_str();
+
+    if let SyncWhat::Graph { limit } = what {
+        let mut count = 0usize;
+        let following = client
+            .following(&account.id, 100, None)
+            .await
+            .context("following failed")?;
+        for u in following.users.iter().take(*limit as usize) {
+            store.upsert_user(u)?;
+            store.add_follow(acct, "following", u)?;
+            count += 1;
+        }
+        let followers = client
+            .followers(&account.id, 100, None)
+            .await
+            .context("followers failed")?;
+        for u in followers.users.iter().take(*limit as usize) {
+            store.upsert_user(u)?;
+            store.add_follow(acct, "follower", u)?;
+            count += 1;
+        }
+        return Ok(count);
+    }
+
+    // Tweet-based syncs: fetch up to `limit`, upsert + edge.
+    let (limit, kind): (u32, &str) = match what {
+        SyncWhat::Authored { limit } => (*limit, edge::AUTHORED),
+        SyncWhat::Likes { limit } => (*limit, edge::LIKED),
+        SyncWhat::Bookmarks { limit } => (*limit, edge::BOOKMARKED),
+        SyncWhat::Timeline { limit } => (*limit, edge::TIMELINE),
+        SyncWhat::Mentions { limit } => (*limit, edge::MENTION),
+        SyncWhat::Graph { .. } => unreachable!(),
+    };
+
+    let mut cursor: Option<String> = None;
+    let mut stored = 0usize;
+    let mut pages = 0u32;
+    loop {
+        let page = match what {
+            SyncWhat::Authored { .. } => {
+                client.user_tweets(&account.id, 40, cursor.as_deref(), 1).await
+            }
+            SyncWhat::Likes { .. } => {
+                client.likes(&account.id, 40, cursor.as_deref(), 1).await
+            }
+            SyncWhat::Bookmarks { .. } => client.bookmarks(40, cursor.as_deref(), 1).await,
+            SyncWhat::Timeline { .. } => client.home(40, cursor.as_deref(), false, 1).await,
+            SyncWhat::Mentions { .. } => {
+                let q = format!("(@{acct})");
+                client.search(&q, 40, cursor.as_deref(), "Latest", 1).await
+            }
+            SyncWhat::Graph { .. } => unreachable!(),
+        }
+        .context("sync fetch failed")?;
+
+        let got = page.tweets.len();
+        for t in &page.tweets {
+            store.upsert_tweet(t)?;
+            store.add_edge(acct, kind, &t.id)?;
+            stored += 1;
+            if stored >= limit as usize {
+                break;
+            }
+        }
+        pages += 1;
+        cursor = page.next_cursor;
+        if stored >= limit as usize || cursor.is_none() || got == 0 || pages >= 25 {
+            break;
+        }
+    }
+    Ok(stored)
+}
+
+/// Emit exported tweets in the requested format.
+fn emit_export(tweets: &[serde_json::Value], format: &str) {
+    match format {
+        "jsonl" => {
+            for t in tweets {
+                if let Ok(s) = serde_json::to_string(t) {
+                    println!("{s}");
+                }
+            }
+        }
+        "md" => {
+            for t in tweets {
+                let author = t
+                    .pointer("/author/username")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("?");
+                let text = t.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                let id = t.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                println!("- **@{author}** ([{id}](https://x.com/{author}/status/{id})): {text}");
+            }
+        }
+        _ => output::print_json(&tweets),
+    }
 }
 
 /// Upload each `--media` file and return the resulting media id list.

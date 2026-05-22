@@ -43,6 +43,8 @@ regex       = { version = "1" }
 json5       = { version = "0.4" }
 # Timestamps for the local store and JSONL backups.
 time        = { version = "0.3", features = ["formatting", "parsing", "macros"] }
+# Local-first store: bundled SQLite with FTS5 full-text search.
+rusqlite    = { version = "0.32", features = ["bundled"] }
 
 [dev-dependencies]
 tokio       = { version = "1.52", features = ["full"] }

@@ -47,6 +47,7 @@ pub mod output;
 pub mod parse;
 pub mod runtime_query_ids;
 pub mod session;
+pub mod store;
 
 pub use api::{TimelineTweet, TweetResult, UserInfo};
 pub use catalog::{OpType, Operation};
@@ -57,6 +58,7 @@ pub use output::OutputMode;
 pub use parse::{Author, Tweet, TweetPage, User, UserPage};
 pub use runtime_query_ids::{QueryIdStore, Snapshot as QueryIdSnapshot};
 pub use session::XSession;
+pub use store::{Stats as StoreStats, Store, StoredTweet};
 
 use thiserror::Error;
 
@@ -82,6 +84,10 @@ pub enum XError {
     /// I/O error (reading session file, etc.).
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// Local SQLite store error.
+    #[error("store error: {0}")]
+    Db(#[from] rusqlite::Error),
 
     /// The requested GraphQL operation name was not found in the embedded
     /// catalog.  Either the name is misspelled or the catalog needs to be
