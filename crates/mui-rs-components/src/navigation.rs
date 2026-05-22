@@ -33,7 +33,7 @@ impl Widget for TopAppBar {
         // Title — real glyphs, vertically centred, left of the window controls.
         if !self.title.is_empty() {
             let style = TextStyle::new(
-                "Roboto, Segoe UI, Arial, sans-serif",
+                mui_rs_renderer::text::FONT_UI,
                 22.0,
                 400.0,
                 Color::from_rgb8(230, 225, 229), // on-surface

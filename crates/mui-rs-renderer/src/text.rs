@@ -18,6 +18,17 @@ use vello::kurbo::Affine;
 use vello::peniko::{Color, Fill};
 use vello::Scene;
 
+/// Google's open-source brand families (made open-source in 2025), with
+/// cross-platform fallbacks. Google Sans Text is tuned for UI/body sizes;
+/// Google Sans for display; Google Sans Code is the monospace used to render
+/// code in Gemini. Centralising these here means every component shares one
+/// typographic identity instead of hard-coding `"Roboto, …"` per file.
+pub const FONT_UI: &str = "\"Google Sans Text\", \"Google Sans\", Roboto, \"Segoe UI\", system-ui, sans-serif";
+/// Larger display / headline family.
+pub const FONT_DISPLAY: &str = "\"Google Sans\", \"Google Sans Display\", Roboto, \"Segoe UI\", sans-serif";
+/// Monospace for code (Gemini's code typeface).
+pub const FONT_CODE: &str = "\"Google Sans Code\", \"Roboto Mono\", \"Cascadia Code\", Consolas, monospace";
+
 /// A resolved text style: family (CSS source string), pixel size, weight, colour.
 #[derive(Clone, Copy, Debug)]
 pub struct TextStyle {
@@ -35,6 +46,24 @@ impl TextStyle {
     #[must_use]
     pub const fn new(family: &'static str, size: f32, weight: f32, color: Color) -> Self {
         Self { family, size, weight, color }
+    }
+
+    /// UI/body text in the Google Sans Text stack ([`FONT_UI`]).
+    #[must_use]
+    pub const fn ui(size: f32, weight: f32, color: Color) -> Self {
+        Self::new(FONT_UI, size, weight, color)
+    }
+
+    /// Display/headline text in the Google Sans stack ([`FONT_DISPLAY`]).
+    #[must_use]
+    pub const fn display(size: f32, weight: f32, color: Color) -> Self {
+        Self::new(FONT_DISPLAY, size, weight, color)
+    }
+
+    /// Monospace code text in the Google Sans Code stack ([`FONT_CODE`]).
+    #[must_use]
+    pub const fn code(size: f32, weight: f32, color: Color) -> Self {
+        Self::new(FONT_CODE, size, weight, color)
     }
 }
 
