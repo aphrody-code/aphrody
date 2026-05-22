@@ -145,9 +145,19 @@ impl XClient {
             });
         }
 
-        let json = self
+        let json = match self
             .graphql("CreateTweet", variables, Some(extra_features))
-            .await?;
+            .await
+        {
+            Ok(v) => v,
+            // Error 226 = X flagged the request as "automated". The legacy
+            // statuses/update.json endpoint is more lenient; fall back to it,
+            // exactly like the reference client does.
+            Err(XError::Api { code: 226, .. }) => {
+                return self.create_tweet_rest(text, reply_to).await;
+            }
+            Err(e) => return Err(e),
+        };
 
         let result = json
             .pointer("/data/create_tweet/tweet_results/result")
@@ -168,6 +178,55 @@ impl XClient {
             .unwrap_or(text)
             .to_owned();
 
+        Ok(TweetResult { id, text: full_text })
+    }
+
+    /// Post a tweet via the legacy REST v1.1 `statuses/update.json` endpoint.
+    ///
+    /// Used as an automatic fallback when GraphQL `CreateTweet` returns error
+    /// `226` ("this request looks like it might be automated"). The legacy
+    /// endpoint accepts the same cookie auth and is historically more lenient.
+    pub async fn create_tweet_rest(&self, text: &str, reply_to: Option<&str>) -> Result<TweetResult> {
+        let url = format!("{API_BASE}/1.1/statuses/update.json");
+        let mut form: Vec<(&str, String)> = vec![
+            ("status", text.to_owned()),
+            ("tweet_mode", "extended".to_owned()),
+        ];
+        if let Some(reply_id) = reply_to {
+            form.push(("in_reply_to_status_id", reply_id.to_owned()));
+            form.push(("auto_populate_reply_metadata", "true".to_owned()));
+        }
+
+        let resp = self
+            .inner()
+            .post(&url)
+            .header("x-client-transaction-id", crate::client::random_transaction_id())
+            .form(&form)
+            .send()
+            .await?;
+        self.capture_rate_limit(resp.headers());
+        let status = resp.status();
+        let json: Value = resp.json().await.unwrap_or(Value::Null);
+        if !status.is_success() {
+            check_api_errors(&json)?;
+            return Err(XError::Api {
+                code: status.as_u16().into(),
+                message: format!("HTTP {status} from statuses/update.json"),
+            });
+        }
+        check_api_errors(&json)?;
+
+        let id = json
+            .get("id_str")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+        let full_text = json
+            .get("full_text")
+            .or_else(|| json.get("text"))
+            .and_then(Value::as_str)
+            .unwrap_or(text)
+            .to_owned();
         Ok(TweetResult { id, text: full_text })
     }
 
