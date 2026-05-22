@@ -890,6 +890,54 @@ def _parse_formats(value: Any) -> tuple[str, ...]:
     return tuple(s.strip().lower() for s in str(value).split(",") if s.strip())
 
 
+def _autocomplete_dry_run(
+    prefix: str | None,
+    file: str | None,
+    suffix: str,
+    line: int | None,
+    col: int | None,
+    lang: str | None,
+    marker: str | None,
+    n: int,
+    model: str,
+) -> dict[str, Any]:
+    """Resolve an autocomplete request offline (no model call) for smoke tests.
+
+    Returns the normalised request + the exact prompt that *would* be sent, so
+    the command can be exercised without burning live quota or needing network.
+    """
+    from aphrody import autocomplete as ac
+
+    if file is not None:
+        text = Path(file).read_text(encoding="utf-8")
+        eff_marker = marker if marker is not None else ac.DEFAULT_CURSOR_MARKER
+        pre, suf = ac.split_at_cursor(
+            text, line=line, col=col, marker=eff_marker
+        )
+        req = ac.CompletionRequest(
+            prefix=pre,
+            suffix=suf,
+            language=lang or ac.language_for_path(file),
+            path=file,
+        )
+    else:
+        req = ac.CompletionRequest(
+            prefix=prefix or "", suffix=suffix, language=lang
+        )
+    system, user = ac.build_prompt(req)
+    return {
+        "dry_run": True,
+        "model": model,
+        "n": n,
+        "language": req.language,
+        "mode": "fill-in-the-middle" if req.suffix.strip() else "continuation",
+        "prefix": req.prefix,
+        "suffix": req.suffix,
+        "system_instruction": system,
+        "user_prompt": user,
+    }
+
+
 def _emit(value: Any) -> None:
     """Print a result as indented JSON (dict/list) or plain text."""
     if isinstance(value, (dict, list)):
@@ -1290,6 +1338,118 @@ class Aphrody:
             model: The Gemini model id.
         """
         _emit(vertex.GeminiVertex(model=model).generate(prompt))
+
+    def autocomplete(
+        self,
+        prefix: str | None = None,
+        file: str | None = None,
+        suffix: str = "",
+        line: int | None = None,
+        col: int | None = None,
+        lang: str | None = None,
+        marker: str | None = None,
+        n: int = 1,
+        model: str = vertex.DEFAULT_MODEL,
+        stream: bool = False,
+        auto: bool = False,
+        write: bool = False,
+        dry_run: bool = False,
+    ) -> None:
+        """Keyless automatic code completion ("auto-recomplete").
+
+        Predicts the code at a cursor with Gemini (keyless, via Vertex AI) and
+        prints structured completions as JSON. Provide either ``--prefix`` (a
+        code fragment to continue) or ``--file`` (with ``--line``/``--col`` or a
+        cursor marker). With ``--suffix`` (or surrounding file context) it does
+        fill-in-the-middle. ``--auto`` walks files and fills the cursor marker
+        (``<|cursor|>``) in each; pair with ``--write`` to apply in place.
+
+        Args:
+            prefix: Code before the cursor (continuation mode).
+            file: Source file to complete inside (mutually exclusive with
+                ``--prefix``). In ``--auto`` mode, the file(s) to fill.
+            suffix: Code after the cursor (enables fill-in-the-middle).
+            line: 1-based cursor line within ``--file``.
+            col: 1-based cursor column within the line.
+            lang: Language hint (e.g. ``python``); inferred from ``--file``.
+            marker: Cursor marker substring (default ``<|cursor|>`` for files).
+            n: Number of candidates to return.
+            model: Gemini model id.
+            stream: Stream the first candidate token-by-token (low TTFT).
+            auto: Auto-fill the cursor marker in the file(s) (batch loop).
+            write: In ``--auto`` mode, write completions back to disk.
+            dry_run: Do not call the model; echo the resolved request (offline
+                smoke test, burns no live quota).
+        """
+        from aphrody import autocomplete as ac
+
+        if dry_run:
+            _emit(
+                _autocomplete_dry_run(
+                    prefix, file, suffix, line, col, lang, marker, n, model
+                )
+            )
+            return
+
+        if auto:
+            if not file:
+                raise AphrodyError("--auto requires --file")
+            results = ac.recomplete_paths(
+                [file],
+                marker=marker or ac.DEFAULT_CURSOR_MARKER,
+                model=model,
+                write=write,
+            )
+            _emit({"auto": True, "write": write, "results": results})
+            return
+
+        if stream:
+            completer = ac.CodeCompleter(model=model)
+            if file is not None:
+                text = Path(file).read_text(encoding="utf-8")
+                eff_marker = (
+                    marker if marker is not None else ac.DEFAULT_CURSOR_MARKER
+                )
+                pre, suf = ac.split_at_cursor(
+                    text, line=line, col=col, marker=eff_marker
+                )
+                req = ac.CompletionRequest(
+                    prefix=pre,
+                    suffix=suf,
+                    language=lang or ac.language_for_path(file),
+                    path=file,
+                )
+            else:
+                req = ac.CompletionRequest(
+                    prefix=prefix or "", suffix=suffix, language=lang
+                )
+            for delta in completer.stream(req):
+                sys.stdout.write(delta)
+                sys.stdout.flush()
+            sys.stdout.write("\n")
+            return
+
+        candidates = ac.complete(
+            prefix=prefix,
+            suffix=suffix,
+            file=file,
+            line=line,
+            col=col,
+            language=lang,
+            marker=marker,
+            n=n,
+            model=model,
+        )
+        _emit(
+            {
+                "model": model,
+                "count": len(candidates),
+                "candidates": [c.to_dict() for c in candidates],
+            }
+        )
+
+    # ``recomplete`` is an alias for ``autocomplete`` (the auto loop).
+    recomplete = autocomplete
 
     def web(self, prompt: str) -> None:
         """Ask the Gemini *web app* (gemini.google.com) via session cookies.
