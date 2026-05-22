@@ -37,11 +37,14 @@
 //! via the `XSession::transaction_id` field.
 
 pub mod api;
+pub mod catalog;
 pub mod client;
+pub mod features;
 pub mod session;
 
 pub use api::{TimelineTweet, TweetResult, UserInfo};
-pub use client::XClient;
+pub use catalog::{OpType, Operation};
+pub use client::{RateLimit, XClient};
 pub use session::XSession;
 
 use thiserror::Error;
@@ -68,6 +71,18 @@ pub enum XError {
     /// I/O error (reading session file, etc.).
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// The requested GraphQL operation name was not found in the embedded
+    /// catalog.  Either the name is misspelled or the catalog needs to be
+    /// re-extracted from a fresh X JS bundle.
+    #[error("unknown GraphQL operation: {0}")]
+    UnknownOperation(String),
+
+    /// The operation is rate-limited and the caller's configured `max_wait`
+    /// would be exceeded before the reset timestamp.  The caller should either
+    /// increase `max_wait` or schedule the call after `reset_epoch`.
+    #[error("rate limited until epoch {reset_epoch} (max_wait exceeded)")]
+    RateLimited { reset_epoch: i64 },
 }
 
 /// Convenience alias used throughout the crate.
