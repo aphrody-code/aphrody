@@ -40,6 +40,7 @@ pub mod grep;
 pub mod ls;
 pub mod memory_tool;
 pub mod read_file;
+pub mod scraping;
 pub mod web_fetch;
 pub mod write_file;
 

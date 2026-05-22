@@ -688,7 +688,12 @@ pub(crate) enum MemoryAction {
     /// parse it programmatically). Skipped records (per-item write errors)
     /// are collected and never abort the sweep.
     ///
-    /// Example (offline test):
+    /// Example (lancedb → honcho dry-run):
+    ///   aphrody memory migrate --from lancedb --to honcho \
+    ///     --from-lancedb-path ./var/memory --lancedb-ndims 768 \
+    ///     --agent-id agent-A --dry-run
+    ///
+    /// Example (offline sqlite test):
     ///   aphrody memory migrate --from sqlite-local --to sqlite-local \
     ///     --from-sqlite-path a.sqlite --to-sqlite-path b.sqlite \
     ///     --agent-id agent-A --dry-run --json
@@ -717,6 +722,17 @@ pub(crate) enum MemoryAction {
         /// Filesystem path for the target SQLite store (sqlite-local only).
         #[arg(long)]
         to_sqlite_path: Option<PathBuf>,
+        /// Filesystem path for the source LanceDB store directory (lancedb only).
+        #[arg(long)]
+        from_lancedb_path: Option<PathBuf>,
+        /// Filesystem path for the target LanceDB store directory (lancedb only).
+        #[arg(long)]
+        to_lancedb_path: Option<PathBuf>,
+        /// Embedding vector dimensionality for LanceDB backends.
+        /// Required when `--from lancedb` or `--to lancedb`; defaults to 768
+        /// (matches all-MiniLM-L6-v2 and similar sentence-embedding models).
+        #[arg(long, default_value_t = 768)]
+        lancedb_ndims: usize,
     },
 }
 
@@ -847,6 +863,13 @@ pub(crate) enum ReAction {
         /// Pretty-print the JSON (default: compact one-line).
         #[arg(long)]
         pretty: bool,
+        /// Deep Go recovery: also delegate to `redress` (goretk) and merge its
+        /// `info` + `packages` output under a `redress` key. Useful when native
+        /// recovery is weak (go1.27 google3/blaze builds → native
+        /// `func_count = 0`). Resolves redress via
+        /// $REDRESS_BIN > PATH > $GOPATH/bin > ~/go/bin.
+        #[arg(long)]
+        deep: bool,
     },
     /// Auto reverse-engineering — orchestrates all RE passes on a binary or folder.
     ///
@@ -958,6 +981,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 pretty,
                 from_sqlite_path,
                 to_sqlite_path,
+                from_lancedb_path,
+                to_lancedb_path,
+                lancedb_ndims,
             } => {
                 memory_cmd::MigrateCommand {
                     from,
@@ -968,6 +994,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     pretty,
                     from_sqlite_path,
                     to_sqlite_path,
+                    from_lancedb_path,
+                    to_lancedb_path,
+                    lancedb_ndims,
                 }
                 .execute(ctx)
                 .await?;
@@ -1064,23 +1093,38 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     ));
                 }
             },
-            ReAction::Go { path, pretty } => {
+            ReAction::Go { path, pretty, deep } => {
                 let bytes = std::fs::read(&path).map_err(|e| {
                     miette::miette!("failed to read {}: {e}", path.display())
                 })?;
                 let report = aphrody_re::golang::analyze_go(&bytes);
-                let json = match &report {
-                    Some(r) => {
-                        if pretty {
-                            serde_json::to_string_pretty(r)
-                        } else {
-                            serde_json::to_string(r)
-                        }
-                    },
-                    None => {
-                        // Not a Go binary — emit a minimal JSON object.
-                        Ok(r#"{"is_go":false}"#.to_owned())
-                    },
+                // Base JSON: le rapport natif, ou `{"is_go":false}`.
+                let mut value = match &report {
+                    Some(r) => serde_json::to_value(r)
+                        .map_err(|e| miette::miette!("JSON encode failed: {e}"))?,
+                    None => serde_json::json!({ "is_go": false }),
+                };
+                // `--deep` : déléguer à redress (lent, opt-in) et fusionner.
+                if deep {
+                    let path_for_redress = path.clone();
+                    let redress = tokio::task::spawn_blocking(move || {
+                        re_auto::run_redress(&path_for_redress)
+                    })
+                    .await
+                    .map_err(|e| miette::miette!("redress task panicked: {e}"))?;
+                    if let serde_json::Value::Object(ref mut map) = value {
+                        map.insert(
+                            "redress".to_owned(),
+                            serde_json::to_value(&redress).map_err(|e| {
+                                miette::miette!("redress JSON encode failed: {e}")
+                            })?,
+                        );
+                    }
+                }
+                let json = if pretty {
+                    serde_json::to_string_pretty(&value)
+                } else {
+                    serde_json::to_string(&value)
                 }
                 .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
                 println!("{json}");

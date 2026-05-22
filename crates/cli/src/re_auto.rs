@@ -138,6 +138,28 @@ pub(crate) struct DeepSummary {
     pub ghidra_output: Option<serde_json::Value>,
 }
 
+/// Résultat de la délégation à `redress` (goretk) — récupération Go profonde.
+///
+/// Le détecteur Go natif (`aphrody_re::golang::analyze_go`) échoue à compter les
+/// fonctions sur les builds go1.27 internes (google3/blaze, layout funcdata
+/// divergent — cf. `func_count = 0` sur le langserver Antigravity). `redress`
+/// porte ces builds (pclntab, packages, projection source). Ce DTO capture
+/// fidèlement sa sortie texte sans sur-promettre un parsing structuré.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct RedressSummary {
+    /// `true` si `redress` a été trouvé et invoqué avec succès.
+    pub redress_available: bool,
+    /// Message d'explication si `redress_available = false`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redress_unavailable_reason: Option<String>,
+    /// Sortie de `redress info <bin>` (build info — version, flags, deps).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub info: Option<String>,
+    /// Sortie de `redress packages <bin>` (packages + fonctions par package).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub packages: Option<String>,
+}
+
 // ---------------------------------------------------------------------------
 // Point d'entrée principal
 // ---------------------------------------------------------------------------
@@ -492,6 +514,84 @@ fn which_in_path(name: &str) -> Option<PathBuf> {
         }
     }
     None
+}
+
+// ---------------------------------------------------------------------------
+// Passe redress (goretk) — récupération Go profonde, opt-in (`re go --deep`)
+// ---------------------------------------------------------------------------
+
+/// Résout le binaire `redress` : `$REDRESS_BIN` > PATH > `$GOPATH/bin` >
+/// `$HOME/go/bin` (emplacement par défaut de `go install`).
+fn resolve_redress_bin() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    let exe = "redress.exe";
+    #[cfg(not(target_os = "windows"))]
+    let exe = "redress";
+
+    if let Ok(p) = std::env::var("REDRESS_BIN") {
+        let p = PathBuf::from(p);
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    if let Some(p) = which_in_path(exe) {
+        return Some(p);
+    }
+    // `go install` dépose dans $GOPATH/bin, sinon $HOME/go/bin.
+    let gopath_bins = std::env::var("GOPATH")
+        .ok()
+        .map(|g| g.split(if cfg!(windows) { ';' } else { ':' }).map(PathBuf::from).collect::<Vec<_>>())
+        .unwrap_or_default();
+    let home_go = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .ok()
+        .map(|h| PathBuf::from(h).join("go"));
+    for base in gopath_bins.into_iter().chain(home_go) {
+        let candidate = base.join("bin").join(exe);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+/// Invoque `redress info` + `redress packages` sur le binaire Go et capture la
+/// sortie. Non destructif, lent (lecture full du binaire par redress) → opt-in.
+pub(crate) fn run_redress(path: &Path) -> RedressSummary {
+    let Some(bin) = resolve_redress_bin() else {
+        return RedressSummary {
+            redress_available: false,
+            redress_unavailable_reason: Some(
+                "redress introuvable ($REDRESS_BIN / PATH / $GOPATH/bin / ~/go/bin) — \
+                 installer via `go install github.com/goretk/redress@latest`"
+                    .to_owned(),
+            ),
+            info: None,
+            packages: None,
+        };
+    };
+
+    let target = path.to_string_lossy();
+    let run = |sub: &str| -> Option<String> {
+        let out = std::process::Command::new(&bin)
+            .arg(sub)
+            .arg(target.as_ref())
+            .output()
+            .ok()?;
+        if out.status.success() {
+            let s = String::from_utf8_lossy(&out.stdout).into_owned();
+            (!s.trim().is_empty()).then_some(s)
+        } else {
+            None
+        }
+    };
+
+    RedressSummary {
+        redress_available: true,
+        redress_unavailable_reason: None,
+        info: run("info"),
+        packages: run("packages"),
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -162,6 +162,8 @@ pub enum ProviderKind {
     Honcho,
     /// Local rusqlite-backed offline store.
     SqliteLocal,
+    /// Embedded LanceDB vector store (via [`crate::lancedb_adapter::LanceDbAdapter`]).
+    LanceDb,
 }
 
 impl ProviderKind {
@@ -172,6 +174,7 @@ impl ProviderKind {
             Self::Mem0 => "mem0",
             Self::Honcho => "honcho",
             Self::SqliteLocal => "sqlite_local",
+            Self::LanceDb => "lancedb",
         }
     }
 }
@@ -305,6 +308,7 @@ mod tests {
         assert_eq!(ProviderKind::Mem0.as_str(), "mem0");
         assert_eq!(ProviderKind::Honcho.as_str(), "honcho");
         assert_eq!(ProviderKind::SqliteLocal.as_str(), "sqlite_local");
+        assert_eq!(ProviderKind::LanceDb.as_str(), "lancedb");
     }
 
     #[test]

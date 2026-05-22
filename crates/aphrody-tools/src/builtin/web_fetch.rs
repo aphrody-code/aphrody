@@ -12,8 +12,17 @@
 //! * Body is truncated to `max_bytes` (default 256 KiB).
 //! * Returns the raw bytes as UTF-8 when valid, else a base64-encoded
 //!   payload tagged `binary`.
+//!
+//! ## Client reuse
+//!
+//! [`WebFetchTool`] uses a process-wide [`crate::builtin::scraping::ScrapingClient`]
+//! initialised on first use via [`std::sync::OnceLock`].  This avoids
+//! creating a new TCP + TLS stack per call (minimal-latency project goal).
+//! The singleton is constructed with a generous pool limit and TCP keep-alive;
+//! per-request timeouts are enforced at the request level.
 
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -23,6 +32,7 @@ use serde_json::{Value, json};
 use crate::{
     Permission, PermissionDescriptor, Tool, ToolDescriptor, ToolError,
 };
+use super::scraping::ScrapingClient;
 
 /// Canonical tool name.
 pub const NAME: &str = "web_fetch";
@@ -33,12 +43,25 @@ pub const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 /// Default cap on the returned response body (256 KiB).
 pub const DEFAULT_MAX_BYTES: usize = 256 * 1024;
 
-/// Default User-Agent header. Mirrors the gemini-cli token format so
-/// upstream services see a familiar string.
-pub const DEFAULT_USER_AGENT: &str = concat!(
-    "aphrody-tools/", env!("CARGO_PKG_VERSION"),
-    " (+https://github.com/aphrody-code/aphrody)"
-);
+/// Default User-Agent header.
+///
+/// Mirrors Chrome 146 on Windows 11 x64 (see
+/// [`crate::builtin::scraping::CHROME146_USER_AGENT`]).  Using a realistic
+/// browser UA avoids bot-detection gates that reject CLI-style strings.
+pub const DEFAULT_USER_AGENT: &str = super::scraping::CHROME146_USER_AGENT;
+
+/// Process-wide shared scraping client.
+///
+/// Initialised on first access.  Panics at process start if the rustls
+/// provider was not installed before the first `web_fetch` call (same
+/// contract as before — `crates/cli/src/main.rs` installs it at boot).
+fn shared_client() -> &'static ScrapingClient {
+    static CLIENT: OnceLock<ScrapingClient> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        ScrapingClient::new(Duration::from_millis(DEFAULT_TIMEOUT_MS))
+            .expect("web_fetch: failed to build shared ScrapingClient — ensure rustls provider is installed")
+    })
+}
 
 /// Parsed arguments for the `web_fetch` tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,16 +160,16 @@ impl Tool for WebFetchTool {
         );
         let max_bytes = parsed.max_bytes.unwrap_or(DEFAULT_MAX_BYTES);
 
-        let client = reqwest::Client::builder()
-            .timeout(timeout)
-            .user_agent(DEFAULT_USER_AGENT)
-            .build()
-            .map_err(|e| ToolError::Network(e.to_string()))?;
+        // Reuse the process-wide client (shared connection pool).
+        // Per-request timeout is applied at the request level via
+        // `reqwest::RequestBuilder::timeout`, overriding the client-level
+        // default for this call only.
+        let client = shared_client().inner();
 
         let mut req = match method.as_str() {
-            "GET" => client.get(&parsed.url),
+            "GET" => client.get(&parsed.url).timeout(timeout),
             "POST" => {
-                let mut r = client.post(&parsed.url);
+                let mut r = client.post(&parsed.url).timeout(timeout);
                 if let Some(body) = parsed.body.as_deref() {
                     let has_content_type = parsed
                         .headers
