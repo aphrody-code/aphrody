@@ -1,6 +1,25 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Mise à jour « M3 Web » (material-web) depuis le scrape récursif du glossaire
 
+> **MAJ 2026-05-22 — catalogue complété.** Les 12 composants manquants sont
+> désormais livrés dans `packages/material-web` en Lit auto-suffisant (css
+> inline + tokens `--md-sys-*`, sans pipeline SASS) : `md-snackbar`,
+> `md-top-app-bar`/`md-bottom-app-bar`, `md-navigation-rail`(+item),
+> `md-search-bar`, `md-toolbar`, `md-bottom-sheet`, `md-side-sheet`,
+> `md-carousel`(+item), `md-loading-indicator`, `md-button-group`,
+> `md-fab-menu`(+item), `md-date-picker`, `md-time-picker`. Ajoutés aussi : la
+> famille **layout** adaptative (`md-scaffold`, `md-pane`, `md-list-detail`,
+> `md-supporting-pane`), la typo **`md-type`** (axes Google Sans Flex,
+> flexibilité max + animation) et les effets **`md-webgpu-canvas`**
+> (spectrum-shift / sparkle / glimmer, WGSL + fallback CSS). Les composants
+> `labs/` stables (badge, cards, navigation bar/drawer/tab, segmented button)
+> sont promus via `aphrody-labs.ts`. Tout est branché dans `all.ts` (via
+> `aphrody-components.ts`) + wrappers React dans `apps/m3-react`. Détail :
+> [`packages/material-web/APHRODY-M3.md`](../../packages/material-web/APHRODY-M3.md).
+> Validation : `tsc --noEmit` exit 0 sur les 24 custom elements (flags stricts
+> du projet : noUnusedLocals, noImplicitOverride, noImplicitReturns,
+> noPropertyAccessFromIndexSignature).
+
 Consolide le **scrape récursif** de Material Design 3 — index glossaire +
 toutes les pages composants — en un plan d'update concret pour `packages/material-web`
 (le « M3 web »). Référence : [`m3-glossary.md`](m3-glossary.md),
