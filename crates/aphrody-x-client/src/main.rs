@@ -554,6 +554,24 @@ enum Op {
         #[command(subcommand)]
         cmd: GraphCmd,
     },
+    /// Import a Twitter/X data archive into the local store.
+    Import {
+        #[command(subcommand)]
+        what: ImportWhat,
+    },
+}
+
+/// Import sources.
+#[derive(Subcommand)]
+enum ImportWhat {
+    /// Import a Twitter/X data export (tweets.js or the archive directory).
+    Archive {
+        /// Path to the archive directory or a tweets.js file.
+        path: std::path::PathBuf,
+        /// Owner handle to attribute tweets to (default: authenticated user).
+        #[arg(long)]
+        handle: Option<String>,
+    },
 }
 
 /// What to sync into the local store.
@@ -1241,6 +1259,22 @@ async fn run() -> Result<()> {
                     .context("non_mutual_following failed")?,
             };
             output::print_json(&serde_json::json!({ "account": account, "count": users.len(), "users": users }));
+        }
+        Op::Import { what } => {
+            let store = aphrody_x_client::Store::open_default().context("open store failed")?;
+            match what {
+                ImportWhat::Archive { path, handle } => {
+                    let owner = match handle {
+                        Some(h) => normalize_handle(&h).to_owned(),
+                        None => client.whoami().await.context("whoami failed")?.screen_name,
+                    };
+                    let n = aphrody_x_client::archive::import_archive(&store, &path, &owner)
+                        .context("archive import failed")?;
+                    output::print_json(
+                        &serde_json::json!({ "imported": n, "owner": owner }),
+                    );
+                }
+            }
         }
     }
 

@@ -37,6 +37,7 @@
 //! via the `XSession::transaction_id` field.
 
 pub mod api;
+pub mod archive;
 pub mod catalog;
 pub mod client;
 pub mod config;
