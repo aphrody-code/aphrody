@@ -1522,6 +1522,90 @@ class Aphrody:
             proxy_prefix=proxy_prefix,
         )
 
+    def forensic(
+        self,
+        target: str,
+        deep: bool = False,
+        ask: str | None = None,
+        out_dir: str | None = None,
+        dry_run: bool = False,
+        max_files: int = 200000,
+    ) -> None:
+        """Full forensic + classification + RAG + auto-ML pass over a target.
+
+        Orchestrates the pipeline (inventory -> Magika classify -> LIEF PE
+        inspect -> markitdown docs -> source extraction -> fastembed RAG ->
+        keyless Gemini synthesis/auto-ML) and writes ``report.json`` +
+        ``report.md`` under ``var/data/forensic-<target>/``.
+
+        ``target`` may be a path or a known Antigravity name: ``install``
+        (the installed program dir), ``appdata``, ``dotdir``, ``agy``,
+        ``gemini``. Full mode: real values (tokens included) are read and
+        classified — the owner's own machine, data and account. No analysed
+        binary is executed (Magika/LIEF are static).
+
+        Args:
+            target: A path, or ``install`` / ``appdata`` / ``dotdir`` / ``agy``
+                / ``gemini``.
+            deep: Heavy passes — source extraction + RAG index + LLM auto-ML
+                component tagging.
+            ask: A question answered via RAG retrieval -> Gemini.
+            out_dir: Override the output directory.
+            dry_run: Skip every LLM call (offline smoke; burns no quota).
+            max_files: Inventory file cap (safety bound).
+        """
+        from aphrody.forensic.pipeline import run_forensic
+
+        report = run_forensic(
+            target,
+            deep=deep,
+            dry_run=dry_run,
+            ask=ask,
+            out_dir=out_dir,
+            max_files=max_files,
+        )
+        # Keep stdout compact: emit the summary, not the full per-file dump.
+        summary = {
+            "target": report.get("target"),
+            "resolved_path": report.get("resolved_path"),
+            "exists": report.get("exists"),
+            "deep": report.get("deep"),
+            "dry_run": report.get("dry_run"),
+            "out_dir": report.get("out_dir"),
+            "report_json": (
+                str(Path(report["out_dir"]) / "report.json")
+                if report.get("out_dir")
+                else None
+            ),
+            "report_md": report.get("report_md"),
+            "inventory": report.get("inventory", {}).get("summary"),
+            "classification": report.get("classification"),
+            "pe_count": len(report.get("pe_reports", [])),
+            "documents": len(report.get("documents", [])),
+        }
+        if "extraction" in report:
+            summary["extraction"] = {
+                "total_files": report["extraction"].get("total_files"),
+                "asar": len(report["extraction"].get("asar_archives", [])),
+            }
+        if "rag" in report:
+            summary["rag"] = report["rag"]
+        if "error" in report:
+            summary["error"] = report["error"]
+        _emit(summary)
+
+    def targets(self) -> None:
+        """List the known Antigravity forensic targets and whether they exist."""
+        from aphrody.forensic import targets as targets_mod
+
+        known = targets_mod.known_targets()
+        _emit(
+            {
+                name: {"path": path, "exists": Path(path).exists()}
+                for name, path in known.items()
+            }
+        )
+
     def voice(
         self,
         host: str = "127.0.0.1",
