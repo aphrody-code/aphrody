@@ -89,6 +89,8 @@ thiserror                 = { workspace = true }
 # Messaging (outbound connectors + bidirectional channels: Slack/Telegram/Matrix/Discord/X).
 # Native-only because reqwest + tokio do not compile on wasm32.
 aphrody-messaging         = { path = "../aphrody-messaging" }
+# `aphrody hermes` voice-to-voice agent — STT (Whisper/ElevenLabs) + TTS (ElevenLabs).
+aphrody-voice             = { path = "../aphrody-voice" }
 # `aphrody scan {tree, manifests}` — parallel filesystem walk + manifest parse.
 walkdir                   = { workspace = true }
 ignore                    = { workspace = true }
