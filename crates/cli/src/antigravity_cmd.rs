@@ -19,15 +19,15 @@
 //! which links on wasm32.
 
 use antigravity_sdk::client::AntigravityClient;
-use antigravity_sdk::endpoints::{CloudCodeEndpoint, GEMINI_API_HOST};
+use antigravity_sdk::endpoints::{CloudCodeEndpoint, METHOD_GENERATE_CONTENT};
 use antigravity_sdk::error::SdkError;
 use antigravity_sdk::models::{ClientMetadata, OnboardUserRequest};
 use serde_json::json;
 
 /// Default Gemini model used by `aphrody antigravity chat` when `--model` is
-/// not supplied. The bare model id (no `models/` prefix) is what the
-/// `generativelanguage` `v1beta` `generateContent` path expects.
-const DEFAULT_GEMINI_MODEL: &str = "gemini-2.0-flash";
+/// not supplied. The bare model id (no `models/` prefix) is what the Cloud Code
+/// `v1internal:generateContent` envelope expects.
+const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
 
 /// Cloud Code endpoint selector for `aphrody antigravity cloud-code`.
 #[derive(Debug, Clone, clap::ValueEnum, Default)]
@@ -293,24 +293,37 @@ pub(crate) async fn run(action: AntigravityAction) -> miette::Result<()> {
         AntigravityAction::Chat { model, prompt } => {
             let client = build_client().map_err(|e| map_sdk_err("chat", e))?;
             let model = model.unwrap_or_else(|| DEFAULT_GEMINI_MODEL.to_string());
-            // Gemini generative-language v1beta generateContent surface.
-            // URL is composed inline against the GEMINI host constant.
-            let url = format!("{GEMINI_API_HOST}/v1beta/models/{model}:generateContent");
+            // Faithful agy path: Cloud Code modelbackend
+            // (`cloudcode-pa.googleapis.com/v1internal:generateContent`). The
+            // agy token is scoped for this host (the public `generativelanguage`
+            // host rejects it with 403 ACCESS_TOKEN_SCOPE_INSUFFICIENT). The
+            // Cloud AI Companion project is resolved via `loadCodeAssist`.
+            let project = client
+                .resolve_cloudcode_project()
+                .await
+                .map_err(|e| map_sdk_err("chat", e))?
+                .ok_or_else(|| {
+                    miette::miette!(
+                        "no cloudaicompanionProject for this account (run \
+                         `aphrody antigravity onboard` first)"
+                    )
+                })?;
             let body = json!({
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [ { "text": prompt } ]
-                    }
-                ]
+                "model": model,
+                "project": project,
+                "request": {
+                    "contents": [ { "role": "user", "parts": [ { "text": prompt } ] } ]
+                }
             });
             let response = client
-                .post_json(&url, &body)
+                .cloud_code(CloudCodeEndpoint::Prod, METHOD_GENERATE_CONTENT, &body)
                 .await
                 .map_err(|e| map_sdk_err("chat", e))?;
-            // `chat` is always JSON (no --json flag); pretty-print for
-            // readability since it is the primary human-facing output.
-            print_value(&response, true)
+            // Unwrap the Cloud Code `response` envelope so the printed JSON keeps
+            // the documented `.candidates[0].content` shape. `chat` is always
+            // JSON (no --json flag); pretty-print as the primary human output.
+            let unwrapped = response.get("response").cloned().unwrap_or(response);
+            print_value(&unwrapped, true)
         },
 
         // -----------------------------------------------------------------------
