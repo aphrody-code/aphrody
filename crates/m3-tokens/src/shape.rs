@@ -2,25 +2,28 @@
 //! Material Design 3 shape — corner radius token scale.
 //!
 //! M3 defines a corner radius scale that controls how component edges are
-//! rounded.  The scale has seven named tokens ranging from `none` (0 dp,
-//! perfectly square) through `full` (9999 dp, a fully rounded pill shape).
+//! rounded.  The M3 Expressive scale has ten named tokens ranging from `none`
+//! (0 dp, perfectly square) through `full` (9999 dp, a fully rounded pill).
 //!
 //! Components are assigned a shape role by the M3 specification; the tokens
 //! here are the authoritative values for those roles.
 //!
-//! Reference: <https://m3.material.io/styles/shape/shape-scale-tokens>
+//! Reference: <https://m3.material.io/styles/shape/corner-radius-scale>
 //!
 //! ## Token table
 //!
-//! | Token        | dp   | CSS variable                          |
-//! |--------------|------|---------------------------------------|
-//! | none         | 0    | `--md-sys-shape-corner-none`          |
-//! | extra-small  | 4    | `--md-sys-shape-corner-extra-small`   |
-//! | small        | 8    | `--md-sys-shape-corner-small`         |
-//! | medium       | 12   | `--md-sys-shape-corner-medium`        |
-//! | large        | 16   | `--md-sys-shape-corner-large`         |
-//! | extra-large  | 28   | `--md-sys-shape-corner-extra-large`   |
-//! | full         | 9999 | `--md-sys-shape-corner-full`          |
+//! | Token                  | dp   | CSS variable                                  |
+//! |------------------------|------|-----------------------------------------------|
+//! | none                   | 0    | `--md-sys-shape-corner-none`                  |
+//! | extra-small            | 4    | `--md-sys-shape-corner-extra-small`           |
+//! | small                  | 8    | `--md-sys-shape-corner-small`                 |
+//! | medium                 | 12   | `--md-sys-shape-corner-medium`                |
+//! | large                  | 16   | `--md-sys-shape-corner-large`                 |
+//! | large-increased        | 20   | `--md-sys-shape-corner-large-increased`       |
+//! | extra-large            | 28   | `--md-sys-shape-corner-extra-large`           |
+//! | extra-large-increased  | 32   | `--md-sys-shape-corner-extra-large-increased` |
+//! | extra-extra-large      | 48   | `--md-sys-shape-corner-extra-extra-large`     |
+//! | full                   | 9999 | `--md-sys-shape-corner-full`                  |
 
 /// A corner radius token value expressed in density-independent pixels (dp).
 ///
@@ -49,8 +52,17 @@ pub const MEDIUM: CornerRadius = CornerRadius { dp: 12 };
 /// Large corner rounding (16 dp).
 pub const LARGE: CornerRadius = CornerRadius { dp: 16 };
 
+/// Large-increased corner rounding (20 dp) — M3 Expressive.
+pub const LARGE_INCREASED: CornerRadius = CornerRadius { dp: 20 };
+
 /// Extra-large corner rounding (28 dp).
 pub const EXTRA_LARGE: CornerRadius = CornerRadius { dp: 28 };
+
+/// Extra-large-increased corner rounding (32 dp) — M3 Expressive.
+pub const EXTRA_LARGE_INCREASED: CornerRadius = CornerRadius { dp: 32 };
+
+/// Extra-extra-large corner rounding (48 dp) — M3 Expressive.
+pub const EXTRA_EXTRA_LARGE: CornerRadius = CornerRadius { dp: 48 };
 
 /// Full corner rounding — pill shape (9999 dp).
 ///
@@ -59,18 +71,38 @@ pub const EXTRA_LARGE: CornerRadius = CornerRadius { dp: 28 };
 /// same visual result.
 pub const FULL: CornerRadius = CornerRadius { dp: 9999 };
 
-/// All seven corner-radius tokens in canonical M3 order
-/// (`none` → `extra-small` → `small` → `medium` → `large` → `extra-large` → `full`).
-pub const ALL: [CornerRadius; 7] = [NONE, EXTRA_SMALL, SMALL, MEDIUM, LARGE, EXTRA_LARGE, FULL];
+/// All ten corner-radius tokens in canonical M3 (Expressive) order.
+pub const ALL: [CornerRadius; 10] = [
+    NONE,
+    EXTRA_SMALL,
+    SMALL,
+    MEDIUM,
+    LARGE,
+    LARGE_INCREASED,
+    EXTRA_LARGE,
+    EXTRA_LARGE_INCREASED,
+    EXTRA_EXTRA_LARGE,
+    FULL,
+];
 
 /// Kebab-case names for each token in [`ALL`] order.
 ///
 /// Matches the CSS custom property suffix defined by the M3 specification:
 /// `--md-sys-shape-corner-<name>`.
-pub const NAMES: [&str; 7] =
-    ["none", "extra-small", "small", "medium", "large", "extra-large", "full"];
+pub const NAMES: [&str; 10] = [
+    "none",
+    "extra-small",
+    "small",
+    "medium",
+    "large",
+    "large-increased",
+    "extra-large",
+    "extra-large-increased",
+    "extra-extra-large",
+    "full",
+];
 
-/// Emits a CSS `:root` block declaring all seven M3 shape corner-radius
+/// Emits a CSS `:root` block declaring all ten M3 shape corner-radius
 /// custom properties.
 ///
 /// Each property value is expressed as `<dp>dp` per M3 convention (not `px`),
@@ -101,20 +133,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_has_seven_entries() {
-        assert_eq!(ALL.len(), 7);
+    fn all_has_ten_entries() {
+        assert_eq!(ALL.len(), 10);
     }
 
     #[test]
-    fn names_has_seven_entries() {
-        assert_eq!(NAMES.len(), 7);
+    fn names_has_ten_entries() {
+        assert_eq!(NAMES.len(), 10);
     }
 
     #[test]
     fn canonical_ordering() {
         // Each token must be strictly larger than the previous one.
-        assert!(FULL.dp > EXTRA_LARGE.dp);
-        assert!(EXTRA_LARGE.dp > LARGE.dp);
+        assert!(FULL.dp > EXTRA_EXTRA_LARGE.dp);
+        assert!(EXTRA_EXTRA_LARGE.dp > EXTRA_LARGE_INCREASED.dp);
+        assert!(EXTRA_LARGE_INCREASED.dp > EXTRA_LARGE.dp);
+        assert!(EXTRA_LARGE.dp > LARGE_INCREASED.dp);
+        assert!(LARGE_INCREASED.dp > LARGE.dp);
         assert!(LARGE.dp > MEDIUM.dp);
         assert!(MEDIUM.dp > SMALL.dp);
         assert!(SMALL.dp > EXTRA_SMALL.dp);
@@ -145,7 +180,10 @@ mod tests {
         assert_eq!(SMALL.dp, 8);
         assert_eq!(MEDIUM.dp, 12);
         assert_eq!(LARGE.dp, 16);
+        assert_eq!(LARGE_INCREASED.dp, 20);
         assert_eq!(EXTRA_LARGE.dp, 28);
+        assert_eq!(EXTRA_LARGE_INCREASED.dp, 32);
+        assert_eq!(EXTRA_EXTRA_LARGE.dp, 48);
         assert_eq!(FULL.dp, 9999);
     }
 

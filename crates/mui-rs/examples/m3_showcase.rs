@@ -19,6 +19,9 @@ use std::sync::Arc;
 
 use mui_rs::components::actions::{Button, ButtonVariant};
 use mui_rs::components::containers::{Card, CardVariant};
+use mui_rs::components::display::{Chip, Tab};
+use mui_rs::components::feedback::{ProgressIndicator, Snackbar};
+use mui_rs::components::inputs::{SearchBar, Slider, Switch};
 use mui_rs::components::navigation::TopAppBar;
 use mui_rs::renderer::pipeline::RenderPipeline;
 use mui_rs::renderer::surface::RenderSurface;
@@ -116,6 +119,47 @@ impl ApplicationHandler for App<'_> {
                     self.pipeline
                         .draw_widget(&card, Affine::translate((40.0 + i as f64 * 300.0, 200.0)));
                 }
+
+                // Chips (filter, unselected + selected).
+                self.pipeline.draw_widget(
+                    &Chip { label: "All".to_owned(), selected: true },
+                    Affine::translate((40.0, 380.0)),
+                );
+                self.pipeline.draw_widget(
+                    &Chip { label: "Starred".to_owned(), selected: false },
+                    Affine::translate((110.0, 380.0)),
+                );
+
+                // Switch on/off + a slider.
+                self.pipeline
+                    .draw_widget(&Switch { checked: true, disabled: false }, Affine::translate((240.0, 376.0)));
+                self.pipeline
+                    .draw_widget(&Switch { checked: false, disabled: false }, Affine::translate((310.0, 376.0)));
+                self.pipeline
+                    .draw_widget(&Slider { value: 0.6, disabled: false }, Affine::translate((400.0, 372.0)));
+                self.pipeline.draw_widget(
+                    &ProgressIndicator { progress: Some(0.45) },
+                    Affine::translate((640.0, 392.0)),
+                );
+
+                // Primary tabs.
+                self.pipeline.draw_widget(
+                    &Tab {
+                        labels: vec!["Overview".to_owned(), "Specs".to_owned(), "Code".to_owned()],
+                        active: 0,
+                    },
+                    Affine::translate((40.0, 430.0)),
+                );
+
+                // Search bar + snackbar.
+                self.pipeline.draw_widget(
+                    &SearchBar { query: String::new() },
+                    Affine::translate((40.0, 500.0)),
+                );
+                self.pipeline.draw_widget(
+                    &Snackbar { message: "Saved to library".to_owned() },
+                    Affine::translate((420.0, 504.0)),
+                );
 
                 if let Err(e) = self.pipeline.render_to_surface(surface) {
                     eprintln!("render error: {e:?}");
