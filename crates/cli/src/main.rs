@@ -24,6 +24,7 @@
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod design_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod ide_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod re_auto;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
@@ -829,6 +830,53 @@ pub(crate) enum ReAction {
         #[arg(long)]
         pretty: bool,
     },
+    /// Analyse a Go binary — version, function table, packages, type names.
+    ///
+    /// Detects Go binaries via `buildinfo` magic and `pclntab` structure.
+    /// Handles Go 1.18+ and 1.20+ pclntab layouts. Degrades gracefully on
+    /// stripped binaries (buildinfo absent but pclntab present). Zero GPL
+    /// dependency — pure Rust via goblin.
+    ///
+    /// Output JSON: `{ is_go, go_version, build_flags, module_path,
+    ///   func_count, funcs, packages, types_sample }`.
+    ///
+    /// Example: aphrody re go language_server.exe --pretty | jq '.go_version, .func_count'
+    Go {
+        /// Path to the binary to analyse.
+        path: PathBuf,
+        /// Pretty-print the JSON (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
+    /// Auto reverse-engineering — orchestrates all RE passes on a binary or folder.
+    ///
+    /// Runs (in order): triage, strings, Google endpoint extraction, Go analysis
+    /// (if applicable), entrypoint disasm. With `--deep` also invokes Ghidra
+    /// headless (requires `$GHIDRA_INSTALL_DIR` or `$GHIDRA_HOME`).
+    ///
+    /// On a folder: recursively scans executables (PE/ELF by magic), runs
+    /// `auto` on each with concurrency=4, emits a JSON array.
+    ///
+    /// Pure-Rust passes are fast (milliseconds). `--deep` is strictly opt-in
+    /// (Ghidra JVM startup is slow).
+    ///
+    /// Example: aphrody re auto language_server.exe --json | jq '.go.func_count'
+    /// Example (batch): aphrody re auto ./bin/ --json --limit 500
+    Auto {
+        /// Path to the binary or directory to analyse.
+        path: PathBuf,
+        /// Also invoke Ghidra headless for decompilation (opt-in, slow).
+        /// Requires `$GHIDRA_INSTALL_DIR` or `$GHIDRA_HOME`.
+        #[arg(long)]
+        deep: bool,
+        /// Emit only pure JSON on stdout (default: also prints a markdown
+        /// summary on stderr). Useful for scripting.
+        #[arg(long)]
+        json: bool,
+        /// Maximum number of strings to extract per file (default: 2000).
+        #[arg(long, default_value_t = 2000)]
+        limit: usize,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -1015,6 +1063,36 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                          Rebuild with: cargo build -p aphrody --features magika"
                     ));
                 }
+            },
+            ReAction::Go { path, pretty } => {
+                let bytes = std::fs::read(&path).map_err(|e| {
+                    miette::miette!("failed to read {}: {e}", path.display())
+                })?;
+                let report = aphrody_re::golang::analyze_go(&bytes);
+                let json = match &report {
+                    Some(r) => {
+                        if pretty {
+                            serde_json::to_string_pretty(r)
+                        } else {
+                            serde_json::to_string(r)
+                        }
+                    },
+                    None => {
+                        // Not a Go binary — emit a minimal JSON object.
+                        Ok(r#"{"is_go":false}"#.to_owned())
+                    },
+                }
+                .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                println!("{json}");
+            },
+            ReAction::Auto { path, deep, json, limit } => {
+                let result = tokio::task::spawn_blocking(move || {
+                    re_auto::run_auto(&path, deep, json, limit)
+                })
+                .await
+                .map_err(|e| miette::miette!("task panicked: {e}"))?
+                .map_err(|e| miette::miette!("re auto failed: {e}"))?;
+                println!("{result}");
             },
         },
         #[cfg(feature = "index")]
