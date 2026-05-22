@@ -158,13 +158,25 @@ enum Op {
     Post {
         /// Tweet text (max 280 chars unless X Premium subscriber).
         text: String,
+        /// Attach a media file (repeatable; up to 4 images/GIFs or 1 video).
+        #[arg(long)]
+        media: Vec<std::path::PathBuf>,
+        /// Alt text for the corresponding --media (repeatable, positional).
+        #[arg(long)]
+        alt: Vec<String>,
     },
     /// Reply to an existing tweet.
     Reply {
-        /// Numeric tweet ID to reply to.
+        /// Tweet URL or numeric ID to reply to.
         tweet_id: String,
         /// Reply text.
         text: String,
+        /// Attach a media file (repeatable; up to 4 images/GIFs or 1 video).
+        #[arg(long)]
+        media: Vec<std::path::PathBuf>,
+        /// Alt text for the corresponding --media (repeatable, positional).
+        #[arg(long)]
+        alt: Vec<String>,
     },
     /// Delete a tweet by its numeric ID.
     Delete {
@@ -468,6 +480,40 @@ enum Op {
         #[command(flatten)]
         page: PageArgs,
     },
+    /// Fetch news / trending topics from X's Explore tabs.
+    #[command(alias = "trending")]
+    News {
+        /// Number of items to return (default: 10).
+        #[arg(short = 'n', long, default_value_t = 10)]
+        count: usize,
+        /// Keep only AI-curated news items.
+        #[arg(long)]
+        ai_only: bool,
+        /// Fetch only the For You tab.
+        #[arg(long)]
+        for_you: bool,
+        /// Fetch only the News tab.
+        #[arg(long = "news-only")]
+        news_only: bool,
+        /// Fetch only the Sports tab.
+        #[arg(long)]
+        sports: bool,
+        /// Fetch only the Entertainment tab.
+        #[arg(long)]
+        entertainment: bool,
+        /// Fetch only the Trending tab.
+        #[arg(long = "trending-only")]
+        trending_only: bool,
+    },
+    /// Upload a media file and print its media_id (for scripted posting).
+    #[command(name = "upload-media")]
+    UploadMedia {
+        /// Path to the media file (jpg/png/webp/gif/mp4/mov).
+        path: std::path::PathBuf,
+        /// Optional alt text for accessibility.
+        #[arg(long)]
+        alt: Option<String>,
+    },
     /// Print which X account your cookies belong to.
     Whoami,
     /// Show which credential sources are available and where they resolve from.
@@ -508,16 +554,24 @@ async fn main() -> Result<()> {
         // -------------------------------------------------------------------
         // Tweets
         // -------------------------------------------------------------------
-        Op::Post { text } => {
+        Op::Post { text, media, alt } => {
+            let media_ids = upload_all_media(client, &media, &alt).await?;
             let result = client
-                .create_tweet(&text, None)
+                .create_tweet_with_media(&text, None, &media_ids)
                 .await
                 .context("create_tweet failed")?;
             println!("{}", serde_json::to_string_pretty(&result)?);
         }
-        Op::Reply { tweet_id, text } => {
+        Op::Reply {
+            tweet_id,
+            text,
+            media,
+            alt,
+        } => {
+            let id = extract_tweet_id(&tweet_id)?;
+            let media_ids = upload_all_media(client, &media, &alt).await?;
             let result = client
-                .create_tweet(&text, Some(&tweet_id))
+                .create_tweet_with_media(&text, Some(&id), &media_ids)
                 .await
                 .context("create_tweet (reply) failed")?;
             println!("{}", serde_json::to_string_pretty(&result)?);
@@ -957,6 +1011,52 @@ async fn main() -> Result<()> {
             .context("list_timeline failed")?;
             println!("{}", serde_json::to_string_pretty(&result)?);
         }
+        Op::News {
+            count,
+            ai_only,
+            for_you,
+            news_only,
+            sports,
+            entertainment,
+            trending_only,
+        } => {
+            let mut tabs: Vec<String> = Vec::new();
+            if for_you {
+                tabs.push("forYou".into());
+            }
+            if news_only {
+                tabs.push("news".into());
+            }
+            if sports {
+                tabs.push("sports".into());
+            }
+            if entertainment {
+                tabs.push("entertainment".into());
+            }
+            if trending_only {
+                tabs.push("trending".into());
+            }
+            let opts = aphrody_x_client::NewsOptions {
+                tabs: if tabs.is_empty() {
+                    aphrody_x_client::NewsOptions::default().tabs
+                } else {
+                    tabs
+                },
+                ai_only,
+            };
+            let items = client
+                .get_news(count, &opts)
+                .await
+                .context("get_news failed")?;
+            println!("{}", serde_json::to_string_pretty(&items)?);
+        }
+        Op::UploadMedia { path, alt } => {
+            let media_id = client
+                .upload_media(&path, alt.as_deref())
+                .await
+                .context("upload_media failed")?;
+            println!("{}", serde_json::json!({ "media_id": media_id }));
+        }
         Op::Whoami => {
             let me = client.whoami().await.context("whoami failed")?;
             println!("{}", serde_json::to_string_pretty(&me)?);
@@ -976,6 +1076,26 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Upload each `--media` file and return the resulting media id list.
+///
+/// `alt[i]` (if present) is applied to `media[i]`.
+async fn upload_all_media(
+    client: &XClient,
+    media: &[std::path::PathBuf],
+    alt: &[String],
+) -> Result<Vec<String>> {
+    let mut ids = Vec::with_capacity(media.len());
+    for (i, path) in media.iter().enumerate() {
+        let alt_text = alt.get(i).map(String::as_str);
+        let id = client
+            .upload_media(path, alt_text)
+            .await
+            .with_context(|| format!("media upload failed for {}", path.display()))?;
+        ids.push(id);
+    }
+    Ok(ids)
 }
 
 /// Resolve an optional handle to a user id, defaulting to the authenticated user.

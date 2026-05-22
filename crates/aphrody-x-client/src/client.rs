@@ -529,8 +529,10 @@ pub(crate) fn auth_headers(
     // Language / locale — must be present; "en" is the safest value.
     insert(&mut map, "x-twitter-client-language", "en");
 
-    // Content negotiation.
-    insert(&mut map, "content-type", "application/json");
+    // Content negotiation. NOTE: we deliberately do not set a default
+    // `content-type` — GraphQL POSTs set `application/json` via `.json()`, REST
+    // form posts set `application/x-www-form-urlencoded`, and media APPEND uses
+    // multipart; a default JSON content-type would corrupt the multipart body.
     insert(&mut map, "accept", "*/*");
 
     // Origin + Referer — required to pass X's CORS-like server checks.
