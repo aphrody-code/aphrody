@@ -1448,6 +1448,21 @@ where
     runtime.block_on(run_async(args))
 }
 
+/// Process-global [`GoogleContext`], built once and reused across calls so the
+/// FFI path (many commands per process) does not rebuild the VFS layout + the
+/// mirror on every invocation. For the binary (one command per process) this is
+/// equivalent to building it inline. `GoogleContext` is `Send + Sync` (it is
+/// `Arc`-backed shared state), so a process-global handle is sound.
+#[cfg(not(target_arch = "wasm32"))]
+fn shared_context() -> miette::Result<&'static GoogleContext> {
+    static CONTEXT: std::sync::OnceLock<GoogleContext> = std::sync::OnceLock::new();
+    if let Some(ctx) = CONTEXT.get() {
+        return Ok(ctx);
+    }
+    let ctx = GoogleContext::new()?;
+    Ok(CONTEXT.get_or_init(|| ctx))
+}
+
 /// Run the full native command surface on the **caller's** async runtime,
 /// returning the exit code. This is the entry the `aphrody-ffi` cdylib drives
 /// on a persistent tokio runtime (so repeated FFI calls do not pay a
@@ -1480,7 +1495,7 @@ where
         },
     };
 
-    let ctx = match GoogleContext::new() {
+    let ctx = match shared_context() {
         Ok(ctx) => ctx,
         Err(err) => {
             eprintln!("aphrody: {err}");
@@ -1488,7 +1503,7 @@ where
         },
     };
 
-    match dispatch(&ctx, cli).await {
+    match dispatch(ctx, cli).await {
         Ok(()) => 0,
         Err(report) => {
             // `SubprocessExit` forwards a child process's exit code verbatim;
