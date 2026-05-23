@@ -284,8 +284,7 @@ impl GoTokenEstimator {
             }
         }
 
-        // Step 4: Check if Go binary was compiled under go/aphrody-tokenizer-go/
-        // (convenient for local tests/development).
+        // Étape 4 : binaire compilé sous go/aphrody-tokenizer-go/ (dev local).
         if let Ok(cwd) = std::env::current_dir() {
             let mut current = Some(cwd.as_path());
             while let Some(path) = current {
@@ -295,11 +294,37 @@ impl GoTokenEstimator {
                         return Some(p);
                     }
                 }
-                // Also check if we are already inside the crates/aphrody-tokenizer-go folder
+                // Cas où on est déjà dans le dossier aphrody-tokenizer-go
                 for cand in ["aphrody-tokenizer-go.exe", "aphrody-tokenizer-go"] {
                     let p = path.join(cand);
                     if p.exists() && path.ends_with("aphrody-tokenizer-go") {
                         return Some(p);
+                    }
+                }
+                current = path.parent();
+            }
+        }
+
+        // Étape 5 : dépôt frère aphrody-go (layout monorepo-sibling standard).
+        //
+        // Le binaire est produit par `go build ./cmd/aphrody-tokenizer-go/` dans
+        // le dépôt `aphrody-go` (C:\src\aphrody-go ou ~/src/aphrody-go).
+        // On remonte jusqu'à un répertoire qui possède un voisin `aphrody-go/`
+        // contenant le binaire dans le sous-chemin canonique.
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut current = Some(cwd.as_path());
+            while let Some(path) = current {
+                if let Some(parent) = path.parent() {
+                    // Chemin canonique dans le dépôt frère Go.
+                    let sibling = parent.join("aphrody-go");
+                    for cand in [
+                        "gogcli/cmd/aphrody-tokenizer-go/aphrody-tokenizer-go.exe",
+                        "gogcli/cmd/aphrody-tokenizer-go/aphrody-tokenizer-go",
+                    ] {
+                        let p = sibling.join(cand);
+                        if p.exists() {
+                            return Some(p);
+                        }
                     }
                 }
                 current = path.parent();

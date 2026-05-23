@@ -823,6 +823,7 @@ name = "aphrody-router"
 version = "1.0.0-canary"
 dependencies = [
  "aphrody-providers",
+ "async-stream",
  "async-trait",
  "axum",
  "bytes",
