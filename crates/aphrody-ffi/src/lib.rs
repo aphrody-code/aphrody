@@ -21,6 +21,13 @@
 //! Arguments are the command arguments WITHOUT the program name — a synthetic
 //! `argv[0]` is prepended internally — e.g. `["doctor", "--json"]`.
 //!
+//! The hand-written C header lives in `include/aphrody.h` and is kept in
+//! lock-step with this module: a unit test parses `APHRODY_ABI_VERSION` from it
+//! and asserts it equals the Rust `ABI_VERSION`, and the FFI-injected status
+//! codes are mirrored by the `AphrodyStatus` enum (sysexits-compatible). The
+//! run functions still return a plain `c_int` because a wrapped command may
+//! exit with any process code, not only the closed set in `AphrodyStatus`.
+//!
 //! ## Robustness
 //!
 //! * Every entry point catches Rust panics (`std::panic::catch_unwind`) and
@@ -55,7 +62,27 @@ mod native {
     use crate::capture::with_captured_stdio;
 
     /// ABI version of the exported symbol set. Bump on any incompatible change.
-    const ABI_VERSION: u32 = 1;
+    ///
+    /// Kept in lock-step with `APHRODY_ABI_VERSION` in `include/aphrody.h`; the
+    /// `header_abi_version_matches` test parses the header and asserts they
+    /// agree, so the two cannot silently drift.
+    pub(crate) const ABI_VERSION: u32 = 1;
+
+    /// FFI-layer status codes, mirroring `enum AphrodyStatus` in
+    /// `include/aphrody.h`. `#[repr(i32)]` makes the enum layout-compatible
+    /// with the `c_int` the run functions return, so a value can be produced as
+    /// `AphrodyStatus::Usage as c_int`.
+    ///
+    /// These are only the codes the FFI boundary itself injects; a wrapped
+    /// command may still return any other process exit code unchanged.
+    #[repr(i32)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(crate) enum AphrodyStatus {
+        /// Malformed request: invalid argv, JSON, or UTF-8 (sysexits EX_USAGE).
+        Usage = 64,
+        /// Internal error: a caught Rust panic (sysexits EX_SOFTWARE).
+        Software = 70,
+    }
 
     thread_local! {
         /// Last error recorded on this thread (the C ABI has no Result channel).
@@ -70,8 +97,10 @@ mod native {
         LAST_ERROR.with(|cell| *cell.borrow_mut() = Some(value));
     }
 
-    /// Returns the ABI version of this library.
+    /// Returns the runtime ABI version of this library (see `APHRODY_NODISCARD`
+    /// / `[[nodiscard]]` on the C declaration).
     #[unsafe(no_mangle)]
+    #[must_use]
     pub extern "C" fn aphrody_abi_version() -> u32 {
         ABI_VERSION
     }
@@ -79,8 +108,9 @@ mod native {
     /// Returns the aphrody version as a static, NUL-terminated UTF-8 string.
     ///
     /// The pointer is owned by the library and valid for the entire program
-    /// lifetime — do NOT free it.
+    /// lifetime — do NOT free it. Never NULL (`APHRODY_RETURNS_NONNULL`).
     #[unsafe(no_mangle)]
+    #[must_use]
     pub extern "C" fn aphrody_version() -> *const c_char {
         static VERSION: OnceLock<CString> = OnceLock::new();
         VERSION
@@ -100,6 +130,7 @@ mod native {
     /// `argv` must point to `argc` valid, NUL-terminated C strings, or be NULL
     /// iff `argc == 0`. The pointers are only read for the duration of the call.
     #[unsafe(no_mangle)]
+    #[must_use]
     pub unsafe extern "C" fn aphrody_run(argc: c_int, argv: *const *const c_char) -> c_int {
         let outcome = catch_unwind(|| {
             // SAFETY: forwarded contract from this function's `# Safety` clause.
@@ -107,13 +138,13 @@ mod native {
                 Some(args) => run_argv(args),
                 None => {
                     set_last_error("invalid argv: null pointer or negative argc");
-                    64 // EX_USAGE
+                    AphrodyStatus::Usage as c_int
                 }
             }
         });
         outcome.unwrap_or_else(|payload| {
             set_last_error(format!("aphrody panicked: {}", panic_message(&*payload)));
-            70 // EX_SOFTWARE
+            AphrodyStatus::Software as c_int
         })
     }
 
@@ -126,6 +157,7 @@ mod native {
     /// `args_json` must be a valid NUL-terminated UTF-8 C string, or NULL
     /// (treated as `[]`).
     #[unsafe(no_mangle)]
+    #[must_use]
     pub unsafe extern "C" fn aphrody_run_json(args_json: *const c_char) -> c_int {
         let outcome = catch_unwind(|| {
             // SAFETY: forwarded contract.
@@ -133,13 +165,13 @@ mod native {
                 Ok(args) => run_argv(args),
                 Err(message) => {
                     set_last_error(message);
-                    64
+                    AphrodyStatus::Usage as c_int
                 }
             }
         });
         outcome.unwrap_or_else(|payload| {
             set_last_error(format!("aphrody panicked: {}", panic_message(&*payload)));
-            70
+            AphrodyStatus::Software as c_int
         })
     }
 
@@ -155,6 +187,7 @@ mod native {
     /// `args_json` must be a valid NUL-terminated UTF-8 C string, or NULL
     /// (treated as `[]`).
     #[unsafe(no_mangle)]
+    #[must_use]
     pub unsafe extern "C" fn aphrody_run_captured(args_json: *const c_char) -> *mut c_char {
         let outcome = catch_unwind(|| {
             // SAFETY: forwarded contract.
@@ -165,13 +198,13 @@ mod native {
                     let (code, out, err) = with_captured_stdio(|| run_argv(args));
                     json_result(code, &out, &err)
                 }
-                Err(message) => json_result(64, "", &message),
+                Err(message) => json_result(AphrodyStatus::Usage as i32, "", &message),
             }
         });
         let json = outcome.unwrap_or_else(|payload| {
             let message = format!("aphrody panicked: {}", panic_message(&*payload));
             set_last_error(message.clone());
-            json_result(70, "", &message)
+            json_result(AphrodyStatus::Software as i32, "", &message)
         });
         string_to_c(json)
     }
@@ -198,6 +231,7 @@ mod native {
     /// The pointer is valid until the next library call on this thread — copy it
     /// if you need to keep it. Do NOT free it.
     #[unsafe(no_mangle)]
+    #[must_use]
     pub extern "C" fn aphrody_last_error() -> *const c_char {
         LAST_ERROR.with(|cell| match cell.borrow().as_ref() {
             Some(value) => value.as_ptr(),
@@ -325,6 +359,68 @@ mod native {
         #[test]
         fn abi_version_is_one() {
             assert_eq!(aphrody_abi_version(), 1);
+            assert_eq!(aphrody_abi_version(), ABI_VERSION);
+        }
+
+        /// The hand-written header must declare the same ABI revision the Rust
+        /// symbol reports, so the two never drift. Parses `APHRODY_ABI_VERSION`
+        /// out of `include/aphrody.h` (relative to `CARGO_MANIFEST_DIR`).
+        #[test]
+        fn header_abi_version_matches() {
+            let header = std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/include/aphrody.h"
+            ))
+            .expect("aphrody.h is readable");
+
+            let line = header
+                .lines()
+                .find(|l| l.trim_start().starts_with("#define APHRODY_ABI_VERSION"))
+                .expect("header defines APHRODY_ABI_VERSION");
+
+            // `#define APHRODY_ABI_VERSION 1u` -> strip the `u`/`U` suffix.
+            let value: u32 = line
+                .rsplit_once("APHRODY_ABI_VERSION")
+                .map(|(_, rest)| rest.trim())
+                .and_then(|tok| tok.trim_end_matches(['u', 'U', 'l', 'L']).parse().ok())
+                .expect("APHRODY_ABI_VERSION is a parseable integer literal");
+
+            assert_eq!(value, ABI_VERSION, "header and Rust ABI versions disagree");
+        }
+
+        /// The typed status codes must keep the documented sysexits values; the
+        /// `#[repr(i32)]` lets us round-trip them through `c_int`.
+        #[test]
+        fn status_codes_match_documented_values() {
+            assert_eq!(AphrodyStatus::Usage as c_int, 64);
+            assert_eq!(AphrodyStatus::Software as c_int, 70);
+        }
+
+        /// A negative `argc` is a usage error, never a panic, and records a
+        /// diagnostic on this thread.
+        #[test]
+        fn run_rejects_negative_argc() {
+            // SAFETY: NULL argv with a negative argc is an explicitly handled,
+            // rejected input — no pointer is dereferenced.
+            let code = unsafe { aphrody_run(-1, ptr::null()) };
+            assert_eq!(code, AphrodyStatus::Usage as c_int);
+            assert!(!aphrody_last_error().is_null());
+        }
+
+        /// `aphrody_run_json` with malformed JSON returns the usage code rather
+        /// than panicking, and string_free tolerates the resulting NULL paths.
+        #[test]
+        fn run_json_rejects_malformed_json() {
+            let json = CString::new("not json").unwrap();
+            // SAFETY: valid NUL-terminated string; bad *content* is handled.
+            let code = unsafe { aphrody_run_json(json.as_ptr()) };
+            assert_eq!(code, AphrodyStatus::Usage as c_int);
+        }
+
+        #[test]
+        fn string_free_tolerates_null() {
+            // SAFETY: NULL is an explicitly documented no-op for string_free.
+            unsafe { aphrody_string_free(ptr::null_mut()) };
         }
 
         #[test]
