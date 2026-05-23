@@ -515,6 +515,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-ffi"
+version = "1.0.0-canary"
+dependencies = [
+ "aphrody",
+ "libc",
+ "mimalloc",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "aphrody-firefly"
 version = "1.0.0-canary"
 dependencies = [
