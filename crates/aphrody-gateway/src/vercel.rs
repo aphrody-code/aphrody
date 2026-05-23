@@ -205,8 +205,20 @@ fn sse_bytes_to_chunks(
 mod tests {
     use super::*;
 
+    /// Install the rustls `ring` `CryptoProvider` once for the test process —
+    /// `VercelAdapter::new` builds a `reqwest::Client`, and rustls 0.23+ panics
+    /// `No provider set` without an installed default provider.
+    fn install_rustls_provider() {
+        use std::sync::Once;
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
+    }
+
     #[test]
     fn endpoint_url_default() {
+        install_rustls_provider();
         let adapter = VercelAdapter::new("key123").expect("construct");
         let url = adapter.endpoint_url().expect("url");
         assert_eq!(url.as_str(), "https://ai-gateway.vercel.sh/v1/chat/completions");
@@ -214,6 +226,7 @@ mod tests {
 
     #[test]
     fn endpoint_url_custom_base() {
+        install_rustls_provider();
         let adapter =
             VercelAdapter::with_base_url("key", "http://localhost:9090").expect("construct");
         let url = adapter.endpoint_url().expect("url");

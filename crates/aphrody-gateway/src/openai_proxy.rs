@@ -208,8 +208,20 @@ fn sse_bytes_to_chunks(
 mod tests {
     use super::*;
 
+    /// Install the rustls `ring` `CryptoProvider` once for the test process —
+    /// `OpenAiProxyAdapter::new` builds a `reqwest::Client`, and rustls 0.23+
+    /// panics `No provider set` without an installed default provider.
+    fn install_rustls_provider() {
+        use std::sync::Once;
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
+    }
+
     #[test]
     fn endpoint_url_default_base() {
+        install_rustls_provider();
         let adapter = OpenAiProxyAdapter::new("sk-test", DEFAULT_BASE_URL).expect("construct");
         let url = adapter.endpoint_url().expect("url");
         assert_eq!(url.as_str(), "https://api.openai.com/v1/chat/completions");
@@ -217,6 +229,7 @@ mod tests {
 
     #[test]
     fn endpoint_url_custom_base() {
+        install_rustls_provider();
         let adapter =
             OpenAiProxyAdapter::new("sk-test", "http://localhost:11434").expect("construct");
         let url = adapter.endpoint_url().expect("url");

@@ -31,6 +31,9 @@ which         = { workspace = true }
 tokio         = { workspace = true, features = ["rt-multi-thread", "macros"] }
 serde_json    = { workspace = true }
 reqwest       = { workspace = true }
+# Install a rustls CryptoProvider in tests before building a reqwest::Client
+# (rustls 0.23+ panics "No provider set" otherwise).
+rustls        = { workspace = true }
 
 [package.metadata.cargo-machete]
 # reqwest features are cfg-gated; keep all declared features from workspace.
