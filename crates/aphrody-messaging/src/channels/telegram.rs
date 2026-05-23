@@ -367,6 +367,17 @@ mod tests {
     use super::*;
     use crate::channels::test_util::ENV_LOCK;
 
+    /// Install the rustls `ring` `CryptoProvider` once for the test process —
+    /// the channel builds a `reqwest::Client`, and rustls 0.23+ panics
+    /// `No provider set` without an installed default provider.
+    fn install_rustls_provider() {
+        use std::sync::Once;
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
+    }
+
     #[test]
     fn from_env_fails_when_variable_absent() {
         let _guard = ENV_LOCK.lock().unwrap();
@@ -382,6 +393,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
+        install_rustls_provider();
         let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("TELEGRAM_BOT_TOKEN", "1234567890:ABC-DEF");
@@ -395,12 +407,14 @@ mod tests {
 
     #[test]
     fn method_url_builds_correctly() {
+        install_rustls_provider();
         let ch = TelegramChannel::new("123:ABC");
         assert_eq!(ch.method_url("sendMessage"), "https://api.telegram.org/bot123:ABC/sendMessage");
     }
 
     #[test]
     fn telegram_channel_id_is_telegram() {
+        install_rustls_provider();
         let ch = TelegramChannel::new("tok");
         assert_eq!(ch.id(), "telegram");
     }

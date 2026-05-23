@@ -445,6 +445,17 @@ mod tests {
     use super::*;
     use crate::channels::test_util::ENV_LOCK;
 
+    /// Install the rustls `ring` `CryptoProvider` once for the test process —
+    /// the channel builds a `reqwest::Client`, and rustls 0.23+ panics
+    /// `No provider set` without an installed default provider.
+    fn install_rustls_provider() {
+        use std::sync::Once;
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
+    }
+
     #[test]
     fn from_env_fails_when_variable_absent() {
         let _guard = ENV_LOCK.lock().unwrap();
@@ -461,6 +472,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_token() {
+        install_rustls_provider();
         let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("SLACK_BOT_TOKEN", "xoxb-test-token");
@@ -474,6 +486,7 @@ mod tests {
 
     #[test]
     fn endpoint_builds_correctly() {
+        install_rustls_provider();
         let ch = SlackChannel::new("xoxb-x");
         let url = ch.endpoint("chat.postMessage").expect("valid URL");
         assert_eq!(url.as_str(), "https://slack.com/api/chat.postMessage");
@@ -494,6 +507,7 @@ mod tests {
 
     #[test]
     fn slack_channel_id_is_slack() {
+        install_rustls_provider();
         let ch = SlackChannel::new("tok");
         assert_eq!(ch.id(), "slack");
     }
