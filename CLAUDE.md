@@ -52,23 +52,25 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 > Rust toolchain pinned `nightly-2026-05-17` via `rust-toolchain.toml` ;
 > Bun/Go/Python pinnés via `mise.toml`. Re-pin requires PR.
 
-**aphrody est un monorepo polyglotte. Une seule entrée d'orchestration : le
-`justfile` racine (`just build|test|lint|fmt|ci`).** Chaque langage garde son
-manifeste canonique et son workspace natif :
+**Extraction 2026-05-23 : ce dépôt (`C:\src\aphrody`) ne garde QUE le Rust.**
+Les trois autres surfaces langage vivent désormais dans des **dépôts FRÈRES
+indépendants** (git séparés, pas de submodule) :
 
-| Langage | Rôle | Workspace / manifeste | Toolchain |
-|---------|------|-----------------------|-----------|
-| **Rust** (primaire) | Cœur CLI, systems, FFI, WASM | `Cargo.toml` (`crates/*`) | `rust-toolchain.toml` |
-| **Bun** (TS/JS) | Apps web first-party + lint (oxlint) | `package.json` + `bunfig.toml` + `.oxlintrc.json` (`apps/*`) | `mise.toml` |
-| **Python** | ML / data / SDK clients | `pyproject.toml` (uv : `python/*`) | `mise.toml` (uv) |
-| **Go** | Bridges natifs (tokenizer, genai) | `go.work` (`go/*`) | `mise.toml` |
+| Langage | Dépôt frère | Workspace / manifeste | Toolchain |
+|---------|-------------|-----------------------|-----------|
+| **Rust** (primaire, ici) | `C:\src\aphrody` | `Cargo.toml` (`crates/*`) | `rust-toolchain.toml` |
+| **Bun** (TS/JS) | `C:\src\aphrody-ts` | `package.json` + `bunfig.toml` + `.oxlintrc.json` (`apps/*` + `packages/*`) | `mise.toml` (dans aphrody-ts) |
+| **Python** | `C:\src\aphrody-py` | `pyproject.toml` (uv, membres à la racine) | `mise.toml` (dans aphrody-py) |
+| **Go** | `C:\src\aphrody-go` | `go.work` | `mise.toml` (dans aphrody-go) |
 
-> **Arborescence (magika-style, 2026-05-22)** : ségrégation par langage — `crates/` (Rust, modèle tauri), `python/` (packages uv), `go/` (modules go.work), `apps/` + `packages/` (Bun TS/JS). Plus de Python sous `apps/`/`libs/`, plus de Go sous `crates/`.
+Le `justfile` racine d'aphrody pilote **uniquement** le workspace Rust
+(`just build|test|lint|fmt|ci`). Pour go/python/ts, lancer les runners dans le
+dépôt frère correspondant.
 
 - **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
-- **Bun** : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Versions de deps centralisées via le **Bun catalog** racine (`workspaces.catalog` ; refs `"dep": "catalog:"`). Lint = **oxlint** (oxc, `.oxlintrc.json`, `just lint-bun`), format = **oxfmt** (oxc, `.oxfmtrc.json`, `just fmt-bun`). Outils globaux (`bun add -g`) : `turbo` (orchestre les forks pnpm/turbo de `packages/*`), `tsc`, `oxc`. Web/UI = **Material Web Components 3** (fork `packages/material-web`) ; WASM (`wasm-bindgen`) et WebGPU (`wgpu`) pour les surfaces Rust-natives. Les forks `packages/*` gardent leur PM natif (npm/pnpm), hors workspace bun.
-- **Python** : géré par **uv** (workspace `python/*`), lint/format **ruff**, tests **pytest**.
-- **Go** : modules sous `go/`, agrégés par **go.work** ; `go vet`/`go test` via le runner.
+- **Bun** (`aphrody-ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Web Components 3** (fork `packages/material-web`). Les forks `packages/*` gardent leur PM natif (npm/pnpm) et leur propre `.git`, hors workspace bun.
+- **Python** (`aphrody-py`) : géré par **uv**, lint/format **ruff**, tests **pytest**.
+- **Go** (`aphrody-go`) : modules agrégés par **go.work** ; `go vet`/`go test`.
 - **C/C++** : toujours banni de la distribution, sauf wrappers FFI (`cxx::bridge`).
 - **FFI** : `mimalloc` global côté Rust, zero-copy via pointeurs bruts encapsulés.
 - **Shell** : wrappers de bootstrap one-shot tolérés ; logique réelle dans une des 4 toolchains.
@@ -103,7 +105,7 @@ cargo audit-machete        # unused deps detector
 
 ## 4. Architecture
 
-Monorepo **polyglotte, Rust primaire** (cf. §2). Cœur Rust : workspace 57 membres, 71 crates sur disque, 14 exclues. Surfaces UI JS/TS : forks `packages/*` + `apps/m3-react`.
+Dépôt **Rust uniquement** (cf. §2). Workspace 57 membres, 71 crates sur disque, 14 exclues. Les surfaces Go / Python / TS-JS (dont les forks UI `packages/*` et `apps/m3-react`) ont été extraites le 2026-05-23 vers les dépôts frères `C:\src\aphrody-{go,py,ts}`.
 Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ### Cœur du workspace
