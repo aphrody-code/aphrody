@@ -1,6 +1,7 @@
 ---
 name: skill-creator
-description: Create agent skills for any technology (Microsoft / Rust crate / Azure / .NET / browser API / framework) by investigating it live through the MCP servers wired into this plugin, then generating a hybrid SKILL.md with essential knowledge stored locally and dynamic lookups for depth. Use whenever the user wants to build, generate, scaffold, or improve a skill — even phrased casually as "make a skill for tokio" or "I need a skill that covers DirectX 12 RTV creation". Source: upstream `microsoftdocs/mcp` `microsoft-skill-creator` (MIT), generalised for the aphrody cross-platform scope on 2026-05-19.
+description: >-
+  Create agent skills for any technology (Microsoft / Rust crate / Azure / .NET / browser API / framework) by investigating it live through the MCP servers wired into this plugin, then generating a hybrid SKILL.md with essential knowledge stored locally and dynamic lookups for depth. Use whenever the user wants to build, generate, scaffold, or improve a skill — even phrased casually as "make a skill for tokio" or "I need a skill that covers DirectX 12 RTV creation". Source: upstream `microsoftdocs/mcp` `microsoft-skill-creator` (MIT), generalised for the aphrody cross-platform scope on 2026-05-19.
 license: MIT
 upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-skill-creator
 ---
