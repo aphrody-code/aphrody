@@ -1,11 +1,12 @@
 ---
 conventions:
-  - Use absolute paths everywhere.
-  - Read a file before editing it.
-  - Prefer the dedicated tool over a raw shell command when one exists.
+  - Chemins absolus partout.
+  - Lis un fichier avant de l'éditer.
+  - Préfère l'outil dédié à une commande shell brute quand il en existe un.
 ---
 
-# Tools
+# Outils
 
-Local tool conventions for this workspace. Document the tools the agent should
-reach for, any house rules for calling them, and anything that is off-limits.
+Conventions d'outils locales pour ce workspace. Documente les outils que
+l'agent doit privilégier, les règles maison pour les appeler, et ce qui est
+hors-limite.

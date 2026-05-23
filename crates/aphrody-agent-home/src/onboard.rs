@@ -315,7 +315,7 @@ mod tests {
         // The body should NOT start with the YAML frontmatter delimiter; the
         // frontmatter is stripped at seed time.
         assert!(!soul.trim_start().starts_with("---"), "frontmatter not stripped:\n{soul}");
-        assert!(soul.contains("focused engineering companion"));
+        assert!(soul.contains("agent d'ingénierie souverain"));
     }
 
     #[test]

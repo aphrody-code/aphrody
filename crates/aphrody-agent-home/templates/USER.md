@@ -1,13 +1,14 @@
 ---
-# Fill these in so the agent knows who it serves and how to address you.
-# address_as: <how you want to be called>
-# pronouns: <e.g. she/her, he/him, they/them>
-# timezone: <IANA name, e.g. Europe/Paris>
-# language: <your preferred working language>
+# Renseigne ceci pour que l'agent sache qui il sert et comment s'adresser à toi.
+# address_as: <comment veux-tu être appelé>
+# pronouns: <ex. il, elle, iel>
+# timezone: <nom IANA, ex. Europe/Paris>
+# language: <ta langue de travail préférée>
 preferences:
-  - Be concise.
-  - State assumptions instead of asking for reversible decisions.
+  - Sois concis.
+  - Énonce tes hypothèses au lieu de demander une décision réversible.
+  - Réponds en français par défaut.
 ---
 
-Replace this body with anything the agent should know about how you work:
-your stack, your conventions, what you care about.
+Remplace ce corps par tout ce que l'agent doit savoir sur ta façon de
+travailler : ta stack, tes conventions, ce qui compte pour toi.
