@@ -1062,6 +1062,7 @@ struct DoctorReport {
     inbox: CheckResult,
     http_listener: CheckResult,
     cargo_vet: CheckResult,
+    workspace: CheckResult,
     env_vars: Vec<(String, String)>,
 }
 
@@ -1072,7 +1073,8 @@ impl DoctorReport {
             || matches!(self.peer_heartbeat, CheckResult::Warn(_))
             || matches!(self.inbox, CheckResult::Warn(_))
             || matches!(self.http_listener, CheckResult::Warn(_))
-            || matches!(self.cargo_vet, CheckResult::Warn(_));
+            || matches!(self.cargo_vet, CheckResult::Warn(_))
+            || matches!(self.workspace, CheckResult::Warn(_));
         if has_error {
             "UNHEALTHY"
         } else if has_warn {
@@ -1135,7 +1137,72 @@ async fn collect_diagnostics() -> DoctorReport {
         inbox: check_inbox(),
         http_listener: check_http_listener().await,
         cargo_vet: check_vet_audits(),
+        workspace: check_workspace(),
         env_vars,
+    }
+}
+
+/// Workspace health (AH-16): opens the agent home, assembles against the
+/// default bootstrap budget, and warns on missing required files or truncation.
+fn check_workspace() -> CheckResult {
+    let home = match aphrody_agent_home::AgentHome::open(
+        aphrody_agent_home::HomeOptions::default(),
+    ) {
+        Ok(h) => h,
+        Err(e) => return CheckResult::Warn(format!("agent home not openable: {e}")),
+    };
+    let root = home.root();
+    if !root.is_dir() {
+        return CheckResult::Warn(format!(
+            "workspace not seeded ({}); run `aphrody oc-onboard`",
+            root.display()
+        ));
+    }
+
+    let mut missing_required: Vec<&str> = Vec::new();
+    for file in [
+        aphrody_agent_home::BootstrapFile::Agents,
+        aphrody_agent_home::BootstrapFile::Tools,
+    ] {
+        if !root.join(file.filename()).is_file() {
+            missing_required.push(file.filename());
+        }
+    }
+
+    let budget = aphrody_agent_home::BootstrapBudget::default();
+    let view = home.system_prompt(&budget);
+    let total_chars: usize = view.sections.iter().map(|s| s.body.chars().count()).sum();
+
+    if !missing_required.is_empty() {
+        return CheckResult::Warn(format!(
+            "{} ({}; missing required: {})",
+            root.display(),
+            human_chars(total_chars),
+            missing_required.join(", ")
+        ));
+    }
+    if let Some(report) = &view.truncation {
+        return CheckResult::Warn(format!(
+            "{} ({}; {} file(s) truncated by the bootstrap budget — raise the caps or trim the files)",
+            root.display(),
+            human_chars(total_chars),
+            report.truncated_files
+        ));
+    }
+    CheckResult::Ok(format!(
+        "{} ({}, {} section(s), no truncation)",
+        root.display(),
+        human_chars(total_chars),
+        view.sections.len()
+    ))
+}
+
+/// Render a char count compactly (e.g. `12.0k chars`).
+fn human_chars(n: usize) -> String {
+    if n >= 1000 {
+        format!("{:.1}k chars", n as f64 / 1000.0)
+    } else {
+        format!("{n} chars")
     }
 }
 
@@ -1161,6 +1228,10 @@ fn print_text(r: &DoctorReport) {
     println!("[supply chain]");
     println!("  cargo-deny: not present at runtime — use the dev tool for CI");
     println!("{}", r.cargo_vet.line("cargo-vet audits"));
+
+    println!();
+    println!("[agent workspace]");
+    println!("{}", r.workspace.line("agent home"));
 
     println!();
     println!("[environment]");
@@ -1217,6 +1288,9 @@ fn print_json(r: &DoctorReport) -> miette::Result<()> {
         "supply_chain": {
             "cargo_deny": "not present at runtime — use the dev tool for CI",
             "cargo_vet_audits": r.cargo_vet.value(),
+        },
+        "agent_workspace": {
+            "detail": r.workspace.value(),
         },
         "environment": serde_json::Value::Object(env_obj),
         "verdict": r.verdict(),
