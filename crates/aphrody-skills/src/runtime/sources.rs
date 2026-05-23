@@ -22,6 +22,10 @@ pub enum SourceSlug {
     VercelSkills,
     VercelOpenAgents,
     GoogleLabs,
+    /// Antigravity / `agy` CLI agent skill dirs (`.agents/skills`,
+    /// `.antigravity/skills`, `~/.gemini/antigravity/skills`, …). Discovery-only
+    /// label (not a static upstream catalog in `SOURCES`).
+    Antigravity,
 }
 
 impl SourceSlug {
@@ -36,6 +40,7 @@ impl SourceSlug {
             Self::VercelSkills => "vercel-skills",
             Self::VercelOpenAgents => "vercel-open-agents",
             Self::GoogleLabs => "google-labs",
+            Self::Antigravity => "antigravity",
         }
     }
 
@@ -50,6 +55,7 @@ impl SourceSlug {
             "vercel-skills" => Some(Self::VercelSkills),
             "vercel-open-agents" => Some(Self::VercelOpenAgents),
             "google-labs" => Some(Self::GoogleLabs),
+            "antigravity" | "agy" | "ag" => Some(Self::Antigravity),
             _ => None,
         }
     }

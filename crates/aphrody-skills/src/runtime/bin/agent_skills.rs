@@ -31,10 +31,10 @@ use clap::{Parser, Subcommand};
 use serde::Serialize;
 
 use aphrody_skills::runtime::{
-    active_sources, discover::discover_skills_in_path, discover_skills, ensure_home_exists,
-    manifest::ManifestEntry, parse_frontmatter, read_manifest, resolve_source_root,
-    skills_home, source_by_slug, sources::SourceSlug, upsert_entry, validate_frontmatter,
-    write_manifest, SourceSpec, SOURCES,
+    active_sources, discover::discover_skills_in_path, discover_agent_skills, discover_plugin_skills,
+    discover_skills, ensure_home_exists, manifest::ManifestEntry, parse_frontmatter, read_manifest,
+    resolve_source_root, skills_home, source_by_slug, sources::SourceSlug, upsert_entry,
+    validate_frontmatter, write_manifest, SourceSpec, SOURCES,
 };
 
 #[derive(Debug, Parser)]
@@ -70,6 +70,12 @@ enum Cmd {
     /// Uninstall a skill from $APHRODY_SKILLS_HOME (inverse of `install`).
     #[command(visible_alias = "rm", alias = "uninstall")]
     Remove(InfoArgs),
+    /// Search discovered skills by keyword (name + description, scriptable).
+    Find(FindArgs),
+    /// Scaffold a new SKILL.md template in a directory.
+    Init(InitArgs),
+    /// Refresh installed skills from their recorded source path.
+    Update(UpdateArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -122,6 +128,28 @@ struct SyncArgs {
     dry_run: bool,
 }
 
+#[derive(Debug, clap::Args)]
+struct FindArgs {
+    /// Keyword matched (case-insensitive) against skill name + description.
+    /// Omit to list everything discovered.
+    query: Option<String>,
+    /// Machine-readable JSON output.
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(Debug, clap::Args)]
+struct InitArgs {
+    /// Optional subdirectory to scaffold into; defaults to the current dir.
+    name: Option<String>,
+}
+
+#[derive(Debug, clap::Args)]
+struct UpdateArgs {
+    /// Specific installed skills to refresh; default = every installed skill.
+    names: Vec<String>,
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let res = match cli.cmd.unwrap_or(Cmd::List(ListArgs {
@@ -138,6 +166,9 @@ fn main() -> ExitCode {
         Cmd::Install(a) => run_install(&a),
         Cmd::Sync(a) => run_sync(&a),
         Cmd::Remove(a) => run_remove(&a),
+        Cmd::Find(a) => run_find(&a),
+        Cmd::Init(a) => run_init(&a),
+        Cmd::Update(a) => run_update(&a),
     };
     match res {
         Ok(code) => ExitCode::from(code),
@@ -162,6 +193,9 @@ struct ListRow {
     loc: usize,
     size_bytes: u64,
     path: String,
+    /// Hidden unless `INSTALL_INTERNAL_SKILLS=1` (frontmatter `metadata.internal`).
+    #[serde(skip)]
+    internal: bool,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     errors: Vec<String>,
 }
@@ -179,7 +213,8 @@ fn collect_rows(args: &ListArgs) -> Result<Vec<ListRow>> {
             rows.push(row_from(&h.skill_md_path, slug.as_str(), "aphrody", &h.name)?);
         }
     } else {
-        let sources: Vec<&SourceSpec> = if let Some(s) = &args.source {
+        let slug_filter = args.source.as_deref();
+        let sources: Vec<&SourceSpec> = if let Some(s) = slug_filter {
             source_by_slug(s).into_iter().collect()
         } else {
             active_sources()
@@ -194,6 +229,23 @@ fn collect_rows(args: &ListArgs) -> Result<Vec<ListRow>> {
                 )?);
             }
         }
+        // Plugin-manifest + agent-dir discovery (claude-code / gemini-cli /
+        // antigravity / agy), in addition to the upstream catalog registry.
+        let extra = discover_plugin_skills(&plugin_bases())
+            .into_iter()
+            .chain(discover_agent_skills());
+        for h in extra {
+            if slug_filter.is_none_or(|s| s == h.source.as_str()) {
+                rows.push(row_from(&h.skill_md_path, h.source.as_str(), "aphrody", &h.name)?);
+            }
+        }
+    }
+    // Drop duplicate SKILL.md paths surfaced by more than one discovery root.
+    let mut seen_paths = std::collections::HashSet::new();
+    rows.retain(|r| seen_paths.insert(r.path.clone()));
+    // Internal skills stay hidden unless explicitly opted in.
+    if !install_internal() {
+        rows.retain(|r| !r.internal);
     }
     rows.sort_by(|a, b| {
         if a.source == b.source {
@@ -217,6 +269,7 @@ fn row_from(skill_md: &Path, source: &str, schema: &str, name: &str) -> Result<L
         .and_then(|o| o.mode.clone())
         .unwrap_or_default();
     let description = fm.description.clone().unwrap_or_default();
+    let internal = fm.metadata.get("internal").is_some_and(|v| v == "true");
     Ok(ListRow {
         name: name.to_string(),
         source: source.to_string(),
@@ -226,6 +279,7 @@ fn row_from(skill_md: &Path, source: &str, schema: &str, name: &str) -> Result<L
         loc,
         size_bytes: size,
         path: skill_md.to_string_lossy().into_owned(),
+        internal,
         errors: Vec::new(),
     })
 }
@@ -623,6 +677,158 @@ fn run_sync(args: &SyncArgs) -> Result<u8> {
         }
     }
     Ok(0)
+}
+
+fn run_find(args: &FindArgs) -> Result<u8> {
+    let rows = collect_rows(&ListArgs {
+        path: None,
+        source: None,
+        json: args.json,
+    })?;
+    let filtered: Vec<&ListRow> = match args.query.as_deref() {
+        Some(q) if !q.is_empty() => {
+            let needle = q.to_lowercase();
+            rows.iter()
+                .filter(|r| {
+                    r.name.to_lowercase().contains(&needle)
+                        || r.description.to_lowercase().contains(&needle)
+                })
+                .collect()
+        },
+        _ => rows.iter().collect(),
+    };
+    let mut stdout = std::io::stdout().lock();
+    if args.json {
+        writeln!(stdout, "{}", serde_json::to_string_pretty(&filtered)?)?;
+        return Ok(0);
+    }
+    if filtered.is_empty() {
+        writeln!(
+            stdout,
+            "No skills match {:?}.",
+            args.query.as_deref().unwrap_or("")
+        )?;
+        return Ok(0);
+    }
+    for r in &filtered {
+        writeln!(
+            stdout,
+            "{}/{}\t{}",
+            r.source,
+            r.name,
+            truncate(&r.description, 80)
+        )?;
+    }
+    writeln!(stdout, "\n{} match(es).", filtered.len())?;
+    Ok(0)
+}
+
+fn run_init(args: &InitArgs) -> Result<u8> {
+    let (dir, skill_name) = match &args.name {
+        Some(n) => (PathBuf::from(n), n.clone()),
+        None => {
+            let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let name = cwd
+                .file_name()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "my-skill".to_string());
+            (PathBuf::from("."), name)
+        },
+    };
+    fs::create_dir_all(&dir).with_context(|| format!("mkdir {}", dir.display()))?;
+    let path = dir.join("SKILL.md");
+    if path.exists() {
+        anyhow::bail!("{} already exists — refusing to overwrite", path.display());
+    }
+    let template = format!(
+        "---\nname: {skill_name}\ndescription: What this skill does and when to use it.\n---\n\n\
+         # {skill_name}\n\nInstructions for the agent to follow when this skill is activated.\n\n\
+         ## When to Use\n\nDescribe the scenarios where this skill should be used.\n\n\
+         ## Steps\n\n1. First, do this.\n2. Then, do that.\n"
+    );
+    fs::write(&path, template).with_context(|| format!("write {}", path.display()))?;
+    writeln!(std::io::stdout(), "created {}", path.display())?;
+    Ok(0)
+}
+
+fn run_update(args: &UpdateArgs) -> Result<u8> {
+    let mut manifest = read_manifest()?;
+    if manifest.entries.is_empty() {
+        writeln!(std::io::stdout(), "no installed skills to update.")?;
+        return Ok(0);
+    }
+    let home = ensure_home_exists()?;
+    let mut updated = 0usize;
+    let mut missing = 0usize;
+    for entry in &mut manifest.entries {
+        if !args.names.is_empty() && !args.names.iter().any(|n| n == &entry.name) {
+            continue;
+        }
+        let src = PathBuf::from(&entry.source_path);
+        if !src.is_file() {
+            missing += 1;
+            writeln!(
+                std::io::stderr(),
+                "skip {}/{}: source gone ({})",
+                entry.source.as_str(),
+                entry.name,
+                entry.source_path
+            )?;
+            continue;
+        }
+        let dst_dir = home.join(entry.source.as_str()).join(&entry.name);
+        fs::create_dir_all(&dst_dir).with_context(|| format!("mkdir {}", dst_dir.display()))?;
+        let dst = dst_dir.join("SKILL.md");
+        fs::copy(&src, &dst)
+            .with_context(|| format!("copy {} -> {}", src.display(), dst.display()))?;
+        entry.size_bytes = fs::metadata(&src).map(|m| m.len()).unwrap_or(entry.size_bytes);
+        entry.copied_at = chrono_like_now();
+        updated += 1;
+    }
+    write_manifest(&manifest)?;
+    writeln!(
+        std::io::stdout(),
+        "updated {updated} skill(s), {missing} skipped (source missing)."
+    )?;
+    Ok(0)
+}
+
+/// Conventional Claude Code plugin base dirs to scan for plugin manifests.
+/// Never the hardcoded dev plugin path — only standard locations + an env
+/// override (`APHRODY_PLUGIN_BASE`); the manifest resolves the rest.
+fn plugin_bases() -> Vec<PathBuf> {
+    let mut bases: Vec<PathBuf> = Vec::new();
+    if let Ok(b) = std::env::var("APHRODY_PLUGIN_BASE") {
+        if !b.is_empty() {
+            bases.push(PathBuf::from(b));
+        }
+    }
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut dir = cwd.clone();
+    let mut root = cwd;
+    for _ in 0..8 {
+        if dir.join(".git").exists() || dir.join("Cargo.toml").exists() {
+            root = dir.clone();
+            break;
+        }
+        match dir.parent() {
+            Some(p) if p != dir => dir = p.to_path_buf(),
+            _ => break,
+        }
+    }
+    bases.push(root.clone());
+    bases.push(root.join(".claude").join("plugins"));
+    if let Some(h) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
+        bases.push(PathBuf::from(h).join(".claude").join("plugins"));
+    }
+    let mut seen = std::collections::HashSet::new();
+    bases.retain(|p| seen.insert(p.clone()));
+    bases
+}
+
+/// `INSTALL_INTERNAL_SKILLS=1` reveals skills marked `metadata.internal: true`.
+fn install_internal() -> bool {
+    std::env::var("INSTALL_INTERNAL_SKILLS").is_ok_and(|v| v == "1")
 }
 
 fn chrono_like_now() -> String {

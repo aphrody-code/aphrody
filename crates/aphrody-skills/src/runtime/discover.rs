@@ -6,11 +6,13 @@
 // a generic `discover_skills_in_path` helper used by the `agent-skills list
 // <PATH>` subcommand.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
+use crate::runtime::plugin_manifest::plugin_skill_dirs;
 use crate::runtime::sources::{resolve_source_root, SourceSlug, SourceSpec};
 
 /// One SKILL.md hit on disk.
@@ -57,6 +59,84 @@ pub fn discover_skills_in_path(root: &Path, slug: SourceSlug) -> Vec<DiscoveredS
             })
         })
         .collect();
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+/// Discover skills declared by plugin manifests found under `bases`.
+///
+/// Resolves each `.claude-plugin/{marketplace,plugin}.json` RELATIVE to its
+/// base (never a hardcoded plugin path — the dev plugin location is
+/// temporary), then scans the resulting `skills/` directories. Plugin skills
+/// are surfaced under the `claude-code` slug. Deduplicated by name across all
+/// bases.
+#[must_use]
+pub fn discover_plugin_skills(bases: &[PathBuf]) -> Vec<DiscoveredSkill> {
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut out = Vec::new();
+    for base in bases {
+        for dir in plugin_skill_dirs(base) {
+            for hit in discover_skills_in_path(&dir, SourceSlug::ClaudeCode) {
+                if seen.insert(hit.name.clone()) {
+                    out.push(hit);
+                }
+            }
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+/// Canonical agent skill directories (project-local + global) for the agents
+/// aphrody targets: claude-code, gemini-cli, and Antigravity / the `agy` CLI.
+///
+/// These are where each agent READS its installed skills (per the open
+/// agent-skills directory conventions), distinct from the upstream source
+/// registry. Only directories that exist on disk are returned. `.agents/skills`
+/// is the dir shared by the Gemini-family CLIs (gemini-cli / antigravity / agy)
+/// and is surfaced under the `antigravity` slug.
+#[must_use]
+pub fn agent_skill_roots() -> Vec<(SourceSlug, PathBuf)> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let home = std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from);
+
+    let mut roots: Vec<(SourceSlug, PathBuf)> = vec![
+        (SourceSlug::ClaudeCode, cwd.join(".claude").join("skills")),
+        (SourceSlug::GeminiCli, cwd.join(".gemini").join("skills")),
+        (SourceSlug::Antigravity, cwd.join(".agents").join("skills")),
+        (SourceSlug::Antigravity, cwd.join(".antigravity").join("skills")),
+    ];
+    if let Some(h) = home {
+        roots.push((SourceSlug::ClaudeCode, h.join(".claude").join("skills")));
+        roots.push((SourceSlug::GeminiCli, h.join(".gemini").join("skills")));
+        roots.push((
+            SourceSlug::Antigravity,
+            h.join(".gemini").join("antigravity").join("skills"),
+        ));
+        roots.push((
+            SourceSlug::Antigravity,
+            h.join(".config").join("antigravity").join("skills"),
+        ));
+    }
+    roots.retain(|(_, p)| p.is_dir());
+    roots
+}
+
+/// Discover skills installed in the canonical agent skill directories
+/// ([`agent_skill_roots`]). Deduplicated by `(slug, name)`.
+#[must_use]
+pub fn discover_agent_skills() -> Vec<DiscoveredSkill> {
+    let mut seen: HashSet<(SourceSlug, String)> = HashSet::new();
+    let mut out = Vec::new();
+    for (slug, root) in agent_skill_roots() {
+        for hit in discover_skills_in_path(&root, slug) {
+            if seen.insert((slug, hit.name.clone())) {
+                out.push(hit);
+            }
+        }
+    }
     out.sort_by(|a, b| a.name.cmp(&b.name));
     out
 }
