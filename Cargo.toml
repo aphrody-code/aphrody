@@ -183,6 +183,12 @@ members = [
     # stdio server (handshake + tools/list + tools/call sweep + p50/p95 +
     # NDJSON report). Replaces the ad-hoc bash/pwsh probes.
     "crates/aphrody-mcp-smoke",
+    # aphrody-agent-home — the agent's persistent home (Soul / Identity / User /
+    # Tools typed model + mmap zero-copy file cache + content-addressed blake3
+    # cache + bootstrap budget + system-prompt assembler + notify hot-reload +
+    # gix git backup). Rust port of openclaw agents/{workspace,bootstrap-budget,
+    # identity}.ts, pushed past it via mmap / arc-swap / Send+Sync by construction.
+    "crates/aphrody-agent-home",
 
     # Next.js / Turbopack integration (excluded)
 ]
@@ -681,6 +687,19 @@ sysinfo            = { version = "0.39", default-features = false, features = ["
 # --- Misc -----------------------------------------------------------------
 itertools          = { version = "0.14" }
 nix                = { version = "0.31" }
+# `arc-swap` — lock-free atomic swap of an `Arc<T>`. Backs the hot-reload of
+# `Arc<AgentHome>` in aphrody-agent-home (notify watcher swaps the live home
+# without a mutex). Cross-platform, zero unsafe at the consumer level.
+arc-swap           = { version = "1.7" }
+# `gix` — pure-Rust git (no shell-out, no libgit2 C). Backs the optional `git`
+# feature of aphrody-agent-home (workspace backup: init/add/commit). Default
+# network/TLS features deliberately omitted; add `worktree-mutation` for the
+# commit-on-HEAD path.
+gix                = { version = "0.83", default-features = false, features = ["sha1", "basic", "extras", "comfort", "max-performance-safe", "revision", "index", "worktree-mutation"] }
+# aphrody-agent-home — the agent's persistent home: Soul / Identity / User /
+# Tools typed model, mmap zero-copy file cache, content-addressed cache,
+# bootstrap budget, system-prompt assembler, hot-reload, git backup.
+aphrody-agent-home = { path = "crates/aphrody-agent-home", version = "1.0.0-canary" }
 # Unicode helpers (consumed by aphrody-tui dev-deps + future TUI layout).
 unicode-width        = { version = "0.2" }
 unicode-segmentation = { version = "1" }
