@@ -244,8 +244,8 @@ mod tests {
         let b = SystemPromptView::assemble(&files, &BootstrapBudget::default()).render();
         assert_eq!(a, b);
         // Soul precedes Identity in canonical order.
-        let soul_pos = a.find("Soul (SOUL.md)").unwrap();
-        let id_pos = a.find("Identity (IDENTITY.md)").unwrap();
+        let soul_pos = a.find("Âme (SOUL.md)").unwrap();
+        let id_pos = a.find("Identité (IDENTITY.md)").unwrap();
         assert!(soul_pos < id_pos);
     }
 

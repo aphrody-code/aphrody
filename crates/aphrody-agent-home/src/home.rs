@@ -343,10 +343,10 @@ mod tests {
         let view = home.system_prompt(&BootstrapBudget::default());
         let prompt = view.render();
         // The seeded IDENTITY.md body identifies the agent as aphrody.
-        assert!(prompt.contains("Identity (IDENTITY.md)"), "identity section missing:\n{prompt}");
+        assert!(prompt.contains("Identité (IDENTITY.md)"), "identity section missing:\n{prompt}");
         assert!(prompt.contains("aphrody"), "agent name missing");
-        assert!(prompt.contains("Operating rules"), "agents missing");
-        assert!(prompt.contains("focused engineering companion"), "soul body missing");
+        assert!(prompt.contains("Règles d'opération"), "agents missing");
+        assert!(prompt.contains("agent d'ingénierie souverain"), "soul body missing");
     }
 
     #[test]
@@ -362,8 +362,8 @@ mod tests {
         .unwrap();
         let prompt = home.system_prompt(&BootstrapBudget::default()).render();
         // Subagent gets rules + tools, never the identity/soul persona.
-        assert!(prompt.contains("Operating rules"));
-        assert!(!prompt.contains("You are aphrody"), "subagent must not see identity");
+        assert!(prompt.contains("Règles d'opération"));
+        assert!(!prompt.contains("Identité (IDENTITY.md)"), "subagent must not see identity");
     }
 
     #[test]
@@ -378,9 +378,9 @@ mod tests {
         })
         .unwrap();
         let prompt = home.system_prompt(&BootstrapBudget::default()).render();
-        assert!(prompt.contains("Heartbeat checklist"));
+        assert!(prompt.contains("Checklist de heartbeat"));
         // Cron does not get the boot checklist.
-        assert!(!prompt.contains("Boot checklist"));
+        assert!(!prompt.contains("Checklist de démarrage"));
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod tests {
         assert!(home.soul().is_none());
         let prompt = home.system_prompt(&BootstrapBudget::default()).render();
         // Default identity always renders.
-        assert!(prompt.contains("You are aphrody"));
+        assert!(prompt.contains("Tu es aphrody"));
     }
 
     #[test]

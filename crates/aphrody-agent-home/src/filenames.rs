@@ -101,15 +101,15 @@ impl BootstrapFile {
     #[must_use]
     pub const fn section_title(self) -> &'static str {
         match self {
-            BootstrapFile::Agents => "Operating rules (AGENTS.md)",
-            BootstrapFile::Soul => "Soul (SOUL.md)",
-            BootstrapFile::Identity => "Identity (IDENTITY.md)",
-            BootstrapFile::User => "User (USER.md)",
-            BootstrapFile::Tools => "Tools (TOOLS.md)",
-            BootstrapFile::Heartbeat => "Heartbeat checklist (HEARTBEAT.md)",
-            BootstrapFile::Boot => "Boot checklist (BOOT.md)",
-            BootstrapFile::Bootstrap => "First-run ritual (BOOTSTRAP.md)",
-            BootstrapFile::Memory => "Curated memory (MEMORY.md)",
+            BootstrapFile::Agents => "Règles d'opération (AGENTS.md)",
+            BootstrapFile::Soul => "Âme (SOUL.md)",
+            BootstrapFile::Identity => "Identité (IDENTITY.md)",
+            BootstrapFile::User => "Utilisateur (USER.md)",
+            BootstrapFile::Tools => "Outils (TOOLS.md)",
+            BootstrapFile::Heartbeat => "Checklist de heartbeat (HEARTBEAT.md)",
+            BootstrapFile::Boot => "Checklist de démarrage (BOOT.md)",
+            BootstrapFile::Bootstrap => "Rituel de premier lancement (BOOTSTRAP.md)",
+            BootstrapFile::Memory => "Mémoire curatée (MEMORY.md)",
         }
     }
 

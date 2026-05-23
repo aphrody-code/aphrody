@@ -1,13 +1,13 @@
 ---
-title: First-run ritual
+title: Rituel de premier lancement
 ---
 
-# First-run ritual
+# Rituel de premier lancement
 
-This is a one-shot setup ritual. It is deleted automatically once setup
-completes, so do not rely on it after the first run.
+Rituel de configuration unique. Il est supprimé automatiquement une fois la
+configuration terminée ; ne compte pas dessus après le premier lancement.
 
-1. Read AGENTS.md, SOUL.md, IDENTITY.md, TOOLS.md.
-2. Fill in USER.md so the agent knows who it serves and how to address them.
-3. Adjust SOUL.md and IDENTITY.md to taste (name, tone, opinions, boundaries).
-4. Delete this file (or just complete a session; setup will remove it).
+1. Lire AGENTS.md, SOUL.md, IDENTITY.md, TOOLS.md.
+2. Renseigner USER.md pour que l'agent sache qui il sert et comment s'adresser à lui.
+3. Ajuster SOUL.md et IDENTITY.md à ton goût (nom, ton, opinions, limites).
+4. Supprimer ce fichier (ou simplement terminer une session ; la configuration le retirera).
