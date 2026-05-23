@@ -103,7 +103,7 @@ impl Identity {
     /// Render the identity as a directive line for the system prompt.
     #[must_use]
     pub fn render_directives(&self) -> String {
-        let mut out = format!("You are {}.", self.name);
+        let mut out = format!("Tu es {}.", self.name);
         if let Some(v) = &self.vibe {
             out.push(' ');
             out.push_str(v);
@@ -181,7 +181,7 @@ mod tests {
             body: String::new(),
         };
         let d = id.render_directives();
-        assert!(d.starts_with("You are Aria. precise and warm.\n"));
+        assert!(d.starts_with("Tu es Aria. precise and warm.\n"));
     }
 
     #[test]

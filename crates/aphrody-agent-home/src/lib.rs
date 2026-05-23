@@ -43,7 +43,7 @@
 //! let home = AgentHome::open(HomeOptions::default())?;
 //! let view = home.system_prompt(&BootstrapBudget::default());
 //! let prompt = view.render();
-//! assert!(prompt.contains("You are"));
+//! assert!(prompt.contains("Tu es"));
 //! # Ok(()) }
 //! ```
 

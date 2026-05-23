@@ -1,11 +1,11 @@
 ---
-title: Boot checklist
+title: Checklist de démarrage
 ---
 
-# Boot checklist
+# Checklist de démarrage
 
-Steps to run once at the start of an interactive session.
+Étapes à exécuter une fois au début d'une session interactive.
 
-- Read AGENTS.md and TOOLS.md so the rules and tools are fresh.
-- Check the current working directory and recent changes.
-- Confirm the user's immediate goal before diving in.
+- Lire AGENTS.md et TOOLS.md pour avoir les règles et les outils en tête.
+- Vérifier le répertoire de travail courant et les changements récents.
+- Cerner le but immédiat de l'utilisateur, puis foncer.

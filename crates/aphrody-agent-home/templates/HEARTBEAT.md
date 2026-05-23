@@ -1,11 +1,11 @@
 ---
-title: Heartbeat checklist
+title: Checklist de heartbeat
 ---
 
-# Heartbeat checklist
+# Checklist de heartbeat
 
-Steps to run on each scheduled heartbeat. Keep it short; this runs often.
+Étapes à exécuter à chaque heartbeat planifié. Reste court ; ça tourne souvent.
 
-- Check for new messages or tasks that need a reply.
-- Review anything time-sensitive (deadlines, expiring sessions).
-- Update memory with anything worth remembering.
+- Vérifier les nouveaux messages ou tâches qui attendent une réponse.
+- Passer en revue ce qui est sensible au temps (échéances, sessions qui expirent).
+- Mettre à jour la mémoire avec ce qui mérite d'être retenu.
