@@ -384,6 +384,10 @@ enum Commands {
         /// Overwrite an existing aphrody.json instead of bailing out.
         #[arg(long, short)]
         force: bool,
+        /// Skip seeding the optional persona files (SOUL/IDENTITY/USER/
+        /// HEARTBEAT/BOOT); AGENTS.md and TOOLS.md are always seeded.
+        #[arg(long)]
+        skip_bootstrap: bool,
     },
     /// (ported from openclaw) Reset local state. Choose a scope:
     /// `config`, `config-creds-sessions`, or `full`.
@@ -1317,8 +1321,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 scan_cmd::ManifestsCommand { root, output }.execute(ctx).await?;
             },
         },
-        Some(Commands::OcOnboard { workspace, non_interactive, accept_risk, force }) => {
-            oc_cmd::OnboardCommand { workspace, non_interactive, accept_risk, force }
+        Some(Commands::OcOnboard { workspace, non_interactive, accept_risk, force, skip_bootstrap }) => {
+            oc_cmd::OnboardCommand { workspace, non_interactive, accept_risk, force, skip_bootstrap }
                 .execute(ctx)
                 .await?;
         },
