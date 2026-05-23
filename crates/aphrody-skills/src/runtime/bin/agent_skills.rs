@@ -16,6 +16,8 @@
 //                When invoked WITH a <owner>/<repo> spec, delegates to
 //                `cargo xtask skills-sync` so the existing clone-from-GitHub
 //                code path stays the single source of truth.
+//   remove     → uninstall a skill from $APHRODY_SKILLS_HOME and drop its
+//                manifest entry (symmetric inverse of `install`).
 
 use std::{
     fs,
@@ -31,7 +33,8 @@ use serde::Serialize;
 use aphrody_skills::runtime::{
     active_sources, discover::discover_skills_in_path, discover_skills, ensure_home_exists,
     manifest::ManifestEntry, parse_frontmatter, read_manifest, resolve_source_root,
-    source_by_slug, sources::SourceSlug, upsert_entry, validate_frontmatter, SourceSpec, SOURCES,
+    skills_home, source_by_slug, sources::SourceSlug, upsert_entry, validate_frontmatter,
+    write_manifest, SourceSpec, SOURCES,
 };
 
 #[derive(Debug, Parser)]
@@ -64,6 +67,9 @@ enum Cmd {
     Install(InfoArgs),
     /// Mirror SKILL.md files (locally or from a GitHub repo).
     Sync(SyncArgs),
+    /// Uninstall a skill from $APHRODY_SKILLS_HOME (inverse of `install`).
+    #[command(visible_alias = "rm", alias = "uninstall")]
+    Remove(InfoArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -131,6 +137,7 @@ fn main() -> ExitCode {
         Cmd::Sources(a) => run_sources(&a),
         Cmd::Install(a) => run_install(&a),
         Cmd::Sync(a) => run_sync(&a),
+        Cmd::Remove(a) => run_remove(&a),
     };
     match res {
         Ok(code) => ExitCode::from(code),
@@ -487,6 +494,51 @@ fn run_install(args: &InfoArgs) -> Result<u8> {
         args.name,
         target.display(),
         size
+    )?;
+    Ok(0)
+}
+
+fn run_remove(args: &InfoArgs) -> Result<u8> {
+    let mut manifest = read_manifest()?;
+    let wanted = args.source.as_deref().and_then(SourceSlug::from_str);
+    let matches: Vec<usize> = manifest
+        .entries
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.name == args.name && wanted.is_none_or(|s| e.source == s))
+        .map(|(i, _)| i)
+        .collect();
+    if matches.is_empty() {
+        anyhow::bail!(
+            "no installed skill named '{}' (run `agent-skills list`)",
+            args.name
+        );
+    }
+    if matches.len() > 1 {
+        let srcs: Vec<&str> = matches
+            .iter()
+            .map(|&i| manifest.entries[i].source.as_str())
+            .collect();
+        anyhow::bail!(
+            "'{}' is installed from multiple sources ({}). Re-run with --source=<slug>.",
+            args.name,
+            srcs.join(", ")
+        );
+    }
+    let idx = matches[0];
+    let slug = manifest.entries[idx].source;
+    let dir = skills_home().join(slug.as_str()).join(&args.name);
+    if dir.exists() {
+        fs::remove_dir_all(&dir).with_context(|| format!("remove {}", dir.display()))?;
+    }
+    manifest.entries.remove(idx);
+    write_manifest(&manifest)?;
+    writeln!(
+        std::io::stdout(),
+        "removed {}/{} ({})",
+        slug.as_str(),
+        args.name,
+        dir.display()
     )?;
     Ok(0)
 }
