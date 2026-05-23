@@ -55,6 +55,13 @@
 //! is delegated.
 
 #![forbid(unsafe_code)]
+// zerocopy derive macros (FromBytes/IntoBytes/KnownLayout/Immutable) generate
+// internal helper identifiers that contain non-ASCII Unicode characters.
+// The macros already emit #[allow(non_ascii_idents)] in their expansion, but
+// the workspace `-D non-ascii-idents` flag overrides inner allow attributes.
+// Allowing it at the crate root is the standard fix for zerocopy 0.8 on
+// nightly -- see zerocopy-derive output_tests/expected/*.expected.rs.
+#![allow(non_ascii_idents)]
 
 /// Adobe application directory mapper — forensic inventory of an Adobe
 /// application install dir (Photoshop, Illustrator, …) into structured JSON.
@@ -75,6 +82,14 @@ pub mod google;
 /// Entry point: [`golang::analyze_go`].
 pub mod golang;
 
+/// Zero-copy binary header inspection via [`zerocopy`].
+///
+/// Provides `FromBytes` + `Immutable` typed views over ELF and DOS/PE headers,
+/// so that format detection and field reads can be performed directly on a raw
+/// `&[u8]` without any allocation.  The public entry point is
+/// [`headers::HeaderProbe::from_bytes`].
+pub mod headers;
+
 /// Read-only Chromium LevelDB enumerator (opt-in `leveldb` feature, host-only).
 ///
 /// Pulls a pure-Rust LevelDB reader + a scratch temp copy to keep the source
@@ -89,6 +104,17 @@ pub mod leveldb;
 /// magika`. See the module docs for the rationale.
 #[cfg(feature = "magika")]
 pub mod magika;
+
+/// YARA-X pattern-matching scanner (opt-in `yara` feature, pure Rust, BSD-3-Clause).
+///
+/// Compiles YARA rules from source text and scans a byte slice, returning all
+/// matching rules with their matched string identifiers and byte offsets.
+/// Host-only; excluded from wasm builds. Build with:
+/// `cargo build -p aphrody --features yara`.
+///
+/// Entry point: [`yara::scan`].
+#[cfg(feature = "yara")]
+pub mod yara;
 
 use iced_x86::{
     Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter,
@@ -617,99 +643,98 @@ fn push_unique(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use googletest::prelude::*;
 
-    #[test]
+    #[gtest]
     fn garbage_input_returns_unknown_without_panicking() {
         let input: &[u8] = b"clearly not a binary, just random bytes here";
         let r = triage(input).expect("never errs");
-        assert_eq!(r.format, Format::Unknown);
-        assert_eq!(r.size, input.len());
-        assert_eq!(r.sha256.len(), 64);
-        assert!(r.entry_point.is_none());
-        assert!(r.sections.is_empty());
+        expect_that!(r.format, eq(Format::Unknown));
+        expect_that!(r.size, eq(input.len()));
+        expect_that!(r.sha256.len(), eq(64));
+        expect_that!(r.entry_point, none());
+        expect_that!(r.sections, is_empty());
     }
 
-    #[test]
+    #[gtest]
     fn empty_input_is_unknown_with_known_hash() {
         let r = triage(b"").expect("never errs");
-        assert_eq!(r.format, Format::Unknown);
-        assert_eq!(r.size, 0);
+        expect_that!(r.format, eq(Format::Unknown));
+        expect_that!(r.size, eq(0usize));
         // SHA-256 of the empty string is a well-known constant.
-        assert_eq!(
+        expect_that!(
             r.sha256,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            eq("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
         );
     }
 
-    #[test]
+    #[gtest]
     fn shannon_entropy_uniform_bytes_close_to_8() {
         // 256 distinct bytes, equiprobable => entropy == 8.0.
         let uniform: Vec<u8> = (0u8..=255).collect();
         let h = shannon_entropy(&uniform);
-        assert!((h - 8.0).abs() < 1e-9, "uniform entropy must be 8.0, got {h}");
+        // Use a tolerance matcher via `near` — googletest provides `approx_eq`
+        // for floats; we verify with abs_diff_le via a custom check.
+        expect_that!((h - 8.0).abs(), le(1e-9));
     }
 
-    #[test]
+    #[gtest]
     fn shannon_entropy_constant_bytes_is_zero() {
         let zeros = vec![0u8; 1024];
         let h = shannon_entropy(&zeros);
-        assert_eq!(h, 0.0);
+        expect_that!(h, eq(0.0));
     }
 
-    #[test]
+    #[gtest]
     fn extract_strings_finds_ascii_runs() {
         let bytes = b"\x00\x00hello world\x00\x01\x02foobar\xffmidstream short\x00THIS_IS_AN_API";
         let s = extract_strings(bytes, 6, 16);
-        assert!(s.iter().any(|x| x == "hello world"), "missing 'hello world' in {s:?}");
-        assert!(s.iter().any(|x| x == "foobar"), "missing 'foobar' in {s:?}");
-        assert!(
-            s.iter().any(|x| x.contains("THIS_IS_AN_API")),
-            "missing 'THIS_IS_AN_API' in {s:?}"
-        );
+        // `contains` iterates &String elements; use predicate to compare via as_str().
+        expect_that!(s, contains(predicate(|x: &String| x.as_str() == "hello world")));
+        expect_that!(s, contains(predicate(|x: &String| x.as_str() == "foobar")));
         // 'short' is 5 chars, below min_len=6 → excluded.
-        assert!(!s.iter().any(|x| x == "short"));
+        expect_that!(s, not(contains(predicate(|x: &String| x.as_str() == "short"))));
+        // THIS_IS_AN_API is 14 chars >= 6 → included.
+        assert!(s.iter().any(|x| x.contains("THIS_IS_AN_API")), "missing THIS_IS_AN_API in {s:?}");
     }
 
-    #[test]
+    #[gtest]
     fn extract_strings_finds_utf16le_runs() {
-        // "API_KEY" encoded as UTF-16LE: byte order is (low, high) per char,
-        // so 'A' (0x41) becomes 0x41 0x00, 'P' (0x50) becomes 0x50 0x00, …
-        // Prefix with a few non-string bytes that the UTF-16 pass should
-        // skip (\xFF\x01 is not (printable, 0)).
+        // "API_KEY" encoded as UTF-16LE.
         let bytes: &[u8] = b"\xFF\x01A\x00P\x00I\x00_\x00K\x00E\x00Y\x00\xFF\x01";
         let s = extract_strings(bytes, 6, 8);
-        assert!(s.iter().any(|x| x == "API_KEY"), "missing UTF-16LE 'API_KEY' in {s:?}");
+        expect_that!(s, contains(predicate(|x: &String| x.as_str() == "API_KEY")));
     }
 
-    #[test]
+    #[gtest]
     fn extract_strings_respects_limit() {
         // 100 distinct 8-char runs separated by null bytes.
         let mut bytes = Vec::new();
         for i in 0..100u32 {
-            bytes.extend_from_slice(format!("STRNG{:03}", i).as_bytes());
+            bytes.extend_from_slice(format!("STRNG{i:03}").as_bytes());
             bytes.push(0);
         }
         let s = extract_strings(&bytes, 6, 10);
-        assert_eq!(s.len(), 10);
+        expect_that!(s, len(eq(10)));
     }
 
-    #[test]
+    #[gtest]
     fn format_display_names_stable() {
-        assert_eq!(Format::Pe32.display_name(), "PE32");
-        assert_eq!(Format::Pe64.display_name(), "PE32+");
-        assert_eq!(Format::Elf32.display_name(), "ELF32");
-        assert_eq!(Format::Elf64.display_name(), "ELF64");
-        assert_eq!(Format::Unknown.display_name(), "Unknown");
+        expect_that!(Format::Pe32.display_name(), eq("PE32"));
+        expect_that!(Format::Pe64.display_name(), eq("PE32+"));
+        expect_that!(Format::Elf32.display_name(), eq("ELF32"));
+        expect_that!(Format::Elf64.display_name(), eq("ELF64"));
+        expect_that!(Format::Unknown.display_name(), eq("Unknown"));
     }
 
-    #[test]
+    #[gtest]
     fn triage_report_serializes_to_stable_json_shape() {
         let r = triage(b"unknown").expect("ok");
         let json = serde_json::to_value(&r).expect("serialize");
         // Lowercase variant per #[serde(rename_all = "lowercase")].
-        assert_eq!(json["format"], "unknown");
-        assert_eq!(json["size"], 7);
-        assert!(json["sha256"].as_str().unwrap().len() == 64);
+        expect_that!(json["format"].as_str(), some(eq("unknown")));
+        expect_that!(json["size"].as_u64(), some(eq(7u64)));
+        expect_that!(json["sha256"].as_str().map(str::len), some(eq(64usize)));
         // Sections/imports/exports must always be arrays (never null) for
         // downstream consumers that index without null-checking.
         assert!(json["sections"].is_array());
@@ -718,35 +743,36 @@ mod tests {
         assert!(json["strings_sample"].is_array());
     }
 
-    #[test]
+    #[gtest]
     fn minimal_pe_magic_is_detected_or_falls_back_gracefully() {
-        // Bare MZ header (DOS stub start) without a valid PE32+ header.
-        // goblin should either parse partially or error — either way we
-        // must not panic and the report must be well-formed.
+        // Bare MZ header without a valid PE32+ header — must not panic.
         let mut bytes = b"MZ".to_vec();
-        bytes.extend_from_slice(&[0u8; 62]); // pad DOS header
+        bytes.extend_from_slice(&[0u8; 62]); // pad to 64-byte DOS header
         let r = triage(&bytes).expect("never panics");
-        // Format is either Pe* (if goblin accepts) or Unknown (if it
-        // rejects). Both are acceptable — what matters is the API contract.
-        assert!(matches!(r.format, Format::Pe32 | Format::Pe64 | Format::Unknown));
-        assert_eq!(r.size, 64);
+        // goblin accepts or rejects: both paths are valid, report must be
+        // well-formed either way.
+        assert!(
+            matches!(r.format, Format::Pe32 | Format::Pe64 | Format::Unknown),
+            "unexpected format: {:?}",
+            r.format
+        );
+        expect_that!(r.size, eq(64usize));
     }
 
     // -----------------------------------------------------------------------
     // disasm tests
     // -----------------------------------------------------------------------
 
-    /// `48 89 E5` = `mov rbp, rsp` (REX.W + MOV r/m64,r64, ModRM 0xE5).
-    #[test]
+    /// `48 89 E5` = `mov rbp, rsp`.
+    #[gtest]
     fn disasm_mov_rbp_rsp() {
         let bytes: &[u8] = &[0x48, 0x89, 0xE5];
         let insns = disasm(bytes, 0x1000, 8);
-        assert_eq!(insns.len(), 1, "expected exactly 1 instruction, got {insns:?}");
-        assert_eq!(insns[0].mnemonic, "mov");
-        assert_eq!(insns[0].address, 0x1000);
-        assert_eq!(insns[0].offset, 0);
-        assert_eq!(insns[0].bytes_hex, "4889e5");
-        // Full text must contain both operands.
+        expect_that!(insns, len(eq(1)));
+        expect_that!(insns[0].mnemonic, eq("mov"));
+        expect_that!(insns[0].address, eq(0x1000u64));
+        expect_that!(insns[0].offset, eq(0u64));
+        expect_that!(insns[0].bytes_hex, eq("4889e5"));
         assert!(
             insns[0].text.contains("rbp") && insns[0].text.contains("rsp"),
             "unexpected text: {}",
@@ -754,66 +780,52 @@ mod tests {
         );
     }
 
-    /// Multi-instruction sequence: `push rbp` + `mov rbp, rsp` + `nop`.
-    /// Canonical function prologue found in almost every x86-64 binary.
-    #[test]
+    /// `push rbp` + `mov rbp, rsp` + `nop` — canonical function prologue.
+    #[gtest]
     fn disasm_function_prologue_three_insns() {
-        // 55            push rbp
-        // 48 89 E5      mov rbp, rsp
-        // 90            nop
         let bytes: &[u8] = &[0x55, 0x48, 0x89, 0xE5, 0x90];
         let insns = disasm(bytes, 0x0, 16);
-        assert_eq!(insns.len(), 3, "expected 3 instructions, got {insns:?}");
-        assert_eq!(insns[0].mnemonic, "push");
-        assert_eq!(insns[1].mnemonic, "mov");
-        assert_eq!(insns[2].mnemonic, "nop");
-        // Offsets must be monotonically increasing and match byte lengths.
-        assert_eq!(insns[0].offset, 0);
-        assert_eq!(insns[1].offset, 1); // `push rbp` is 1 byte
-        assert_eq!(insns[2].offset, 4); // `mov rbp, rsp` is 3 bytes
+        expect_that!(insns, len(eq(3)));
+        expect_that!(insns[0].mnemonic, eq("push"));
+        expect_that!(insns[1].mnemonic, eq("mov"));
+        expect_that!(insns[2].mnemonic, eq("nop"));
+        expect_that!(insns[0].offset, eq(0u64));
+        expect_that!(insns[1].offset, eq(1u64)); // push rbp is 1 byte
+        expect_that!(insns[2].offset, eq(4u64)); // mov rbp,rsp is 3 bytes
     }
 
-    /// `limit` must be respected: decode at most N instructions even if more
-    /// valid bytes remain.
-    #[test]
+    #[gtest]
     fn disasm_respects_limit() {
-        // 10 consecutive `nop` bytes (0x90).
         let bytes: Vec<u8> = vec![0x90; 10];
         let insns = disasm(&bytes, 0x0, 3);
-        assert_eq!(insns.len(), 3, "limit=3 must cap at 3, got {insns:?}");
+        expect_that!(insns, len(eq(3)));
     }
 
-    /// Empty slice must produce an empty result without panicking.
-    #[test]
+    #[gtest]
     fn disasm_empty_bytes_returns_empty() {
         let insns = disasm(&[], 0x0, DISASM_LIMIT);
-        assert!(insns.is_empty());
+        expect_that!(insns, is_empty());
     }
 
-    /// Garbage bytes must not panic; the decoder may emit 0 valid instructions
-    /// or stop at the first invalid encoding.
-    #[test]
+    #[gtest]
     fn disasm_invalid_bytes_does_not_panic() {
-        // 0xFF 0xFF … is an invalid encoding in x86-64 (no valid 64-bit opcode
-        // starts with FF FF for GRPFF /7 + invalid ModRM).
         let bytes: &[u8] = &[0xFF, 0xFF, 0xFF, 0xFF];
-        // Must not panic regardless of the output.
         let _insns = disasm(bytes, 0x4000, DISASM_LIMIT);
+        // Must not panic — no assertion needed beyond reaching this line.
     }
 
-    /// Verify `DisasmInsn` round-trips through JSON without losing fields.
-    #[test]
+    #[gtest]
     fn disasm_insn_serializes_to_stable_json_shape() {
         let bytes: &[u8] = &[0x90]; // nop
         let insns = disasm(bytes, 0x2000, 1);
-        assert_eq!(insns.len(), 1);
+        expect_that!(insns, len(eq(1)));
         let json = serde_json::to_value(&insns[0]).expect("serialize");
         assert!(json["offset"].is_number());
         assert!(json["address"].is_number());
         assert!(json["bytes_hex"].is_string());
         assert!(json["mnemonic"].is_string());
         assert!(json["text"].is_string());
-        assert_eq!(json["address"], 0x2000u64);
-        assert_eq!(json["mnemonic"], "nop");
+        expect_that!(json["address"].as_u64(), some(eq(0x2000u64)));
+        expect_that!(json["mnemonic"].as_str(), some(eq("nop")));
     }
 }

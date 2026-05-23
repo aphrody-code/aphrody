@@ -944,6 +944,28 @@ pub(crate) enum ReAction {
         #[arg(long, default_value_t = 2000)]
         limit: usize,
     },
+    /// Scan a binary with YARA-X rules (pure Rust, BSD-3-Clause).
+    ///
+    /// Compiles the rules from `--rules` and scans `<binary>` in memory.
+    /// Returns a JSON report with every matching rule name, namespace, tags,
+    /// and all matched string occurrences (identifier + byte offset + hex).
+    ///
+    /// Requires building with `--features yara` (activates the `yara` feature
+    /// in `aphrody-re`; pure Rust, no C). Without it the command errors with
+    /// the rebuild instruction rather than silently degrading.
+    ///
+    /// Example: aphrody re yara --rules malware.yar target.exe --pretty | jq '.matches[].rule_name'
+    Yara {
+        /// Path to the YARA rules file (UTF-8 source, may contain multiple
+        /// rules and optional namespace declarations).
+        #[arg(long)]
+        rules: PathBuf,
+        /// Path to the binary (or any file) to scan.
+        path: PathBuf,
+        /// Pretty-print the JSON output (default: compact one-line).
+        #[arg(long)]
+        pretty: bool,
+    },
 }
 
 // Natural-language prompt detection lives in `crate::nl_tokens`. The
@@ -1181,6 +1203,41 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 .map_err(|e| miette::miette!("task panicked: {e}"))?
                 .map_err(|e| miette::miette!("re auto failed: {e}"))?;
                 println!("{result}");
+            },
+            ReAction::Yara { rules, path, pretty } => {
+                #[cfg(feature = "yara")]
+                {
+                    // Both files are read in a spawn_blocking so we never block
+                    // the tokio worker thread on disk I/O.
+                    let result = tokio::task::spawn_blocking(move || -> miette::Result<String> {
+                        let rules_src = std::fs::read_to_string(&rules).map_err(|e| {
+                            miette::miette!("failed to read rules {}: {e}", rules.display())
+                        })?;
+                        let data = std::fs::read(&path).map_err(|e| {
+                            miette::miette!("failed to read {}: {e}", path.display())
+                        })?;
+                        let report = aphrody_re::yara::scan(&rules_src, &data)
+                            .map_err(|e| miette::miette!("yara scan failed: {e}"))?;
+                        let json = if pretty {
+                            serde_json::to_string_pretty(&report)
+                        } else {
+                            serde_json::to_string(&report)
+                        }
+                        .map_err(|e| miette::miette!("JSON encode failed: {e}"))?;
+                        Ok(json)
+                    })
+                    .await
+                    .map_err(|e| miette::miette!("task panicked: {e}"))??;
+                    println!("{result}");
+                }
+                #[cfg(not(feature = "yara"))]
+                {
+                    let _ = (&rules, &path, pretty);
+                    return Err(miette::miette!(
+                        "`aphrody re yara` requires the `yara` feature (yara-x pure Rust engine). \
+                         Rebuild with: cargo build -p aphrody --features yara"
+                    ));
+                }
             },
         },
         #[cfg(feature = "index")]
