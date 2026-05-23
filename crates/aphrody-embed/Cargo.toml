@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-embed"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Local, offline text embeddings for aphrody — fastembed (ONNX Runtime) text vectorisation with no external API. Feeds semantic memory/search."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[features]
+# OFF by default: the embeddings stack links the ONNX Runtime via `ort`
+# (host-only, fetches a prebuilt backend at build time) plus tokenizers /
+# safetensors / ndarray, and downloads the model from HuggingFace on first use.
+# None of that is hermetic-offline or wasm-safe, so the default build of
+# aphrody-embed (and the `aphrody` CLI that may depend on it) stays light and
+# pulls NONE of it. Build with: cargo build -p aphrody-embed --features embeddings
+default     = []
+embeddings  = ["dep:fastembed"]
+
+[dependencies]
+# Typed errors for the public API (mirrors aphrody-images / aphrody-firefly).
+thiserror   = { workspace = true }
+# Structured tracing for the model-load / embed lifecycle.
+tracing     = { workspace = true }
+# Portable state-dir resolution (~/.aphrody/models) across Linux/Windows/macOS.
+dirs        = { workspace = true }
+
+# Local, offline embeddings engine (Apache-2.0 OR MIT). Optional + host-only:
+# gated behind the `embeddings` feature AND `cfg(not(target_arch = "wasm32"))`
+# at the source level. We disable default features (they pull `native-tls` for
+# both the ort backend download and the hf-hub model download) and select the
+# rustls variants instead, to honour aphrody's rustls-only TLS policy
+# (CLAUDE.md §7). fastembed pins `ort = "=2.0.0-rc.12"` internally — the SAME
+# pin aphrody already forces for the `magika` feature, so the `ort` version is
+# unified across the workspace with zero duplication (cargo-deny clean).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Feature selection rationale:
+#   * `ort-load-dynamic` -> `ort/load-dynamic` (sets `ort-sys/disable-linking`):
+#     the ONNX Runtime is loaded at RUNTIME via `libloading`, not statically
+#     linked. This is mandatory here because aphrody forces `+crt-static` on
+#     MSVC while the prebuilt ONNX Runtime is `/MD` (dynamic CRT) — static
+#     linking the two is irreconcilable (see build.rs). Loading the dylib at
+#     runtime sidesteps the CRT clash and keeps aphrody's own `+crt-static`
+#     posture. It is also the most portable strategy across Linux/Windows.
+#   * `ort-download-binaries-rustls-tls` -> `ort/download-binaries` +
+#     `ort/tls-rustls`: still fetch the prebuilt ONNX Runtime shared library
+#     (over rustls, per aphrody's TLS policy) so a first run is turnkey; with
+#     `disable-linking` active this provides the dylib `ort` then loads.
+#   * `hf-hub-rustls-tls`: model-weight download from HuggingFace over rustls.
+fastembed   = { workspace = true, optional = true, features = [
+    "ort-load-dynamic",
+    "ort-download-binaries-rustls-tls",
+    "hf-hub-rustls-tls",
+] }
+
+[dev-dependencies]
+# The smoke / API tests build a model + a reqwest-backed hf-hub downloader,
+# which (via ort/hf-hub rustls) initialises a rustls ClientConfig. rustls 0.23
+# needs a CryptoProvider installed once before the first client — install the
+# ring provider in the test module (CLAUDE.md §7).
+rustls      = { workspace = true }
+tempfile    = { workspace = true }
+
+[package.metadata.cargo-machete]
+# `fastembed` is feature-gated AND target-gated; machete's symbol scan cannot
+# see its uses when the feature is inactive. `tracing` is macro-only usage
+# (tracing::debug!/info!) which machete under-counts.
+ignored = ["fastembed", "tracing"]
