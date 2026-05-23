@@ -618,27 +618,29 @@ mod tests {
         assert!(ids.contains(&"gemini-2.5-flash-lite"));
     }
 
-    /// Smoke-test: if `gemini` is not on PATH the detector must return
-    /// `RuntimeError::NotFound`, not panic.
+    /// When no `gemini` binary is resolvable, the detector must return
+    /// `RuntimeError::NotFound`, not panic. Hermetic: every `resolve_bin`
+    /// input is neutralised so the binary is genuinely absent regardless of
+    /// the host's installs (a half-installed global `gemini-cli` would
+    /// otherwise resolve via the in-tree bundle walk-up and fail differently).
     #[tokio::test]
     async fn detect_absent_binary_returns_not_found() {
-        // Temporarily shadow PATH with an empty directory so `which` fails.
-        // We cannot guarantee `gemini` is absent, but we can test that the
-        // error variant is correct when it is.
-        //
-        // If the binary IS present this test becomes a live integration test
-        // (version query must succeed). Both outcomes are valid.
+        let tmp = std::env::temp_dir().join(format!(
+            "aphrody-gemini-absent-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&tmp).expect("create temp dir");
+        // SAFETY: nextest runs each test in its own process, so there is no
+        // other thread concurrently reading/writing the environment here.
+        unsafe {
+            std::env::remove_var(ENV_GEMINI_BIN); // step 1: no override
+            std::env::set_var("PATH", &tmp); // step 4: empty dir → which fails
+            // step 3: a temp-dir CWD has no `packages/gemini-cli/bundle` ancestor
+            std::env::set_current_dir(&tmp).expect("cd to temp dir");
+        }
         match detect().await {
-            Ok(rt) => {
-                // Binary found — version must be a non-empty string.
-                assert!(!rt.version.is_empty(), "version should not be empty");
-            },
-            Err(RuntimeError::NotFound(_)) => {
-                // Expected when gemini is not installed — pass.
-            },
-            Err(e) => {
-                panic!("unexpected error variant: {e}");
-            },
+            Err(RuntimeError::NotFound(_)) => {} // expected
+            other => panic!("expected NotFound for an absent binary, got {other:?}"),
         }
     }
 }
