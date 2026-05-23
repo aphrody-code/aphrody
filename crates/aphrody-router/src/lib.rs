@@ -33,7 +33,7 @@ use std::pin::Pin;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use futures_util::Stream;
+use futures_util::{Stream, StreamExt as _};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -363,6 +363,107 @@ fn finish_from_str(s: &str) -> FinishReason {
 }
 
 // ---------------------------------------------------------------------------
+// Utilitaires SSE (Server-Sent Events)
+// ---------------------------------------------------------------------------
+
+/// Découpe un flux d'octets en lignes SSE complètes.
+///
+/// Accumule les octets dans un tampon interne et extrait les lignes terminées
+/// par `\n`. Les caractères `\r` sont ignorés pour la compatibilité CRLF.
+/// Renvoie les lignes sans le `\n` terminal.
+struct SseLineReader {
+    buf: Vec<u8>,
+}
+
+impl SseLineReader {
+    fn new() -> Self {
+        Self { buf: Vec::with_capacity(4096) }
+    }
+
+    /// Ingère un nouveau chunk d'octets et retourne toutes les lignes
+    /// complètes disponibles.
+    fn feed(&mut self, chunk: &[u8]) -> Vec<String> {
+        self.buf.extend_from_slice(chunk);
+        let mut lines = Vec::new();
+        loop {
+            match self.buf.iter().position(|&b| b == b'\n') {
+                None => break,
+                Some(pos) => {
+                    let raw = self.buf.drain(..=pos).collect::<Vec<u8>>();
+                    // Retire le `\n` et éventuellement le `\r` précédent.
+                    let trimmed = raw
+                        .strip_suffix(b"\n")
+                        .unwrap_or(&raw);
+                    let trimmed = trimmed
+                        .strip_suffix(b"\r")
+                        .unwrap_or(trimmed);
+                    if let Ok(s) = std::str::from_utf8(trimmed) {
+                        lines.push(s.to_owned());
+                    }
+                }
+            }
+        }
+        lines
+    }
+
+    /// Vide et renvoie tout résidu accumulé (fin de flux sans `\n` terminal).
+    fn flush(&mut self) -> Option<String> {
+        if self.buf.is_empty() {
+            return None;
+        }
+        let raw = std::mem::take(&mut self.buf);
+        std::str::from_utf8(&raw).ok().map(str::to_owned)
+    }
+}
+
+/// Type d'événement SSE extrait des métadonnées de l'événement courant.
+#[derive(Debug, Default, Clone)]
+struct SseEvent {
+    /// Valeur de la ligne `event:` (peut être vide si absente).
+    pub event: String,
+    /// Valeur concaténée des lignes `data:`.
+    pub data: String,
+}
+
+/// Accumulateur d'un événement SSE multi-lignes.
+///
+/// Un événement SSE se termine par une ligne vide (séparateur de blocs).
+/// Plusieurs lignes `data:` sont concaténées avec `\n`.
+struct SseEventBuilder {
+    current: SseEvent,
+}
+
+impl SseEventBuilder {
+    fn new() -> Self {
+        Self { current: SseEvent::default() }
+    }
+
+    /// Ingère une ligne et renvoie `Some(event)` quand le bloc est complet
+    /// (ligne vide reçue).
+    fn push_line(&mut self, line: &str) -> Option<SseEvent> {
+        if line.is_empty() {
+            // Ligne vide = fin du bloc SSE courant.
+            let evt = std::mem::take(&mut self.current);
+            if evt.data.is_empty() && evt.event.is_empty() {
+                // Bloc complètement vide : heartbeat, ignorer.
+                return None;
+            }
+            return Some(evt);
+        }
+        if let Some(val) = line.strip_prefix("event:") {
+            self.current.event = val.trim().to_owned();
+        } else if let Some(val) = line.strip_prefix("data:") {
+            if !self.current.data.is_empty() {
+                self.current.data.push('\n');
+            }
+            self.current.data.push_str(val.trim_start_matches(' '));
+        }
+        // Les champs `id:` et `retry:` sont ignorés volontairement.
+        None
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Anthropic
 // ---------------------------------------------------------------------------
 
@@ -449,6 +550,48 @@ struct AnthropicUsage {
     input_tokens: u32,
     #[serde(default)]
     output_tokens: u32,
+}
+
+// --- Structures SSE Anthropic ------------------------------------------------
+
+/// Événement SSE Anthropic `content_block_delta`.
+///
+/// Format : `event: content_block_delta\ndata: { "type": "content_block_delta",
+/// "delta": { "type": "text_delta", "text": "…" } }`
+#[derive(Debug, Deserialize)]
+struct AnthropicSseDelta {
+    #[serde(rename = "type", default)]
+    kind: String,
+    #[serde(default)]
+    delta: Option<AnthropicSseTextDelta>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnthropicSseTextDelta {
+    #[serde(rename = "type", default)]
+    kind: String,
+    #[serde(default)]
+    text: String,
+}
+
+/// Extrait le delta texte d'un événement SSE Anthropic.
+///
+/// Renvoie `Some(text)` si l'événement est `content_block_delta` avec un
+/// delta de type `text_delta`, `None` sinon.
+fn anthropic_sse_text(event_type: &str, data: &str) -> Option<String> {
+    // On accepte soit l'événement explicite, soit le champ `type` dans le JSON.
+    if event_type == "content_block_delta" || event_type.is_empty() {
+        if let Ok(delta) = serde_json::from_str::<AnthropicSseDelta>(data) {
+            if delta.kind == "content_block_delta" {
+                if let Some(d) = delta.delta {
+                    if d.kind == "text_delta" && !d.text.is_empty() {
+                        return Some(d.text);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 #[async_trait]
@@ -541,12 +684,85 @@ impl ChatProvider for AnthropicProvider {
         &self,
         req: ChatRequest,
     ) -> RouterResult<Pin<Box<dyn Stream<Item = RouterResult<String>> + Send>>> {
-        // V0: buffer the full body and emit a single chunk. SSE parsing is a
-        // planned follow-up tracked by the project PLAN.
-        tracing::warn!(target: "aphrody_router::anthropic", "streaming not yet implemented, buffering");
-        let full = self.complete(req).await?;
-        let stream = futures_util::stream::iter(vec![Ok(full.content)]);
-        Ok(Box::pin(stream))
+        if req.model.provider != Provider::Anthropic {
+            return Err(RouterError::InvalidModel(req.model.to_string()));
+        }
+        let mut system_buf = String::new();
+        let mut msgs: Vec<AnthropicMessage<'_>> = Vec::with_capacity(req.messages.len());
+        for m in &req.messages {
+            match m.role {
+                Role::System => {
+                    if !system_buf.is_empty() {
+                        system_buf.push('\n');
+                    }
+                    system_buf.push_str(&m.content);
+                }
+                Role::User => msgs.push(AnthropicMessage { role: "user", content: &m.content }),
+                Role::Assistant => {
+                    msgs.push(AnthropicMessage { role: "assistant", content: &m.content });
+                }
+                Role::Tool => msgs.push(AnthropicMessage { role: "user", content: &m.content }),
+            }
+        }
+        let body = AnthropicRequest {
+            model: &req.model.name,
+            messages: msgs,
+            system: if system_buf.is_empty() { None } else { Some(system_buf) },
+            max_tokens: req.max_tokens.unwrap_or(1024),
+            temperature: req.temperature,
+            stream: true,
+        };
+        let resp = self
+            .client
+            .post(format!("{}/v1/messages", self.base_url))
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", ANTHROPIC_API_VERSION)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .json(&body)
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(lift_error(resp).await);
+        }
+
+        // Consomme la réponse HTTP en SSE ligne par ligne via bytes_stream().
+        let mut byte_stream = resp.bytes_stream();
+        let output = async_stream::stream! {
+            let mut reader = SseLineReader::new();
+            let mut builder = SseEventBuilder::new();
+            loop {
+                match byte_stream.next().await {
+                    None => {
+                        // Fin du flux réseau — vider le tampon restant.
+                        if let Some(leftover) = reader.flush() {
+                            if let Some(evt) = builder.push_line(&leftover) {
+                                if evt.data == "[DONE]" { break; }
+                                if let Some(text) = anthropic_sse_text(&evt.event, &evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        yield Err(RouterError::Stream(e.to_string()));
+                        break;
+                    }
+                    Some(Ok(chunk)) => {
+                        let lines = reader.feed(&chunk);
+                        for line in lines {
+                            if let Some(evt) = builder.push_line(&line) {
+                                if evt.data == "[DONE]" { return; }
+                                if let Some(text) = anthropic_sse_text(&evt.event, &evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Ok(Box::pin(output))
     }
 }
 
@@ -655,6 +871,35 @@ struct GeminiUsage {
     prompt_token_count: u32,
     #[serde(default, rename = "candidatesTokenCount")]
     candidates_token_count: u32,
+}
+
+/// Extrait le texte delta d'un événement SSE Gemini.
+///
+/// Le format `streamGenerateContent?alt=sse` émet des objets JSON de type
+/// `GeminiResponse` — chaque `data:` contient un fragment de réponse complet
+/// (le premier candidat seulement est utilisé, multi-candidats hors périmètre).
+fn gemini_sse_text(data: &str) -> Option<String> {
+    if data == "[DONE]" {
+        return None;
+    }
+    // Gemini peut émettre un tableau JSON `[{...}]` ou un objet simple `{...}`.
+    // On tente les deux formes.
+    let resp: GeminiResponse = if data.trim_start().starts_with('[') {
+        // Tableau : on prend le premier élément.
+        let arr: Vec<serde_json::Value> = serde_json::from_str(data).ok()?;
+        let first = arr.into_iter().next()?;
+        serde_json::from_value(first).ok()?
+    } else {
+        serde_json::from_str(data).ok()?
+    };
+    let candidate = resp.candidates.into_iter().next()?;
+    let content = candidate.content?;
+    let text = content
+        .parts
+        .into_iter()
+        .filter_map(|p| p.text)
+        .collect::<String>();
+    if text.is_empty() { None } else { Some(text) }
 }
 
 #[async_trait]
@@ -778,9 +1023,102 @@ impl ChatProvider for GeminiProvider {
         &self,
         req: ChatRequest,
     ) -> RouterResult<Pin<Box<dyn Stream<Item = RouterResult<String>> + Send>>> {
-        tracing::warn!(target: "aphrody_router::gemini", "streaming not yet implemented, buffering");
-        let full = self.complete(req).await?;
-        Ok(Box::pin(futures_util::stream::iter(vec![Ok(full.content)])))
+        if req.model.provider != Provider::Gemini {
+            return Err(RouterError::InvalidModel(req.model.to_string()));
+        }
+        let mut system_text = String::new();
+        let mut contents: Vec<GeminiContent> = Vec::new();
+        for m in &req.messages {
+            match m.role {
+                Role::System => {
+                    if !system_text.is_empty() {
+                        system_text.push('\n');
+                    }
+                    system_text.push_str(&m.content);
+                }
+                Role::User | Role::Tool => contents.push(GeminiContent {
+                    role: "user".to_owned(),
+                    parts: vec![GeminiPart { text: m.content.clone() }],
+                }),
+                Role::Assistant => contents.push(GeminiContent {
+                    role: "model".to_owned(),
+                    parts: vec![GeminiPart { text: m.content.clone() }],
+                }),
+            }
+        }
+        let generation_config = if req.temperature.is_some() || req.max_tokens.is_some() {
+            Some(GeminiGenerationConfig {
+                temperature: req.temperature,
+                max_output_tokens: req.max_tokens,
+            })
+        } else {
+            None
+        };
+        let body = GeminiRequest {
+            contents,
+            system_instruction: if system_text.is_empty() {
+                None
+            } else {
+                Some(GeminiContent {
+                    role: "system".to_owned(),
+                    parts: vec![GeminiPart { text: system_text }],
+                })
+            },
+            generation_config,
+        };
+        // `streamGenerateContent?alt=sse` active le mode SSE côté Gemini.
+        let url = format!(
+            "{}/v1beta/models/{}:streamGenerateContent?alt=sse",
+            self.base_url, req.model.name
+        );
+        let resp = self
+            .client
+            .post(url)
+            .header("x-goog-api-key", &self.api_key)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .json(&body)
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(lift_error(resp).await);
+        }
+
+        let mut byte_stream = resp.bytes_stream();
+        let output = async_stream::stream! {
+            let mut reader = SseLineReader::new();
+            let mut builder = SseEventBuilder::new();
+            loop {
+                match byte_stream.next().await {
+                    None => {
+                        if let Some(leftover) = reader.flush() {
+                            if let Some(evt) = builder.push_line(&leftover) {
+                                if evt.data == "[DONE]" { break; }
+                                if let Some(text) = gemini_sse_text(&evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        yield Err(RouterError::Stream(e.to_string()));
+                        break;
+                    }
+                    Some(Ok(chunk)) => {
+                        let lines = reader.feed(&chunk);
+                        for line in lines {
+                            if let Some(evt) = builder.push_line(&line) {
+                                if evt.data == "[DONE]" { return; }
+                                if let Some(text) = gemini_sse_text(&evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Ok(Box::pin(output))
     }
 }
 
@@ -874,6 +1212,41 @@ struct AntigravityUsage {
     completion_tokens: u32,
 }
 
+/// Extrait le delta texte d'un événement SSE Antigravity.
+///
+/// Antigravity utilise le même format Messages API qu'Anthropic (SSE
+/// `content_block_delta` / `text_delta`). En fallback, si la `data` est
+/// un objet JSON avec un champ `content` direct, ce contenu est retourné —
+/// cela couvre les implémentations alternatives qui émettent des réponses
+/// complètes par événement SSE plutôt que de vrais deltas.
+fn antigravity_sse_text(event_type: &str, data: &str) -> Option<String> {
+    if data == "[DONE]" {
+        return None;
+    }
+    // Essai 1 : format Anthropic (content_block_delta / text_delta).
+    if let Some(text) = anthropic_sse_text(event_type, data) {
+        return Some(text);
+    }
+    // Essai 2 : objet complet avec champ `content` (OpenAI-like SSE).
+    let v: serde_json::Value = serde_json::from_str(data).ok()?;
+    if let Some(choices) = v.get("choices").and_then(|c| c.as_array()) {
+        // Format OpenAI chat completions stream : choices[0].delta.content
+        let text = choices
+            .iter()
+            .filter_map(|c| c.get("delta").and_then(|d| d.get("content")).and_then(|t| t.as_str()))
+            .collect::<String>();
+        if !text.is_empty() {
+            return Some(text);
+        }
+    }
+    if let Some(content) = v.get("content").and_then(|c| c.as_str()) {
+        if !content.is_empty() {
+            return Some(content.to_owned());
+        }
+    }
+    None
+}
+
 #[async_trait]
 impl ChatProvider for AntigravityProvider {
     fn provider(&self) -> Provider {
@@ -952,9 +1325,78 @@ impl ChatProvider for AntigravityProvider {
         &self,
         req: ChatRequest,
     ) -> RouterResult<Pin<Box<dyn Stream<Item = RouterResult<String>> + Send>>> {
-        tracing::warn!(target: "aphrody_router::antigravity", "streaming not yet implemented, buffering");
-        let full = self.complete(req).await?;
-        Ok(Box::pin(futures_util::stream::iter(vec![Ok(full.content)])))
+        if req.model.provider != Provider::Antigravity {
+            return Err(RouterError::InvalidModel(req.model.to_string()));
+        }
+        let messages = req
+            .messages
+            .iter()
+            .map(|m| AntigravityMessage {
+                role: match m.role {
+                    Role::System => "system",
+                    Role::User => "user",
+                    Role::Assistant => "assistant",
+                    Role::Tool => "tool",
+                }
+                .to_owned(),
+                content: m.content.clone(),
+            })
+            .collect();
+        let body = AntigravityRequest {
+            model: req.model.name.clone(),
+            messages,
+            max_tokens: req.max_tokens,
+            temperature: req.temperature,
+            stream: true,
+        };
+        let resp = self
+            .client
+            .post(format!("{}/v1/messages", self.base_url))
+            .header(reqwest::header::AUTHORIZATION, self.bearer())
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .json(&body)
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(lift_error(resp).await);
+        }
+
+        let mut byte_stream = resp.bytes_stream();
+        let output = async_stream::stream! {
+            let mut reader = SseLineReader::new();
+            let mut builder = SseEventBuilder::new();
+            loop {
+                match byte_stream.next().await {
+                    None => {
+                        if let Some(leftover) = reader.flush() {
+                            if let Some(evt) = builder.push_line(&leftover) {
+                                if evt.data == "[DONE]" { break; }
+                                if let Some(text) = antigravity_sse_text(&evt.event, &evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        yield Err(RouterError::Stream(e.to_string()));
+                        break;
+                    }
+                    Some(Ok(chunk)) => {
+                        let lines = reader.feed(&chunk);
+                        for line in lines {
+                            if let Some(evt) = builder.push_line(&line) {
+                                if evt.data == "[DONE]" { return; }
+                                if let Some(text) = antigravity_sse_text(&evt.event, &evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Ok(Box::pin(output))
     }
 }
 
@@ -1084,5 +1526,210 @@ mod tests {
         assert!(matches!(finish_from_str("max_tokens"), FinishReason::Length));
         assert!(matches!(finish_from_str("tool_use"), FinishReason::ToolCalls));
         assert!(matches!(finish_from_str("unknown"), FinishReason::Stop));
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests unitaires du parser SSE — aucune dépendance réseau.
+    // -------------------------------------------------------------------------
+
+    /// Vérifie que `SseLineReader` découpe correctement un chunk unique.
+    #[test]
+    fn sse_line_reader_single_chunk() {
+        let mut reader = SseLineReader::new();
+        let lines = reader.feed(b"event: content_block_delta\ndata: {\"hello\":1}\n\n");
+        assert_eq!(lines, vec!["event: content_block_delta", "data: {\"hello\":1}", ""]);
+    }
+
+    /// Vérifie le découpage sur plusieurs chunks fragmentés (simulation réseau).
+    #[test]
+    fn sse_line_reader_fragmented_chunks() {
+        let mut reader = SseLineReader::new();
+        // Chunk 1 : coupe au milieu d'une ligne.
+        let l1 = reader.feed(b"data: {\"ty");
+        assert!(l1.is_empty(), "pas de ligne complète attendue");
+        // Chunk 2 : ferme la ligne + ligne vide.
+        let l2 = reader.feed(b"pe\":\"ping\"}\n\n");
+        assert_eq!(l2, vec!["data: {\"type\":\"ping\"}", ""]);
+    }
+
+    /// Vérifie que les fins de ligne CRLF sont normalisées correctement.
+    #[test]
+    fn sse_line_reader_crlf() {
+        let mut reader = SseLineReader::new();
+        let lines = reader.feed(b"data: hello\r\n\r\n");
+        assert_eq!(lines, vec!["data: hello", ""]);
+    }
+
+    /// Vérifie l'assemblage d'un événement SSE complet par `SseEventBuilder`.
+    #[test]
+    fn sse_event_builder_assembles_block() {
+        let mut builder = SseEventBuilder::new();
+        assert!(builder.push_line("event: content_block_delta").is_none());
+        assert!(builder.push_line("data: {\"x\":1}").is_none());
+        let evt = builder.push_line("").expect("événement complet sur ligne vide");
+        assert_eq!(evt.event, "content_block_delta");
+        assert_eq!(evt.data, "{\"x\":1}");
+    }
+
+    /// Vérifie la concaténation de plusieurs lignes `data:` (multi-ligne SSE).
+    #[test]
+    fn sse_event_builder_multiline_data() {
+        let mut builder = SseEventBuilder::new();
+        assert!(builder.push_line("data: line1").is_none());
+        assert!(builder.push_line("data: line2").is_none());
+        let evt = builder.push_line("").expect("événement complet");
+        assert_eq!(evt.data, "line1\nline2");
+    }
+
+    /// Les lignes vides consécutives (heartbeats) ne produisent pas d'événement.
+    #[test]
+    fn sse_event_builder_ignores_empty_heartbeat() {
+        let mut builder = SseEventBuilder::new();
+        // Double ligne vide = heartbeat vide.
+        assert!(builder.push_line("").is_none());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests des extracteurs de delta par provider.
+    // -------------------------------------------------------------------------
+
+    /// Anthropic : `content_block_delta` avec `text_delta` produit le texte.
+    #[test]
+    fn anthropic_sse_text_extracts_delta() {
+        let data = r#"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Bonjour"}}"#;
+        let result = anthropic_sse_text("content_block_delta", data);
+        assert_eq!(result.as_deref(), Some("Bonjour"));
+    }
+
+    /// Anthropic : événement non-delta (`message_start`) → `None`.
+    #[test]
+    fn anthropic_sse_text_ignores_non_delta() {
+        let data = r#"{"type":"message_start","message":{"id":"msg_01"}}"#;
+        assert!(anthropic_sse_text("message_start", data).is_none());
+    }
+
+    /// Anthropic : `[DONE]` n'est pas traité par l'extracteur (guard en amont).
+    #[test]
+    fn anthropic_sse_text_ignores_done_marker() {
+        // `[DONE]` n'est pas du JSON valide — l'extracteur doit renvoyer None.
+        assert!(anthropic_sse_text("", "[DONE]").is_none());
+    }
+
+    /// Gemini : objet JSON candidat valide → texte extrait.
+    #[test]
+    fn gemini_sse_text_extracts_candidate() {
+        let data = r#"{"candidates":[{"content":{"parts":[{"text":"Salut"},{"text":" monde"}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":2}}"#;
+        let result = gemini_sse_text(data);
+        assert_eq!(result.as_deref(), Some("Salut monde"));
+    }
+
+    /// Gemini : tableau JSON (format de certaines implémentations) → texte extrait.
+    #[test]
+    fn gemini_sse_text_extracts_array_form() {
+        let data = r#"[{"candidates":[{"content":{"parts":[{"text":"chunk"}],"role":"model"}}],"usageMetadata":{}}]"#;
+        let result = gemini_sse_text(data);
+        assert_eq!(result.as_deref(), Some("chunk"));
+    }
+
+    /// Gemini : candidat sans texte → `None`.
+    #[test]
+    fn gemini_sse_text_returns_none_on_empty_parts() {
+        let data = r#"{"candidates":[{"content":{"parts":[],"role":"model"}}]}"#;
+        assert!(gemini_sse_text(data).is_none());
+    }
+
+    /// Antigravity : format Anthropic passthrough → texte extrait.
+    #[test]
+    fn antigravity_sse_text_anthropic_format() {
+        let data = r#"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"delta-text"}}"#;
+        let result = antigravity_sse_text("content_block_delta", data);
+        assert_eq!(result.as_deref(), Some("delta-text"));
+    }
+
+    /// Antigravity : format OpenAI choices stream → texte extrait.
+    #[test]
+    fn antigravity_sse_text_openai_choices_format() {
+        let data = r#"{"choices":[{"delta":{"content":"hello"}}]}"#;
+        let result = antigravity_sse_text("", data);
+        assert_eq!(result.as_deref(), Some("hello"));
+    }
+
+    /// Antigravity : champ `content` direct → texte extrait.
+    #[test]
+    fn antigravity_sse_text_direct_content_format() {
+        let data = r#"{"content":"direct","model":"m"}"#;
+        let result = antigravity_sse_text("", data);
+        assert_eq!(result.as_deref(), Some("direct"));
+    }
+
+    /// Pipeline complet : flux SSE Anthropic factice → tokens collectés dans l'ordre.
+    #[tokio::test]
+    async fn sse_pipeline_anthropic_full_stream() {
+        use futures_util::StreamExt as _;
+
+        // Flux SSE Anthropic complet simulé (3 deltas + DONE).
+        let sse_bytes: &[u8] = concat!(
+            "event: message_start\n",
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_01\"}}\n\n",
+            "event: content_block_delta\n",
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Bon\"}}\n\n",
+            "event: content_block_delta\n",
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"jour\"}}\n\n",
+            "event: content_block_delta\n",
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" monde\"}}\n\n",
+            "event: message_delta\n",
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+            "data: [DONE]\n\n",
+        ).as_bytes();
+
+        // Simulation du byte_stream en plusieurs petits morceaux.
+        let chunks: Vec<Result<bytes::Bytes, std::io::Error>> = sse_bytes
+            .chunks(16)
+            .map(|c| Ok(bytes::Bytes::copy_from_slice(c)))
+            .collect();
+        let byte_stream = futures_util::stream::iter(chunks);
+        let mut byte_stream = Box::pin(byte_stream);
+
+        let output = async_stream::stream! {
+            let mut reader = SseLineReader::new();
+            let mut builder = SseEventBuilder::new();
+            loop {
+                match byte_stream.next().await {
+                    None => {
+                        if let Some(leftover) = reader.flush() {
+                            if let Some(evt) = builder.push_line(&leftover) {
+                                if evt.data == "[DONE]" { break; }
+                                if let Some(text) = anthropic_sse_text(&evt.event, &evt.data) {
+                                    yield Ok::<String, RouterError>(text);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        yield Err(RouterError::Stream(e.to_string()));
+                        break;
+                    }
+                    Some(Ok(chunk)) => {
+                        let lines = reader.feed(&chunk);
+                        for line in lines {
+                            if let Some(evt) = builder.push_line(&line) {
+                                if evt.data == "[DONE]" { return; }
+                                if let Some(text) = anthropic_sse_text(&evt.event, &evt.data) {
+                                    yield Ok(text);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        let tokens: Vec<String> = output
+            .map(|r| r.expect("pas d'erreur attendue"))
+            .collect()
+            .await;
+        assert_eq!(tokens, vec!["Bon", "jour", " monde"]);
+        assert_eq!(tokens.join(""), "Bonjour monde");
     }
 }

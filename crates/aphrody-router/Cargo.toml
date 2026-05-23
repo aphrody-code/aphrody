@@ -25,6 +25,7 @@ tokio         = { workspace = true, features = ["macros", "rt"] }
 reqwest       = { workspace = true }
 futures-util  = { workspace = true }
 bytes         = { workspace = true }
+async-stream  = { workspace = true }
 
 [dev-dependencies]
 tokio         = { workspace = true, features = ["rt-multi-thread", "macros", "test-util", "io-util", "net", "time", "sync"] }
