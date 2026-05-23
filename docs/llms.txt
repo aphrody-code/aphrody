@@ -2869,14 +2869,13 @@ Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** rév
 | R-E | `aphrody-cron` (single lib.rs) | ✅ shipped | 536 |
 | -- | **Workspace consolidation** (2026-05-19) : 22 crates merged into 6 domain crates (-16 net). See `consolidation_plan.md`. | ✅ shipped | n/a |
 | R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
-| R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
+| R-E | `aphrody-re` (NEW — reverse engineering) | ✅ **shippé** — R5.1-R5.7 DONE (triage/disasm/strings/sections lib + CLI + 4 MCP tools) | ≈18 tests |
 | R-A | R1.4 MCP client dans `aphrody-mcp` | ✅ shipped — tool `aphrody_mcp_call(server, tool, args, config?)` wired sur McpClient stdio/HTTP, 5 unit tests | n/a |
 | R-A | R1.5 cold-start bench criterion | ✅ shipped (`benches/cold_start.rs` + `benches/initialize_handshake.rs` + ledger §4.2/§4.3) | 179 |
-| R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ⏳ | n/a |
+| R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ✅ **R3.4-R3.6 DONE** ; R3.7 bench shippé (p95≈172ms brute-force ; <100ms requiert instant-distance HNSW) | n/a |
 | R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | ⏳ | n/a |
 
-**Vrais ⏳ restants prioritaires** : R1.5 (bench cold-start), R3.4 (migration tool),
-R4.1-R4.7 (scraping deep features). R1.4 ✅ closed 2026-05-19 (commit suivant).
+**Vrais ⏳ restants prioritaires** : R3.7 (p95<100ms HNSW swap), R3.8 (API v3 backlog), R4.1-R4.7 (scraping deep), R5.8-R5.9 (radare2/yara backlog). R1.4/R1.5 ✅ clos. R3.4 ✅ clos 2026-05-22.
 
 Les sprints R-B/R-C/R-E sont donc **largement déjà clos** — leur valeur résiduelle est
 en **finition** (tests, docs, wire CLI) plutôt qu'en scaffolding.
@@ -2957,7 +2956,7 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 | R3.1 | ✅ Trait `MemoryProvider` (`crates/aphrody-memory/src/provider.rs`) : `add/get/search/delete/health/provider_kind` ; dyn-compat compile-time check `dyn_compat_check(Box<dyn MemoryProvider>)` | **DONE** | `cargo doc -p aphrody-memory --no-deps` — trait public |
 | R3.2 | ✅ Adapter `honcho` API **v1** (`/v1/apps/{app}/users/{user}/sessions/{sess}/messages`) dans `crates/aphrody-memory/src/honcho.rs` (298 l.) | **DONE** | `cargo test -p aphrody-memory honcho::` |
 | R3.3 | ✅ Adapter `mem0` API **v1** sync (`POST/GET/DELETE /v1/memories/`, `GET /v1/memories/search`) auth `Authorization: Token <key>` dans `crates/aphrody-memory/src/mem0.rs` (273 l.) | **DONE** | `cargo test -p aphrody-memory mem0::` |
-| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ⏳ | dry-run + JSON diff |
+| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ✅ **DONE** | `crates/aphrody-memory/src/migrate.rs` (impl prod) + wire CLI `MemoryAction::Migrate` a `crates/cli/src/main.rs:958-969` ; `--dry-run` + JSON diff via `MigrationDiff` |
 | R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ✅ **DONE** | `cargo test policy_ttl_evicts_after_n_secs` 3/3 pass (eviction.rs, 14 test fns) |
 | R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ✅ **DONE** | `cargo test schema_v1_to_v2_roundtrip` pass (schema.rs : `upgrade_jsonl()` atomic, lossless) |
 | R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ✅ **DONE** (bench) / ⏳ p95 | `cargo bench -p aphrody-memory --bench recall` — mesuré p95≈172ms sur `HnswBackend` brute-force ; <100ms requiert swap `instant-distance` HNSW (noté src/hnsw.rs) |
@@ -2993,7 +2992,7 @@ tools = Phase 2.
 | R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ✅ **DONE** | `aphrody_re::disasm` (lib.rs) + `ReAction::Disasm` (cli/main.rs) ; 6/6 tests ; smoke `aphrody re disasm` exit 0 |
 | R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI `aphrody re strings` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test extract_strings_*` 3/3 pass ; `ReAction::Strings` à cli/src/main.rs:540 |
 | R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI `aphrody re sections` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test shannon_entropy_*` 2/2 pass ; `ReAction::Sections` à cli/src/main.rs:562 |
-| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (`re_triage`/`re_strings`/`re_sections`) / ⏳ (`re_disasm` MCP tool — lib `aphrody_re::disasm` prête depuis R5.4, reste à exposer le tool) | `re_strings`+`re_sections` à google_mcp/src/main.rs:1015,1086 ; build `aphrody-mcp` exit 0 |
+| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (4/4 : `re_triage`/`re_disasm`/`re_strings`/`re_sections` tous shippés) | `re_disasm` à google_mcp/src/main.rs:1464-1485 ; `re_triage`/`re_strings`/`re_sections` à :1015,1086 ; build `aphrody-mcp` exit 0 |
 | R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | ⏳ backlog | `cargo build -p aphrody-re --features radare2` |
 | R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ⏳ Phase 2 | smoke avec règles publiques YARA |
 | R5.10 | ~~`unicorn-engine` (CPU emulator)~~ | 🚨 **DROPPED — GPL-2.0 viral incompatible avec Apache-2.0** | n/a |
@@ -3021,11 +3020,11 @@ tools = Phase 2.
 | R1 | `aphrody-mcp initialize` p50 | < 20 ms | ~590 ms observé sur 1er handshake (warm-up tokio dominant) |
 | R2 | Skills auto-forgées / mois actif | ≥ 5 | 0 (feature absente) |
 | R3 | `aphrody-memory` recall p95 (100k events) | < 100 ms | non mesuré |
-| R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 1 (lancedb only) |
+| R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 3 (HonchoProvider + Mem0Provider + SqliteLocal ✅ R3.2-R3.3 DONE) |
 | R4 | bxc DOM-only scrape p50 | < 200 ms | non mesuré (mais bxc `example.com` < 1s end-to-end mesuré 2026-05-19) |
 | R4 | Cloudflare bypass success rate | ≥ 95 % | non mesuré (CF identifié sur example.com mais pas testé contre protection active) |
-| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | feature absente |
-| R5 | MCP tools reverse | 4 | 0 |
+| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | non mesuré (lib shippée R5.1-R5.4, bench a faire) |
+| R5 | MCP tools reverse | 4 | 4 (re_triage, re_disasm, re_strings, re_sections — ✅ R5.7 DONE) |
 
 ---
 
@@ -13936,6 +13935,613 @@ recorded as `{valid: false, error}` in the manifest and printed to
 stdout once. The watcher keeps running.
 
 
+## File: docs/awesome/awesome-rust-ml.md
+
+![arml](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning/blob/main/public/img/arml.png?raw=true)
+
+This repository is a list of machine learning libraries written in Rust.
+It's a compilation of GitHub repositories, blogs, books, movies, discussions, papers.
+This repository is targeted at people who are thinking of migrating from Python. 🦀🐍
+
+It is divided into several basic library and algorithm categories.
+And it also contains libraries that are no longer maintained and small libraries.
+It has commented on the helpful parts of the code.
+It also commented on good libraries within each category.
+
+We can find a better way to use Rust for Machine Learning.
+
+
+- [Website (en)](https://vaaaaanquish.github.io/Awesome-Rust-MachineLearning)
+- [GitHub (en)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning/blob/main/README.md)
+- [GitHub (ja)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning/blob/main/README.ja.md)
+
+
+# ToC
+
+- [Support Tools](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#support-tools)
+    - [Jupyter Notebook](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#jupyter-notebook)
+    - [Graph Plot](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#graph-plot)
+    - [Vector](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#vector)
+    - [Dataframe](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#dataframe)
+    - [Image Processing](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#image-processing)
+    - [Natural Language Processing (preprocessing)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#natural-language-processing-preprocessing)
+    - [Graphical Modeling](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#graphical-modeling)
+    - [Interface & Pipeline & AutoML](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#interface--pipeline--automl)
+    - [Workflow](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#workflow)
+    - [GPU](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#gpu)
+- [Comprehensive (like sklearn)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#comprehensive-like-sklearn)
+- [Comprehensive (statistics)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#comprehensive-statistics)
+- [Gradient Boosting](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#gradient-boosting)
+- [Deep Neural Network](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#deep-neural-network)
+- [Graph Model](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#graph-model)
+- [Natural Language Processing (model)](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#natural-language-processing-model)
+- [Recommendation](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#recommendation)
+- [Information Retrieval](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#information-retrieval)
+    - [Full Text Search](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#full-text-search)
+    - [Nearest Neighbor Search](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#nearest-neighbor-search)
+- [Reinforcement Learning](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#reinforcement-learning)
+- [Supervised Learning](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#supervised-learning-model)
+- [Unsupervised Learning & Clustering Model](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#unsupervised-learning--clustering-model)
+- [Statistical Model](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#statistical-model)
+- [Evolutionary Algorithm](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#evolutionary-algorithm)
+- [Reference](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#reference)
+    - [Nearby Projects](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#nearby-projects)
+    - [Blogs](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#blogs)
+        - [Introduction](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#introduction)
+        - [Tutorial](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#tutorial)
+        - [Apply](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#apply)
+        - [Case Study](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#case-study)
+    - [Discussion](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#discussion)
+    - [Books](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#books)
+    - [Movie](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#movie)
+    - [PodCast](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#podcast)
+    - [Paper](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#paper)
+- [Thanks](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning#thanks)
+
+
+
+# Support Tools
+
+
+## Jupyter Notebook
+
+`evcxr` can be handled as Jupyter Kernel or REPL. It is helpful for learning and validation.
+
+- [google/evcxr](https://github.com/google/evcxr) - An evaluation context for Rust.
+- [emakryo/rustdef](https://github.com/emakryo/rustdef) - Jupyter extension for rust.
+- [murarth/rusti](https://github.com/murarth/rusti) - REPL for the Rust programming language
+
+
+## Graph Plot
+
+It might want to try `plotters` for now.
+
+- [38/plotters](https://github.com/38/plotters) - A rust drawing library for high quality data plotting for both WASM and native, statically and realtimely 🦀 📈🚀
+- [igiagkiozis/plotly](https://github.com/igiagkiozis/plotly) - Plotly for Rust
+- [milliams/plotlib](https://github.com/milliams/plotlib) - Data plotting library for Rust
+- [tiby312/poloto](https://github.com/tiby312/poloto) - A simple 2D plotting library that outputs graphs to SVG that can be styled using CSS.
+- [askanium/rustplotlib](https://github.com/askanium/rustplotlib) - A pure Rust visualization library inspired by D3.js
+- [SiegeLord/RustGnuplot](https://github.com/SiegeLord/RustGnuplot) - A Rust library for drawing plots, powered by Gnuplot.
+- [saona-raimundo/preexplorer](https://github.com/saona-raimundo/preexplorer) - Externalize easily the plotting process from Rust to gnuplot.
+- [procyon-rs/vega_lite_4.rs](https://github.com/procyon-rs/vega_lite_4.rs) - rust api for vega-lite v4
+    - [procyon-rs/showata](https://github.com/procyon-rs/showata) - A library of to show data (in browser, evcxr_jupyter) as table, chart...
+- [coder543/dataplotlib](https://github.com/coder543/dataplotlib) - Scientific plotting library for Rust
+- [shahinrostami/chord_rs](https://github.com/shahinrostami/chord_rs) - Rust crate for creating beautiful interactive Chord Diagrams. Pro version available at https://m8.fyi/chord
+
+
+ASCII line graph:
+
+- [loony-bean/textplots-rs](https://github.com/loony-bean/textplots-rs) Terminal plotting library for Rust
+- [orhanbalci/rasciigraph](https://github.com/orhanbalci/rasciigraph) Zero dependency Rust crate to make lightweight ASCII line graph ╭┈╯ in command line apps with no other dependencies.
+- [jakobhellermann/piechart](https://github.com/jakobhellermann/piechart) a rust crate for drawing fancy pie charts in the terminal
+- [milliams/plot](https://github.com/milliams/plot) Command-line plotting tool written in Rust
+
+
+Examples:
+
+- Plotters Developer's Guide - Plotter Developer's Guide [https://plotters-rs.github.io/book/intro/introduction.html](https://plotters-rs.github.io/book/intro/introduction.html)
+- Plotly.rs - Plotly.rs Book [https://igiagkiozis.github.io/plotly/content/plotly_rs.html](https://igiagkiozis.github.io/plotly/content/plotly_rs.html)
+- petgraph_review [https://timothy.hobbs.cz/rust-play/petgraph_review.html](https://timothy.hobbs.cz/rust-play/petgraph_review.html)
+- evcxr-jupyter-integration [https://plotters-rs.github.io/plotters-doc-data/evcxr-jupyter-integration.html](https://plotters-rs.github.io/plotters-doc-data/evcxr-jupyter-integration.html)
+- Rust for Data Science: Tutorial 1 - DEV Community [https://dev.to/davidedelpapa/rust-for-data-science-tutorial-1-4g5j](https://dev.to/davidedelpapa/rust-for-data-science-tutorial-1-4g5j)
+- Preface | Data Crayon [https://datacrayon.com/posts/programming/rust-notebooks/preface/](https://datacrayon.com/posts/programming/rust-notebooks/preface/)
+- Drawing SVG Graphs with Rust [https://cetra3.github.io/blog/drawing-svg-graphs-rust/](Drawing SVG Graphs with Rust https://cetra3.github.io/blog/drawing-svg-graphs-rust/)
+
+
+## Vector
+
+Most things use `ndarray` or `std::vec`. 
+
+Also, look at `nalgebra`. When the size of the matrix is known, it is valid.
+See also: [ndarray vs nalgebra - reddit](https://www.reddit.com/r/rust/comments/btn1cz/ndarray_vs_nalgebra/)
+
+- [dimforge/nalgebra](https://github.com/dimforge/nalgebra) - Linear algebra library for Rust.
+- [rust-ndarray/ndarray](https://github.com/rust-ndarray/ndarray) - ndarray: an N-dimensional array with array views, multidimensional slicing, and efficient operations
+- [AtheMathmo/rulinalg](https://github.com/AtheMathmo/rulinalg) - A linear algebra library written in Rust
+- [arrayfire/arrayfire-rust](https://github.com/arrayfire/arrayfire-rust) - Rust wrapper for ArrayFire
+- [bluss/arrayvec](https://github.com/bluss/arrayvec) - A vector with a fixed capacity. (Rust)
+- [vbarrielle/sprs](https://github.com/vbarrielle/sprs) - sparse linear algebra library for rust
+- [liborty/rstats](https://github.com/liborty/rstats) - Rust Statistics and Vector Algebra Library
+- [PyO3/rust-numpy](https://github.com/PyO3/rust-numpy) - PyO3-based Rust binding of NumPy C-API
+
+
+## Dataframe
+
+It might want to try `polars` for now. `datafusion` looks good too.
+
+- [ritchie46/polars](https://github.com/ritchie46/polars) - Rust DataFrame library
+- [apache/arrow](https://github.com/apache/arrow-rs) - In-memory columnar format, in Rust.
+- [apache/arrow-datafusion](https://github.com/apache/arrow-datafusion) - Apache Arrow DataFusion and Ballista query engines
+- [milesgranger/black-jack](https://github.com/milesgranger/black-jack) - DataFrame / Series data processing in Rust
+- [nevi-me/rust-dataframe](https://github.com/nevi-me/rust-dataframe) - A Rust DataFrame implementation, built on Apache Arrow
+- [kernelmachine/utah](https://github.com/kernelmachine/utah) - Dataframe structure and operations in Rust
+- [sinhrks/brassfibre](https://github.com/sinhrks/brassfibre) - Provides multiple-dtype columner storage, known as DataFrame in pandas/R
+
+
+## Image Processing
+
+It might want to try `image-rs` for now. Algorithms such as linear transformations are implemented in other libraries as well.
+
+- [image-rs/image](https://github.com/image-rs/image) - Encoding and decoding images in Rust
+    - [image-rs/imageproc](https://github.com/image-rs/imageproc) - Image processing operations
+- [rust-cv/ndarray-image](https://github.com/rust-cv/ndarray-image) - Allows conversion between ndarray's types and image's types
+- [rust-cv/cv](https://github.com/rust-cv/cv) - Rust CV mono-repo. Contains pure-Rust dependencies which attempt to encapsulate the capability of OpenCV, OpenMVG, and vSLAM frameworks in a cohesive set of APIs.
+- [twistedfall/opencv-rust](https://github.com/twistedfall/opencv-rust) - Rust bindings for OpenCV 3 & 4
+- [rustgd/cgmath](https://github.com/rustgd/cgmath) - A linear algebra and mathematics library for computer graphics.
+- [atomashpolskiy/rustface](https://github.com/atomashpolskiy/rustface) - Face detection library for the Rust programming language
+
+
+## Natural Language Processing (preprocessing)
+
+- [google-research/deduplicate-text-datasets](https://github.com/google-research/deduplicate-text-datasets) - This repository contains code to deduplicate language model datasets as descrbed in the paper "Deduplicating Training Data Makes Language Models Better" by Katherine Lee, Daphne Ippolito, Andrew Nystrom, Chiyuan Zhang, Douglas Eck, Chris Callison-Burch and Nicholas Carlini. This repository contains both the ExactSubstr deduplication implementation (written in Rust) along with the scripts we used in the paper to perform deduplication and inspect the results (written in Python). In an upcoming update, we will add files to reproduce the NearDup-deduplicated versions of the C4, RealNews, LM1B, and Wiki-40B-en datasets.
+- [pemistahl/lingua-rs](https://github.com/pemistahl/lingua-rs) - 👄 The most accurate natural language detection library in the Rust ecosystem, suitable for long and short text alike
+- [usamec/cntk-rs](https://github.com/usamec/cntk-rs) - Wrapper around Microsoft CNTK library
+- [stickeritis/sticker](https://github.com/stickeritis/sticker) - A LSTM/Transformer/dilated convolution sequence labeler
+- [tensordot/syntaxdot](https://github.com/tensordot/syntaxdot) - Neural syntax annotator, supporting sequence labeling, lemmatization, and dependency parsing.
+- [christophertrml/rs-natural](https://github.com/christophertrml/rs-natural) - Natural Language Processing for Rust
+- [bminixhofer/nnsplit](https://github.com/bminixhofer/nnsplit) - Semantic text segmentation. For sentence boundary detection, compound splitting and more.
+- [greyblake/whatlang-rs](https://github.com/greyblake/whatlang-rs) - Natural language detection library for Rust.
+- [finalfusion/finalfrontier](https://github.com/finalfusion/finalfrontier) - Context-sensitive word embeddings with subwords. In Rust.
+- [bminixhofer/nlprule](https://github.com/bminixhofer/nlprule) - A fast, low-resource Natural Language Processing and Error Correction library written in Rust.
+- [rth/vtext](https://github.com/rth/vtext) - Simple NLP in Rust with Python bindings
+- [tamuhey/tokenizations](https://github.com/tamuhey/tokenizations) - Robust and Fast tokenizations alignment library for Rust and Python
+- [vgel/treebender](https://github.com/vgel/treebender) - A HDPSG-inspired symbolic natural language parser written in Rust
+- [reinfer/blingfire-rs](https://github.com/reinfer/blingfire-rs) - Rust wrapper for the BlingFire tokenization library
+- [CurrySoftware/rust-stemmers](https://github.com/CurrySoftware/rust-stemmers) - Common stop words in a variety of languages
+- [cmccomb/rust-stop-words](https://github.com/cmccomb/rust-stop-words) - Common stop words in a variety of languages
+- [Freyskeyd/nlp](https://github.com/Freyskeyd/nlp) - Rust-nlp is a library to use Natural Language Processing algorithm with RUST
+- [Daniel-Liu-c0deb0t/uwu](https://github.com/Daniel-Liu-c0deb0t/uwu) - fastest text uwuifier in the west
+
+
+## Graphical Modeling
+
+- [alibaba/GraphScope](https://github.com/alibaba/GraphScope) - GraphScope: A One-Stop Large-Scale Graph Computing System from Alibaba
+- [petgraph/petgraph](https://github.com/petgraph/petgraph) - Graph data structure library for Rust.
+- [rs-graph/rs-graph](https://chiselapp.com/user/fifr/repository/rs-graph/doc/release/README.md) - rs-graph is a library for graph algorithms and combinatorial optimization
+- [metamolecular/gamma](https://github.com/metamolecular/gamma) - A graph library for Rust.
+- [purpleprotocol/graphlib](https://github.com/purpleprotocol/graphlib) - Simple but powerful graph library for Rust
+- [yamafaktory/hypergraph](https://github.com/yamafaktory/hypergraph) - Hypergraph is a data structure library to generate directed hypergraphs
+
+## Interface & Pipeline & AutoML
+
+- [modelfoxdotdev/modelfox](https://github.com/modelfoxdotdev/modelfox) - Modelfox is an all-in-one automated machine learning framework. https://github.com/modelfoxdotdev/modelfox
+- [datafuselabs/datafuse](https://github.com/datafuselabs/datafuse) - A Modern Real-Time Data Processing & Analytics DBMS with Cloud-Native Architecture, written in Rust
+- [mstallmo/tensorrt-rs](https://github.com/mstallmo/tensorrt-rs) - Rust library for running TensorRT accelerated deep learning models
+- [pipehappy1/tensorboard-rs](https://github.com/pipehappy1/tensorboard-rs) - Write TensorBoard events in Rust.
+- [ehsanmok/tvm-rust](https://github.com/ehsanmok/tvm-rust) - Rust bindings for TVM runtime
+- [vertexclique/orkhon](https://github.com/vertexclique/orkhon) - Orkhon: ML Inference Framework and Server Runtime
+- [xaynetwork/xaynet](https://github.com/xaynetwork/xaynet) - Xaynet represents an agnostic Federated Machine Learning framework to build privacy-preserving AI applications
+- [webonnx/wonnx](https://github.com/webonnx/wonnx) - A GPU-accelerated ONNX inference run-time written 100% in Rust, ready for the web
+- [sonos/tract](https://github.com/sonos/tract) - Tiny, no-nonsense, self-contained, Tensorflow and ONNX inference
+- [MegEngine/MegFlow](https://github.com/MegEngine/MegFlow) - Efficient ML solutions for long-tailed demands.
+
+
+## Workflow
+
+- [substantic/rain](https://github.com/substantic/rain) - Framework for large distributed pipelines
+- [timberio/vector](https://github.com/timberio/vector) - A high-performance, highly reliable, observability data pipeline
+
+
+## GPU
+
+- [Rust-GPU/Rust-CUDA](https://github.com/Rust-GPU/Rust-CUDA) - Ecosystem of libraries and tools for writing and executing extremely fast GPU code fully in Rust.
+- [EmbarkStudios/rust-gpu](https://github.com/EmbarkStudios/rust-gpu) - 🐉 Making Rust a first-class language and ecosystem for GPU code 🚧
+- [termoshtt/accel](https://github.com/termoshtt/accel) - GPGPU Framework for Rust
+- [kmcallister/glassful](https://github.com/kmcallister/glassful) - Rust-like syntax for OpenGL Shading Language
+- [MaikKlein/rlsl](https://github.com/MaikKlein/rlsl) - Rust to SPIR-V compiler
+- [japaric-archived/nvptx](https://github.com/japaric-archived/nvptx) - How to: Run Rust code on your NVIDIA GPU
+- [msiglreith/inspirv-rust](https://github.com/msiglreith/inspirv-rust) - Rust (MIR) → SPIR-V (Shader) compiler
+
+
+
+# Comprehensive (like sklearn)
+
+All libraries support the following algorithms.
+
+- Linear Regression
+- Logistic Regression
+- K-Means Clustering
+- Neural Networks
+- Gaussian Process Regression
+- Support Vector Machines
+- kGaussian Mixture Models
+- Naive Bayes Classifiers
+- DBSCAN
+- k-Nearest Neighbor Classifiers
+- Principal Component Analysis
+- Decision Tree
+- Support Vector Machines
+- Naive Bayes
+- Elastic Net
+
+
+It might want to try `smartcore` or `linfa` for now.
+
+- [smartcorelib/smartcore](https://github.com/smartcorelib/smartcore) - SmartCore is a comprehensive library for machine learning and numerical computing. The library provides a set of tools for linear algebra, numerical computing, optimization, and enables a generic, powerful yet still efficient approach to machine learning.
+    - LASSO, Ridge, Random Forest, LU, QR, SVD, EVD, and more metrics
+    - https://smartcorelib.org/user_guide/quick_start.html
+- [rust-ml/linfa](https://github.com/rust-ml/linfa) - A Rust machine learning framework.
+    - Gaussian Mixture Model Clustering, Agglomerative Hierarchical Clustering, ICA
+    - https://github.com/rust-ml/linfa#current-state
+- [maciejkula/rustlearn](https://github.com/maciejkula/rustlearn) - Machine learning crate for Rust
+    - factorization machines, k-fold cross-validation, ndcg
+    - https://github.com/maciejkula/rustlearn#features
+- [AtheMathmo/rusty-machine](https://github.com/AtheMathmo/rusty-machine) - Machine Learning library for Rust
+    - Confusion Matrix, Cross Varidation, Accuracy, F1 Score, MSE
+    - https://github.com/AtheMathmo/rusty-machine#machine-learning
+- [benjarison/eval-metrics](https://github.com/benjarison/eval-metrics) - Evaluation metrics for machine learning
+    - Many evaluation functions
+- [blue-yonder/vikos](https://github.com/blue-yonder/vikos) - A machine learning library for supervised training of parametrized models
+- [mbillingr/openml-rust](https://github.com/mbillingr/openml-rust) - A rust interface to http://openml.org/
+
+
+# Comprehensive (Statistics)
+
+- [statrs-dev/statrs](https://github.com/statrs-dev/statrs) - Statistical computation library for Rust
+- [rust-ndarray/ndarray-stats](https://github.com/rust-ndarray/ndarray-stats) - Statistical routines for ndarray
+- [Axect/Peroxide](https://github.com/Axect/Peroxide) - Rust numeric library with R, MATLAB & Python syntax
+    - Linear Algebra, Functional Programming, Automatic Differentiation, Numerical Analysis, Statistics, Special functions, Plotting, Dataframe
+- [tarcieri/micromath](https://github.com/tarcieri/micromath) - Embedded Rust arithmetic, 2D/3D vector, and statistics library
+
+
+# Gradient Boosting
+
+- [mesalock-linux/gbdt-rs](https://github.com/mesalock-linux/gbdt-rs) - MesaTEE GBDT-RS : a fast and secure GBDT library, supporting TEEs such as Intel SGX and ARM TrustZone
+- [davechallis/rust-xgboost](https://github.com/davechallis/rust-xgboost) - Rust bindings for XGBoost.
+- [vaaaaanquish/lightgbm-rs](https://github.com/vaaaaanquish/lightgbm-rs) - LightGBM Rust binding
+- [catboost/catboost](https://github.com/catboost/catboost/tree/master/catboost/rust-package) - A fast, scalable, high performance Gradient Boosting on Decision Trees library, used for ranking, classification, regression and other machine learning tasks (predict only)
+- [Entscheider/stamm](https://github.com/entscheider/stamm) - Generic decision trees for rust
+
+
+# Deep Neural Network
+
+`Tensorflow bindings` and `PyTorch bindings` are the most common.
+`tch-rs` also has torch vision, which is useful.
+
+- [tensorflow/rust](https://github.com/tensorflow/rust) - Rust language bindings for TensorFlow
+- [LaurentMazare/tch-rs](https://github.com/LaurentMazare/tch-rs) - Rust bindings for the C++ api of PyTorch.
+- [VasanthakumarV/einops](https://github.com/vasanthakumarv/einops) - Simplistic API for deep learning tensor operations
+- [spearow/juice](https://github.com/spearow/juice) - The Hacker's Machine Learning Engine
+- [neuronika/neuronika](https://github.com/neuronika/neuronika) - Tensors and dynamic neural networks in pure Rust.
+- [bilal2vec/L2](https://github.com/bilal2vec/L2) - l2 is a fast, Pytorch-style Tensor+Autograd library written in Rust
+- [raskr/rust-autograd](https://github.com/raskr/rust-autograd) - Tensors and differentiable operations (like TensorFlow) in Rust
+- [charles-r-earp/autograph](https://github.com/charles-r-earp/autograph) - Machine Learning Library for Rust
+- [patricksongzy/corgi](https://github.com/patricksongzy/corgi) - A neural network, and tensor dynamic automatic differentiation implementation for Rust.
+- [JonathanWoollett-Light/cogent](https://github.com/JonathanWoollett-Light/cogent) - Simple neural network library for classification written in Rust.
+- [oliverfunk/darknet-rs](https://github.com/oliverfunk/darknet-rs) - Rust bindings for darknet
+- [jakelee8/mxnet-rs](https://github.com/jakelee8/mxnet-rs) - mxnet for Rust
+- [jramapuram/hal](https://github.com/jramapuram/hal) - Rust based Cross-GPU Machine Learning
+- [primitiv/primitiv-rust](https://github.com/primitiv/primitiv-rust) - Rust binding of primitiv
+- [chantera/dynet-rs](https://github.com/chantera/dynet-rs) - The Rust Language Bindings for DyNet
+- [millardjn/alumina](https://github.com/millardjn/alumina) - A deep learning library for rust
+- [jramapuram/hal](https://github.com/jramapuram/hal) - Rust based Cross-GPU Machine Learning
+- [afck/fann-rs](https://github.com/afck/fann-rs) - Rust wrapper for the Fast Artificial Neural Network library
+- [autumnai/leaf](https://github.com/autumnai/leaf) - Open Machine Intelligence Framework for Hackers. (GPU/CPU)
+- [c0dearm/mushin](https://github.com/c0dearm/mushin) - Compile-time creation of neural networks
+- [tedsta/deeplearn-rs](https://github.com/tedsta/deeplearn-rs) - Neural networks in Rust
+- [sakex/neat-gru-rust](https://github.com/sakex/neat-gru-rust) - neat-gru
+- [nerosnm/n2](https://github.com/nerosnm/n2) - (Work-in-progress) library implementation of a feedforward, backpropagation artificial neural network
+- [Wuelle/deep_thought](https://github.com/Wuelle/deep_thought) - Neural Networks in Rust
+- [MikhailKravets/NeuroFlow](https://github.com/MikhailKravets/NeuroFlow) - Awesome deep learning crate
+- [dvigneshwer/deeprust](https://github.com/dvigneshwer/deeprust) - Machine learning crate in Rust
+- [millardjn/rusty_sr](https://github.com/millardjn/rusty_sr) - Deep learning superresolution in pure rust
+- [coreylowman/dfdx](https://github.com/coreylowman/dfdx) - Strongly typed Deep Learning in Rust
+
+# Graph Model
+
+- [Synerise/cleora](https://github.com/Synerise/cleora) - Cleora AI is a general-purpose model for efficient, scalable learning of stable and inductive entity embeddings for heterogeneous relational data.
+- [Pardoxa/net_ensembles](https://github.com/Pardoxa/net_ensembles) - Rust library for random graph ensembles
+
+
+# Natural Language Processing (model)
+
+- [huggingface/tokenizers](https://github.com/huggingface/tokenizers/tree/master/tokenizers) - The core of tokenizers, written in Rust. Provides an implementation of today's most used tokenizers, with a focus on performance and versatility.
+- [guillaume-be/rust-tokenizers](https://github.com/guillaume-be/rust-tokenizers) - Rust-tokenizer offers high-performance tokenizers for modern language models, including WordPiece, Byte-Pair Encoding (BPE) and Unigram (SentencePiece) models
+- [guillaume-be/rust-bert](https://github.com/guillaume-be/rust-bert) - Rust native ready-to-use NLP pipelines and transformer-based models (BERT, DistilBERT, GPT2,...)
+- [sno2/bertml](https://github.com/sno2/bertml) - Use common pre-trained ML models in Deno!
+- [cpcdoy/rust-sbert](https://github.com/cpcdoy/rust-sbert) - Rust port of sentence-transformers (https://github.com/UKPLab/sentence-transformers)
+- [vongaisberg/gpt3_macro](https://github.com/vongaisberg/gpt3_macro) - Rust macro that uses GPT3 codex to generate code at compiletime
+- [proycon/deepfrog](https://github.com/proycon/deepfrog) - An NLP-suite powered by deep learning
+- [ferristseng/rust-tfidf](https://github.com/ferristseng/rust-tfidf) - Library to calculate TF-IDF
+- [messense/fasttext-rs](https://github.com/messense/fasttext-rs) - fastText Rust binding
+- [mklf/word2vec-rs](https://github.com/mklf/word2vec-rs) - pure rust implementation of word2vec
+- [DimaKudosh/word2vec](https://github.com/DimaKudosh/word2vec) - Rust interface to word2vec.
+- [lloydmeta/sloword2vec-rs](https://github.com/lloydmeta/sloword2vec-rs) - A naive (read: slow) implementation of Word2Vec. Uses BLAS behind the scenes for speed.
+
+
+# Recommendation
+
+- [PersiaML/PERSIA](https://github.com/PersiaML/PERSIA) - High performance distributed framework for training deep learning recommendation models based on PyTorch.
+- [jackgerrits/vowpalwabbit-rs](https://github.com/jackgerrits/vowpalwabbit-rs) - 🦀🐇 Rusty VowpalWabbit
+- [outbrain/fwumious_wabbit](https://github.com/outbrain/fwumious_wabbit) - Fwumious Wabbit, fast on-line machine learning toolkit written in Rust
+- [hja22/rucommender](https://github.com/hja22/rucommender) - Rust implementation of user-based collaborative filtering
+- [maciejkula/sbr-rs](https://github.com/maciejkula/sbr-rs) - Deep recommender systems for Rust
+- [chrisvittal/quackin](https://github.com/chrisvittal/quackin) - A recommender systems framework for Rust
+- [snd/onmf](https://github.com/snd/onmf) - fast rust implementation of online nonnegative matrix factorization as laid out in the paper "detect and track latent factors with online nonnegative matrix factorization"
+- [rhysnewell/nymph](https://github.com/rhysnewell/nymph) - Non-Negative Matrix Factorization in Rust
+
+
+# Information Retrieval
+
+## Full Text Search
+
+- [quickwit-inc/quickwit](https://github.com/quickwit-inc/quickwit) - Quickwit is a big data search engine.
+- [bayard-search/bayard](https://github.com/bayard-search/bayard) - A full-text search and indexing server written in Rust.
+- [neuml/txtai.rs](https://github.com/neuml/txtai.rs) - AI-powered search engine for Rust
+- [meilisearch/MeiliSearch](https://github.com/meilisearch/MeiliSearch) - Lightning Fast, Ultra Relevant, and Typo-Tolerant Search Engine
+- [toshi-search/Toshi](https://github.com/toshi-search/Toshi) - A full-text search engine in rust
+- [BurntSushi/fst](https://github.com/BurntSushi/fst) - Represent large sets and maps compactly with finite state transducers.
+- [tantivy-search/tantivy](https://github.com/tantivy-search/tantivy) - Tantivy is a full-text search engine library inspired by Apache Lucene and written in Rust
+- [tinysearch/tinysearch](https://github.com/tinysearch/tinysearch) - 🔍 Tiny, full-text search engine for static websites built with Rust and Wasm
+- [quantleaf/probly-search](https://github.com/quantleaf/probly-search) - A lightweight full-text search library that provides full control over the scoring calculations
+- [https://github.com/andylokandy/simsearch-rs](https://github.com/andylokandy/simsearch-rs) - A simple and lightweight fuzzy search engine that works in memory, searching for similar strings
+- [jameslittle230/stork](https://github.com/jameslittle230/stork) - 🔎 Impossibly fast web search, made for static sites.
+- [elastic/elasticsearch-rs](https://github.com/elastic/elasticsearch-rs) - Official Elasticsearch Rust Client
+
+
+## Nearest Neighbor Search
+
+- [Enet4/faiss-rs](https://github.com/Enet4/faiss-rs) - Rust language bindings for Faiss
+- [rust-cv/hnsw](https://github.com/rust-cv/hnsw) - HNSW ANN from the paper "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs"
+- [hora-search/hora](https://github.com/hora-search/hora) - 🚀 efficient approximate nearest neighbor search algorithm collections library, which implemented with Rust 🦀. horasearch.com
+- [InstantDomain/instant-distance](https://github.com/InstantDomain/instant-distance) - Fast approximate nearest neighbor searching in Rust, based on HNSW index
+- [lerouxrgd/ngt-rs](https://github.com/lerouxrgd/ngt-rs) - Rust wrappers for NGT approximate nearest neighbor search
+- [granne/granne](https://github.com/granne/granne) - Graph-based Approximate Nearest Neighbor Search
+- [u1roh/kd-tree](https://github.com/u1roh/kd-tree) - k-dimensional tree in Rust. Fast, simple, and easy to use.
+- [qdrant/qdrant](https://github.com/qdrant/qdrant) - Qdrant - vector similarity search engine with extended filtering support
+- [rust-cv/hwt](https://github.com/rust-cv/hwt) - Hamming Weight Tree from the paper "Online Nearest Neighbor Search in Hamming Space"
+- [fulara/kdtree-rust](https://github.com/fulara/kdtree-rust) - kdtree implementation for rust.
+- [mrhooray/kdtree-rs](https://github.com/mrhooray/kdtree-rs) - K-dimensional tree in Rust for fast geospatial indexing and lookup
+- [kornelski/vpsearch](https://github.com/kornelski/vpsearch) - C library for finding nearest (most similar) element in a set
+- [petabi/petal-neighbors](https://github.com/petabi/petal-neighbors) - Nearest neighbor search algorithms including a ball tree and a vantage point tree.
+- [ritchie46/lsh-rs](https://github.com/ritchie46/lsh-rs) - Locality Sensitive Hashing in Rust with Python bindings
+- [kampersanda/mih-rs](https://github.com/kampersanda/mih-rs) - Rust implementation of multi-index hashing for neighbor searches on 64-bit codes in the Hamming space
+
+
+# Reinforcement Learning
+
+- [taku-y/border](https://github.com/taku-y/border) - Border is a reinforcement learning library in Rust.
+- [NivenT/REnforce](https://github.com/NivenT/REnforce) - Reinforcement learning library written in Rust
+- [edlanglois/relearn](https://github.com/edlanglois/relearn) - Reinforcement learning with Rust
+- [tspooner/rsrl](https://github.com/tspooner/rsrl) - A fast, safe and easy to use reinforcement learning framework in Rust.
+- [milanboers/rurel](https://github.com/milanboers/rurel) - Flexible, reusable reinforcement learning (Q learning) implementation in Rust
+- [Ragnaroek/bandit](https://github.com/Ragnaroek/bandit) - Bandit Algorithms in Rust
+- [MrRobb/gym-rs](https://github.com/mrrobb/gym-rs) - OpenAI Gym bindings for Rust
+
+
+# Supervised Learning Model
+
+- [tomtung/omikuji](https://github.com/tomtung/omikuji) - An efficient implementation of Partitioned Label Trees & its variations for extreme multi-label classification
+- [shadeMe/liblinear-rs](https://github.com/shademe/liblinear-rs) - Rust language bindings for the LIBLINEAR C/C++ library.
+- [messense/crfsuite-rs](https://github.com/messense/crfsuite-rs) - Rust binding to crfsuite
+- [ralfbiedert/ffsvm-rust](https://github.com/ralfbiedert/ffsvm-rust) - FFSVM stands for "Really Fast Support Vector Machine"
+- [zenoxygen/bayespam](https://github.com/zenoxygen/bayespam) - A simple bayesian spam classifier written in Rust.
+- [Rui_Vieira/naive-bayesnaive-bayes](https://gitlab.com/ruivieira/naive-bayes) - A Naive Bayes classifier written in Rust.
+- [Rui_Vieira/random-forests](https://gitlab.com/ruivieira/random-forests) - A Rust library for Random Forests.
+- [sile/randomforest](https://github.com/sile/randomforest) - A random forest implementation in Rust
+- [tomtung/craftml-rs](https://github.com/tomtung/craftml-rs) - A Rust🦀 implementation of CRAFTML, an Efficient Clustering-based Random Forest for Extreme Multi-label Learning
+- [nkaush/naive-bayes-rs](https://github.com/nkaush/naive-bayes-rs) - A Rust library with homemade machine learning models to classify the MNIST dataset. Built in an attempt to get familiar with advanced Rust concepts.
+
+
+# Unsupervised Learning & Clustering Model
+
+- [frjnn/bhtsne](https://github.com/frjnn/bhtsne) - Barnes-Hut t-SNE implementation written in Rust.
+- [vaaaaanquish/label-propagation-rs](https://github.com/vaaaaanquish/label-propagation-rs) - Label Propagation Algorithm by Rust. Label propagation (LP) is graph-based semi-supervised learning (SSL). LGC and CAMLP have been implemented.
+- [nmandery/extended-isolation-forest](https://github.com/nmandery/extended-isolation-forest) - Rust port of the extended isolation forest algorithm for anomaly detection
+- [avinashshenoy97/RusticSOM](https://github.com/avinashshenoy97/RusticSOM) - Rust library for Self Organising Maps (SOM).
+- [diffeo/kodama](https://github.com/diffeo/kodama) - Fast hierarchical agglomerative clustering in Rust.
+- [kno10/rust-kmedoids](https://github.com/kno10/rust-kmedoids) - k-Medoids clustering in Rust with the FasterPAM algorithm
+- [petabi/petal-clustering](https://github.com/petabi/petal-clustering) - DBSCAN and OPTICS clustering algorithms.
+- [savish/dbscan](https://github.com/savish/dbscan) - A naive DBSCAN implementation in Rust
+- [gu18168/DBSCANSD](https://github.com/gu18168/DBSCANSD) - Rust implementation for DBSCANSD, a trajectory clustering algorithm.
+- [lazear/dbscan](https://github.com/lazear/dbscan) - Dependency free implementation of DBSCAN clustering in Rust
+- [whizsid/kddbscan-rs](https://github.com/whizsid/kddbscan-rs) - A rust library inspired by kDDBSCAN clustering algorithm
+- [Sauro98/appr_dbscan_rust](https://github.com/Sauro98/appr_dbscan_rust) - Program implementing the approximate version of DBSCAN introduced by Gan and Tao
+- [quietlychris/density_clusters](https://github.com/quietlychris/density_clusters) - A naive density-based clustering algorithm written in Rust
+- [milesgranger/gap_statistic](https://github.com/milesgranger/gap_statistic) - Dynamically get the suggested clusters in the data for unsupervised learning.
+- [genbattle/rkm](https://github.com/genbattle/rkm) - Generic k-means implementation written in Rust
+- [selforgmap/som-rust](https://github.com/selforgmap/som-rust) - Self Organizing Map (SOM) is a type of Artificial Neural Network (ANN) that is trained using an unsupervised, competitive learning to produce a low dimensional, discretized representation (feature map) of higher dimensional data.
+
+
+# Statistical Model
+
+- [Redpoll/changepoint](https://gitlab.com/Redpoll/changepoint) - Includes the following change point detection algorithms: Bocpd -- Online Bayesian Change Point Detection Reference. BocpdTruncated -- Same as Bocpd but truncated the run-length distribution when those lengths are unlikely.
+- [krfricke/arima](https://github.com/krfricke/arima) - ARIMA modelling for Rust
+- [Daingun/automatica](https://gitlab.com/daingun/automatica) - Automatic Control Systems Library
+- [rbagd/rust-linearkalman](https://github.com/rbagd/rust-linearkalman) - Kalman filtering and smoothing in Rust
+- [sanity/pair_adjacent_violators](https://github.com/sanity/pair_adjacent_violators) - An implementation of the Pair Adjacent Violators algorithm for isotonic regression in Rust
+
+
+# Evolutionary Algorithm
+
+- [martinus/differential-evolution-rs](https://github.com/martinus/differential-evolution-rs) - Generic Differential Evolution for Rust
+- [innoave/genevo](https://github.com/innoave/genevo) - Execute genetic algorithm (GA) simulations in a customizable and extensible way.
+- [Jeffail/spiril](https://github.com/Jeffail/spiril) - Rust library for genetic algorithms
+- [sotrh/rust-genetic-algorithm](https://github.com/sotrh/rust-genetic-algorithm) - Example of a genetic algorithm in Rust and Python
+- [willi-kappler/darwin-rs](https://github.com/willi-kappler/darwin-rs) - darwin-rs, evolutionary algorithms with rust
+
+
+# Reference
+
+## Nearby Projects
+
+- [Are we learning yet?](http://www.arewelearningyet.com/), A work-in-progress to catalog the state of machine learning in Rust
+- [e-tony/best-of-ml-rust](https://github.com/e-tony/best-of-ml-rust), A ranked list of awesome machine learning Rust libraries
+- [The Best 51 Rust Machine learning Libraries](https://rustrepo.com/catalog/rust-machine-learning_newest_1), RustRepo
+- [rust-unofficial/awesome-rust](https://github.com/rust-unofficial/awesome-rust), A curated list of Rust code and resources
+- [Top 16 Rust Machine learning Projects](https://www.libhunt.com/l/rust/t/machine-learning), Open-source Rust projects categorized as Machine learning
+- [39+ Best Rust Machine learning frameworks, libraries, software and resourcese](https://reposhub.com/rust/machine-learning), ReposHub
+
+
+## Blogs
+
+### Introduction
+
+- [About Rust’s Machine Learning Community](https://medium.com/@autumn_eng/about-rust-s-machine-learning-community-4cda5ec8a790#.hvkp56j3f), Medium, 2016/1/6, Autumn Engineering
+- [Rust vs Python: Technology And Business Comparison](https://www.ideamotive.co/blog/rust-vs-python-technology-and-business-comparison), 2021/3/4, Miłosz Kaczorowski
+- [I wrote one of the fastest DataFrame libraries](https://www.ritchievink.com/blog/2021/02/28/i-wrote-one-of-the-fastest-dataframe-libraries), 2021/2/28, Ritchie Vink 
+- [Polars: The fastest DataFrame library you've never heard of](https://www.analyticsvidhya.com/blog/2021/06/polars-the-fastest-dataframe-library-youve-never-heard-of) 2021/1/19, Analytics Vidhya 
+- [Data Manipulation: Polars vs Rust](https://able.bio/haixuanTao/data-manipulation-polars-vs-rust--3def44c8), 2021/3/13, Xavier Tao
+- [State of Machine Learning in Rust – Ehsan's Blog](https://ehsanmkermani.com/2019/05/13/state-of-machine-learning-in-rust/), 2019/5/13, Published by Ehsan
+- [Ritchie Vink, Machine Learning Engineer, writes Polars, one of the fastest DataFrame libraries in Python and Rust](https://www.xomnia.com/post/ritchie-vink-writes-polars-one-of-the-fastest-dataframe-libraries-in-python-and-rust/), Xomnia, 2021/5/11
+- [Quickwit: A highly cost-efficient search engine in Rust](https://quickwit.io/blog/quickwit-first-release/), 2021/7/13, quickwit, PAUL MASUREL
+- [Data Manipulation: Polars vs Rust](https://able.bio/haixuanTao/data-manipulation-polars-vs-rust--3def44c8), 2021/3/13, Xavier Tao
+- [Check out Rust in Production](https://serokell.io/blog/rust-in-production-qovery), 2021/8/10, Qovery, @serokell
+- [Why I started Rust instead of stick to Python](https://medium.com/geekculture/why-i-started-rust-instead-of-stick-to-python-626bab07479a), 2021/9/26, Medium, Geek Culture, Marshal SHI
+
+
+### Tutorial
+
+- [Rust Machine Learning Book](https://rust-ml.github.io/book/chapter_1.html), Examples of KMeans and DBSCAN with linfa-clustering
+- [Artificial Intelligence and Machine Learning – Practical Rust Projects: Building Game, Physical Computing, and Machine Learning Applications – Dev Guis ](http://devguis.com/6-artificial-intelligence-and-machine-learning-practical-rust-projects-building-game-physical-computing-and-machine-learning-applications.html), 2021/5/19
+- [Machine learning in Rust using Linfa](https://blog.logrocket.com/machine-learning-in-rust-using-linfa/), LogRocket Blog, 2021/4/30, Timeular, Mario Zupan, Examples of LogisticRegression
+- [Machine Learning in Rust, Smartcore](https://medium.com/swlh/machine-learning-in-rust-smartcore-2f472d1ce83), Medium, The Startup, 2021/1/15, [Vlad Orlov](https://volodymyr-orlov.medium.com/), Examples of LinerRegression, Random Forest Regressor, and K-Fold
+- [Machine Learning in Rust, Logistic Regression](https://medium.com/swlh/machine-learning-in-rust-logistic-regression-74d6743df161), Medium, The Startup, 2021/1/6, [Vlad Orlov](https://volodymyr-orlov.medium.com/)
+- [Machine Learning in Rust, Linear Regression](https://medium.com/swlh/machine-learning-in-rust-linear-regression-edef3fb65f93), Medium, The Startup, 2020/12/16, [Vlad Orlov](https://volodymyr-orlov.medium.com/)
+- [Machine Learning in Rust](https://athemathmo.github.io/2016/03/07/rusty-machine.html), 2016/3/7, James, Examples of LogisticRegressor
+- [Machine Learning and Rust (Part 1): Getting Started!](https://levelup.gitconnected.com/machine-learning-and-rust-part-1-getting-started-745885771bc2), Level Up Coding, 2021/1/9, Stefano Bosisio 
+- [Machine Learning and Rust (Part 2): Linear Regression](https://levelup.gitconnected.com/machine-learning-and-rust-part-2-linear-regression-d3b820ed28f9), Level Up Coding, 2021/6/15, Stefano Bosisio 
+- [Machine Learning and Rust (Part 3): Smartcore, Dataframe, and Linear Regression](https://levelup.gitconnected.com/machine-learning-and-rust-part-3-smartcore-dataframe-and-linear-regression-10451fdc2e60), Level Up Coding, 2021/7/1, Stefano Bosisio 
+- [Tensorflow Rust Practical Part 1](https://www.programmersought.com/article/18696273900/), Programmer Sought, 2018
+- [A Machine Learning introduction to ndarray](https://barcelona.rustfest.eu/sessions/machine-learning-ndarray), RustFest 2019, 2019/11/12, [Luca Palmieri](https://github.com/LukeMathWalker)
+- [Simple Linear Regression from scratch in Rust](https://cheesyprogrammer.com/2018/12/13/simple-linear-regression-from-scratch-in-rust/), Web Development, Software Architecture, Algorithms and more, 2018/12/13, philipp
+- [Interactive Rust in a REPL and Jupyter Notebook with EVCXR](https://depth-first.com/articles/2020/09/21/interactive-rust-in-a-repl-and-jupyter-notebook-with-evcxr/), Depth-First, 2020/9/21, Richard L. Apodaca
+- [Rust for Data Science: Tutorial 1](https://dev.to/davidedelpapa/rust-for-data-science-tutorial-1-4g5j), dev, 2021/8/25, Davide Del Papa
+- [petgraph_review](https://timothy.hobbs.cz/rust-play/petgraph_review.html), 2019/10/11, Timothy Hobbs
+- [Rust for ML. Rust](https://medium.com/tempus-ex/rust-for-ml-fba0421b0959), Medium, Tempus Ex, 2021/8/1, Michael Naquin
+- [Adventures in Drone Photogrammetry Using Rust and Machine Learning (Image Segmentation with linfa and DBSCAN)](http://cmoran.xyz/writing/adventures_in_photogrammetry), 2021/11/14, CHRISTOPHER MORAN
+
+
+### Apply
+
+- [Deep Learning in Rust: baby steps](https://medium.com/@tedsta/deep-learning-in-rust-7e228107cccc), Medium,  2016/2/2, Theodore DeRego
+- [A Rust SentencePiece implementation](https://guillaume-be.github.io/2020-05-30/sentence_piece), Rust NLP tales, 2020/5/30
+- [Accelerating text generation with Rust](https://guillaume-be.github.io/2020-11-21/generation_benchmarks), Rust NLP tales, 2020/11/21
+- [A Simple Text Summarizer written in Rust](https://towardsdatascience.com/a-simple-text-summarizer-written-in-rust-4df05f9327a5), Towards Data Science, 2020/11/24, [Charles Chan](https://chancharles.medium.com/), Examples of Text Sentence Vector, Cosine Distance and PageRank
+- [Extracting deep learning image embeddings in Rust](https://logicai.io/blog/extracting-image-embeddings/), RecoAI, 2021/6/1, Paweł Jankiewic, Examples of ONNX
+- [Deep Learning in Rust with GPU](https://able.bio/haixuanTao/deep-learning-in-rust-with-gpu--26c53a7f), 2021/7/30, Xavier Tao
+- [tch-rs pretrain example - Docker for PyTorch rust bindings tch-rs. Example of pretrain model](https://github.com/vaaaaanquish/tch-rs-pretrain-example-docker), 2021/8/15, vaaaaanquish
+- [Rust ANN search Example - Image search example by approximate nearest-neighbor library In Rust](https://github.com/vaaaaanquish/rust-ann-search-example), 2021/8/15, vaaaaanquish
+- [dzamkov/deep-learning-test - Implementing deep learning in Rust using just a linear algebra library (nalgebra)](https://github.com/dzamkov/deep-learning-test), 2021/8/30, dzamkov
+- [vaaaaanquish/rust-machine-learning-api-example - The axum example that uses resnet224 to infer images received in base64 and returns the results.](https://github.com/vaaaaanquish/rust-machine-learning-api-example), 2021/9/7, vaaaaanquish
+- [Rust for Machine Learning: Benchmarking Performance in One-shot - A Rust implementation of Siamese Neural Networks for One-shot Image Recognition for benchmarking performance and results](https://utmist.gitlab.io/projects/rust-ml-oneshot/), UofT Machine Intelligence Student Team
+- [Why Wallaroo Moved From Pony To Rust](https://wallarooai.medium.com/why-wallaroo-moved-from-pony-to-rust-292e7339fc34), 2021/8/19, Wallaroo.ai
+- [epwalsh/rust-dl-webserver - Example of serving deep learning models in Rust with batched prediction](https://github.com/epwalsh/rust-dl-webserver), 2021/11/16, epwalsh
+
+
+### Case study
+
+- [Production users - Rust Programming Language](https://www.rust-lang.org/production/users), by rust-lang.org
+- [Taking ML to production with Rust: a 25x speedup](https://www.lpalmieri.com/posts/2019-12-01-taking-ml-to-production-with-rust-a-25x-speedup/), A LEARNING JOURNAL, 2019/12/1, [@algo_luca](https://twitter.com/algo_luca)
+- [9 Companies That Use Rust in Production](https://serokell.io/blog/rust-companies), serokell, 2020/11/18, Gints Dreimanis
+- [Masked Language Model on Wasm, BERT on flontend examples](https://github.com/optim-corp/masked-lm-wasm/), optim-corp/masked-lm-wasm, 2021/8/27, Optim
+- [Serving TensorFlow with Actix-Web](https://github.com/kykosic/actix-tensorflow-example), kykosic/actix-tensorflow-example
+- [Serving PyTorch with Actix-Web](https://github.com/kykosic/actix-pytorch-example), kykosic/actix-pytorch-example
+
+
+## Discussion
+
+- [Natural Language Processing in Rust : rust](https://www.reddit.com/r/rust/comments/5jj8vr/natural_language_processing_in_rust), 2016/12/6
+- [Future prospect of Machine Learning in Rust Programming Language : MachineLearning](https://www.reddit.com/r/MachineLearning/comments/7iz51p/d_future_prospect_of_machine_learning_in_rust/), 2017/11/11
+- [Interest for NLP in Rust? - The Rust Programming Language Forum](https://users.rust-lang.org/t/interest-for-nlp-in-rust/15331), 2018/1/19
+- [Is Rust good for deep learning and artificial intelligence? - The Rust Programming Language Forum](https://users.rust-lang.org/t/is-rust-good-for-deep-learning-and-artificial-intelligence/22866), 2018/11/18
+- [ndarray vs nalgebra : rust](https://www.reddit.com/r/rust/comments/btn1cz/ndarray_vs_nalgebra/), 2019/5/28
+- [Taking ML to production with Rust | Hacker News](https://news.ycombinator.com/item?id=21680965), 2019/12/2
+- [Who is using Rust for Machine learning in production/research? : rust](https://www.reddit.com/r/rust/comments/fvehyq/d_who_is_using_rust_for_machine_learning_in/), 2020/4/5
+- [Deep Learning in Rust](https://www.reddit.com/r/rust/comments/igz8iv/deep_learning_in_rust/), 2020/8/26
+- [SmartCore, fast and comprehensive machine learning library for Rust! : rust](https://www.reddit.com/r/rust/comments/j1mj1g/smartcore_fast_and_comprehensive_machine_learning/), 2020/9/29
+- [Deep Learning in Rust with GPU on ONNX](https://www.reddit.com/r/MachineLearning/comments/ouul33/d_p_deep_learning_in_rust_with_gpu_on_onnx/), 2021/7/31
+- [Rust vs. C++ the main differences between these popular programming languages](https://codilime.com/blog/rust-vs-cpp-the-main-differences-between-these-popular-programming-languages/), 2021/8/25
+- [I wanted to share my experience of Rust as a deep learning researcher](https://www.reddit.com/r/rust/comments/pft9n9/i_wanted_to_share_my_experience_of_rust_as_a_deep/), 2021/9/2
+- [How far along is the ML ecosystem with Rust?](https://www.reddit.com/r/rust/comments/poglgg/how_far_along_is_the_ml_ecosystem_with_rust/), 2021/9/15
+
+
+## Books
+
+- [Practical Machine Learning with Rust: Creating Intelligent Applications in Rust (English Edition)](https://amzn.to/3h7JV8U), 2019/12/10, Joydeep Bhattacharjee
+    - Write machine learning algorithms in Rust
+    - Use Rust libraries for different tasks in machine learning
+    - Create concise Rust packages for your machine learning applications
+    - Implement NLP and computer vision in Rust
+    - Deploy your code in the cloud and on bare metal servers
+    - source code: [Apress/practical-machine-learning-w-rust](https://github.com/Apress/practical-machine-learning-w-rust)
+- [DATA ANALYSIS WITH RUST NOTEBOOKS](https://datacrayon.com/shop/product/data-analysis-with-rust-notebooks/), 2021/9/3, Shahin Rostami
+    - Plotting with Plotters and Plotly
+    - Operations with ndarray
+    - Descriptive Statistics
+    - Interactive Diagram
+    - Visualisation of Co-occurring Types
+    - download source code and dataset
+    - full text
+        - [https://datacrayon.com/posts/programming/rust-notebooks/preface/](https://datacrayon.com/posts/programming/rust-notebooks/preface/)
+
+
+## Movie
+
+- [The /r/playrust Classifier: Real World Rust Data Science](https://www.youtube.com/watch?v=lY10kTcM8ek), RustConf 2016, 2016/10/05, Suchin Gururangan & Colin O'Brien
+- [Building AI Units in Rust](https://www.youtube.com/watch?v=UHFlKAmANJg), FOSSASIA 2018, 2018/3/25, Vigneshwer Dhinakaran 
+- [Python vs Rust for Simulation](https://www.youtube.com/watch?v=kytvDxxedWY), EuroPython 2019, 2019/7/10, Alisa Dammer
+- [Machine Learning is changing - is Rust the right tool for the job?](https://www.youtube.com/watch?v=odI_LY8AIqo), RustLab 2019, 2019/10/31, Luca Palmieri
+- [Using TensorFlow in Embedded Rust](https://www.youtube.com/watch?v=DUVE86yTfKU), 2020/09/29, Ferrous Systems GmbH, Richard Meadows
+- [Writing the Fastest GBDT Library in Rust](https://www.youtube.com/watch?v=D1NAREuicNs), 2021/09/16, RustConf 2021, Isabella Tromba
+
+
+## PodCast
+
+- DATA SCIENCE AT HOME
+    - [Rust and machine learning #1 (Ep. 107)](https://datascienceathome.com/rust-and-machine-learning-1-ep-107/)
+    - [Rust and machine learning #2 with Luca Palmieri (Ep. 108)](https://datascienceathome.com/rust-and-machine-learning-2-with-luca-palmieri-ep-108/)
+    - [Rust and machine learning #3 with Alec Mocatta (Ep. 109)](https://datascienceathome.com/rust-and-machine-learning-3-with-alec-mocatta-ep-109/)
+    - [Rust and machine learning #4: practical tools (Ep. 110)](https://datascienceathome.com/rust-and-machine-learning-4-practical-tools-ep-110/)
+    - [Machine Learning in Rust: Amadeus with Alec Mocatta (Ep. 127)](https://datascienceathome.com/machine-learning-in-rust-amadeus-with-alec-mocatta-rb-ep-127/)
+    - [Rust and deep learning with Daniel McKenna (Ep. 135)](https://datascienceathome.com/rust-and-deep-learning/)
+    - [Is Rust flexible enough for a flexible data model? (Ep. 137)](https://datascienceathome.com/is-rust-flexible-enough-for-a-flexible-data-model-ep-137/)
+    - [Pandas vs Rust (Ep. 144)](https://datascienceathome.com/pandas-vs-rust-ep-144/)
+    - [Apache Arrow, Ballista and Big Data in Rust with Andy Grove (Ep. 145)](https://datascienceathome.com/apache-arrow-ballista-and-big-data-in-rust-with-andy-grove-ep-145/)
+    - [Polars: the fastest dataframe crate in Rust (Ep. 146)](https://datascienceathome.com/polars-the-fastest-dataframe-crate-in-rust-ep-146/)
+    - [Apache Arrow, Ballista and Big Data in Rust with Andy Grove RB (Ep. 160)](https://datascienceathome.com/apache-arrow-ballista-and-big-data-in-rust-with-andy-grove-rb-ep-160/)
+
+
+## Paper
+
+- [End-to-end NLP Pipelines in Rust](https://www.aclweb.org/anthology/2020.nlposs-1.4.pdf), Proceedings of Second Workshop for NLP Open Source Software (NLP-OSS), pages 20–25 Virtual Conference, 2020/11/19, Guillaume Becquin
+
+
+# How to contribute
+
+Please just update the README.md.
+
+If you update this README.md, CI will be executed automatically.
+And the website will also be updated.
+
+
+# Thanks
+
+Thanks for all the projects.
+
+[https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning](https://github.com/vaaaaanquish/Awesome-Rust-MachineLearning)
+
+
 ## File: docs/cargo/ANDROID_TARGET.md
 
 <!-- SPDX-License-Identifier: Apache-2.0 -->
@@ -16661,7 +17267,7 @@ expected response times, and embargo policy.
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Agent Skills — Ecosystem & Centralization
 
-> Last updated: 2026-05-17.
+> Last updated: 2026-05-22.
 > Single source of truth for **agent skills** consumed by Claude Code,
 > Gemini CLI, and the `skill` Rust runtime.
 
@@ -16712,6 +17318,7 @@ Allowed siblings (all optional):
 |-------------------------------|---------------------------------------------------|----------------------------------------------------------|
 | [`start`](../../.claude/plugins/aphrody/skills/start/SKILL.md)                 | `/start`, "lance", "go"            | Continuous autonomous execution mode (drives PLAN.md)    |
 | [`vps-commander`](../../.claude/plugins/aphrody/skills/vps-commander/SKILL.md) | "start the tunnel"                 | OVH VPS SSH-tunnel operator (chrome/postgres/bun/SOCKS5) |
+| [`google-design`](../../.claude/plugins/aphrody/skills/google-design/SKILL.md) | `/google-design`, any M3 / Gemini / Google Sans / token / color / shape / motion / adaptive question | Canonical Google/Material 3 authority — grounds answers in `docs/design/` + `crates/m3-tokens` + `mui-rs`; reading list = [`notebook-google-design-corpus.md`](../design/notebook-google-design-corpus.md) |
 
 ### 3.2 Project agents (`/.claude/agents/`)
 
@@ -16725,6 +17332,7 @@ The Trinity Architecture routes per task class:
 | `ffi-architect`    | C++↔Bun FFI zero-allocation architecture                | `Read, Edit, Write, Bash, Glob, Grep`    |
 | `rust-architect`   | Cargo workspaces, FFI boundaries (Fuchsia/Windows-rs)   | `Read, Edit, Write, Bash, Glob, Grep`    |
 | `rust-engineer`    | Rust implementation (Chromium/Google Style)             | `Read, Edit, Write, Bash, Glob, Grep`    |
+| `google-design-researcher` | Google-sources-only design reader (m3.material.io / design.google / developer.android.com / fonts.google.com) — distilled, attributed facts; refuses non-Google systems as authority | `Read, Grep, Glob, universal_web_fetch, docs_auto_search, WebFetch` |
 
 ### 3.3 Global user-scope skills (`~/.claude/skills/`)
 
@@ -17273,6 +17881,489 @@ targets    = [8 targets: Win x64/arm64, Linux x64/arm64,
 [workspace.metadata.aws-lc-sys]
 notice = "Forced via cargo update -p aws-lc-sys --precise 0.41.0 if needed."
 ```
+
+
+## File: docs/chromium/README.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# docs/chromium — Chromium & V8 build reference (Windows-first)
+
+> Distilled, attributed reference for building **V8** (and the wider Chromium
+> toolchain) from source on **Windows 11**, as used by aphrody to produce a
+> native `v8_monolith` static library. Facts are paraphrased from the official
+> Google docs and cross-checked against this machine's real checkout in
+> `C:\src\v8` (depot_tools in `C:\src\depot_tools`). Article bodies are **not**
+> reproduced verbatim (copyright); each section links its canonical source.
+
+## Why this exists
+
+aphrody needs a Windows-native V8 to unblock JS-engine work that Lightpanda /
+`zig-v8-fork` cannot deliver on Windows (no `*-windows` V8 artifact upstream).
+The path is therefore **V8-from-source via depot_tools + GN + ninja**, built
+against **Visual Studio 2026 Insiders** (MSVC 19.5x).
+
+## Map
+
+| Doc | Scope |
+|-----|-------|
+| [`get-the-code.md`](get-the-code.md) | depot_tools, `fetch v8`, gclient sync, fast-fetch accelerators |
+| [`windows-build.md`](windows-build.md) | Windows prerequisites: VS 2026, Windows SDK, env vars |
+| [`v8-build.md`](v8-build.md) | `gm.py`, `gn gen`, GN args, ninja targets (`v8_monolith`, `d8`) |
+| [`v8-embed.md`](v8-embed.md) | Embedder's guide: Isolate/Context/Handle, linking the monolith |
+| [`rust-bindings.md`](rust-bindings.md) | Official Rust↔V8 binding (`rusty_v8` / crate `v8` 149) — prebuilt MSVC vs from-source |
+| [`aphrody-v8-state.md`](aphrody-v8-state.md) | This machine's exact build state, env, and gotchas |
+
+## Canonical sources
+
+- Chromium Windows build: <https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md>
+- Chromium get-the-code: <https://chromium.googlesource.com/chromium/src/+/main/docs/get_the_code.md>
+- V8 source checkout: <https://v8.dev/docs/source-code>
+- V8 build: <https://v8.dev/docs/build> · GN build: <https://v8.dev/docs/build-gn>
+- V8 embedder's guide: <https://v8.dev/docs/embed>
+- depot_tools tutorial: <https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html>
+
+> Fetched 2026-05-22. depot_tools has **no official GitHub repo** — clone only
+> from `chromium.googlesource.com/chromium/tools/depot_tools.git`.
+
+
+## File: docs/chromium/aphrody-v8-state.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# aphrody V8 build state (this machine)
+
+Snapshot 2026-05-22. Records the exact, reproducible state of the Windows V8
+build so it can be resumed without re-deriving the toolchain dance.
+
+## Layout
+
+| Path | What |
+|------|------|
+| `C:\src\depot_tools` | depot_tools clone (gclient/fetch/gn/ninja/autoninja) |
+| `C:\src\v8` | V8 checkout (`fetch --no-history v8` from `C:\src`) |
+| `C:\src\v8\out\x64.release` | release monolith build dir |
+| `C:\src\.git_cache` | `GIT_CACHE_PATH` shared object cache |
+| `C:\src\v8-gngen.log` / `C:\src\v8-ninja.log` | last gn/ninja logs |
+
+> depot_tools and the V8 checkout live **outside** the aphrody repo (in
+> `C:\src\` root), so nothing here is committed into aphrody.
+
+## Environment (must be set for every gn/ninja invocation)
+
+```powershell
+$env:Path = "C:\src\depot_tools;" + $env:Path
+$env:DEPOT_TOOLS_WIN_TOOLCHAIN = "0"
+$env:vs2026_install          = "C:\Program Files\Microsoft Visual Studio\18\Insiders"
+$env:GYP_MSVS_OVERRIDE_PATH  = "C:\Program Files\Microsoft Visual Studio\18\Insiders"
+$env:GYP_MSVS_VERSION        = "2026"
+```
+
+Toolchain: **VS 2026 Insiders** (`...\18\Insiders`), MSVC 19.5x, Windows SDK
+10.0.26100. `DEPOT_TOOLS_WIN_TOOLCHAIN=0` forces the locally-installed VS
+(external/non-Googler build).
+
+## `args.gn` (out\x64.release)
+
+```gn
+is_debug = false
+target_cpu = "x64"
+v8_monolithic = true
+v8_use_external_startup_data = false
+is_component_build = false
+v8_enable_sandbox = false
+use_custom_libcxx = false
+```
+
+## Gotchas hit & fixed
+
+1. **`vs2022_install` ignored by VS 2026** → `gn gen` exited without writing
+   `build.ninja`. Fix: use `vs2026_install` + `GYP_MSVS_OVERRIDE_PATH` (path is
+   the non-standard Insiders `...\18\Insiders`).
+2. **`cmd /c "gn.bat gen out\\x64.release 2>&1"` from bash** → quoting broke, cmd
+   only printed its banner. Fix: drive gn/ninja from **PowerShell**
+   (`& cmd /c gn.bat gen out\x64.release`), not nested bash→cmd quoting.
+3. **`v8_enable_sandbox = true` + `use_custom_libcxx = false`** → GN assertion
+   `BUILD.gn:814` "sandbox requires libc++ hardening". Fix: sandbox **off** for
+   the MSVC-STL embed build.
+4. **Clang `-Werror,-Wctad-maybe-unsupported`** on `std::atomic_ref` in
+   `src/heap/cppgc/heap-object-header.h:357` (V8's bundled clang + newer libc++)
+   → 3 compile units failed at ~922/2410. Fix: add
+   `treat_warnings_as_errors = false` to `args.gn` (warnings stay, build
+   proceeds).
+
+## Status
+
+- depot_tools cloned ✅
+- `fetch v8` + `gclient sync` complete ✅
+- `gn gen out\x64.release` → 825 targets ✅
+- `autoninja v8_monolith` → **blocked** at ~930/2410 on a Torque ABI assertion
+  `static_assert(kSize == sizeof(ExtendedMap))` in
+  `gen/torque-generated/src/objects/map-tq.cc:102`. Root cause: turning the
+  **sandbox off while leaving pointer-compression at its default** desyncs the
+  Torque-generated object layout from the runtime `Map` size.
+
+### Decision (do not chase the hand-build)
+
+The Rust↔V8 surface uses the **prebuilt `v8` crate** (see
+[`rust-bindings.md`](rust-bindings.md)) — `rusty_v8` ships a known-good
+Windows-MSVC monolith whose sandbox/pointer-compression flags are internally
+consistent. So this from-source monolith is **only** an offline/patch fallback;
+it is not on the critical path and is left blocked rather than ABI-tuned.
+
+If the hand-build is ever needed, the fix is to use a self-consistent flag set
+(either keep `v8_enable_sandbox = true` with `use_custom_libcxx = true`, or also
+set `v8_enable_pointer_compression = false`) — i.e. mirror the exact `GN_ARGS`
+rusty_v8 uses for its release archive, rather than mixing sandbox-off with
+default pointer compression.
+
+## Resume command
+
+```powershell
+# (set env block above first)
+Set-Location C:\src\v8
+cmd /c autoninja.bat -C out\x64.release v8_monolith
+# output: out\x64.release\obj\v8_monolith.lib
+```
+
+
+## File: docs/chromium/get-the-code.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Getting the code — depot_tools + `fetch v8`
+
+Source: <https://v8.dev/docs/source-code> · <https://chromium.googlesource.com/chromium/src/+/main/docs/get_the_code.md>
+(fetched 2026-05-22, distilled)
+
+## 1. depot_tools
+
+depot_tools bundles `gclient`, `fetch`, `gn`, `ninja`, `autoninja`, and a
+managed Git. Clone it (no official GitHub repo exists — third-party mirrors are
+not authoritative):
+
+```bat
+cd C:\src
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
+
+Put `C:\src\depot_tools` at the **front** of `PATH` so its bundled tools win.
+Then run `gclient` once with no args to self-bootstrap (downloads Python, Git,
+ninja, etc.).
+
+## 2. Fetch V8
+
+Never `git clone` the V8 repo directly — `fetch` also pulls the `DEPS`-managed
+dependencies. The checkout lands in a detached HEAD.
+
+```bat
+mkdir C:\src\v8src & cd C:\src\v8src
+fetch v8
+cd v8
+```
+
+aphrody's checkout lives at `C:\src\v8` (the `fetch` was run from `C:\src`).
+
+## 3. Fast fetch / sync accelerators (used here)
+
+The full checkout is ~22 GB+. Levers that actually cut wall-time:
+
+| Lever | Effect |
+|-------|--------|
+| `fetch --no-history v8` | shallow-ish fetch, ~2× less transfer |
+| `gclient sync --no-history --jobs N` | parallel dependency sync (N = ~2× cores) |
+| `GIT_CACHE_PATH=C:\src\.git_cache` | shared object cache / reference clones across re-syncs |
+| `git config --global protocol.version 2` | smarter ref negotiation |
+| `git config --global fetch.parallel 0` | parallel sub-fetches (0 = auto) |
+| `git config --global core.fscache true` + `core.preloadindex true` | Windows FS speedups |
+| `git config --global core.longpaths true` | avoids `MAX_PATH` failures in deep deps |
+
+## 4. Keep updated
+
+```bat
+git pull
+gclient sync
+```
+
+`gclient sync` reconciles `DEPS` after any pull; `-D` additionally prunes
+removed dependencies.
+
+
+## File: docs/chromium/rust-bindings.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Rust ↔ V8 — the official binding (`rusty_v8`)
+
+Source: <https://github.com/denoland/rusty_v8> · crate <https://crates.io/crates/v8>
+(checked 2026-05-22)
+
+The canonical, officially-maintained Rust binding to V8 is the **`v8` crate**
+(repo name `rusty_v8`), maintained by the **Deno** team. It is what Deno and
+most Rust JS-engine work build on — there is no competing "official" binding.
+
+- Crate: `v8` — **latest `149.0.0`** (149.1.0 was yanked).
+- It mirrors the V8 C++ API (`Isolate`, `Context`, `HandleScope`, `Local<T>`,
+  `Global<T>`, `FunctionTemplate`, …) in safe-ish Rust.
+
+## Two ways to get the V8 library
+
+### A. Prebuilt (default, recommended for aphrody)
+
+By default the crate's build script **downloads a prebuilt static lib** from the
+GitHub release matching the crate version — **Windows MSVC (`x86_64-pc-windows-
+msvc`) is a supported target**. So the fastest path is simply:
+
+```toml
+# Cargo.toml
+[dependencies]
+v8 = "149"
+```
+
+```bash
+cargo build      # downloads librusty_v8 prebuilt, links it, done
+```
+
+No depot_tools, no gn, no ninja required for this path.
+
+### B. From source
+
+To compile V8 from rusty_v8's own pinned checkout (e.g. to patch V8, or on an
+unsupported target):
+
+```bash
+V8_FROM_SOURCE=1 cargo build -vv
+```
+
+This needs depot_tools-style prerequisites and a Python 3.
+
+## Relevant env vars
+
+| Var | Purpose |
+|-----|---------|
+| `V8_FROM_SOURCE=1` | build V8 from source instead of downloading a prebuilt lib |
+| `RUSTY_V8_MIRROR` | alternate download base (URL or file path) for the prebuilt lib |
+| `RUSTY_V8_ARCHIVE` | use a **specific** prebuilt archive (URL or **local path**) instead of downloading |
+| `GN_ARGS` | extra `gn` args for the from-source build |
+| `CLANG_BASE_PATH` | existing LLVM/clang dir (skip the auto clang download) |
+| `PYTHON` | Python 3 binary (required for source builds) |
+
+## How our `C:\src\v8` build fits in
+
+The hand-built `v8_monolith` (see [`v8-build.md`](v8-build.md) /
+[`aphrody-v8-state.md`](aphrody-v8-state.md)) is **not strictly required** if we
+take path A. Its value:
+
+- **Offline / pinned**: package the resulting lib and point
+  `RUSTY_V8_ARCHIVE=C:\path\to\librusty_v8.a` (or a static `.lib`) so CI never
+  hits GitHub releases.
+- **Custom V8 args / patches**: drive a from-source build and pass our
+  `args.gn` choices via `GN_ARGS`.
+
+> Decision for aphrody: **default to the prebuilt `v8` crate** for the
+> Rust↔V8 surface (zero build cost, MSVC target supported). Keep the
+> `C:\src\v8` from-source build as the patch/offline fallback feeding
+> `RUSTY_V8_ARCHIVE`. This mirrors the `bxc_rust_bridge.dll` FFI pattern: a thin
+> Rust wrapper over a native engine.
+
+
+## File: docs/chromium/v8-build.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Building V8 — GN + ninja
+
+Source: <https://v8.dev/docs/build> · <https://v8.dev/docs/build-gn>
+(fetched 2026-05-22, distilled)
+
+## Option A — `gm.py` (one-shot helper)
+
+`tools/dev/gm.py` chains `gn gen` + `ninja` (+ optional tests) and **prints
+every command it runs**, so you can copy them for manual re-use.
+
+```bat
+python tools\dev\gm.py x64.release            REM compile only
+python tools\dev\gm.py x64.release.check       REM compile + run the test suite
+python tools\dev\gm.py x64.debug mjsunit/foo   REM debug + targeted tests
+```
+
+## Option B — manual GN (what aphrody uses)
+
+Manual control is preferred here because the VS 2026 Insiders toolchain needs
+explicit env vars (see [`windows-build.md`](windows-build.md)) and we want a
+**monolithic, MSVC-STL, sandbox-off** embed library.
+
+1. Write `out\x64.release\args.gn`:
+
+   ```gn
+   is_debug = false
+   target_cpu = "x64"
+   v8_monolithic = true
+   v8_use_external_startup_data = false
+   is_component_build = false
+   v8_enable_sandbox = false      # required when use_custom_libcxx = false
+   use_custom_libcxx = false      # link MSVC STL → embeddable in non-Chromium apps
+   ```
+
+2. Generate ninja files (with the VS 2026 env set):
+
+   ```bat
+   gn gen out\x64.release
+   gn args out\x64.release --list    REM inspect every available arg
+   ```
+
+3. Build the target:
+
+   ```bat
+   ninja -C out\x64.release v8_monolith    REM the static embed lib
+   ninja -C out\x64.release d8             REM the standalone JS shell
+   autoninja -C out\x64.release v8_monolith REM autoninja = ninja + auto -j
+   ```
+
+## Key GN args
+
+| Arg | Meaning |
+|-----|---------|
+| `is_debug` | `false` = release (optimised, no DCHECKs) |
+| `target_cpu` / `v8_target_cpu` | host arch / cross-compile target (`"x64"`, `"arm64"`) |
+| `v8_monolithic` | bundle everything into a single `v8_monolith` static lib |
+| `v8_use_external_startup_data` | `false` = embed the snapshot in the binary (no `.bin` files) |
+| `is_component_build` | `false` = static (one lib), `true` = many DLLs (faster incremental) |
+| `v8_enable_sandbox` | pointer-compression sandbox; **requires `use_safe_libcxx`** |
+| `use_custom_libcxx` | `true` = Chromium hardened libc++; `false` = platform STL (MSVC) |
+
+> **Constraint proven on this machine:** `v8_enable_sandbox = true` asserts
+> `use_safe_libcxx`, which conflicts with `use_custom_libcxx = false`. For an
+> MSVC-STL embed build, set the sandbox **off**.
+
+## Targets
+
+- `v8_monolith` — static lib for embedders (pairs with `v8_libbase`,
+  `v8_libplatform` when not monolithic).
+- `d8` — the V8 developer shell / REPL.
+- Tests via `tools\run-tests.py --gn` or the `.check` gm suffix.
+
+
+## File: docs/chromium/v8-embed.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Embedding V8
+
+Source: <https://v8.dev/docs/embed> (fetched 2026-05-22, distilled — no verbatim code)
+
+## Linking the monolith
+
+After `ninja -C out\x64.release v8_monolith`, link an embedder against the
+single static lib:
+
+- Libraries: `v8_monolith` (monolithic build folds in `v8_libbase` +
+  `v8_libplatform`).
+- Includes: the repo root and `include/` (`-I. -Iinclude`).
+- Compiler: C++20, **`-fno-rtti`**, and the defines matching your `args.gn`
+  (e.g. `V8_COMPRESS_POINTERS` only if you enabled it; **do not** define
+  `V8_ENABLE_SANDBOX` for our sandbox-off build).
+- Runtime data: ship `icudtl.dat` (ICU) unless ICU is disabled; with
+  `v8_use_external_startup_data = false` the snapshot is already embedded.
+
+On Windows/MSVC the equivalent flags are `/std:c++20 /GR-` and linking
+`v8_monolith.lib` plus the system libs V8 pulls in (`winmm`, `dbghelp`, etc.).
+
+## Core object model
+
+| Concept | One-liner |
+|---------|-----------|
+| **Isolate** | An isolated VM instance with its own heap. Usually one per app/thread. |
+| **Context** | A sandboxed JS execution environment inside an Isolate; you must *enter* it before running script. |
+| **HandleScope** | A stack-scoped container that owns handles and frees them on destruction. |
+| **`Local<T>`** | Stack handle to a JS object; dies with its `HandleScope`. |
+| **`Persistent<T>`** | Long-lived handle; freed explicitly via `Reset()`. |
+| **`EscapableHandleScope`** | Lets a function return one `Local` to the outer scope via `Escape()`. |
+
+## Minimal hello-world flow
+
+1. Initialise the platform + `Isolate`.
+2. Open a `HandleScope`.
+3. Create a `Context` and enter it.
+4. Compile a source string (`Script::Compile`) and `Run()` it.
+5. Wrap in `TryCatch` for exceptions; convert the result to a UTF-8 string.
+6. Leave the scope/context; dispose the `Isolate` and platform.
+
+C++ objects are exposed to JS via **object templates** with internal fields and
+accessor/method callbacks.
+
+## aphrody integration target
+
+The monolith is the bridge for a future Rust↔V8 FFI surface (mirrors how
+`bxc_rust_bridge.dll` wraps DOM parsing). Keep the sandbox **off** and STL =
+MSVC so the lib links cleanly into the Rust/MSVC toolchain. See
+[`aphrody-v8-state.md`](aphrody-v8-state.md).
+
+
+## File: docs/chromium/windows-build.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Windows build prerequisites
+
+Source: <https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md>
+(fetched 2026-05-22, distilled)
+
+## System requirements
+
+- x86-64, **≥ 8 GB RAM** (16 GB+ recommended), **≥ 100 GB** free on an **NTFS**
+  drive (FAT32 unsupported).
+- Windows 10 or newer.
+- **Visual Studio 2026** (build ≥ 17.0.0 per the doc; this machine runs the
+  **2026 Insiders** channel = v18.x, MSVC 19.5x).
+- **Windows SDK 10.0.26100.7705**, with **SDK Debugging Tools 10.0.26100.3323+**.
+
+## Visual Studio components
+
+Install the Native Desktop workload + ATL/MFC:
+
+```bat
+vs_installer.exe ^
+  --add Microsoft.VisualStudio.Workload.NativeDesktop ^
+  --add Microsoft.VisualStudio.Component.VC.ATLMFC ^
+  --includeRecommended
+```
+
+ARM64 cross builds additionally need `VC.Tools.ARM64` + `VC.MFC.ARM64`.
+The **Debugging Tools for Windows** component is required (gn looks for it).
+
+## Git config (Windows)
+
+```bat
+git config --global core.autocrlf false
+git config --global core.filemode false
+git config --global core.preloadindex true
+git config --global core.fscache true
+git config --global core.longpaths true
+```
+
+## The two critical environment variables
+
+| Var | Value | Why |
+|-----|-------|-----|
+| `DEPOT_TOOLS_WIN_TOOLCHAIN` | `0` | **External (non-Googler) builds**: use the locally-installed VS instead of Google's internal hermetic toolchain package. |
+| `vs2026_install` | `C:\Program Files\Microsoft Visual Studio\2026\<Edition>` | Tells `build/vs_toolchain.py` where VS lives. **Year-specific** — `vs2022_install` is silently ignored by a 2026 VS, which makes `gn gen` fail to find the toolchain. |
+
+For the **Insiders** channel the path is non-standard
+(`...\Visual Studio\18\Insiders`), so also set the path-based override which is
+version-agnostic:
+
+```bat
+set GYP_MSVS_OVERRIDE_PATH=C:\Program Files\Microsoft Visual Studio\18\Insiders
+set GYP_MSVS_VERSION=2026
+```
+
+> Gotcha proven on this machine: setting only `vs2022_install` made `gn gen`
+> exit without writing `build.ninja`. Switching to `vs2026_install` +
+> `GYP_MSVS_OVERRIDE_PATH` fixed toolchain detection. See
+> [`aphrody-v8-state.md`](aphrody-v8-state.md).
+
+## Build (Chromium proper, for reference)
+
+```bat
+gn gen out\Default
+autoninja -C out\Default chrome
+```
+
+For V8 specifically, see [`v8-build.md`](v8-build.md).
 
 
 ## File: docs/design/DESIGN-PACKAGE.md
@@ -18008,10 +19099,16 @@ Implémentation 100% Rust de l'adaptive design M3 (cible #1, headless, no_std-co
 # aphrody plugin — refocus on Google design (proposal)
 
 Goal: pivot the `aphrody` plugin's centre of gravity to **Google / Material 3
-design**, and surface the off-focus surface ("pure Photoshop", Blender, misc)
-for trimming. This is a **proposal** — the removals are destructive (a 12-tool
-MCP surface + a Rust crate + a Python module the user actively built this
-session), so they are listed for explicit go/no-go rather than executed.
+design** — **additively**. The Google-design surface is elevated to the front;
+nothing is removed.
+
+> **Decision (2026-05-22): Photoshop and Blender STAY in the MCP surface.**
+> The `aphrody-adobe` split below is **declined / not executed** — the Adobe
+> (12 cloud + 3 live Photoshop), Firefly, and Blender tools remain first-class
+> MCP tools in the default `aphrody` plugin. The refocus is purely additive
+> (the `google-design` skill, `google-design-researcher` agent and the
+> `docs/design/` package lead the design story); the table below is retained
+> only as historical rationale, not a to-do.
 
 Already shipped this session (the design core): the `google-design` skill, the
 `google-design-researcher` Google-sources-only sub-agent, the full
@@ -39293,6 +40390,215 @@ statique déjà livré (`aphrody-logo`) : `animate` n'apporte que la dimension
 temporelle, le rendu reste celui d'`aphrody-logo`.
 
 
+## File: docs/research/antigravity-ide-re.md
+
+# Antigravity IDE — Reverse-engineering approfondi
+
+Cible : `C:\Users\yohan\AppData\Local\Programs\Antigravity IDE`
+Analyse : read-only, machine perso (logiciel installé par le user, analyse autorisée).
+Date : 2026-05-22. Artefacts bruts : `var/data/antigravity-ide-re/`.
+
+Classification de complétude (par phase) :
+
+| Phase | Sujet | Statut |
+|-------|-------|--------|
+| 1 | Deep RE filesystem (extensions, Jetski, language server) | **FAIT** |
+| 2 | Pipeline binaire `aphrody re` | **FAIT** (cargo check exit 0, pipeline exécuté) |
+| 3 | Corrélation `antigravity-sdk` + gaps | **FAIT** |
+
+Découverte majeure : **Antigravity est un fork Google de Windsurf / Codeium** (et non un produit greenfield). Tout l'agent et l'auth transitent par un language server natif Go de 133 Mo (`exa.*` protobuf, package `cortex`, moteur `Cascade`), pas par le JS de l'extension. C'est le centre de gravité de la RE.
+
+---
+
+## 1. Identité / versions
+
+Source : `var/data/antigravity-ide-re/tree-map.json` (l.4-8) + `re-google.json`.
+
+- IDE **Antigravity 2.0.2**, base **VSCode 1.107.0**, commit `bd0307c171dbaf4cd6135192515e160af7d9d132` (2026-05-21).
+- **Electron 39.2.3**, **Chromium 142.0.7444.175** (confirmé par `re google` sur l'exe : `re-google.json` l.3).
+- Code-sign subject : **Google Inc** (`re-google.json` l.7).
+- Binaire principal `Antigravity IDE.exe` : 210 848 768 octets (~211 Mo).
+- Gallery extensions : **open-vsx.org** (`package.json` cœur, `marketplaceExtensionGalleryServiceURL`).
+- Publisher de toutes les extensions Antigravity : `google`.
+
+---
+
+## 2. Arbre & artefacts
+
+Réf. `tree-map.json` (1578 entrées top-level IDE) + `scan-tree.json` (récursif `resources/app` : **38 914 fichiers, 697 Mo, 25 685 `.js`**).
+
+Sous-dossiers cœur `resources/app/extensions/antigravity/` :
+- `dist/extension.js` — 1.96 Mo, point d'entrée VSCode (mince : juste de la glu).
+- `bin/language_server_windows_x64.exe` — **133 599 744 octets (~133 Mo)** : le vrai cerveau (Go, Codeium-derived).
+- `bin/sandbox-wrapper.sh` + `.LICENSE` — wrapper d'exécution sandboxée du code agent.
+- `dist/languageServer/cert.pem` — 1250 octets : certificat pour le endpoint HTTPS local self-signed du LS.
+- `out/jetskiAgent/main.js` — **12.4 Mo** : webview de l'agent UI « Jetski ».
+- `cascade-panel.html`, `auth-success-jetski.html` — webviews.
+- `schemas/mcp_config.schema.json`, `customEditor/`, `assets/auth/google_signin.svg`.
+
+Note interne révélée par le schema MCP (`mcp_config.schema.json`) :
+`$comment: Keep in sync with google3/third_party/jetski/cortex/utils/mcp/config.schema.json`
+→ chemin source Google3 : **`google3/third_party/jetski/`**, module **`cortex`**.
+
+---
+
+## 3. Extensions Antigravity (5)
+
+### 3.1 `antigravity` (cœur agent) — `package.json`
+
+- `name: antigravity`, `publisher: google`, `version: 0.2.0`, `main: ./dist/extension.js`, `activationEvents: ["*"]`.
+- `enabledApiProposals`: `contribSourceControlInputBoxMenu`, `inlineCompletionsAdditions`, **`antigravityUnifiedStateSync`** (API proposal propriétaire pour la synchro d'état).
+- **Authentication provider** : `id: antigravity_auth`, `label: Antigravity`.
+- **Custom editors** : `antigravity.workflowEditor` (`.agent/workflows`, `.gemini/jetski*/global_workflows`, `.gemini/antigravity*/global_workflows`), `antigravity.ruleEditor` (`.agent/rules`).
+- **Commandes** (extraits notables) :
+  - `antigravity.login`, `antigravity.loginWithAuthToken` (« Backup Login » = token manuel),
+  - `antigravity.copyApiKey` (« Copy API Key to Clipboard »),
+  - `antigravity.prioritized.chat.open` (chat agent), keybindings `antigravity.prioritized.agent*` (alt+j/k/enter pour accept/reject de hunks), `supercompleteAccept`/`Escape` (Tab/Esc),
+  - `antigravity.restartLanguageServer`, `killLanguageServerAndReloadWindow`, `togglePersistentLanguageServer`, `openPersistentLanguageServerLog`,
+  - `antigravity.openBrowser`, `showBrowserAllowlist` (navigateur agentique allowlisté),
+  - Imports : VSCode / Cursor / **Windsurf** / Cider (interne Google) settings + extensions,
+  - `startDemoMode` / `endDemoMode` (Beta).
+- **Settings** : `antigravity.searchMaxWorkspaceFileCount` (def 5000 — *« Jetski will attempt to compute embeddings for workspaces up to this many files »*), `marketplaceExtensionGalleryServiceURL`/`GalleryItemURL` (open-vsx), `persistentLanguageServer`, `enableCursorImportCursor`.
+- **MCP** : langage `jsonc` mappé sur `mcp_config.json` + jsonValidation vers `schemas/mcp_config.schema.json`.
+- **Indice d'origine Codeium** : menu `editor/context` groupe **`CodeiumGroup@1`** ; resolution `@exa/agent-ui-toolkit: file:../../../exa/agent_ui_toolkit` ; importOrder prettier `^@exa/(.*)$`. **`exa` = nom de code Codeium**.
+
+### 3.2 `antigravity-code-executor`
+
+Mince. Une commande : `antigravity-code-executor.executeCode`. Exécute le code généré par l'agent (couplé au `sandbox-wrapper.sh`).
+
+### 3.3 / 3.4 / 3.5 `antigravity-dev-containers` / `-remote-openssh` / `-remote-wsl`
+
+Forks des extensions **open-remote-ssh / open-remote-wsl** (cf. `LICENSE.open-remote-*.txt`). Renommage Codeium → Antigravity. Commandes standard de remote dev (`reopenInContainer`, `closeSSHProcess`, `connectUsingDistro`, …). Pas de surface AI ; intéressantes seulement pour le remoting de l'agent.
+
+---
+
+## 4. Agent Jetski
+
+- **Jetski** = nom de code de l'agent UI (front webview). Le runtime Go côté serveur s'appelle **`cortex`** ; le moteur d'exécution agentique **`Cascade`** (hérité de Windsurf).
+- Webview chargée via `workbench-jetski-agent.html` → `jetskiAgent.js` → `out/jetskiAgent/main.js` (12.4 Mo) + `jetskiMain.tailwind.css`. CSP `trusted-types ... google#safe`.
+- **Hosts de feature-flagging exposés dans la CSP** (`workbench-jetski-agent.html` l.48-49) :
+  `http://jetski-unleash.corp.goog/` et `http://antigravity-unleash.goog/` (Unleash = système de feature flags ; `corp.goog` = réseau interne Google).
+- Protocole workbench↔agent : webview standard VSCode (`postMessage`, 11 occurrences dans main.js). L'agent parle au LS via le proto **`exa.cortex_pb`** (référencé dans `main.js`).
+- Concepts UI confirmés dans `main.js` : `BYOM` (Bring-Your-Own-Model — `gemini-v3-byom`), `BattleMode` / `battle mode` (comparaison de modèles côte-à-côte ; côté LS `v1internal:battleModeOverrides`, `cortex.EndBattleModeError`), crédits `g1-credits` / `g1-activity` (système de quota « G1 »).
+- Modèles référencés dans le JS Jetski (`main.js` l.3874) : `gemini-2.5-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-image`, et (LS) `gemini-3.1-pro`, `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-2.5-pro`, `gemini-2.5-pro-windsurf` (!), `gemini-coder`.
+- Doc/légal pointés : `antigravity.google/docs/{faq,enterprise,strict-mode}`, `antigravity.google/{faq,terms,g1-credits,g1-activity}`.
+- Sidecars / config agent : `.gemini/config/sidecars/`, OAuth scope Drive (`www.googleapis.com/auth/drive`) → l'agent peut lire Google Drive.
+
+---
+
+## 5. Endpoints / RPC / auth (extraits du language server natif)
+
+Tous extraits par `strings` + grep sur `bin/language_server_windows_x64.exe`. Aucun token/secret en clair recopié.
+
+### 5.1 Hosts backend Google
+- `https://cloudcode-pa.googleapis.com` (**Cloud Code Private API — surface principale**)
+- `https://daily-cloudcode-pa.googleapis.com` (variante daily/runtime ; le crate SDK la traite comme défaut)
+- `https://aiplatform.googleapis.com` (Vertex AI : publishers/google **et** publishers/anthropic — Claude exposé via Vertex)
+- `aicode.googleapis.com:443` (gRPC dédié)
+- `https://feedback-pa.googleapis.com`, `play.googleapis.com/log`, `alkalimakersuiteapplets.pa.googleapis.com` (telemetry / feedback)
+- `docs.googleapis.com`, `secretmanager.googleapis.com`, `cloudkms.googleapis.com`, `iamcredentials.googleapis.com`, `modelarmor.googleapis.com` (sécurité / enterprise)
+
+### 5.2 Méthodes RPC Cloud Code `v1internal:*` — **37 méthodes** (liste complète : `var/data/antigravity-ide-re/v1internal-methods.txt`)
+
+Génération / agent :
+`generateContent`, `streamGenerateContent`, `generateChat`, `streamGenerateChat`, `generateCode`, `completeCode`, `transformCode`, `tabChat`, **`internalAtomicAgenticChat`** (cœur agentique), `countTokens`.
+
+Session / compte / quota :
+`loadCodeAssist`, `onboardUser`, `onboardUserBackgroundTasks`, `fetchAvailableModels`, `listModelConfigs`, `listAgents`, `fetchUserInfo`, `retrieveUserQuota`, `getCodeAssistGlobalUserSetting`, `setCodeAssistGlobalUserSetting`, `setUserSettings`, `fetchCodeCustomizationState`, `fetchAdminControls`, `listCloudAICompanionProjects`, `listExperiments`.
+
+Agent / repo / contexte :
+`searchSnippets`, `listRemoteRepositories`, `fetchFromTrawlerCache`, `migrateDatabaseCode`, `rewriteUri`, `checkUrlDenylist`, `battleModeOverrides`.
+
+Telemetry / feedback :
+`recordClientEvent`, `recordCodeAssistMetrics`, `recordSmartchoicesFeedback`, `recordTrajectoryAnalytics`, `registerInteraction`.
+
+Transcoding gRPC↔REST via connect-go (`/v1/connect.*`).
+
+### 5.3 Proto Codeium / exa (gRPC interne LS)
+- `exa.api_server_pb.ApiServerService` — service principal (centaines de messages : `Cascade*`, `AgentPlugin*`, `Trajectory*`, `CheckHybridDeploymentStatus`, `*OidcProvider`, `*TeamOrganizationalControls`, …).
+- `exa.analytics_pb.AnalyticsService` — `RecordCompletions`, `RecordCortexTrajectory(Step)`, `RecordCommandUsage`, `RecordPrompt`.
+- `exa.cortex_pb` (référencé côté Jetski JS), `exa.codeium_common_pb.ImageData`.
+- Package Go : `cortex/agentapi`, `cortex/cascade_manager.go`, `cortex/battlemode.go`, `cortex/annotations_manager.go`, `cortex/artifacts`, `cortex.stateSyncSummariesStore`, `cortex.trajectoryFetcherImpl`, `cortex.providerServerURLMap`.
+
+### 5.4 Auth OAuth 2.0
+- **Deux client IDs publics** embarqués (non secrets, présents dans toute copie distribuée) :
+  - `1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com` (= `ANTIGRAVITY_CLIENT_ID` du SDK — **confirmé identique**)
+  - `884354919052-36trc1jjb3tguiac32ov6cod268c5blh.apps.googleusercontent.com` (= `ANTIGRAVITY_CLIENT_ID_SECONDARY` du SDK — **confirmé identique**)
+- Endpoints : `accounts.google.com/o/oauth2/...`, `oauth2.googleapis.com/token`, `oauth2.mtls.googleapis.com/token` (mTLS), **`oauth2.googleapis.com/device/code`** (device-code flow — non couvert par le SDK), redirect `oauth-callback`.
+- Scopes (présents dans le LS) : `cloud-platform`, `userinfo.email`, `userinfo.profile`, `cclog`, **`experimentsandconfigs`**, **`aicode`**, + une famille **Drive** large (`drive`, `drive.appdata`, `drive.file`, `drive.metadata.readonly`, `drive.meet.readonly`, `drive.photos.readonly`, `drive.scripts`, `drive.apps.readonly`).
+- `authProviderType: google_credentials` pour MCP (`mcp_config.schema.json`), + bloc `oauth {clientId, clientSecret}` par serveur MCP.
+- État persistant : API proposal `antigravityUnifiedStateSync` + `UnifiedStateSync`/`stateSync` côté LS (cf. décodeur `state_sync.rs` du SDK).
+
+### 5.5 Secrets — inventaire (aucune valeur recopiée)
+- Token utilisateur : **non présent dans les binaires** ; stocké au runtime (Credential Manager `gemini:antigravity` / state.vscdb). Conforme à l'invariant sécurité du SDK.
+- Les deux `clientId` OAuth sont publics par conception (desktop = Auth-Code + PKCE, pas de client secret confidentiel). `cert.pem` (1250 o) est un cert local self-signed du LS, pas une clé privée d'auth Google.
+
+---
+
+## 6. Sortie pipeline `aphrody re`
+
+`cargo check -p aphrody --offline` → **exit 0** (build OK ; warnings de profil swc non bloquants). Pipeline exécuté, artefacts dans `var/data/antigravity-ide-re/` :
+
+- `re-triage.json` (256 Ko) — triage de `Antigravity IDE.exe`.
+- `re-google.json` — `family: electron`, `chromium_version: 142.0.7444.175`, `code_sign_subject: "Google Inc"`. **`oauth_client_ids`, `google_endpoints`, `grpc_*` vides** : le détecteur `re google` cible l'exe Electron, où ces artefacts sont absents.
+- `re-strings.txt` — strings de l'exe Electron (4000 entrées, surtout symboles natifs).
+- `scan-tree.json` — 38 914 fichiers / 697 Mo sous `resources/app`.
+- `v1internal-methods.txt` — **artefact le plus utile** : les 37 méthodes RPC (extraites du language server, pas via `re`).
+
+**Limite identifiée du pipeline `aphrody re`** : il a été pointé sur l'exécutable Electron (`Antigravity IDE.exe`), mais 100 % de la surface réseau/RPC/auth vit dans `extensions/antigravity/bin/language_server_windows_x64.exe` (Go, 133 Mo). `re google`/`re strings` sur l'exe Electron ne remontent donc rien d'exploitable. Toute la section 5 a été produite par `strings` + grep manuel sur le LS. Magika non lancé (optionnel, lourd ; skip assumé).
+
+---
+
+## 7. Corrélation avec `crates/antigravity-sdk/` + gaps
+
+Ce que le SDK couvre **et qui est confirmé exact** par cette RE :
+- `ANTIGRAVITY_CLIENT_ID` + `_SECONDARY` : **les deux exacts**, byte-for-byte.
+- Hosts `cloudcode-pa` + `daily-cloudcode-pa` + `aiplatform` : **confirmés**.
+- `oauth2.googleapis.com/token`, `accounts.google.com/o/oauth2/v2/auth` : confirmés.
+- Credential Manager `gemini:antigravity`, décodeur `UnifiedStateSync` : confirmés (clés présentes dans le LS).
+- Scopes `cloud-platform`/`userinfo.*`/`cclog`/`experimentsandconfigs` : confirmés.
+- 3 méthodes typées : `loadCodeAssist`, `fetchAvailableModels`, `onboardUser` — corrects.
+
+### Gaps exploitables (ce que l'IDE utilise et que le SDK ne couvre PAS)
+
+**(A) Méthodes RPC manquantes — le SDK n'a que 3/37.** Manquent les méthodes à plus forte valeur :
+- Génération : `streamGenerateContent`, `generateChat`/`streamGenerateChat`, `completeCode`, `tabChat`, **`internalAtomicAgenticChat`** (la boucle agent réelle), `countTokens`.
+- Compte/quota : `fetchUserInfo`, `retrieveUserQuota`, `getCodeAssistGlobalUserSetting`/`set...`, `listModelConfigs`, `listAgents`, `listExperiments`, `fetchAdminControls`, `listCloudAICompanionProjects`.
+- Contexte : `searchSnippets`, `listRemoteRepositories`, `fetchFromTrawlerCache`, `checkUrlDenylist`.
+- Telemetry : `recordClientEvent`, `recordTrajectoryAnalytics`, `registerInteraction`.
+
+**(B) Scope `aicode` + famille Drive.** Le SDK ne demande ni `aicode` ni les scopes Drive, alors que l'agent les utilise (sidecars, lecture Drive). À ajouter à `ANTIGRAVITY_SCOPES` si on veut la parité fonctionnelle.
+
+**(C) Device-code flow.** Le LS supporte `oauth2.googleapis.com/device/code` (login headless sans navigateur, idéal CLI/CI). Le SDK ne fait que le loopback PKCE. **À ajouter** — fort intérêt pour le mode autonome/headless d'aphrody.
+
+**(D) mTLS.** `oauth2.mtls.googleapis.com/token` présent ; le SDK n'utilise que le token endpoint clair.
+
+**(E) Modèles à jour.** Le SDK documente `gemini-2.0-flash` ; l'IDE expose `gemini-3.1-pro`, `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-3.1-flash-image`, `gemini-3-pro-image`, `gemini-coder`, `gemini-v3-byom`. La liste de modèles du SDK est en retard d'une génération.
+
+**(F) Transport gRPC `exa.*`.** Le SDK (par choix documenté) tape les endpoints Google directement en REST/Bearer et ignore le bridge gRPC local `exa.api_server_pb.ApiServerService`. C'est plus portable, mais on perd l'accès à des features purement-locales (cache Trawler, Cascade trajectory, BattleMode). Décision à conserver, mais documenter le gap.
+
+**(G) Concepts produit non modélisés.** `BattleMode` (`battleModeOverrides`), crédits **G1** (`retrieveUserQuota` + `g1-credits`), `BYOM` (`gemini-v3-byom`), Trawler cache, sidecars. Aucune représentation côté SDK.
+
+---
+
+## 8. Recommandations pour `aphrody agy` / `aphrody antigravity` / `aphrody ide`
+
+1. **Étendre `endpoints.rs` aux 37 méthodes `v1internal`** (au moins en constantes `METHOD_*`), en priorité `streamGenerateContent`, `internalAtomicAgenticChat`, `countTokens`, `retrieveUserQuota`, `fetchUserInfo`, `listModelConfigs`. Source de vérité : `var/data/antigravity-ide-re/v1internal-methods.txt`.
+2. **Ajouter le device-code flow** (`oauth2.googleapis.com/device/code`) à `oauth.rs` → débloque `aphrody agy login --headless` pour CI / VPS, aligné §0.1 (zéro humain dans la boucle).
+3. **Mettre à jour `ANTIGRAVITY_SCOPES`** : ajouter `aicode` (et, derrière un flag, la famille Drive) pour parité agent.
+4. **Rafraîchir la liste de modèles** (`models.rs` doc + une éventuelle table) vers la gamme gemini-3.x, et modéliser `BYOM`.
+5. **Sous-commande `aphrody ide inspect <path>`** : généraliser cette RE. Le détecteur `re google` actuel ne regarde que l'exe Electron — **le rendre récursif sur `resources/app/extensions/*/bin/*.exe`** pour attraper les language servers Go embarqués (c'est là que vivent les endpoints). C'est le bug de couverture #1 du pipeline.
+6. **`aphrody re` : ajouter un mode « deep strings sur sidecar binary »** qui extrait hosts `*.googleapis.com`, `v1internal:*`, scopes `auth/*`, client IDs `*.apps.googleusercontent.com`, et services proto `exa.*_pb.*` — exactement les regex utilisés ici. Automatiserait toute la §5.
+7. **Modéliser `retrieveUserQuota` / crédits G1** dans `models.rs` pour exposer le quota Ultra/Enterprise au CLI.
+8. **Conserver** le choix « REST direct vs bridge gRPC local », mais documenter explicitement dans `endpoints.rs` que `exa.api_server_pb.ApiServerService` (cache Trawler, Cascade, BattleMode) est hors périmètre par conception.
+
+---
+
+### Annexe — origine confirmée
+
+Antigravity est un **fork Google de Windsurf / Codeium** : marqueurs `CodeiumGroup@1`, namespace proto `exa.*`, dépendance `@exa/agent-ui-toolkit`, modèle `gemini-2.5-pro-windsurf`, forks `open-remote-ssh/wsl`, commande d'import Windsurf. Le nom de code Google interne est **Jetski** (`google3/third_party/jetski/`), le runtime agent **cortex** (Go), le moteur d'exécution **Cascade** (Windsurf).
+
+
 ## File: docs/research/antigravity-sdk-analysis.md
 
 <!-- SPDX-License-Identifier: Apache-2.0 -->
@@ -41281,6 +42587,53 @@ Consumers: `aphrody-chat::GeminiWebBackend` (native 3.5 Flash chat) and the
 `gemini_deep_research`.
 
 
+## File: docs/research/ghidra-aphrody-integration.md
+
+# Intégrer le ghidra-suite à la pipeline RE d'aphrody
+
+Recherche d'intégration entre **`C:\src\ghidra`** (plugin Claude Code « ghidra-suite » : MCP live + wrapper headless + agents RE, posé sur une install Ghidra 12.x) et la pipeline RE native d'aphrody (`aphrody re`, crate `aphrody-re`, pur Rust).
+
+## Cartographie des deux surfaces
+
+| | aphrody `re` (natif) | ghidra-suite |
+|---|---|---|
+| Techno | Rust pur (goblin, iced-x86), aucun GPL, dans le binaire | Java 21 + Ghidra, externe (install `C:\src\ghidra`) |
+| Vitesse | instantané (ms) | lent (JVM + auto-analysis, secondes→minutes) |
+| Profondeur | triage, sections+entropie, strings, disasm linéaire, OAuth/endpoints (`re google`), magika | décompilation C, CFG, types, xrefs, symboles, decomp par fonction |
+| Surfaces | `re {triage,strings,sections,disasm,google,classify}` | **headless** (`support/analyzeHeadless` + 6 scripts `Export*.java`) ; **live MCP** (`ghidra` → `http://localhost:8080/mcp`, 38 outils GUI) |
+
+Conclusion : **complémentaires, pas concurrents.** `aphrody re` reste le premier passage rapide ; Ghidra fournit la décompilation profonde que le Rust pur ne fait pas. L'intégration doit déléguer à Ghidra en sous-processus (Java non embarquable, install externe) — exactement le modèle déjà utilisé par `aphrody agy` / `aphrody gemini` / `aphrody ide launch`.
+
+## Reco — bridge en couches
+
+### A. Headless : `aphrody re ghidra <binary>` (RECOMMANDÉ en premier — valeur max)
+Nouvelle variante `ReAction::Ghidra` qui prolonge la pipeline `re` du triage vers la décompilation, en réutilisant le wrapper que le ghidra-suite ship déjà.
+- **Résolution Ghidra** (cross-platform, première trouvée) : `$GHIDRA_INSTALL_DIR` > `$GHIDRA_HOME` > détection self-relative du plugin (cf. `find-ghidra.ps1` durci ce jour : walk-up vers `support/analyzeHeadless[.bat]`) > PATH. Sur cette machine → `C:\src\ghidra`.
+- **Exécution** : spawn `analyzeHeadless <projDir> <projName> -import <bin> -scriptPath <ghidra_scripts> -postScript ExportDecompiled.java -deleteProject` (+ `ExportFunctions/ExportSymbols/ExportStrings/ExportCalls` selon flags). Les 6 scripts Java sont à `C:\src\ghidra\skills\ghidra-headless\scripts\ghidra_scripts/`.
+- **Sortie** : JSON sur stdout (contrat scriptable §0.1) — fonctions décompilées, symboles, xrefs.
+- **Latence (directive user)** : Ghidra headless est lent → cette commande est **opt-in explicite**, jamais dans un chemin par défaut. `re triage` (pur Rust, instantané) reste le défaut. Flags `--no-analysis`, `--timeout`, `--scripts a,b` forwardés ; un seul lancement JVM par binaire.
+- **Coût** : ~120 lignes Rust dans un module `re_ghidra.rs` (spawn + résolution + parse), zéro nouvelle dep, zéro GPL (Ghidra = Apache-2.0, et on ne fait que l'invoquer).
+
+### B. Live MCP : enregistrer `ghidra` dans la config MCP d'aphrody (trivial, complémentaire)
+`aphrody mcp` lit `~/.config/aphrody/mcp.json`. Ajouter l'entrée :
+```json
+{ "mcpServers": { "ghidra": { "type": "http", "url": "http://localhost:8080/mcp" } } }
+```
+→ `aphrody mcp list` / `aphrody mcp call ghidra <tool>` pilotent les 38 outils du GUI Ghidra vivant (édition persistée, decomp interactive). **Zéro code Rust** — juste un doc + l'entrée de config. Couvre le cas interactif (binaire déjà chargé) là où A couvre le batch.
+
+### C. Surface agents (optionnel, packaging)
+Le plugin aphrody peut référencer les 8 agents RE du ghidra-suite (binary-triage, malware-analyst, vulnerability-hunter, decompile-cleaner, firmware-analyst, ctf-solver, ds-reverse, 3ds-reverse) pour délégation depuis `aphrody re`/`ide re`. Priorité basse.
+
+## Chaînage cible dans la pipeline
+1. `aphrody re triage <bin>` → format/sections/entropie (instantané) — déjà là.
+2. `aphrody re google <bin>` / `ide re` → endpoints/OAuth (sidecars Go inclus) — déjà là.
+3. **`aphrody re ghidra <bin>` → décompilation C + symboles (A, nouveau)** — quand le triage justifie l'analyse profonde.
+4. `aphrody mcp call ghidra <tool>` → itération interactive sur le GUI (B).
+
+## Décision
+Implémenter **A** (haute valeur, prolonge `re`) puis **B** (config, trivial). C plus tard. A et B sont non-destructifs, opt-in, et respectent l'invariant latence (le défaut reste le Rust instantané).
+
+
 ## File: docs/research/google-local-install-map.md
 
 <!--
@@ -42138,6 +43491,92 @@ via extraction des arms `match method` + sections clés, pas ligne à ligne sur 
 les noms de commandes et la structure de dispatch sont vérifiés).
 </content>
 </invoke>
+
+
+## File: docs/research/re-tooling-landscape.md
+
+# Paysage outillage RE — Rust / Python / décompilation / inspection backend / Go
+
+Recherche d'écosystème pour étoffer la pipeline RE d'aphrody (`aphrody re`, crate `aphrody-re`, pur Rust). Organisé par axe demandé. **Drapeau licence systématique** : aphrody est Apache-2.0 et bannit la GPL pour l'embarqué (cf. CLAUDE.md §7 — `unicorn-engine` GPL déjà banni). « EMBARQUABLE » = licence permissive (MIT/Apache/BSD), peut entrer dans le binaire ; « EXTERNE-ONLY » = GPL ou outil lourd → invoquer en sous-processus seulement ; « FFI » = pont C/C++.
+
+## 1. « Ghidra full-CLI en Rust » — le plus proche
+Il n'existe pas de portage complet de Ghidra en Rust, mais 3 niveaux d'approche :
+
+| Projet | Quoi | Licence / usage |
+|---|---|---|
+| **`rsleigh`** (ShaneBreazeale/rsleigh) | **Le plus proche** : workspace pure-Rust SLEIGH — decoder/lifter multi-arch → P-code, **décompilateur C-like expérimental** + heuristiques malware. `rsleigh-cli` : list/disassemble/**decompile** des fonctions depuis PE/ELF/… | pure-Rust, EMBARQUABLE — candidat #1 pour une decomp native sans Java |
+| **`jingle_sleigh`** / **`libsla`** (mnemonikr) | Bindings Rust idiomatiques à la lib **SLEIGH de Ghidra** (C++) pour disasm P-code ; `sleigh-compiler` compile les `.slaspec`. | FFI vers SLEIGH (Ghidra Apache-2.0) → propre, mais build C++ |
+| **`sleigh-rs`** (rbran) | Parser SLEIGH 100% Rust (P-code). | pure-Rust mais **inachevé**, pas prod |
+| **`rizin-rs`** | Bindings au framework **Rizin** (fork r2) — qui a un décompilateur (`rz-ghidra`/`jsdec`). | FFI/EXTERNE — Rizin est LGPL |
+| **`falcon`** (crates.io/falcon) | Framework d'analyse binaire Rust : lifters ELF/PE (via goblin), IL Falcon, moteur point-fixe (dataflow/abstract interp), exécuteur concret. **Pas un décompilateur** mais la base pour en écrire un. | EMBARQUABLE |
+
+**Reco aphrody** : `rsleigh` pour une voie decomp **native pure-Rust** (à évaluer/benchmarker) ; sinon déléguer à Ghidra headless (cf. `ghidra-aphrody-integration.md`). `falcon` pour l'analyse (CFG/dataflow/IL) si on veut dépasser le triage linéaire actuel.
+
+## 2. Outils RE en Rust (EMBARQUABLES — déjà alignés avec aphrody-re)
+- **`goblin`** (m4b) — parsing ELF/Mach-O/PE cross-platform. *(déjà utilisé par aphrody-re.)*
+- **`yaxpeax-*`** (yaxpeax-arch/x86/arm/…) — décodeurs désasm multi-arch génériques, perfs ≈ capstone/bad64, ajout d'arch trivial. `yaxpeax-dis` = CLI désasm.
+- **`iced-x86`** — désasm/encodeur x86-64 (formatter Intel). *(déjà utilisé par aphrody-re::disasm.)*
+- **`falcon`** — IL + dataflow + symbolic (cf. §1).
+- **`object`** + **`gimli`**/**`addr2line`** — formats objets + DWARF (symboles/lignes).
+- **`symbolic`** (Sentry) — symbolication, debug-id, demangling.
+- **`pdb`** (crate) — PDB Windows. **`rustc-demangle`/`cpp_demangle`/`msvc-demangler`** — démangling.
+- À ÉVITER : `unicorn-engine` (émulation, **GPL banni**).
+
+## 3. Outils RE en Python
+- **`angr`** (BSD) — exécution symbolique/concolique, CFG, path exploration, vuln discovery. EMBARQUABLE côté Python.
+- **`LIEF`** (Apache-2.0) — parse/modifie/assemble PE/ELF/Mach-O ; bindings Python solides.
+- **`Triton`** (Apache-2.0) — DBA : moteur DSE symbolique, taint engine, AST.
+- **`qiling`** (GPLv3 — EXTERNE-ONLY) — émulation/sandbox cross-OS (sur Unicorn).
+- **`miasm`** (cea-sec, **GPLv2 — EXTERNE-ONLY**) — framework RE (asm/disasm multi-arch, IL, JIT emul, simplification/déobfuscation).
+- **`capstone`/`unicorn`/`keystone`** bindings — disasm/emul/asm (Unicorn = GPL → externe).
+- **`pwntools`** — exploitation/CTF. **`pyelftools`**, **`binwalk`** (firmware).
+- **Go-specific** : `GoReSym` (CLI, cf. §5). 
+- **Note pipeline aphrody** : le package `python/aphrody` peut wrapper angr/LIEF/Triton (permissifs) pour des passes que le Rust ne fait pas (symbolic, déobfuscation), sans contaminer le binaire Rust.
+
+## 4. Décompilateurs / parsers pseudo-code
+- **RetDec** (Avast, **MIT**) — décompilateur machine-code retargetable sur LLVM, sortie **C** + langage type-Python. Bindings : `retdec` (crate Rust, via REST), `retdec-python`. EMBARQUABLE (lib) ou via service.
+- **Reko** (**GPLv2 — EXTERNE-ONLY**) — lit le binaire, infère les types, émet du **C structuré**.
+- **dewolf** (Fraunhofer, en Python, sur Ghidra) — décompilateur orienté lisibilité.
+- **Ghidra / Hex-Rays / Binary Ninja** — décompilateurs de référence (externes/commerciaux ; Binary Ninja a une API Rust).
+- **Parsing du pseudo-code produit** : grammaires **tree-sitter C** (`tree-sitter`, `tree-sitter-c` — crates Rust EMBARQUABLES) pour parser/normaliser la sortie C de Ghidra/RetDec en AST exploitable.
+- **`dogbolt.org`** (Decompiler Explorer) — compare dewolf/Ghidra/Hex-Rays/Reko/RetDec/Relyze sur un même binaire ; utile comme **oracle de référence** et API de comparaison.
+- **Reco aphrody** : sortie decomp (Ghidra headless ou rsleigh) → parse via **tree-sitter-c** → AST structuré JSON exposé par `aphrody re`. RetDec (MIT) est l'option de décompilation embarquable la plus propre côté licence.
+
+## 5. Inspection de backend via appels réseau
+Directement pertinent pour l'axe Antigravity (le `language_server` parle **Connect/gRPC** vers `cloudcode-pa.googleapis.com` — cf. `antigravity-re-findings`).
+- **`grpcurl`** (fullstorydev) — cURL pour gRPC : invoque des méthodes, browse le schéma via **server reflection**, fichiers proto, ou protosets.
+- **`grpcui`** — UI web interactive sur reflection. **`buf curl`** (Buf) — client gRPC/Connect moderne. 
+- **`connectrpc/grpcreflect-go`** + `bufbuild/connect-grpcreflect-go` — exposent la reflection compatible gRPC sur tout serveur Connect → `grpcurl`/`grpcui` marchent dessus. (NB : les backends Google ne l'exposent généralement PAS publiquement → s'appuyer sur les `.proto`/descripteurs extraits du binaire Go.)
+- **`mitmproxy`** + **`mitmproxy-grpc`** — interception/MITM HTTP2+gRPC ; **Burp Suite** idem.
+- **`protoscope`** (Google) — décode un wire-format protobuf brut sans schéma. **`protobuf-inspector`**.
+- **`frida`** — instrumentation dynamique (hook des appels au runtime, dump des messages avant chiffrement TLS).
+- **Reco aphrody** : un outil `inspect`/`probe` qui (a) reconstruit les descripteurs proto depuis le binaire Go (déjà à moitié fait via redress, cf. `go/antigravity-langserver-re`), (b) rejoue/observe les RPC Connect via `grpcurl`/`buf` + le token keyless (réutilise `antigravity-sdk`/`aphrody.vertex`), (c) `mitmproxy`/`frida` pour le dynamique. Pur-Rust possible côté client : `tonic` (gRPC) + `prost` (protobuf) + `prost-reflect` (reflection/descripteurs dynamiques) — tous EMBARQUABLES.
+
+## 6. Patterns Go à exploiter
+Structures internes du runtime Go récupérables sans symboles (cf. `antigravity-re-findings` : le `language_server` est un binaire Go strippé google3) :
+- **`pclntab`** (Program Counter Line Table) — mappe adresse→nom de fonction + fichier + bornes ; pierre angulaire de la récupération de symboles. Layouts versionnés (pré-1.2, 1.2, 1.16, 1.18, 1.20, 1.2x).
+- **`moduledata`** — table runtime : layout du fichier + GC + reflection ; point d'entrée vers `typelinks`.
+- **`typelinks` / `rtype`** — récupération des **types** (structs/interfaces) et de leurs noms.
+- **`itab`** — tables de méthodes interface↔type concret (résout les appels dynamiques).
+- **Outils** : **`GoReSym`** (Mandiant, Apache-2.0) — parse pclntab/types/moduledata, basé sur la source runtime Go, multi-versions ; **`gore`** (`github.com/goretk/gore`, lib Go) + **`redress`** (CLI au-dessus de gore) — packages/types/source projection. *(redress a tout porté sur le language_server ; GoReSym a échoué sur le go1.27 interne non publié — cf. findings.)*
+- **Patterns d'exploitation RE** : (1) localiser le magic pclntab → fonctions ; (2) suivre moduledata → typelinks → reconstruire structs/interfaces ; (3) `go version -m` → graphe de modules (vide si build blaze/google3) ; (4) recouvrement de strings Go (longueur-préfixées, pas NUL-terminées → `GoStringUngarbler`/heuristiques) ; (5) itab → dévirtualisation des appels d'interface.
+- **Reco aphrody** : un détecteur Go natif dans `aphrody-re` (parse pclntab/moduledata en Rust pur via `goblin` — pas de dep GPL), exposé `aphrody re go <bin>` ; pour la reconstruction lourde, déléguer à `redress` (sous-processus) comme on délègue à Ghidra. Le module `go/antigravity-langserver-re` est le premier consommateur.
+
+## Synthèse — quoi adopter pour la pipeline aphrody
+1. **Decomp native** : évaluer **`rsleigh`** (pure-Rust SLEIGH+decomp) ; fallback Ghidra headless (doc séparé) ; **RetDec** (MIT) si decomp embarquée voulue.
+2. **Analyse** : **`falcon`** (IL/CFG/dataflow) pour dépasser le triage linéaire ; **`yaxpeax`** pour le multi-arch.
+3. **Pseudo-code** : parser la sortie C via **`tree-sitter-c`** → AST JSON.
+4. **Backend** : client Connect/gRPC pur-Rust **`tonic`+`prost`+`prost-reflect`** + `grpcurl`/`mitmproxy`/`frida` en externe ; descripteurs proto issus du binaire Go.
+5. **Go** : détecteur pclntab/moduledata pur-Rust dans `aphrody-re` (`aphrody re go`) + `redress` externe.
+6. **Python** : wrappers `angr`/`LIEF`/`Triton` (permissifs) dans `python/aphrody` pour symbolic/déobfuscation.
+**Garde-fou licence** : exclure de l'embarqué `miasm`, `qiling`, `unicorn`, `Reko` (GPL) — invocation sous-processus uniquement.
+
+## Sources
+- Rust BA / SLEIGH : rsleigh (github.com/ShaneBreazeale/rsleigh), jingle_sleigh/libsla (github.com/mnemonikr/libsla), sleigh-rs (github.com/rbran/sleigh-rs), falcon (crates.io/crates/falcon), yaxpeax (crates.io/crates/yaxpeax-arch), goblin (github.com/m4b/goblin), rizin-rs (crates.io/crates/rizin-rs), GhidRust (github.com/DMaroo/GhidRust), ReOxide (nlnet.nl/project/ReOxide).
+- Décompilateurs : RetDec (github.com/avast/retdec) + retdec-rust (github.com/s3rvac/retdec-rust), Reko, dewolf, Decompiler Explorer (dogbolt.org).
+- Python : angr, miasm (github.com/cea-sec/miasm), LIEF, Triton, qiling ; re-list (github.com/extremecoders-re/re-list).
+- gRPC/backend : grpcurl (github.com/fullstorydev/grpcurl), connectrpc/grpcreflect-go, mitmproxy-grpc (github.com/aarnaut/mitmproxy-grpc), grpc.io/docs/guides/reflection.
+- Go RE : GoReSym (github.com/mandiant/GoReSym), gore (pkg.go.dev/github.com/goretk/gore), Mandiant "Golang Internals and Symbol Recovery" (cloud.google.com/blog), CUJO AI "Reverse Engineering Go Binaries with Ghidra".
 
 
 ## File: docs/research/vscode-fork-re-intel.md

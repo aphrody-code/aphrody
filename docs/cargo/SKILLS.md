@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Agent Skills — Ecosystem & Centralization
 
-> Last updated: 2026-05-17.
+> Last updated: 2026-05-22.
 > Single source of truth for **agent skills** consumed by Claude Code,
 > Gemini CLI, and the `skill` Rust runtime.
 
@@ -52,6 +52,7 @@ Allowed siblings (all optional):
 |-------------------------------|---------------------------------------------------|----------------------------------------------------------|
 | [`start`](../../.claude/plugins/aphrody/skills/start/SKILL.md)                 | `/start`, "lance", "go"            | Continuous autonomous execution mode (drives PLAN.md)    |
 | [`vps-commander`](../../.claude/plugins/aphrody/skills/vps-commander/SKILL.md) | "start the tunnel"                 | OVH VPS SSH-tunnel operator (chrome/postgres/bun/SOCKS5) |
+| [`google-design`](../../.claude/plugins/aphrody/skills/google-design/SKILL.md) | `/google-design`, any M3 / Gemini / Google Sans / token / color / shape / motion / adaptive question | Canonical Google/Material 3 authority — grounds answers in `docs/design/` + `crates/m3-tokens` + `mui-rs`; reading list = [`notebook-google-design-corpus.md`](../design/notebook-google-design-corpus.md) |
 
 ### 3.2 Project agents (`/.claude/agents/`)
 
@@ -65,6 +66,7 @@ The Trinity Architecture routes per task class:
 | `ffi-architect`    | C++↔Bun FFI zero-allocation architecture                | `Read, Edit, Write, Bash, Glob, Grep`    |
 | `rust-architect`   | Cargo workspaces, FFI boundaries (Fuchsia/Windows-rs)   | `Read, Edit, Write, Bash, Glob, Grep`    |
 | `rust-engineer`    | Rust implementation (Chromium/Google Style)             | `Read, Edit, Write, Bash, Glob, Grep`    |
+| `google-design-researcher` | Google-sources-only design reader (m3.material.io / design.google / developer.android.com / fonts.google.com) — distilled, attributed facts; refuses non-Google systems as authority | `Read, Grep, Glob, universal_web_fetch, docs_auto_search, WebFetch` |
 
 ### 3.3 Global user-scope skills (`~/.claude/skills/`)
 
