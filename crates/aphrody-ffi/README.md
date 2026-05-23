@@ -10,10 +10,11 @@ P/Invoke) — not only by spawning the `aphrody` binary.
 
 The `aphrody` package (`crates/cli/`) is split into a **library** (`src/lib.rs`,
 all command logic) and a **thin binary** (`src/main.rs`, ~25 lines). This crate
-depends on that library and wraps its single entry point — `aphrody::run_from_args`
-— behind a handful of `extern "C"` symbols. Because cargo builds only the
-library target of a dependency, the binary's `#[global_allocator]` is absent
-here and `aphrody-ffi` installs its own `mimalloc`.
+depends on that library and wraps its async entry point — `aphrody::run_async`,
+driven on a persistent `tokio` runtime — behind a handful of `extern "C"`
+symbols. Because cargo builds only the library target of a dependency, the
+binary's `#[global_allocator]` is absent here and `aphrody-ffi` installs its own
+`mimalloc`.
 
 The wrapped command surface is **exit-free** (commands return a `SubprocessExit`
 error rather than calling `process::exit`) and every FFI entry **catches
@@ -33,6 +34,29 @@ panics**, so running aphrody inside a host process never tears the host down.
 
 Arguments exclude the program name — a synthetic `argv[0]` is prepended
 internally — e.g. `["doctor", "--json"]`. The C header is `include/aphrody.h`.
+
+## The C header
+
+`include/aphrody.h` is a hand-written, self-contained, Doxygen-documented C23
+header (it also compiles clean as C17 and C++17, with `-Wall -Wextra -Werror`):
+
+- `#define APHRODY_ABI_VERSION` — compile-time ABI revision, kept in lock-step
+  with the runtime `aphrody_abi_version()` symbol (a Rust unit test parses the
+  header and asserts they agree, so they cannot drift).
+- `enum AphrodyStatus` — typed, `int32_t`-backed status codes (`OK` = 0,
+  `USAGE` = 64, `SOFTWARE` = 70) documenting the values the FFI layer injects.
+  The run functions still return a plain `int` because a wrapped command may
+  exit with any process code, not only this closed set.
+- `APHRODY_NODISCARD` — `[[nodiscard]]` on C23/C++17, else
+  `__attribute__((warn_unused_result))` (GCC/Clang) or `_Check_return_` (MSVC),
+  applied to every function returning a status or an owned pointer.
+- `APHRODY_API` — `__declspec(dllimport/dllexport)` on Windows,
+  `__attribute__((visibility("default")))` on GCC/Clang.
+- `APHRODY_NONNULL` / `APHRODY_RETURNS_NONNULL` / `APHRODY_MALLOC` — portable
+  attribute helpers that degrade to nothing on compilers without them.
+
+These are purely additive diagnostics: the symbol set, signatures, and the ABI
+version are unchanged (still `1`).
 
 ## Build
 
