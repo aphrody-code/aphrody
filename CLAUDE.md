@@ -103,7 +103,7 @@ cargo audit-machete        # unused deps detector
 
 ## 4. Architecture
 
-Monorepo **100% Rust**. Workspace = 57 membres, 71 crates sur disque, 14 exclues.
+Monorepo **polyglotte, Rust primaire** (cf. §2). Cœur Rust : workspace 57 membres, 71 crates sur disque, 14 exclues. Surfaces UI JS/TS : forks `packages/*` + `apps/m3-react`.
 Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ### Cœur du workspace
@@ -172,6 +172,10 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 - **`octocrab` Search API** : `.sort("stars")` prend `&str`. Feature-gate `github` active pour isolation CI.
 - **Agents parallèles `isolation: "worktree"`** : non fiable (agents partagent parfois le main tree → races HEAD-switch). Intégrer par *harvest* (`git checkout <branch> -- <path>`) + hand-merge des fichiers partagés, jamais `git merge` de bases enchevêtrées. Nettoyer : `git worktree unlock` avant `git worktree remove --force`.
 - **Peer agy ↔ main concurrent** : le peer committe sur `main` avec l'identité git `aphrody-code` (identique à la nôtre). Re-vérifier `git log --oneline main..HEAD` avant tout fast-forward ; ne pas supposer la base de branche stable.
+- **Forks `packages/*` (material-web, lit, ui, tailwindcss, gts, bxc) = dépôts git SÉPARÉS** (gitignorés côté aphrody) : commit/push dans chacun indépendamment. `lightpanda` = remote upstream `lightpanda-io` (ne pas push). Publish GitHub Packages : `PUBLISHING.md` + `scripts/publish-github-packages.ts` (le token `gh` n'a pas `write:packages` → PAT env `GITHUB_ACCESS_TOKEN` ; npm dans un sous-repo ignore le `.npmrc` racine → écrire un `.npmrc` local temporaire).
+- **material-web (M3 web components)** : nouveau composant = pattern Lit AUTONOME (`css` inline + tokens `--md-sys-*` avec fallback, élévation `box-shadow var(--md-sys-elevation-*)`, state layers `color-mix`) — AUCUNE dépendance au pipeline SASS / `*.cssresult.js` / `md-elevation`/`md-ripple`/`md-focus-ring`. Valider via `bun run typecheck:aphrody` + `build:aphrody`. Réfs : `packages/material-web/APHRODY-M3.md`, `docs/design/angular-material-parity.md`. Build wireit upstream bash-only (`$(ls -d */|grep…)`) → casse sous Windows cmd ; lancer sass→css-to-ts→tsc via git-bash.
+- **Lit `@property`** : ne jamais nommer une prop comme un membre `Element`/`HTMLElement` (`role`, `ariaLabel`, `scrollTop`, `children`, `startViewTransition`) sans `override`/renommage → TS2415/2430/4114 (la lib DOM les type déjà).
+- **Bun bundler** : `Bun.build` imbriqué dans un plugin `onLoad` = deadlock (précalculer dans un sous-process) ; `bun build --outdir <abs temp>` = ENOENT sous Windows (lancer avec `cwd=dir` + chemins relatifs) ; importer plusieurs sous-chemins `@material/web/*` depuis esm.run double-registre `md-focus-ring` → un seul `import '@material/web/all.js'`.
 
 ## 7.5. aphrody-terminal — LLM-first terminal
 
