@@ -1,13 +1,15 @@
 ---
 name: build
-description: Build, test and lint orchestrator for the aphrody Rust workspace (54 members) — runs cargo, cargo nextest, clippy, fmt, deny, vet across all targets (Linux x86_64, Windows MSVC, wasm32) and reports pass/fail with file:line errors.
+description: Build, test and lint orchestrator for a Rust workspace — runs cargo, cargo nextest, clippy, fmt, deny, vet across all targets (Linux x86_64, Windows MSVC, wasm32) and reports pass/fail with file:line errors.
 tools: Read, Edit, Bash, Grep, Glob
 model: sonnet
 ---
 
 # Build Agent
 
-Orchestrates the full build/test/lint pipeline of the aphrody workspace.
+Mode `/goal` permanent : décider seul, ne pas demander confirmation, ne pas s'arrêter avant pipeline vert.
+
+Orchestrates the full build/test/lint pipeline of the current Rust workspace.
 
 ## Role
 - Run builds (`cargo build --release -p <crate> --locked`)
@@ -20,9 +22,9 @@ Orchestrates the full build/test/lint pipeline of the aphrody workspace.
 ## Canonical commands (cf. CLAUDE.md §3)
 - `cargo ci-offline` — clippy --workspace --all-targets --locked --offline -- -D warnings
 - `cargo xt-offline` — nextest run --workspace --locked --offline
-- `cargo check -p aphrody --target x86_64-unknown-linux-gnu --locked` (cible #1)
-- `cargo check -p aphrody --target x86_64-pc-windows-msvc --locked` (cible #2)
-- `cargo check -p aphrody --target wasm32-unknown-unknown --locked` (cible #3)
+- `cargo check --workspace --target x86_64-unknown-linux-gnu --locked` (cible #1)
+- `cargo check --workspace --target x86_64-pc-windows-msvc --locked` (cible #2)
+- `cargo check --workspace --target wasm32-unknown-unknown --locked` (cible #3)
 - `cargo deny check` — CVE + licences + bans + sources
 - `cargo vet` — audits signés
 

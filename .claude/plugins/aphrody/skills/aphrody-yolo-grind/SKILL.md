@@ -7,10 +7,9 @@ when_to_use: User types "/aphrody-yolo-grind", says "yolo", "grind", "parallèle
 
 # Aphrody YOLO grind — 4-agent parallel production-ready loop
 
-You are tick-driving four parallel YOLO agents per invocation, each owning one
-unblocked `⏳` item from `C:\src\aphrody\docs\PLAN.md`. The mission is
-production-ready completion per item, clean code, real verification (`cargo
-check` + smoke + audit), zero stub.
+Mode `/goal` permanent : objectif persistant, zéro confirmation, le loop ne s'arrête jamais seul.
+
+Paths are relative to the current repo: `$PLAN` = `docs/PLAN.md`, `$COORD` = A2A mailbox dir (peer `.coord/`, e.g. `$WINCLEAN/.coord` on Windows). Tick-drive four parallel YOLO agents per invocation, each owning one unblocked `⏳` item from `$PLAN`. Mission: production-ready completion per item, clean code, real verification (`cargo check` + smoke + audit), zero stub.
 
 ## Operating contract
 
@@ -25,9 +24,9 @@ check` + smoke + audit), zero stub.
 - **No duplicate ownership**: each agent gets a distinct PLAN row + a distinct
   file path family. If two would touch the same file, sequence them.
 - **Heartbeat in the A2A coord channel**: bump
-  `C:\winclean\.coord\heartbeat-aphrody.txt` on every tick + drop a `fact`
-  envelope in `inbox-from-aphrody.jsonl` summarising which 4 items the tick
-  dispatched. This keeps the peer A2A Claude aware of parallel motion.
+  `$COORD/heartbeat-aphrody.txt` on every tick + drop a `fact` envelope in
+  `$COORD/inbox-from-aphrody.jsonl` summarising which 4 items the tick
+  dispatched. Keeps the peer A2A Claude aware of parallel motion.
 
 ## The loop, one tick
 
@@ -93,11 +92,10 @@ No "shipped 4 features" without the per-item breakdown.
 - 3 consecutive ticks ship 0 FAIT — assume PLAN is exhausted or genuinely
   blocked, post a `fact` envelope in the A2A coord channel, end the loop.
 - `cargo check --workspace` fails after a batch and the breakage is not
-  trivially attributable to one of the 4 agents — open an issue describing
-  the cross-agent conflict, end the loop, surface to user.
-- An agent dispatches a destructive operation (force-push, branch delete,
-  publish) — that's a contract violation: end the loop, surface, do not
-  retry.
+  trivially attributable to one of the 4 agents — record the cross-agent
+  conflict in `$PLAN`, end the loop.
+- An agent dispatches a destructive remote operation (force-push, branch
+  delete, publish) — contract violation: end the loop, do not retry.
 
 ## Pairing with /loop
 
@@ -116,9 +114,9 @@ tick (4 agents) and exits, suggesting the user wrap with `/loop`.
 
 | Path | Direction | Role |
 |---|---|---|
-| `C:\src\aphrody\docs\PLAN.md` | read + edit | source of ⏳ items + sink for ✅ flips |
-| `C:\winclean\.coord\inbox-from-aphrody.jsonl` | append | per-tick fact envelope to peer |
-| `C:\winclean\.coord\heartbeat-aphrody.txt` | write | proof-of-life |
+| `$PLAN` (`docs/PLAN.md`) | read + edit | source of ⏳ items + sink for ✅ flips |
+| `$COORD/inbox-from-aphrody.jsonl` | append | per-tick fact envelope to peer |
+| `$COORD/heartbeat-aphrody.txt` | write | proof-of-life |
 | various `crates/*/src/**.rs` + `Cargo.toml` | dispatched-agent writes | the actual production work |
 
 ## Related skills / agents / references

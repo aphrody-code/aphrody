@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# /ship — desarme la boucle et finalise proprement (verify + commit).
+description = "Termine la boucle aphrody : verifie le build/tests, committe, desarme la boucle."
+prompt = """
+!{aphrody agy-loop stop}
+
+Finalisation. Assure-toi que :
+1. le build passe et les tests sont verts ;
+2. tout le travail est committe (Conventional Commits) ;
+3. aucun stub / TODO ne subsiste.
+
+Quand c'est fait, ecris le jeton exact APHRODY_LOOP_DONE seul sur ta derniere ligne.
+"""

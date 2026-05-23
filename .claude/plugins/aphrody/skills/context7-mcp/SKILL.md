@@ -7,6 +7,8 @@ upstream: https://github.com/upstash/context7/tree/master/skills/context7-mcp
 
 # Context7 (via aphrody MCP)
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant réponse complète.
+
 When the user asks about libraries, frameworks, or needs code examples,
 use Context7 — wired into this plugin as **two native Rust tools** on
 the unified `aphrody-mcp` stdio server — to fetch current documentation

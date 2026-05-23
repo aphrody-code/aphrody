@@ -6,10 +6,9 @@ version: "1.0.0"
 
 # winclean-mcp-skills — Microsoft skill namespace
 
-This directory is a **container for 3 nested skills** synced from the
-peer WinClean MCP server (`C:\winclean\`). It is not a stand-alone skill —
-each sub-directory has its own `SKILL.md` and is independently discoverable
-by Claude Code's skill loader.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant complétion.
+
+This directory is a **container for 3 nested skills** synced from the peer WinClean MCP server (`$WINCLEAN`, default `C:\winclean`). Not a stand-alone skill — each sub-directory has its own `SKILL.md`, independently discoverable by the skill loader.
 
 ## Nested skills
 
@@ -21,9 +20,7 @@ by Claude Code's skill loader.
 
 ## Origin
 
-Synced from the WinClean plugin (`C:\winclean\plugins\winclean\skills\`).
-Kept under a single namespace to preserve provenance and simplify mass
-re-sync by copying the upstream `skills/` tree under this directory.
+Synced from the WinClean plugin (`$WINCLEAN/plugins/winclean/skills/`). Kept under one namespace to preserve provenance and simplify mass re-sync.
 
 ## Cross-reference
 

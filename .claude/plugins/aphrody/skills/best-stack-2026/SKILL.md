@@ -9,6 +9,8 @@ metadata:
 
 # Best Rust stack — May 2026 canonical chooser
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant recommandation justifiée.
+
 When a user asks "what should I use for X in Rust?", do not improvise. Do not
 default to the first crate that comes to mind. Consult this table, pick the
 canonical choice, and **explain *why* the alternative was rejected**. Naming
@@ -26,8 +28,10 @@ the obvious option and ruled it out for a reason.
 
 ## Why a curated stack matters
 
-aphrody is **Apache-2.0** and ships across Linux (priority #1), Windows, and
-wasm32. Three failure modes the canonical stack protects against:
+Assume an **Apache-2.0 / permissive** host project shipping across Linux
+(priority #1), Windows, and wasm32 (adapt to the host repo's actual license if
+different — the GPL-contamination guard still applies to permissive projects).
+Three failure modes the canonical stack protects against:
 
 1. **License contamination** — GPL/AGPL crates virally infect Apache-2.0
    binaries at link time. Apex offenders: `unicorn-engine 2.x` (CPU emu),

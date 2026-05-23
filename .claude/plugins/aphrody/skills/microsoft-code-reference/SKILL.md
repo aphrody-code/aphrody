@@ -8,10 +8,9 @@ upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-code-r
 
 # Microsoft Code Reference
 
-Live API / sample-code verification pipeline backed by three native
-Rust tools fused into the unified `aphrody-mcp` binary. The tools
-proxy `https://learn.microsoft.com/api/mcp` in pure Rust (`reqwest` +
-SSE unwrap) — no separate MCP server entry, no JS runtime.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant code vérifié.
+
+Live API / sample-code verification pipeline backed by native Rust tools in the `aphrody-mcp` binary (proxy `https://learn.microsoft.com/api/mcp` via `reqwest` + SSE unwrap; no separate MCP server, no JS runtime). Cross-platform (HTTP-only).
 
 ## Tools
 
@@ -36,8 +35,8 @@ microsoft_code_sample_search(query: "send message service bus", language: "javas
 - Before writing code — find a working pattern to follow
 - After errors — compare your code against a known-good sample
 - Unsure of initialization/setup — samples show complete context
-- Reverse-engineering Windows-only behaviour the aphrody Rust workspace
-  needs to mirror cross-platform (cf. peer repo `C:\src\winclean\`)
+- Reverse-engineering Windows-only behaviour a workspace needs to mirror
+  cross-platform
 
 ## API Lookups
 
@@ -92,9 +91,4 @@ For simple lookups, step 1 alone may suffice. For complex API usage, complete al
 
 ## Rust-specific note
 
-The aphrody workspace is 100 % Rust. When the upstream sample is C# /
-Python / TypeScript, translate to Rust idioms manually — the Microsoft
-Learn MCP does not yet have first-class Rust SDK coverage outside of
-Azure SDK for Rust (preview). For pure-Rust API lookups, prefer the
-`context7` MCP (configured separately) or `docs.rs` direct fetch via
-`aphrody-mcp__universal_web_fetch`.
+When the upstream sample is C# / Python / TypeScript and the host workspace is Rust, translate to Rust idioms manually — Microsoft Learn MCP has limited first-class Rust SDK coverage (Azure SDK for Rust is preview). For pure-Rust lookups, prefer the `context7` MCP or a `docs.rs` fetch via `mcp__aphrody__universal_web_fetch`.

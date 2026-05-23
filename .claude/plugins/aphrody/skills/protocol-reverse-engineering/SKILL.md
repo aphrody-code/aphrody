@@ -2,12 +2,15 @@
 name: protocol-reverse-engineering
 description: Master network protocol reverse engineering including packet analysis, protocol dissection, and custom protocol documentation. Use when analyzing network traffic, understanding proprietary protocols, or debugging network communication. Pairs with `aphrody re triage` (R5) for binary-side RE.
 version: "1.0.0"
-source: synced from C:\src\winclean (the Windows-only specialization of aphrody) on 2026-05-19, WinClean integration footer stripped
+metadata:
+  source: synced from a network-protocol RE skill on 2026-05-19, integration footer stripped
 ---
 
 # Protocol Reverse Engineering
 
-Comprehensive techniques for capturing, analyzing, and documenting network protocols for security research, interoperability, and debugging.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant protocole documenté.
+
+Techniques for capturing, analyzing, and documenting network protocols. Tools below are cross-platform (Wireshark/tshark/tcpdump/mitmproxy/scapy run on Linux/macOS/Windows; on Windows use `npcap` + `Npcap`-backed dumpcap, and an interface name like `\Device\NPF_{...}` instead of `eth0`).
 
 ## Traffic Capture
 

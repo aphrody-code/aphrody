@@ -10,6 +10,8 @@ metadata:
 
 # google-design — the Google/Material 3 authority
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant réponse ancrée + token cité.
+
 When a question touches design, **do not improvise from generic UI knowledge**.
 Answer from the Google canon, grounded in this repo's design package. Cite the
 exact token/spec and where it lives in aphrody.

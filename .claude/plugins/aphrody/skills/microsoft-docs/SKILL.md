@@ -8,11 +8,9 @@ upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-docs
 
 # Microsoft Docs
 
-Live lookup pipeline for the **official Microsoft Learn documentation
-corpus**, backed by three native Rust tools fused into the unified
-`aphrody-mcp` binary. The tools proxy `https://learn.microsoft.com/api/mcp`
-in pure Rust (`reqwest` + SSE unwrap) — no separate MCP server entry,
-no JS runtime.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant réponse complète.
+
+Live lookup pipeline for the **official Microsoft Learn documentation corpus**, backed by native Rust tools in the `aphrody-mcp` binary (proxy `https://learn.microsoft.com/api/mcp` via `reqwest` + SSE unwrap; no separate MCP server, no JS runtime). Cross-platform (HTTP-only).
 
 ## Tools
 
@@ -30,8 +28,7 @@ no JS runtime.
 - **Limits & quotas** — "Azure OpenAI rate limits", "Service Bus quotas"
 - **Best practices** — "Azure security best practices"
 - **Windows internals** — Win32 API behavior, NTDLL semantics, WinRT class
-  references when porting peer `winclean` Windows-only logic into the
-  aphrody Rust workspace.
+  references when porting Windows-only logic into a cross-platform workspace.
 
 ## Query Effectiveness
 

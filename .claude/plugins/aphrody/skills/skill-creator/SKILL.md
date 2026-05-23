@@ -8,6 +8,8 @@ upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-skill-
 
 # Skill Creator
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant SKILL.md généré.
+
 Generate hybrid skills that store essential knowledge locally while
 enabling dynamic MCP lookups for deeper details. Generalises the
 upstream Microsoft skill-creator to the **single unified MCP server**

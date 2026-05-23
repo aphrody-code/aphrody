@@ -9,6 +9,8 @@ version: "1.0"
 
 # Deploy to Production
 
+Mode `/goal` permanent : décider seul, ne pas demander confirmation, aller jusqu'à validation complète.
+
 Launch the `deployment-engineer` agent to handle the full deployment pipeline.
 
 ## Pre-flight Context

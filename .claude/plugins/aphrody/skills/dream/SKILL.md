@@ -9,7 +9,9 @@ version: "2.0"
 
 # Dream — Memory Consolidation
 
-Consolidate memories from recent sessions directly in the current context.
+Mode `/goal` permanent : décider seul, ne pas demander confirmation, finir la consolidation.
+
+Consolidate memories from recent sessions directly in the current context. Paths use `${CLAUDE_PLUGIN_DATA}` so the skill is portable; on Windows the inline `ls`/`wc`/`cat` previews degrade gracefully (use the Glob/Read tools if a shell builtin is missing).
 
 ## Current State
 
