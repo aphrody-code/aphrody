@@ -1,6 +1,7 @@
 ---
 name: microsoft-docs
-description: Understand Microsoft technologies by querying official documentation. Use whenever the user asks how something works, wants tutorials, needs configuration options, limits, quotas, or best practices for any Microsoft technology (Azure, .NET, M365, Windows, Power Platform, etc.) — even if they don't mention "docs." If the question is about understanding a concept rather than writing code, this is the right skill. Source: upstream `microsoftdocs/mcp` (MIT), imported 2026-05-19.
+description: >-
+  Understand Microsoft technologies by querying official documentation. Use whenever the user asks how something works, wants tutorials, needs configuration options, limits, quotas, or best practices for any Microsoft technology (Azure, .NET, M365, Windows, Power Platform, etc.) — even if they don't mention "docs." If the question is about understanding a concept rather than writing code, this is the right skill. Source: upstream `microsoftdocs/mcp` (MIT), imported 2026-05-19.
 license: MIT
 upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-docs
 ---
