@@ -95,6 +95,16 @@ cargo build --release -p aphrody-ffi
 bun run crates/aphrody-ffi/bun/example.ts
 ```
 
+## Consumed by
+
+The `bun/index.ts` here is the **canonical, drift-tested** binding (the
+`header_abi_version_matches` unit test pins it to the C ABI). The sibling Bun
+workspace `C:\src\aphrody-ts` consumes this library through its first-party
+package **`@aphrody-code/native`** (`apps/native`) — a self-contained mirror
+that resolves this repo's cdylib and re-checks the ABI at load. The division of
+labour: aphrody (Rust, here) is the engine and the ABI source of truth;
+aphrody-ts is the in-process consumer.
+
 ## Ownership rules (read before binding from another language)
 
 - A `char *` from `aphrody_run_captured` is **owned by the caller** — release it
