@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-ffi"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+license.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+description            = "Native C-ABI surface for aphrody — load the full CLI in-process from Bun (bun:ffi) or any C host."
+
+[lib]
+name       = "aphrody_ffi"
+# cdylib -> .so / .dll / .dylib for Bun `bun:ffi` dlopen and any C/Zig host.
+# rlib   -> lets `cargo test` / nextest build + unit-test the crate in-process.
+# (staticlib is intentionally omitted: it is rejected on wasm32-unknown-unknown
+#  and Bun only needs the dynamic library; add it per-need for static C linking.)
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Forward aphrody's opt-in command features so a feature-rich cdylib can be
+# built (e.g. `cargo build -p aphrody-ffi --features forensics`). Inactive by
+# default, so the wasm `cargo check` never tries to pull these host-only deps.
+magika    = ["aphrody/magika"]
+forensics = ["aphrody/forensics"]
+index     = ["aphrody/index"]
+images    = ["aphrody/images"]
+firefly   = ["aphrody/firefly"]
+yara      = ["aphrody/yara"]
+
+# The crate wraps the native `aphrody` command surface (tokio + reqwest +
+# rustls), which does not link on wasm32. On wasm the crate compiles to an
+# empty module so `cargo check --target wasm32-unknown-unknown` stays green.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# `aphrody` is the package in crates/cli/ (historical directory name). Depending
+# on its *library* target pulls the full command dispatch in-process; cargo does
+# NOT build the binary target, so the binary's `#[global_allocator]` is absent
+# here and this crate installs its own mimalloc below without a conflict.
+aphrody    = { path = "../cli" }
+mimalloc   = { workspace = true }
+serde_json = { workspace = true }
+tempfile   = { workspace = true }
+# Persistent multi-thread runtime that drives `aphrody::run_async`, so repeated
+# FFI calls amortise the worker-thread spawn cost instead of paying it per call.
+tokio      = { workspace = true }
+
+[target.'cfg(all(not(target_arch = "wasm32"), unix))'.dependencies]
+libc = { workspace = true }
+
+[target.'cfg(all(not(target_arch = "wasm32"), windows))'.dependencies]
+# Same major as the cli crate (0.61) so cargo-deny sees a single resolved
+# version; features unioned across the graph.
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+] }
