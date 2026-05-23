@@ -49,14 +49,13 @@ Le PLAN initial supposait Sprints R-B/R-C/R-E à scaffolder. **Audit code** rév
 | R-E | `aphrody-cron` (single lib.rs) | ✅ shipped | 536 |
 | -- | **Workspace consolidation** (2026-05-19) : 22 crates merged into 6 domain crates (-16 net). See `consolidation_plan.md`. | ✅ shipped | n/a |
 | R-A | R1.1/R1.2/R1.3 diagnostics tui+gemini-runtime | ✅ **false-positives cached rust-analyzer** (sources OK) | n/a |
-| R-E | `aphrody-re` (NEW — reverse engineering) | ❌ **pas encore amorcé** | 0 |
+| R-E | `aphrody-re` (NEW — reverse engineering) | ✅ **shippé** — R5.1-R5.7 DONE (triage/disasm/strings/sections lib + CLI + 4 MCP tools) | ≈18 tests |
 | R-A | R1.4 MCP client dans `aphrody-mcp` | ✅ shipped — tool `aphrody_mcp_call(server, tool, args, config?)` wired sur McpClient stdio/HTTP, 5 unit tests | n/a |
 | R-A | R1.5 cold-start bench criterion | ✅ shipped (`benches/cold_start.rs` + `benches/initialize_handshake.rs` + ledger §4.2/§4.3) | 179 |
-| R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ⏳ | n/a |
-| R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | ⏳ | n/a |
+| R-B | R3.4-R3.7 (migration tool, eviction, schema versioning, recall bench) | ✅ **R3.4-R3.6 DONE** ; R3.7 bench shippé (p95≈172ms brute-force ; <100ms requiert instant-distance HNSW) | n/a |
+| R-D | R4 scraping deep (concurrent, proxy pool, chrome146, HTTP/3) | 🚫 OBSOLÈTE — bxc-engine supprimé du workspace (audit 2026-05-23) | n/a |
 
-**Vrais ⏳ restants prioritaires** : R1.5 (bench cold-start), R3.4 (migration tool),
-R4.1-R4.7 (scraping deep features). R1.4 ✅ closed 2026-05-19 (commit suivant).
+**Statut ⏳ (audit 2026-05-23)** : R3.7 ✅ clos (p95 18.8ms, commit 16e6d7d91) ; R3.8 ✅ clos (providers v3 Honcho/mem0, commit 75f7cc1da) ; R4.1-R4.7 🚫 obsolètes (bxc-engine supprimé) ; R5.8 🚧 bloqué (r2pipe hors cache offline + binaire r2) ; R5.9 ✅ clos 2026-05-23 (yara-x 1.16, `aphrody re yara`, 5/5 + smoke réel). R1.4/R1.5 ✅ clos. R3.4 ✅ clos 2026-05-22.
 
 Les sprints R-B/R-C/R-E sont donc **largement déjà clos** — leur valeur résiduelle est
 en **finition** (tests, docs, wire CLI) plutôt qu'en scaffolding.
@@ -137,13 +136,15 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 | R3.1 | ✅ Trait `MemoryProvider` (`crates/aphrody-memory/src/provider.rs`) : `add/get/search/delete/health/provider_kind` ; dyn-compat compile-time check `dyn_compat_check(Box<dyn MemoryProvider>)` | **DONE** | `cargo doc -p aphrody-memory --no-deps` — trait public |
 | R3.2 | ✅ Adapter `honcho` API **v1** (`/v1/apps/{app}/users/{user}/sessions/{sess}/messages`) dans `crates/aphrody-memory/src/honcho.rs` (298 l.) | **DONE** | `cargo test -p aphrody-memory honcho::` |
 | R3.3 | ✅ Adapter `mem0` API **v1** sync (`POST/GET/DELETE /v1/memories/`, `GET /v1/memories/search`) auth `Authorization: Token <key>` dans `crates/aphrody-memory/src/mem0.rs` (273 l.) | **DONE** | `cargo test -p aphrody-memory mem0::` |
-| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ⏳ | dry-run + JSON diff |
+| R3.4 | Migration tool `aphrody memory migrate --from lancedb --to honcho` | ✅ **DONE** | `crates/aphrody-memory/src/migrate.rs` (impl prod) + wire CLI `MemoryAction::Migrate` a `crates/cli/src/main.rs:958-969` ; `--dry-run` + JSON diff via `MigrationDiff` |
 | R3.5 | Eviction policies : TTL, LRU, max-size (config via `~/.aphrody/memory.json`) | ✅ **DONE** | `cargo test policy_ttl_evicts_after_n_secs` 3/3 pass (eviction.rs, 14 test fns) |
 | R3.6 | Schema versioning : `MemoryEvent v1 → v2` migration sans perte | ✅ **DONE** | `cargo test schema_v1_to_v2_roundtrip` pass (schema.rs : `upgrade_jsonl()` atomic, lossless) |
-| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ✅ **DONE** (bench) / ⏳ p95 | `cargo bench -p aphrody-memory --bench recall` — mesuré p95≈172ms sur `HnswBackend` brute-force ; <100ms requiert swap `instant-distance` HNSW (noté src/hnsw.rs) |
-| R3.8 | **Optionnel** : upgrade Honcho v1→v3 (`api.honcho.dev` workspaces/peers + `POST /peer/{id}/chat`) + mem0 v1→v3 (`POST /v3/memories/add/` async + `event_id` polling). Repousser tant que v1 couvre les besoins ; v3 = breaking changes API | ⏳ backlog | smoke E2E contre v3 endpoints |
+| R3.7 | Recall benchmark : 100k events, query top-10 semantic, p95 < 100 ms | ✅ **DONE** (commit 16e6d7d91) | `HnswBackend::brute_force_search` optimisé (norme query hoistée + dot/norm fusionnés + quickselect top-k) ; p95 **18.8 ms** < 100 ms (~9× le brute-force initial de 172 ms), vérifié réplique `rustc -O` 100k×128 |
+| R3.8 | upgrade Honcho v1→v3 (`api.honcho.dev` workspaces/peers + `POST /peer/{id}/chat`) + mem0 v1→v3 (`POST /v3/memories/add/` async + `event_id` polling) | ✅ **DONE** (commit 75f7cc1da) | providers additifs `HonchoV3Provider`/`Mem0V3Provider` (v1 intact, même `ProviderKind`) ; vérifié réseau-free via mocks axum `tests/v3_smoke.rs` (5 tests) + 9 unit tests ; suite verte |
 
 #### R4 — Scraping bas niveau
+
+> **🚫 PILIER OBSOLÈTE (audit 2026-05-23)** : `bxc-engine` a été supprimé du workspace (aucun crate `bxc`/`scrape` sur disque). R4.1-R4.7 ci-dessous sont abandonnés ; le scraping deep a été livré ailleurs (cf. R-D).
 
 | # | Tâche | Verify |
 |---|---|---|
@@ -173,9 +174,9 @@ tools = Phase 2.
 | R5.4 | Sub-cmd `aphrody re disasm` via `iced-x86 1.21` (`Decoder::with_ip(64, bytes, rip, NONE)` + `IntelFormatter`) | ✅ **DONE** | `aphrody_re::disasm` (lib.rs) + `ReAction::Disasm` (cli/main.rs) ; 6/6 tests ; smoke `aphrody re disasm` exit 0 |
 | R5.5 | Lib API `extract_strings(bytes, min_len, limit)` ASCII + UTF-16LE avec dedup + cap configurable (constantes `STRINGS_MIN_LEN=6`, `STRINGS_SAMPLE_LIMIT=64`). Sub-cmd CLI `aphrody re strings` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test extract_strings_*` 3/3 pass ; `ReAction::Strings` à cli/src/main.rs:540 |
 | R5.6 | Lib retourne `sections[].entropy: Option<f64>` (Shannon entropy bits/byte). Sub-cmd CLI `aphrody re sections` shippé | ✅ **DONE** (lib + CLI wire) | `cargo test shannon_entropy_*` 2/2 pass ; `ReAction::Sections` à cli/src/main.rs:562 |
-| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (`re_triage`/`re_strings`/`re_sections`) / ⏳ (`re_disasm` MCP tool — lib `aphrody_re::disasm` prête depuis R5.4, reste à exposer le tool) | `re_strings`+`re_sections` à google_mcp/src/main.rs:1015,1086 ; build `aphrody-mcp` exit 0 |
-| R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | ⏳ backlog | `cargo build -p aphrody-re --features radare2` |
-| R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ⏳ Phase 2 | smoke avec règles publiques YARA |
+| R5.7 | MCP tools mirror dans `aphrody-mcp` : `re_triage`, `re_disasm`, `re_strings`, `re_sections` | ✅ **DONE** (4/4 : `re_triage`/`re_disasm`/`re_strings`/`re_sections` tous shippés) | `re_disasm` à google_mcp/src/main.rs:1464-1485 ; `re_triage`/`re_strings`/`re_sections` à :1015,1086 ; build `aphrody-mcp` exit 0 |
+| R5.8 | `radare2` FFI binding optionnel (feature `radare2`) via `r2pipe` crate (API Rust non surfacée context7 — smoke test crates.io requis avant pin) | 🚧 BLOQUÉ — `r2pipe` absent du cache offline (repo lockfile-only) + binaire `r2` externe requis | `cargo build -p aphrody-re --features radare2` |
+| R5.9 | `yara-x 1.11+` (BSD-3, VirusTotal) integration : `aphrody re yara --rules rules.yara <binary>` | ✅ **DONE** 2026-05-23 — `yara-x 1.16` (`default-features=false`, feature `inventory`), module `crates/aphrody-re/src/yara.rs` (`scan()` → `YaraReport` JSON : rule_name/namespace/tags/matched_strings) feature-gated `yara` ; CLI `ReAction::Yara` (spawn_blocking, erreur rebuild explicite si feature absente) à cli/main.rs | `cargo test -p aphrody-re --features yara yara::` 5/5 verts ; smoke réel : `aphrody re yara --rules pe.yar aphrody.exe` matche `pe_mz_header` (offset 0, `4d5a`) |
 | R5.10 | ~~`unicorn-engine` (CPU emulator)~~ | 🚨 **DROPPED — GPL-2.0 viral incompatible avec Apache-2.0** | n/a |
 
 ### Anti-portée (drop explicite)
@@ -201,11 +202,11 @@ tools = Phase 2.
 | R1 | `aphrody-mcp initialize` p50 | < 20 ms | ~590 ms observé sur 1er handshake (warm-up tokio dominant) |
 | R2 | Skills auto-forgées / mois actif | ≥ 5 | 0 (feature absente) |
 | R3 | `aphrody-memory` recall p95 (100k events) | < 100 ms | non mesuré |
-| R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 1 (lancedb only) |
+| R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 3 (HonchoProvider + Mem0Provider + SqliteLocal ✅ R3.2-R3.3 DONE) |
 | R4 | bxc DOM-only scrape p50 | < 200 ms | non mesuré (mais bxc `example.com` < 1s end-to-end mesuré 2026-05-19) |
 | R4 | Cloudflare bypass success rate | ≥ 95 % | non mesuré (CF identifié sur example.com mais pas testé contre protection active) |
-| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | feature absente |
-| R5 | MCP tools reverse | 4 | 0 |
+| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | non mesuré (lib shippée R5.1-R5.4, bench a faire) |
+| R5 | MCP tools reverse | 4 | 4 (re_triage, re_disasm, re_strings, re_sections — ✅ R5.7 DONE) |
 
 ---
 
