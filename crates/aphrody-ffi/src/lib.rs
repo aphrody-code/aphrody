@@ -1,0 +1,400 @@
+// SPDX-License-Identifier: Apache-2.0
+//! # aphrody-ffi — aphrody as a native library.
+//!
+//! A thin, stable **C ABI** over the `aphrody` library crate so the *entire*
+//! command surface is reachable in-process from Bun (`bun:ffi`) and any other
+//! C-ABI host (C / C++ / Zig / Python `ctypes` / .NET P/Invoke), not only by
+//! spawning the `aphrody` binary.
+//!
+//! ## Exported symbols
+//!
+//! | Symbol | Purpose |
+//! |---|---|
+//! | `aphrody_abi_version() -> u32` | ABI version for the host to check. |
+//! | `aphrody_version() -> *const c_char` | aphrody version (static, no free). |
+//! | `aphrody_run(argc, argv) -> c_int` | run any command, inherited stdio. |
+//! | `aphrody_run_json(args_json) -> c_int` | same, args as a JSON array. |
+//! | `aphrody_run_captured(args_json) -> *mut c_char` | run + capture; returns `{"code","stdout","stderr"}` JSON (free with `aphrody_string_free`). |
+//! | `aphrody_string_free(*mut c_char)` | free a string this library returned. |
+//! | `aphrody_last_error() -> *const c_char` | last error on this thread (static, no free). |
+//!
+//! Arguments are the command arguments WITHOUT the program name — a synthetic
+//! `argv[0]` is prepended internally — e.g. `["doctor", "--json"]`.
+//!
+//! ## Robustness
+//!
+//! * Every entry point catches Rust panics (`std::panic::catch_unwind`) and
+//!   maps them to an error code, so a panic never unwinds across the C boundary
+//!   and tears the host process down.
+//! * The wrapped command surface is exit-free (commands return an error rather
+//!   than calling `process::exit`), so a command never kills the host.
+//! * `mimalloc` is the global allocator (the `aphrody` library is
+//!   allocator-agnostic, so the cdylib matches the binary's choice here).
+//!
+//! On wasm32 this crate compiles to an empty module — the native command
+//! surface (tokio + reqwest + rustls) does not link on wasm.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod capture;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use native::*;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod native {
+    use std::cell::RefCell;
+    use std::ffi::{c_char, c_int, CStr, CString, OsString};
+    use std::panic::catch_unwind;
+    use std::ptr;
+    use std::sync::{Mutex, OnceLock};
+
+    use crate::capture::with_captured_stdio;
+
+    /// ABI version of the exported symbol set. Bump on any incompatible change.
+    const ABI_VERSION: u32 = 1;
+
+    thread_local! {
+        /// Last error recorded on this thread (the C ABI has no Result channel).
+        static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
+    }
+
+    fn set_last_error<M: Into<Vec<u8>>>(msg: M) {
+        let value = CString::new(msg).unwrap_or_else(|_| {
+            CString::new("error message contained an interior NUL byte")
+                .expect("static message has no NUL")
+        });
+        LAST_ERROR.with(|cell| *cell.borrow_mut() = Some(value));
+    }
+
+    /// Returns the ABI version of this library.
+    #[unsafe(no_mangle)]
+    pub extern "C" fn aphrody_abi_version() -> u32 {
+        ABI_VERSION
+    }
+
+    /// Returns the aphrody version as a static, NUL-terminated UTF-8 string.
+    ///
+    /// The pointer is owned by the library and valid for the entire program
+    /// lifetime — do NOT free it.
+    #[unsafe(no_mangle)]
+    pub extern "C" fn aphrody_version() -> *const c_char {
+        static VERSION: OnceLock<CString> = OnceLock::new();
+        VERSION
+            .get_or_init(|| {
+                CString::new(env!("CARGO_PKG_VERSION")).expect("crate version has no NUL")
+            })
+            .as_ptr()
+    }
+
+    /// Run an aphrody command with inherited stdout/stderr, returning the exit
+    /// code.
+    ///
+    /// `argv` holds the command arguments WITHOUT the program name (a synthetic
+    /// `argv[0]` is prepended internally), e.g. `["doctor", "--json"]`.
+    ///
+    /// # Safety
+    /// `argv` must point to `argc` valid, NUL-terminated C strings, or be NULL
+    /// iff `argc == 0`. The pointers are only read for the duration of the call.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn aphrody_run(argc: c_int, argv: *const *const c_char) -> c_int {
+        let outcome = catch_unwind(|| {
+            // SAFETY: forwarded contract from this function's `# Safety` clause.
+            match unsafe { collect_args(argc, argv) } {
+                Some(args) => run_argv(args),
+                None => {
+                    set_last_error("invalid argv: null pointer or negative argc");
+                    64 // EX_USAGE
+                }
+            }
+        });
+        outcome.unwrap_or_else(|payload| {
+            set_last_error(format!("aphrody panicked: {}", panic_message(&*payload)));
+            70 // EX_SOFTWARE
+        })
+    }
+
+    /// Run an aphrody command from a JSON array of argument strings with
+    /// inherited stdout/stderr, returning the exit code. Ergonomic alternative
+    /// to `aphrody_run` for hosts that pass a JSON string more easily than a
+    /// `char**` (e.g. Bun).
+    ///
+    /// # Safety
+    /// `args_json` must be a valid NUL-terminated UTF-8 C string, or NULL
+    /// (treated as `[]`).
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn aphrody_run_json(args_json: *const c_char) -> c_int {
+        let outcome = catch_unwind(|| {
+            // SAFETY: forwarded contract.
+            match unsafe { parse_json_args(args_json) } {
+                Ok(args) => run_argv(args),
+                Err(message) => {
+                    set_last_error(message);
+                    64
+                }
+            }
+        });
+        outcome.unwrap_or_else(|payload| {
+            set_last_error(format!("aphrody panicked: {}", panic_message(&*payload)));
+            70
+        })
+    }
+
+    /// Run an aphrody command from a JSON array of arguments with stdout AND
+    /// stderr captured, returning a newly-allocated NUL-terminated JSON
+    /// document: `{"code":<int>,"stdout":"<text>","stderr":"<text>"}`.
+    ///
+    /// Returns NULL only on allocation failure (the cause is then retrievable
+    /// via `aphrody_last_error`). The caller MUST free a non-NULL result with
+    /// `aphrody_string_free`.
+    ///
+    /// # Safety
+    /// `args_json` must be a valid NUL-terminated UTF-8 C string, or NULL
+    /// (treated as `[]`).
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn aphrody_run_captured(args_json: *const c_char) -> *mut c_char {
+        let outcome = catch_unwind(|| {
+            // SAFETY: forwarded contract.
+            match unsafe { parse_json_args(args_json) } {
+                Ok(args) => {
+                    // Serialise the process-global stdio redirect across threads.
+                    let _guard = capture_lock();
+                    let (code, out, err) = with_captured_stdio(|| run_argv(args));
+                    json_result(code, &out, &err)
+                }
+                Err(message) => json_result(64, "", &message),
+            }
+        });
+        let json = outcome.unwrap_or_else(|payload| {
+            let message = format!("aphrody panicked: {}", panic_message(&*payload));
+            set_last_error(message.clone());
+            json_result(70, "", &message)
+        });
+        string_to_c(json)
+    }
+
+    /// Free a string previously returned by this library (e.g.
+    /// `aphrody_run_captured`). Passing NULL is a no-op.
+    ///
+    /// # Safety
+    /// `ptr` must be a pointer this library returned and that has not already
+    /// been freed, or NULL.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn aphrody_string_free(ptr: *mut c_char) {
+        if ptr.is_null() {
+            return;
+        }
+        // SAFETY: the caller guarantees `ptr` came from `CString::into_raw` in
+        // this library and is freed exactly once.
+        drop(unsafe { CString::from_raw(ptr) });
+    }
+
+    /// Returns the last error recorded on THIS thread as a static
+    /// NUL-terminated string, or NULL if there is none.
+    ///
+    /// The pointer is valid until the next library call on this thread — copy it
+    /// if you need to keep it. Do NOT free it.
+    #[unsafe(no_mangle)]
+    pub extern "C" fn aphrody_last_error() -> *const c_char {
+        LAST_ERROR.with(|cell| match cell.borrow().as_ref() {
+            Some(value) => value.as_ptr(),
+            None => ptr::null(),
+        })
+    }
+
+    // ---- internal helpers -------------------------------------------------
+
+    /// Process-wide tokio runtime, created lazily on first use, so repeated FFI
+    /// calls do not pay the worker-thread spawn cost on every invocation.
+    fn runtime() -> &'static tokio::runtime::Runtime {
+        static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+        RUNTIME.get_or_init(|| {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .expect("aphrody-ffi: failed to build the tokio runtime")
+        })
+    }
+
+    /// Serialise stdout/stderr capture: the redirect swaps process-global file
+    /// descriptors, so two concurrent captures (e.g. Bun Workers) would corrupt
+    /// each other's save/restore. Lock poison is recovered (the `()` payload is
+    /// meaningless).
+    fn capture_lock() -> std::sync::MutexGuard<'static, ()> {
+        static CAPTURE_LOCK: Mutex<()> = Mutex::new(());
+        CAPTURE_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Best-effort message extracted from a `catch_unwind` panic payload.
+    fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+        payload
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+            .unwrap_or("unknown panic")
+    }
+
+    /// Build the argument vector (synthetic program name + caller args) and
+    /// dispatch on the persistent runtime.
+    fn run_argv(args: Vec<String>) -> i32 {
+        let mut argv: Vec<OsString> = Vec::with_capacity(args.len() + 1);
+        argv.push(OsString::from("aphrody"));
+        argv.extend(args.into_iter().map(OsString::from));
+        runtime().block_on(aphrody::run_async(argv))
+    }
+
+    /// Collect `argc` C strings into owned `String`s (lossy UTF-8).
+    ///
+    /// # Safety
+    /// `argv` must point to `argc` valid NUL-terminated strings (or be NULL iff
+    /// `argc == 0`).
+    unsafe fn collect_args(argc: c_int, argv: *const *const c_char) -> Option<Vec<String>> {
+        let argc = usize::try_from(argc).ok()?;
+        if argc == 0 {
+            return Some(Vec::new());
+        }
+        if argv.is_null() {
+            return None;
+        }
+        let mut out = Vec::with_capacity(argc);
+        for i in 0..argc {
+            // SAFETY: caller guarantees `argv` has `argc` valid entries.
+            let entry = unsafe { *argv.add(i) };
+            if entry.is_null() {
+                return None;
+            }
+            // SAFETY: caller guarantees each entry is a NUL-terminated string.
+            let text = unsafe { CStr::from_ptr(entry) };
+            out.push(text.to_string_lossy().into_owned());
+        }
+        Some(out)
+    }
+
+    /// Parse a JSON array of strings from a C string.
+    ///
+    /// # Safety
+    /// `ptr` must be a valid NUL-terminated string, or NULL (treated as `[]`).
+    unsafe fn parse_json_args(ptr: *const c_char) -> Result<Vec<String>, String> {
+        if ptr.is_null() {
+            return Ok(Vec::new());
+        }
+        // SAFETY: caller guarantees a NUL-terminated string.
+        let raw = unsafe { CStr::from_ptr(ptr) };
+        let text = raw
+            .to_str()
+            .map_err(|_| "args_json is not valid UTF-8".to_string())?;
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            return Ok(Vec::new());
+        }
+        serde_json::from_str::<Vec<String>>(trimmed)
+            .map_err(|err| format!("args_json must be a JSON array of strings: {err}"))
+    }
+
+    /// Render the captured run result as a compact JSON document.
+    fn json_result(code: i32, stdout: &str, stderr: &str) -> String {
+        serde_json::json!({
+            "code": code,
+            "stdout": stdout,
+            "stderr": stderr,
+        })
+        .to_string()
+    }
+
+    /// Move a `String` into a freshly-allocated C string (caller frees via
+    /// `aphrody_string_free`); NULL + recorded error on interior NUL.
+    fn string_to_c(text: String) -> *mut c_char {
+        match CString::new(text) {
+            Ok(value) => value.into_raw(),
+            Err(_) => {
+                set_last_error("result contained an interior NUL byte");
+                ptr::null_mut()
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn abi_version_is_one() {
+            assert_eq!(aphrody_abi_version(), 1);
+        }
+
+        #[test]
+        fn version_is_non_empty_and_stable() {
+            let ptr = aphrody_version();
+            assert!(!ptr.is_null());
+            // SAFETY: aphrody_version returns a valid static C string.
+            let text = unsafe { CStr::from_ptr(ptr) }.to_str().unwrap();
+            assert!(!text.is_empty());
+            // Same static across calls.
+            assert_eq!(aphrody_version(), ptr);
+        }
+
+        #[test]
+        fn parse_json_args_round_trips() {
+            let json = CString::new(r#"["doctor","--json"]"#).unwrap();
+            // SAFETY: valid NUL-terminated string.
+            let args = unsafe { parse_json_args(json.as_ptr()) }.unwrap();
+            assert_eq!(args, vec!["doctor".to_string(), "--json".to_string()]);
+        }
+
+        #[test]
+        fn parse_json_args_null_is_empty() {
+            // SAFETY: NULL is an explicitly handled input.
+            let args = unsafe { parse_json_args(ptr::null()) }.unwrap();
+            assert!(args.is_empty());
+        }
+
+        #[test]
+        fn parse_json_args_rejects_non_array() {
+            let json = CString::new(r#"{"not":"an array"}"#).unwrap();
+            // SAFETY: valid NUL-terminated string.
+            let result = unsafe { parse_json_args(json.as_ptr()) };
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn collect_args_builds_vector() {
+            let first = CString::new("scan").unwrap();
+            let second = CString::new("tree").unwrap();
+            let argv = [first.as_ptr(), second.as_ptr()];
+            // SAFETY: argv has 2 valid entries.
+            let args = unsafe { collect_args(2, argv.as_ptr()) }.unwrap();
+            assert_eq!(args, vec!["scan".to_string(), "tree".to_string()]);
+        }
+
+        #[test]
+        fn collect_args_zero_is_empty() {
+            // SAFETY: argc 0 with NULL argv is explicitly allowed.
+            let args = unsafe { collect_args(0, ptr::null()) }.unwrap();
+            assert!(args.is_empty());
+        }
+
+        #[test]
+        fn json_result_has_expected_shape() {
+            let doc = json_result(3, "hello", "oops");
+            let value: serde_json::Value = serde_json::from_str(&doc).unwrap();
+            assert_eq!(value["code"], 3);
+            assert_eq!(value["stdout"], "hello");
+            assert_eq!(value["stderr"], "oops");
+        }
+
+        #[test]
+        fn last_error_round_trips() {
+            set_last_error("boom");
+            let ptr = aphrody_last_error();
+            assert!(!ptr.is_null());
+            // SAFETY: non-null static-lifetime string set on this thread.
+            let text = unsafe { CStr::from_ptr(ptr) }.to_str().unwrap();
+            assert_eq!(text, "boom");
+        }
+    }
+}
