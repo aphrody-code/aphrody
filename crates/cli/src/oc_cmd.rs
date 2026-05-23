@@ -157,6 +157,9 @@ pub(crate) struct OnboardCommand {
     pub non_interactive: bool,
     pub accept_risk: bool,
     pub force: bool,
+    /// Skip the optional persona files (SOUL / IDENTITY / USER / HEARTBEAT /
+    /// BOOT); AGENTS.md and TOOLS.md are always seeded.
+    pub skip_bootstrap: bool,
 }
 
 #[async_trait]
@@ -178,35 +181,54 @@ impl TerminalCommand for OnboardCommand {
         fs::create_dir_all(&state)
             .into_diagnostic()
             .wrap_err_with(|| format!("create_dir_all {}", state.display()))?;
-        fs::create_dir_all(&workspace)
-            .into_diagnostic()
-            .wrap_err_with(|| format!("create_dir_all {}", workspace.display()))?;
 
-        if cfg.exists() && !self.force {
-            println!(
-                "aphrody is already bootstrapped (config at {}). Pass --force to overwrite.",
-                cfg.display()
-            );
-            return Ok(());
-        }
-
-        let seed = SeedConfig {
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            bootstrapped_at: current_iso8601(),
+        // Seed the agent-home file-map (SOUL / IDENTITY / USER / TOOLS / AGENTS
+        // / HEARTBEAT / BOOT / BOOTSTRAP + memory/ + skills/) via
+        // aphrody-agent-home instead of a bare mkdir. This is what gives the
+        // agent an actual soul that `aphrody chat` injects into the system prompt.
+        let seed_opts = aphrody_agent_home::OnboardOptions {
             workspace: workspace.clone(),
-            accepted_risk: self.accept_risk,
+            skip_bootstrap: self.skip_bootstrap,
+            force: self.force,
         };
-        let body = serde_json::to_string_pretty(&seed)
-            .into_diagnostic()
-            .wrap_err("serialize seed config")?;
-        fs::write(&cfg, body)
-            .into_diagnostic()
-            .wrap_err_with(|| format!("write seed config {}", cfg.display()))?;
+        let report = aphrody_agent_home::onboard::seed_workspace(&seed_opts)
+            .map_err(|e| miette::miette!("seed agent workspace: {e}"))?;
+
+        let already_bootstrapped = cfg.exists() && !self.force;
+        if !already_bootstrapped {
+            let seed = SeedConfig {
+                version: env!("CARGO_PKG_VERSION").to_string(),
+                bootstrapped_at: current_iso8601(),
+                workspace: workspace.clone(),
+                accepted_risk: self.accept_risk,
+            };
+            let body = serde_json::to_string_pretty(&seed)
+                .into_diagnostic()
+                .wrap_err("serialize seed config")?;
+            fs::write(&cfg, body)
+                .into_diagnostic()
+                .wrap_err_with(|| format!("write seed config {}", cfg.display()))?;
+        }
 
         println!("aphrody onboard: bootstrapped");
         println!("  state:     {}", state.display());
         println!("  config:    {}", cfg.display());
         println!("  workspace: {}", workspace.display());
+        if !report.created.is_empty() {
+            println!("  seeded:    {}", report.created.join(", "));
+        }
+        if !report.kept.is_empty() {
+            println!("  kept:      {}", report.kept.join(", "));
+        }
+        if !report.overwritten.is_empty() {
+            println!("  overwrote: {}", report.overwritten.join(", "));
+        }
+        if already_bootstrapped {
+            println!(
+                "Note: config at {} kept (pass --force to overwrite); workspace files seeded where missing.",
+                cfg.display()
+            );
+        }
         if cfg!(windows) {
             // Mirror openclaw onboard.ts:89 — gentle WSL nudge on Windows.
             println!("Note: aphrody runs natively on Windows but WSL2 is recommended for parity.");
@@ -645,6 +667,7 @@ mod tests {
             non_interactive: true,
             accept_risk: true,
             force: false,
+            skip_bootstrap: false,
         };
         cmd.execute(&ctx).await.unwrap();
 
@@ -666,6 +689,7 @@ mod tests {
             non_interactive: true,
             accept_risk: false,
             force: false,
+            skip_bootstrap: false,
         };
         let err = cmd.execute(&ctx).await.unwrap_err();
         assert!(err.to_string().contains("accept-risk"));
@@ -683,6 +707,7 @@ mod tests {
             non_interactive: true,
             accept_risk: true,
             force: false,
+            skip_bootstrap: false,
         }
         .execute(&ctx)
         .await
@@ -710,6 +735,7 @@ mod tests {
             non_interactive: true,
             accept_risk: true,
             force: false,
+            skip_bootstrap: false,
         }
         .execute(&ctx)
         .await
@@ -732,6 +758,7 @@ mod tests {
             non_interactive: true,
             accept_risk: true,
             force: false,
+            skip_bootstrap: false,
         }
         .execute(&ctx)
         .await
@@ -754,6 +781,7 @@ mod tests {
             non_interactive: true,
             accept_risk: true,
             force: false,
+            skip_bootstrap: false,
         }
         .execute(&ctx)
         .await

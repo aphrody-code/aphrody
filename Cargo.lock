@@ -357,6 +357,7 @@ dependencies = [
  "a2a-client-lf",
  "a2a-lf",
  "antigravity-sdk",
+ "aphrody-agent-home",
  "aphrody-chat",
  "aphrody-firefly",
  "aphrody-fsindex",

@@ -156,6 +156,11 @@ notebooklm                = { workspace = true }
 # secret. Native-only: it builds a reqwest::Client (rustls/ring) and reads the
 # credential store, neither of which links on wasm32.
 antigravity-sdk           = { path = "../antigravity-sdk" }
+# `aphrody oc-onboard` seeds the agent-home file-map (SOUL/IDENTITY/USER/TOOLS/
+# AGENTS/HEARTBEAT/BOOT/BOOTSTRAP + memory/ + skills/) via aphrody-agent-home,
+# and `aphrody doctor` reports its bootstrap-budget health. The `git` feature
+# lets oc-onboard git-back the seeded workspace.
+aphrody-agent-home        = { workspace = true, features = ["git"] }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
