@@ -260,16 +260,12 @@ profile.md
 # ----------------------------------------------------------------------------
 # 13. External clones / vendored research mirrors
 # ----------------------------------------------------------------------------
-# NOTE (2026-05-21 polyglot pivot): packages/* hosts forked Bun/TS workspace
-# members that keep their OWN .git (e.g. packages/material-web, fork of
-# material-components/material-web). They are intentionally NOT tracked by the
-# parent monorepo to avoid accidental gitlink embedding — each fork is pushed
-# to its own aphrody-code/* remote. Drop a `!packages/<name>/` negation here if
-# a future package should instead be vendored directly into this repo.
+# NOTE (2026-05-23): the TS/Bun surface (apps/* + packages/* UI forks) was
+# extracted to the sibling repo C:\src\aphrody-ts. The packages/ ignore is no
+# longer needed here; the forks' own .git now lives in aphrody-ts.
 shared/git/
 opt/
 vendor/
-packages/
 
 # ----------------------------------------------------------------------------
 # 14. Locally-regenerated mirrors (never tracked)
@@ -391,10 +387,6 @@ lefthook.yml
 # ----------------------------------------------------------------------------
 # Registered git worktrees (e.g. parallel-agent sandboxes) — never commit.
 .claude/worktrees/
-# Vendored third-party clone with its own .git (text extraction lib).
-/python/langextract/
-# uv build caches nested under python packages.
-**/.uv-cache/
 # Built tool binaries (n2b etc.) — reproducible, not source.
 /bin/
 # Stray scratch outputs.

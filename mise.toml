@@ -1,38 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # ============================================================================
-#  mise.toml — declarative toolchain pinning for the aphrody polyglot monorepo
-#  (https://mise.jdx.dev). One source of truth for the non-Rust toolchains.
+#  mise.toml — toolchain pinning for the aphrody Rust monorepo
+#  (https://mise.jdx.dev).
 #
 #  Rust is intentionally NOT pinned here: it is owned by `rust-toolchain.toml`
 #  (rustup), which carries the channel + components + cross-targets. mise
 #  defers to it automatically. Pinning Rust in both would create a conflict.
 #
-#  Install mise, then `mise install` materialises every tool below at the exact
-#  version. `mise.toml` is the contract; the unified task runner lives in the
-#  root `justfile` (`just build|test|lint|fmt|ci`).
+#  As of 2026-05-23 the non-Rust toolchains were extracted into sibling repos,
+#  each carrying its own mise.toml:
+#    * Bun (TS/JS) → C:\src\aphrody-ts
+#    * Go           → C:\src\aphrody-go
+#    * Python / uv  → C:\src\aphrody-py
 # ============================================================================
-
-[tools]
-# --- Bun: TypeScript/JS runtime + bundler + test runner ---------------------
-#   Drives apps/photoshop-remote, apps/photoshop-uxp and packages/* (Bun
-#   workspace declared in the root package.json + bunfig.toml).
-bun = "1.3.14"
-
-# --- Go: native modules (Go workspace declared in go.work) ------------------
-#   Currently go/aphrody-tokenizer-go (tiktoken + genai bridge).
-go = "1.26.3"
-
-# --- Python: uv-managed workspace (apps/* + libs/* per pyproject.toml) -------
-python = "3.14"
-
-# --- uv: Python package + workspace manager ---------------------------------
-uv = "0.11.14"
 
 [env]
 # Keep tool caches inside the repo's gitignored var/ tree so CI and local
 # builds stay hermetic and reproducible.
 APHRODY_MONOREPO_ROOT = "{{config_root}}"
-
-[settings]
-# Respect rust-toolchain.toml; never let mise shadow rustup's Rust channel.
-idiomatic_version_file_enable_tools = ["python", "go"]
