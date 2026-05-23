@@ -38,6 +38,10 @@ members = [
     # aphrody-memory — async MemoryBackend (JSONL/HNSW/SQLite/LanceDB) +
     # Tier-1 MemoryProvider trait (Mem0 HTTP / Honcho HTTP / SqliteLocal).
     "crates/aphrody-memory",
+    # aphrody-embed — local, offline text embeddings (fastembed/ONNX Runtime).
+    # Opt-in `embeddings` feature, host-only. Produces the dense vectors that
+    # aphrody-memory's HNSW/LanceDB vector stores consume (no external API).
+    "crates/aphrody-embed",
     # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
     "crates/aphrody-gateway",
     # aphrody-mcp — Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728/8414/7591/7636)
@@ -381,6 +385,20 @@ url                = { version = "2" }
 
 # --- aphrody-providers (single-source-of-truth Provider enum) -------------
 aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canary" }
+
+# --- aphrody-embed (local offline text embeddings, fastembed/ONNX) --------
+# Default-features off so consumers opt into the heavy `embeddings` feature.
+aphrody-embed      = { path = "crates/aphrody-embed", version = "1.0.0-canary", default-features = false }
+
+# `fastembed` declared ONCE here as the single source of truth (CLAUDE.md §2 /
+# §5). Pulled only by aphrody-embed behind its `embeddings` feature + a
+# `cfg(not(wasm32))` target gate. Default features disabled (they select
+# native-tls for the ort backend + hf-hub model download); the rustls variants
+# are chosen at the consumer level to honour the rustls-only TLS policy.
+# fastembed pins `ort = "=2.0.0-rc.12"` internally — identical to the pin the
+# `magika` feature already forces, so `ort` resolves to a single version
+# workspace-wide (cargo-deny duplicate-ban clean).
+fastembed          = { version = "5.13.4", default-features = false }
 
 # --- notebooklm (Google NotebookLM Boq RPC client) ------------------------
 notebooklm         = { path = "crates/notebooklm", version = "1.0.0-canary" }
