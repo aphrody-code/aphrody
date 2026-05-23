@@ -4,6 +4,7 @@
 > Plan d'exécution stratégique. Révision : **2026-05-19 (refresh Apex Autonomous Agent — 5 piliers)**.
 > Voir [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) pour le contexte d'ensemble.
 > Audit comparatif amont : [`audits/2026-05-19-hermes-agent-vs-aphrody.md`](audits/2026-05-19-hermes-agent-vs-aphrody.md).
+> Plan dédié soul/identity/workspace : [`plans/agent-home.md`](plans/agent-home.md) (crate `aphrody-agent-home`, 2026-05-23).
 >
 > **MISE À JOUR (2026-05-21) — plusieurs items et statuts ci-dessous sont
 > PÉRIMÉS depuis le nettoyage du workspace :**
