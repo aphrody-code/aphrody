@@ -117,9 +117,10 @@ impl std::fmt::Debug for AphrodySdk {
 }
 
 impl AphrodySdk {
-    /// Construct an SDK instance from a configuration. The backend defaults
-    /// to [`StubBackend::echo()`] when the host has no `gemini` binary on
-    /// `PATH`; otherwise [`GeminiBackend`] is used.
+    /// Construct an SDK instance from a configuration. The backend defaults to
+    /// [`StubBackend::echo()`] — no external `gemini` CLI is probed or spawned
+    /// at startup. Set `APHRODY_GEMINI_CLI=1` to opt into the external
+    /// [`GeminiBackend`] (used only when the `gemini` binary is on `PATH`).
     ///
     /// # Errors
     /// * [`SdkError::InvalidConfig`] when [`SdkConfig::validate`] fails.
@@ -133,21 +134,43 @@ impl AphrodySdk {
             .or_else(|| std::env::current_dir().ok())
             .unwrap_or_else(|| std::path::PathBuf::from("."));
 
-        // Pick the strongest backend available without panicking on missing
-        // runtimes. The stub backend is the universal fallback.
-        let backend: Arc<dyn Backend> = match gemini_runtime::detect().await {
-            Ok(_) => {
-                tracing::debug!(target: "aphrody_sdk", "GeminiBackend selected (gemini CLI present)");
-                Arc::new(GeminiBackend)
+        // Backend selection. The SDK no longer probes / bootstraps the external
+        // `gemini` CLI at construction by default — that eager `gemini --version`
+        // subprocess spawn was a startup dependency on a tool the keyless paths
+        // now replace (and it cost a process launch on every `new()`). The
+        // external CLI backend is opt-in via `APHRODY_GEMINI_CLI` (truthy) for
+        // hosts that explicitly want it; otherwise the universal in-process
+        // [`StubBackend`] is used with zero subprocess launches. Consumers that
+        // need the native keyless transport drive `aphrody-chat`'s
+        // `GeminiWebBackend` directly.
+        let want_cli = std::env::var("APHRODY_GEMINI_CLI")
+            .ok()
+            .is_some_and(|v| matches!(v.trim(), "1" | "true" | "yes" | "on"));
+        let backend: Arc<dyn Backend> = if want_cli {
+            match gemini_runtime::detect().await {
+                Ok(_) => {
+                    tracing::debug!(
+                        target: "aphrody_sdk",
+                        "GeminiBackend selected (APHRODY_GEMINI_CLI opt-in; gemini CLI present)",
+                    );
+                    Arc::new(GeminiBackend)
+                }
+                Err(e) => {
+                    tracing::debug!(
+                        target: "aphrody_sdk",
+                        error = %e,
+                        "APHRODY_GEMINI_CLI set but gemini CLI absent; falling back to StubBackend",
+                    );
+                    Arc::new(StubBackend::echo())
+                }
             }
-            Err(e) => {
-                tracing::debug!(
-                    target: "aphrody_sdk",
-                    error = %e,
-                    "gemini CLI not present; falling back to StubBackend",
-                );
-                Arc::new(StubBackend::echo())
-            }
+        } else {
+            tracing::debug!(
+                target: "aphrody_sdk",
+                "StubBackend selected (no external gemini-cli probe at startup; set \
+                 APHRODY_GEMINI_CLI=1 to opt in)",
+            );
+            Arc::new(StubBackend::echo())
         };
 
         let cfg_arc = Arc::new(config.clone());

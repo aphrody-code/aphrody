@@ -384,7 +384,7 @@ pub fn export_css(theme: &ColorRoles) -> std::string::String {
 /// Mapping from a semantic UI-system token name to the M3 `--md-sys-color-*`
 /// role it aliases. Shared by [`export_shadcn_aliases`] (shadcn/ui variable
 /// names) and [`export_tailwind_theme`] (Tailwind v4 `--color-*` names) so the
-/// two fusion sheets stay in lockstep. See `docs/ui/FUSION-PLAN.md`.
+/// two fusion sheets stay in lockstep. See `docs/design/FUSION-PLAN.md`.
 pub const FUSION_ALIAS_MAP: &[(&str, &str)] = &[
     ("background", "surface"),
     ("foreground", "on-surface"),
@@ -412,7 +412,7 @@ pub const FUSION_ALIAS_MAP: &[(&str, &str)] = &[
 /// `var()` references (theme-independent): emit this sheet *after* the
 /// `export_css` output so shadcn components inherit the live M3 palette, and
 /// light/dark switching flows through automatically. Backs the `registry:theme`
-/// fusion item in `docs/ui/FUSION-PLAN.md`.
+/// fusion item in `docs/design/FUSION-PLAN.md`.
 ///
 /// Only available with the `std` feature.
 ///
@@ -437,7 +437,7 @@ pub fn export_shadcn_aliases() -> std::string::String {
 /// `--color-*` design tokens to the M3 system colors produced by
 /// [`export_css`]. Import this so utilities (`bg-primary`, `text-foreground`,
 /// `border-border`, ...) resolve to the live M3 palette. Backs the Tailwind
-/// side of the fusion described in `docs/ui/FUSION-PLAN.md`.
+/// side of the fusion described in `docs/design/FUSION-PLAN.md`.
 ///
 /// Only available with the `std` feature.
 ///
@@ -464,7 +464,7 @@ pub fn export_tailwind_theme() -> std::string::String {
 /// ([`export_shadcn_aliases`]) and the Tailwind v4 `@theme inline` block
 /// ([`export_tailwind_theme`]), separated by blank lines. This single sheet is
 /// the materialised output of the three-way UI fusion (Material 3 + shadcn +
-/// Tailwind) — see `docs/ui/FUSION-PLAN.md`.
+/// Tailwind) — see `docs/design/FUSION-PLAN.md`.
 ///
 /// Only available with the `std` feature.
 ///
@@ -491,7 +491,7 @@ pub fn export_fusion_css(theme: &ColorRoles) -> std::string::String {
 /// is the part after `--md-sys-color-` (e.g. `"primary"`, `"on-surface-variant"`).
 /// Structured counterpart of [`export_css`], consumed by tooling that builds
 /// JSON token catalogs — e.g. the shadcn `registry:theme` generator behind
-/// `aphrody design tokens --format shadcn-registry` (see `docs/ui/FUSION-PLAN.md`).
+/// `aphrody design tokens --format shadcn-registry` (see `docs/design/FUSION-PLAN.md`).
 /// Order matches [`export_css`].
 ///
 /// Only available with the `std` feature.

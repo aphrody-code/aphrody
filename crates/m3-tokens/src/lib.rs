@@ -26,6 +26,9 @@
 
 #[cfg(feature = "std")] extern crate std;
 
+/// Adaptive layout — M3 breakpoints (window size classes), pane counts, and
+/// recommended navigation/action/dialog component swaps.
+pub mod adaptive;
 pub mod color;
 pub mod hct;
 /// Dynamic color — HCT seed → 13-tone tonal palette generation (the M3

@@ -4,7 +4,7 @@
 //! semantic-variable alias block, and the Tailwind `@theme inline` block.
 //!
 //! Run: `cargo run -p m3-tokens --example fusion > tokens.css`
-//! See `docs/ui/FUSION-PLAN.md`.
+//! See `docs/design/FUSION-PLAN.md`.
 
 fn main() {
     use m3_tokens::color::{BASELINE, export_fusion_css};

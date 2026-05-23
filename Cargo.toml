@@ -609,9 +609,31 @@ byteorder          = { version = "1.5" }
 # No C dependencies, no GPL, compiles on all targets including wasm32.
 # Used by aphrody-re::disasm (Apex Cap R5, Sprint R-E, item R5.4).
 iced-x86           = { version = "1.21" }
+# `yara-x` — pure Rust YARA pattern-matching engine (BSD-3-Clause, no C, no GPL).
+# Used by aphrody-re::yara for `aphrody re yara --rules <rules.yara> <binary>`.
+# Host-only (reads files from disk + compiles YARA rules); not wasm-safe.
+# Pinned to 1.16 (latest stable 2026-05-22). `default-features = false` drops
+# the heavy default-modules bundle (pe-module, elf-module, crypto, protobuf-
+# codegen, …) — we only need the core scanner + the string/pattern engine.
+# The `inventory` feature is required by the build script (either `inventory`
+# or `linkme` must be active — we choose `inventory` for cross-platform
+# compatibility without platform-specific linker tricks).
+yara-x             = { version = "1.16", default-features = false, features = ["inventory"] }
 
 # --- POSIX shim helpers (Linux/macOS bridges) -----------------------------
 nix-cross          = { package = "nix", version = "0.31", default-features = false }
+
+# --- Google Rust crates (org:google, Apache-2.0 / BSD-2-Clause / MIT) ------
+# `zerocopy` — zero-cost memory layout validation + safe casting. Used by
+# aphrody-re::headers for zero-copy PE/ELF magic header inspection.
+# BSD-2-Clause OR Apache-2.0 OR MIT; MSRV 1.56; 599M downloads; active 2026-05.
+zerocopy           = { version = "0.8", features = ["derive"] }
+# `fancy-regex` — regex with backreferences + lookahead/lookbehind. Used by
+# aphrody-re::google for OAuth client-ID pattern extraction. MIT; MSRV 1.66.
+fancy-regex        = { version = "0.18" }
+# `googletest` — GoogleTest-style matchers for Rust (dev-dep only).
+# Apache-2.0; MSRV 1.70; 6.3M downloads; active 2025-06.
+googletest         = { version = "0.14" }
 
 # --- Test / bench / fuzz --------------------------------------------------
 rstest             = { version = "0.26" }
