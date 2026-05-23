@@ -1,3 +1,0 @@
-[submodule "libs/langextract"]
-	path = libs/langextract
-	url = https://github.com/google/langextract
