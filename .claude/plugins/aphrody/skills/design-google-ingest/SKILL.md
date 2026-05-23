@@ -7,6 +7,8 @@ when_to_use: User types "/design-google-ingest", says "scrape design.google", "r
 
 # design-google-ingest — One-shot SPA crawl + curate
 
+Mode `/goal` permanent : décider seul, ne pas demander confirmation, finir le refresh + commit.
+
 Crawls `design.google` end-to-end, materialises the post-hydration DOM of
 every discoverable URL into the local edge-cache, then dispatches the
 `design-google-curator` agent to assemble `docs/DESIGN.md` from the raw

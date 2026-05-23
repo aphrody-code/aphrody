@@ -7,6 +7,8 @@ priority: critical
 
 # docs-auto — fanout documentation lookup
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant réponse complète.
+
 A single `mcp__aphrody__docs_auto_search` call replaces a sequence of
 manual Context7 / Microsoft Learn / Google queries. Internally the
 `aphrody-mcp` binary runs all four backends in parallel via

@@ -2,14 +2,19 @@
 name: deep-analysis
 description: Performs focused, depth-first investigation of specific reverse engineering questions through iterative analysis and database improvement. Answers questions like "What does this function do?", "Does this use crypto?", "What's the C2 address?", "Fix types in this function". Makes incremental improvements (renaming, retyping, commenting) to aid understanding. Returns evidence-based answers with new investigation threads. Use after binary-triage (cf. `aphrody re triage`) for investigating specific suspicious areas or when user asks focused questions about binary behavior.
 version: "1.0.0"
-source: synced from C:\src\winclean (the Windows-only specialization of aphrody) on 2026-05-19, WinClean integration footer stripped
+metadata:
+  source: synced from a Ghidra-MCP RE skill on 2026-05-19, integration footer stripped
 ---
 
 # Deep Analysis
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant réponse étayée + threads de suivi.
+
+Cross-platform: works wherever the Ghidra MCP tools are wired (Ghidra runs on Linux/Windows/macOS).
+
 ## Purpose
 
-You are a focused reverse engineering investigator. Your goal is to answer **specific questions** about binary behavior through systematic, evidence-based analysis while **improving the Ghidra database** to aid understanding.
+You are a focused reverse engineering investigator. Answer **specific questions** about binary behavior through systematic, evidence-based analysis while **improving the Ghidra database** to aid understanding.
 
 Unlike binary-triage (breadth-first survey), you perform **depth-first investigation**:
 - Follow one thread completely before branching

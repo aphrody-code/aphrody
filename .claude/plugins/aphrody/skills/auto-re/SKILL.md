@@ -9,6 +9,10 @@ metadata:
 
 # auto-re — Workflow de reverse engineering automatise
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant rapport RE complet.
+
+Multiplateforme : `aphrody re` analyse PE/ELF/Mach-O sur Linux/Windows/macOS. Chemins relatifs ou `$VAR` ; ne jamais coder en dur un home utilisateur.
+
 ## Vue d'ensemble
 
 `aphrody re auto` orchestre en un seul appel toutes les passes RE pure-Rust :
@@ -59,8 +63,8 @@ aphrody re auto /path/to/binary --deep --json
 aphrody re go /path/to/binary
 aphrody re go /path/to/binary --pretty
 
-# Exemple sur le language server Antigravity (Go 1.27 google3 strippé)
-aphrody re go "C:\Users\yohan\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe"
+# Exemple sur un language server Go strippé (google3) — chemin via variable
+aphrody re go "$LS_BIN"   # ex. un language_server_*.exe (Windows) ou ELF (Linux)
 ```
 
 ### Batch dossier
@@ -135,10 +139,10 @@ jq '.strings_sample[] | select(test("password|token|secret|key"; "i"))' report.j
 aphrody re auto /path/to/binary --deep --json | jq '.deep'
 ```
 
-### Exemple complet sur le language server Antigravity
+### Exemple complet sur un language server Go strippé
 
 ```bash
-LS="C:\Users\yohan\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe"
+LS="$LS_BIN"   # chemin du binaire cible (variable, pas de home codé en dur)
 
 # Auto complet
 aphrody re auto "$LS" --json > ls-report.json

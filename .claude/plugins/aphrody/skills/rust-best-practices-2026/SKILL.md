@@ -7,7 +7,9 @@ source: https://blog.rust-lang.org/ + rust-lang.org WebFetch 2026-05-19
 
 # Rust best practices — May 2026 snapshot
 
-Source-of-truth synthèse pour tout code Rust écrit dans le workspace aphrody.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant complétion.
+
+Synthèse source-of-truth pour tout code Rust écrit dans le workspace courant.
 Couvre **Rust stable courant (1.95.0, 2026-04-16)** + **breakage à venir 1.96
 (2026-05-28)** + **CVE-2026-33056** + **edition 2024 idioms matures**.
 

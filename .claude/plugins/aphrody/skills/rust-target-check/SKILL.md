@@ -9,7 +9,9 @@ disable-model-invocation: true
 
 # rust-target-check — 3-target parallel verifier
 
-Aphrody must compile on the **3 priority cross-platform targets**:
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant verdict complet.
+
+The workspace must compile on the **3 priority cross-platform targets**:
 
 1. `x86_64-unknown-linux-gnu` (Linux Ubuntu 26.04, **target #1 blocking**)
 2. `x86_64-pc-windows-msvc` (Windows 11 Insider Canary, target #2 blocking)
@@ -38,17 +40,13 @@ per `docs/SOURCE_OF_TRUTH.md` rules.
 1. Resolve scope:
    - If `argument-hint` is a crate name → `cargo check -p <name>` on each target
    - If `--workspace` or empty → `cargo check --workspace` on each target
-2. Spawn the 3 cargo processes in parallel via `Bash` (`&` then `wait`):
+2. Spawn the 3 cargo processes in parallel. Linux/macOS (write logs under a temp dir; on Windows use `$env:TEMP` / PowerShell `Start-Job`):
    ```bash
-   cargo check --offline --target x86_64-unknown-linux-gnu --message-format=short > /tmp/aphrody-linux.log 2>&1 &
-   LINUX=$!
-   cargo check --offline --target x86_64-pc-windows-msvc --message-format=short > /tmp/aphrody-win.log 2>&1 &
-   WIN=$!
-   cargo check --offline --target wasm32-unknown-unknown --message-format=short > /tmp/aphrody-wasm.log 2>&1 &
-   WASM=$!
-   wait $LINUX; LINUX_EC=$?
-   wait $WIN;   WIN_EC=$?
-   wait $WASM;  WASM_EC=$?
+   T="${TMPDIR:-/tmp}"
+   cargo check --offline --target x86_64-unknown-linux-gnu --message-format=short > "$T/xc-linux.log" 2>&1 & LINUX=$!
+   cargo check --offline --target x86_64-pc-windows-msvc   --message-format=short > "$T/xc-win.log"   2>&1 & WIN=$!
+   cargo check --offline --target wasm32-unknown-unknown   --message-format=short > "$T/xc-wasm.log"  2>&1 & WASM=$!
+   wait $LINUX; LINUX_EC=$?; wait $WIN; WIN_EC=$?; wait $WASM; WASM_EC=$?
    ```
 3. Report verdict per target:
    | Target | Verdict | Exit code |

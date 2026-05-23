@@ -9,8 +9,9 @@ metadata:
 
 # autopilot — duel Claude + Gemini infini, zéro humain
 
-The aphrody autopilot is a background bash loop that pilots the repository
-end-to-end. Two LLM lanes run in parallel every tick :
+Mode `/goal` permanent : objectif persistant, zéro confirmation, le loop ne s'arrête jamais seul.
+
+The autopilot is a background loop that pilots the repository end-to-end. Two LLM lanes run in parallel every tick :
 
 - **Claude lane** : `claude -p` with a prompt to pick the highest-leverage
   `⏳` item from `docs/PLAN.md` and ship it (implement → `cargo check` →

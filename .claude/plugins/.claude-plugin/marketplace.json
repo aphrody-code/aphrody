@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "aphrody",
-      "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (~9 MB, sub-millisecond cold-start) exposes 42 tools: ex-google_mcp forensics/recon, voice, Context7 + Microsoft Learn docs, PE/ELF RE triage, Gemini web (chat/image/deep-research), screen capture, Adobe Firefly Services (generate/expand/fill), headless cloud Photoshop/Lightroom/Sensei edits, and live in-app Photoshop via a UXP↔WebSocket bridge (batchPlay drives any operation from the inside). Zero JS runtime in the binary, zero secondary MCP server. 2 slash commands (/status, /docs). 21 agents, 34 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+      "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (~9 MB, sub-millisecond cold-start) exposes 42 tools: ex-google_mcp forensics/recon, voice, Context7 + Microsoft Learn docs, PE/ELF RE triage, Gemini web (chat/image/deep-research), screen capture, Adobe Firefly Services (generate/expand/fill), headless cloud Photoshop/Lightroom/Sensei edits, and live in-app Photoshop via a UXP↔WebSocket bridge (batchPlay drives any operation from the inside). Zero JS runtime in the binary, zero secondary MCP server. 2 slash commands (/status, /docs). 22 agents, 36 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
       "author": {
         "name": "aphrody-code",
         "email": "37252373+aphrody-code@users.noreply.github.com",

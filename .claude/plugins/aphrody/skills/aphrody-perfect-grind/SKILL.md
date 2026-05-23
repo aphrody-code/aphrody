@@ -7,9 +7,9 @@ when_to_use: User types "/aphrody-perfect-grind", says "code en boucle", "force 
 
 # Aphrody perfect grind — loop until objectively perfect
 
-You enter forced-loop mode. Every tick is a `/aphrody-yolo-grind` invocation
-(4 parallel YOLO agents) on a 30-second cron, AND every shell + every agent
-you spawn from inside the orchestrator runs `run_in_background: true`.
+Mode `/goal` permanent : objectif persistant, zéro confirmation, ne pas sortir avant PASS de l'oracle.
+
+Forced-loop mode. Every tick is a `/aphrody-yolo-grind` invocation (4 parallel YOLO agents) on a 30-second cron; every shell + agent spawned from the orchestrator runs `run_in_background: true`. `$COORD` = peer A2A mailbox dir.
 
 ## The two hard rules
 
@@ -74,8 +74,8 @@ ONLY break when:
 - **3 consecutive ticks ship 0 FAIT** (PLAN truly exhausted of
   autonomous-actionable + no oracle failure to fix), OR
 - **A destructive remote op is required** (force-push to main, publish to
-  crates.io, push first v* tag — these need user authorization, not a YOLO
-  decision).
+  crates.io, push first v* tag) — end the loop and document the gate; do not
+  perform it autonomously.
 
 NEVER break when:
 - A single agent reports INCOMPLET — next tick covers it.
@@ -128,9 +128,9 @@ CronDelete 2efc754a
 ## A2A protocol integration
 
 Every tick MUST:
-- bump `C:\winclean\.coord\heartbeat-aphrody.txt`
-- append one envelope to `inbox-from-aphrody.jsonl` summarising tick state
-- read `inbox-from-winclean.jsonl` tail for peer asks to factor into next tick
+- bump `$COORD/heartbeat-aphrody.txt`
+- append one envelope to `$COORD/inbox-from-aphrody.jsonl` summarising tick state
+- read `$COORD/inbox-from-winclean.jsonl` tail for peer asks to factor into next tick
 
 When the oracle finally PASSES:
 - post a `fact` envelope `apx-perfect-PASS-<hex>` to peer with the full
@@ -142,8 +142,8 @@ When the oracle finally PASSES:
 |---|---|---|
 | (delegates to /aphrody-yolo-grind for code work) | — | YOLO agents own the writes |
 | `docs/PLAN.md` | read | oracle gate: 0 unblocked ⏳ |
-| `C:\winclean\.coord\inbox-from-aphrody.jsonl` | append | per-tick fact |
-| `C:\winclean\.coord\heartbeat-aphrody.txt` | write | proof-of-life |
+| `$COORD/inbox-from-aphrody.jsonl` | append | per-tick fact |
+| `$COORD/heartbeat-aphrody.txt` | write | proof-of-life |
 
 ## Related
 
