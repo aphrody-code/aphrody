@@ -27,8 +27,6 @@ sha2        = { workspace = true }
 
 [dev-dependencies]
 tokio        = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
-tempfile     = { workspace = true }
-pretty_assertions = { workspace = true }
 # examples/nblm_surface.rs installs a rustls CryptoProvider before the first
 # reqwest::Client (rustls 0.23 requirement, cf. CLAUDE.md section 7).
 rustls       = { workspace = true }

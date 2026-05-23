@@ -48,6 +48,12 @@ images = ["dep:aphrody-images"]
 #   cargo build -p aphrody --features firefly
 firefly = ["dep:aphrody-firefly"]
 
+# YARA-X pattern matching (`aphrody re yara --rules <rules.yara> <binary>`).
+# Pure Rust (BSD-3-Clause). Activates the `yara` feature in aphrody-re.
+# Host-only (reads files + compiles rules at runtime). Build with:
+#   cargo build -p aphrody --features yara
+yara = ["aphrody-re/yara"]
+
 # Cross-platform note (Linux > Windows > wasm) :
 # - `cli` ships a full native binary on Linux/Windows/macOS.
 # - On wasm32-*, only a minimal stub (Version + help) is built, because
