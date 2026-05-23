@@ -7,6 +7,8 @@ source: 32blog.com + sts10/rust-command-line-utilities + repotoire.com 2026-05-1
 
 # Cross-platform CLI toolbelt — May 2026
 
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant complétion.
+
 Toolbelt Rust de remplacement des classics GNU/BusyBox/PowerShell. Tous shippés
 **single static binary**, **identique Linux/Windows/macOS**, **5–50× plus rapide**,
 **respect `.gitignore`** par défaut.
@@ -35,24 +37,20 @@ Toolbelt Rust de remplacement des classics GNU/BusyBox/PowerShell. Tous shippés
 
 ---
 
-## 1. Inventaire installé (aphrody host, 2026-05-19, **15/15 ✅**)
+## 1. Inventaire installé (à détecter sur le host courant)
 
-```text
-rg           ✅ 14.x   /c/Users/yohan/AppData/Local/Microsoft/WinGet/Links/rg
-fd           ✅        /c/Users/yohan/scoop/shims/fd
-sd           ✅ 1.0.0  /c/Users/yohan/.cargo/bin/sd
-eza          ✅        /c/Users/yohan/.cargo/bin/eza
-bat          ✅ 0.26.1 /c/Users/yohan/.cargo/bin/bat
-dust         ✅ 1.2.4  /c/Users/yohan/.cargo/bin/dust
-btm          ✅ 0.12.3 /c/Users/yohan/.cargo/bin/btm
-procs        ✅ 0.14.11/c/Users/yohan/.cargo/bin/procs
-hyperfine    ✅        /c/Users/yohan/.cargo/bin/hyperfine
-just         ✅        /c/Users/yohan/.cargo/bin/just
-zoxide       ✅        /c/Users/yohan/scoop/shims/zoxide
-delta        ✅ 0.19.2 /c/Users/yohan/.cargo/bin/delta
-tokei        ✅ 14.0.0 /c/Users/yohan/.cargo/bin/tokei  (+JSON serialization)
-watchexec    ✅ 2.5.1  /c/Users/yohan/.cargo/bin/watchexec  (+pid1)
-starship     ✅        /c/Users/yohan/scoop/shims/starship
+Détecter ce qui est présent avant de scripter (ne pas supposer un chemin codé en dur) :
+
+```bash
+# Linux/macOS
+for t in rg fd sd eza bat dust btm procs hyperfine just zoxide delta tokei watchexec starship; do
+  command -v "$t" >/dev/null 2>&1 && echo "$t ✅ $(command -v "$t")" || echo "$t ❌"
+done
+```
+```powershell
+# Windows (PowerShell)
+'rg','fd','sd','eza','bat','dust','btm','procs','hyperfine','just','zoxide','delta','tokei','watchexec','starship' |
+  ForEach-Object { $p = (Get-Command $_ -ErrorAction SilentlyContinue).Source; "$_ $(if($p){"✅ $p"}else{'❌'})" }
 ```
 
 ### Bulk install one-shot (reproductibilité fresh host)
@@ -186,14 +184,13 @@ Get-Process | Where Name -like '*cargo*' →  procs cargo
 Measure-Command { ./bin }               →  hyperfine './bin'
 Get-Volume                              →  duf  (Rust : `dust` couvre file-tree, `duf` Go disk-summary)
 Set-Location ..\foo\bar                 →  z bar    (zoxide init dans $PROFILE)
-ipconfig /all                           →  utilise les MCP winclean (cf. memory feedback_winclean_for_windows_pwsh)
-Get-NetTCPConnection                    →  bandwhich  (ou MCP winclean list_tcp_connections)
+ipconfig /all                           →  (Windows-only) `ipconfig` natif ou MCP Win32 dédié
+Get-NetTCPConnection                    →  bandwhich  (ou un MCP Win32 list_tcp_connections)
 ```
 
-**⚠ Important** : pour les ops **Windows-specific** (registre, services,
-scheduled tasks, process memory, DWM, Steam, window mgmt), préférer les MCP
-**winclean** plutôt que tools Rust génériques — ils ont accès Win32 P/Invoke
-direct. Cf. memory [[feedback_winclean_for_windows_pwsh]].
+**⚠ Important (Windows-only)** : pour le registre, services, scheduled tasks,
+process memory, DWM, window mgmt, préférer un MCP Win32 dédié (P/Invoke direct)
+plutôt que des tools Rust génériques.
 
 ---
 

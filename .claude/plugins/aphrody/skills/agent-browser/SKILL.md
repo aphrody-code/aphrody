@@ -8,8 +8,9 @@ hidden: true
 
 # agent-browser
 
-Fast browser automation CLI for AI agents. Chrome/Chromium via CDP with
-accessibility-tree snapshots and compact `@eN` element refs.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant complétion.
+
+Fast browser automation CLI for AI agents (cross-platform: Linux/macOS/Windows). Chrome/Chromium via CDP with accessibility-tree snapshots and compact `@eN` element refs.
 
 Install: `npm i -g agent-browser && agent-browser install`
 

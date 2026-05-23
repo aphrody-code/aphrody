@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "AfterAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aphrody agy-loop hook",
+            "name": "aphrody-loop-guard",
+            "timeout": 30000,
+            "description": "Tant qu'une boucle est armee et que le jeton APHRODY_LOOP_DONE n'a pas ete emis, renvoie decision=deny pour forcer agy a generer un nouveau tour de codage. Garde anti-emballement par plafond d'iterations."
+          }
+        ]
+      }
+    ]
+  }
+}

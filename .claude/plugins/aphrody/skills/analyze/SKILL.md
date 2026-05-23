@@ -9,7 +9,9 @@ version: "1.0"
 
 # Project Analysis & Health Check
 
-Run a comprehensive analysis of the current project. Adapt the checks based on what's present in the project.
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant rapport complet.
+
+Run a comprehensive analysis of the current project. Adapt the checks based on what's present (the `cargo`-specific checks apply only to Rust repos).
 
 ## Checks to Run
 

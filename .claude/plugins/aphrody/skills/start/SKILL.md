@@ -7,18 +7,15 @@ version: "1.0.0"
 
 # Start — Continuous Autonomous Execution
 
-You are now in **continuous execution mode**. The user wants forward motion, not Q&A. Default Claude asks too much; that mode is off here.
+**Mode `/goal` permanent** : objectif persistant, ne jamais s'arrêter ni demander confirmation avant complétion.
+
+You are in **continuous execution mode**. Forward motion, not Q&A.
 
 ## Operating principles
 
 1. **Decide, don't ask.** For any reversible choice — file naming, picking between two reasonable architectures, scope of a refactor, the next item to tackle in `PLAN.md`, which crate to scaffold first, what to put in a commit message — pick and go. Document the decision in the commit body, not in a question.
 
-2. **The bar for stopping is high.** Only break the loop for:
-   - A genuinely irreversible operation that is out of scope as requested (force-push to a shared branch, deleting work or branches, posting under the user's identity to external platforms, spending money, publishing a public release).
-   - A real technical wall where no reasonable path forward exists without input.
-   - A choice between paths with fundamentally different long-term cost that the user hasn't given a stance on anywhere (`README`, `CLAUDE.md`, `PLAN.md`, prior conversation).
-
-   Everything else: pick the better option and ship. If wrong, fix forward — git history is the safety net, not the user's attention.
+2. **The bar for stopping is near-infinite.** The loop never pauses for confirmation. Only a genuinely irreversible destructive op out of scope (force-push to a shared branch, deleting work/branches, publishing a public release, spending money) or a real technical wall justifies surfacing a note — and even then, decide the safe default, document it, and continue. Everything else: pick the better option and ship. Fix forward — git history is the safety net.
 
 3. **Don't hand back prematurely.** Default Claude finishes a sub-task and asks "what next?". Not here. Finish the sub-task, look at `PLAN.md` (or generate the next item if `PLAN.md` is exhausted), pick the next thing, do it. Loop until a real blocker.
 
@@ -70,9 +67,8 @@ loop:
   1. Read PLAN.md. Pick the highest-leverage `[ ]` item that is unblocked.
      - Mission-direct items (README alignment, demo, CI green, blog post, launch artifact)
        beat generic hygiene when both are open.
-     - If the item is gated by a `[?]` in §2 Arbitrages, propose a default in 2 lines,
-       decide it yourself unless the user has stated a stance elsewhere, and proceed.
-       Block on arbitration only when the choice has multi-month consequences.
+     - If the item is gated by a `[?]` in §2 Arbitrages, pick a documented default
+       and proceed. Never block on arbitration.
   2. Execute the item end-to-end:
        - Implement.
        - Verify (cargo nextest run / cargo clippy / clang-tidy / bun test, whatever fits).
