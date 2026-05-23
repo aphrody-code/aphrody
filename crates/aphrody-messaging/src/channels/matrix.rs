@@ -504,6 +504,17 @@ mod tests {
     use super::*;
     use crate::channels::test_util::ENV_LOCK;
 
+    /// Install the rustls `ring` `CryptoProvider` once for the test process —
+    /// the channel builds a `reqwest::Client`, and rustls 0.23+ panics
+    /// `No provider set` without an installed default provider.
+    fn install_rustls_provider() {
+        use std::sync::Once;
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+        });
+    }
+
     #[test]
     fn from_env_fails_on_missing_homeserver() {
         let _guard = ENV_LOCK.lock().unwrap();
@@ -547,6 +558,7 @@ mod tests {
 
     #[test]
     fn from_env_reads_all_vars() {
+        install_rustls_provider();
         let _guard = ENV_LOCK.lock().unwrap();
         unsafe {
             std::env::set_var("MATRIX_HOMESERVER", "https://matrix.example.org");
@@ -573,12 +585,14 @@ mod tests {
 
     #[test]
     fn matrix_channel_id_is_matrix() {
+        install_rustls_provider();
         let ch = MatrixChannel::new("https://matrix.org", "tok", "@bot:matrix.org").expect("valid");
         assert_eq!(ch.id(), "matrix");
     }
 
     #[test]
     fn cs_url_builds_correctly() {
+        install_rustls_provider();
         let ch = MatrixChannel::new("https://matrix.org", "tok", "@bot:matrix.org").expect("valid");
         let url = ch.cs_url("joined_rooms").expect("url");
         assert_eq!(url.as_str(), "https://matrix.org/_matrix/client/v3/joined_rooms");
@@ -586,6 +600,7 @@ mod tests {
 
     #[test]
     fn cs_url_room_send_event() {
+        install_rustls_provider();
         let ch = MatrixChannel::new("https://matrix.org", "tok", "@bot:matrix.org").expect("valid");
         let url = ch.cs_url("rooms/%21roomid%3Amatrix.org/send/m.room.message/txn1").expect("url");
         assert!(url.as_str().contains("rooms/"));

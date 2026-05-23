@@ -1,6 +1,7 @@
 ---
 name: microsoft-code-reference
-description: Find working code samples, verify API signatures, and fix Microsoft SDK errors using official docs. Use whenever the user is writing, debugging, or reviewing code that touches any Microsoft SDK, .NET library, Azure client library, or Microsoft API — even if they don't ask for a "reference." Catches hallucinated methods, wrong signatures, and deprecated patterns. If the task involves producing or fixing Microsoft-related code, this is the right skill. Source: upstream `microsoftdocs/mcp` (MIT), imported 2026-05-19.
+description: >-
+  Find working code samples, verify API signatures, and fix Microsoft SDK errors using official docs. Use whenever the user is writing, debugging, or reviewing code that touches any Microsoft SDK, .NET library, Azure client library, or Microsoft API — even if they don't ask for a "reference." Catches hallucinated methods, wrong signatures, and deprecated patterns. If the task involves producing or fixing Microsoft-related code, this is the right skill. Source: upstream `microsoftdocs/mcp` (MIT), imported 2026-05-19.
 license: MIT
 upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-code-reference
 ---
