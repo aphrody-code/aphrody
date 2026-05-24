@@ -194,6 +194,7 @@ tools = Phase 2.
 - **Memory write d'output LLM brut** : interdit (toujours sanitize via `aphrody-memory::redactor::scrub` avant write).
 - **Reverse engineering de binaires non-autorisés** : `aphrody re` warning + `--accept-tos` flag obligatoire au premier run (audit local-only, jamais d'upload).
 - **Scraping respectant robots.txt** : flag `--respect-robots` par défaut TRUE ; bypass nécessite `--ignore-robots` explicite + log warning.
+- **`aphrody antigravity refresh` cassé** : Google retourne ``400 client_secret is missing`` pour le refresh grant du client OAuth public Antigravity. Ne pas tenter de corriger cote SDK sans disposer du secret. Workaround : relancer l'outil ``agy`` en arriere-plan pour re-minter le token. Re-auth interactive : ``aphrody antigravity login``.
 
 ### Métriques de succès (gate v2.0.0)
 
@@ -226,6 +227,8 @@ tools = Phase 2.
 | **P10 — Cross-platform Google-grade** | binaire `cli` cross-platform, `platform.rs`, aliases multi-target, lints `android-strict` | ✅ |
 | **P11 — Alignement Google complet** | google.json sync, Android NDK targets, MUSL targets, CI matrix, `cargo-fuzz` skeleton, `cargo-auditable` alias, Dockerfile distroless | ✅ |
 | **P13 — Skills ecosystem** | `skill` crate + binaires + 50+ skills documentés + sync upstream | ✅ |
+| **P14 — Desktop GUI app** | Application desktop Tauri v2 + Angular 21.2 + Angular Material 21.2. Backend Rust : ``crates/aphrody-app`` (exclu du workspace core, in-process via ``aphrody::run_captured``). Frontend : ``C:\src\aphrody-ts\apps\desktop``. Positionnement : assistant IA grand public propulse par Gemini. Commit aphrody-ts ``main``. | ✅ |
+| **P15 — Chat resilience agy 401/403** | ``classify_agy_error`` dans ``crates/cli/src/agy_backend.rs`` : intercepte ``SdkError::OAuthServer{401|403}`` et retourne un message court actionnable au lieu du JSON brut Google. Commit ``e5a932da2``. | ✅ |
 
 ## 1. Phases post-pivot (2026-05-17)
 
