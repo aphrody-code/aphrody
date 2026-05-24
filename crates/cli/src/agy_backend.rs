@@ -10,6 +10,7 @@
 //! here as an [`aphrody_chat::backend::ModelBackend`] so the unified chat
 //! turn-loop can default to agy instead of bootstrapping the `gemini` CLI.
 
+use antigravity_sdk::SdkError;
 use antigravity_sdk::client::AntigravityClient;
 use antigravity_sdk::models::{Content, GenerateContentRequest, Part};
 use aphrody_chat::backend::{BackendResponse, ModelBackend};
@@ -76,7 +77,7 @@ impl AgyBackend {
                 self.client
                     .resolve_cloudcode_project()
                     .await
-                    .map_err(|e| ChatError::BackendFailure(format!("loadCodeAssist: {e}")))?
+                    .map_err(|e| classify_agy_error("loadCodeAssist", e))?
                     .ok_or_else(|| {
                         ChatError::BackendFailure(
                             "no cloudaicompanionProject for this account (run \
@@ -101,6 +102,28 @@ fn normalise_model(model: Option<&str>) -> String {
         DEFAULT_AGY_MODEL.to_owned()
     } else {
         bare.to_owned()
+    }
+}
+
+/// Classify an [`SdkError`] from an authenticated Cloud Code call into a
+/// [`ChatError`].
+///
+/// A `401`/`403` from Google means the agy (Antigravity) OAuth token is expired
+/// or lacks the required scope/tier. We surface a SHORT, actionable message —
+/// and deliberately drop the raw Google JSON error body — so every caller
+/// (including the desktop GUI, which renders the captured `stderr` verbatim) can
+/// prompt a re-auth instead of dumping a nested error blob. Every other error
+/// keeps the contextual `agy {stage}: {err}` form for debugging.
+fn classify_agy_error(stage: &str, err: SdkError) -> ChatError {
+    match err {
+        SdkError::OAuthServer { status: status @ (401 | 403), .. } => {
+            ChatError::BackendFailure(format!(
+                "agy (Antigravity) token rejected by Google (HTTP {status}). The Google AI \
+                 session has expired — re-authenticate with `aphrody antigravity login`, or use \
+                 `aphrody chat --web` (keyless web transport) or `--stub` (offline)."
+            ))
+        },
+        other => ChatError::BackendFailure(format!("agy {stage}: {other}")),
     }
 }
 
@@ -152,7 +175,7 @@ impl ModelBackend for AgyBackend {
                 &req,
             )
             .await
-            .map_err(|e| ChatError::BackendFailure(format!("agy generateContent: {e}")))?;
+            .map_err(|e| classify_agy_error("generateContent", e))?;
 
         let resolved_model = resp.model_version.clone();
         let content = resp.first_text().ok_or_else(|| {
@@ -188,5 +211,55 @@ mod tests {
     fn normalise_model_strips_vendor_prefix() {
         assert_eq!(normalise_model(Some("gemini/gemini-2.5-flash")), "gemini-2.5-flash");
         assert_eq!(normalise_model(Some("gemini-2.0-flash")), "gemini-2.0-flash");
+    }
+
+    #[test]
+    fn classify_agy_error_maps_401_to_actionable_message() {
+        // A 401 carrying a raw Google JSON body must become a short, actionable
+        // re-auth message that NEVER leaks the body into the UI.
+        let err = SdkError::OAuthServer {
+            status: 401,
+            body: "{\"error\":{\"message\":\"invalid authentication credentials\"}}".to_owned(),
+        };
+        let mapped = classify_agy_error("generateContent", err).to_string();
+        assert!(mapped.contains("401"), "status surfaced: {mapped}");
+        assert!(
+            mapped.contains("aphrody antigravity login"),
+            "actionable re-auth hint present: {mapped}"
+        );
+        assert!(
+            !mapped.contains("invalid authentication credentials"),
+            "raw Google JSON body must not leak: {mapped}"
+        );
+    }
+
+    #[test]
+    fn classify_agy_error_maps_403_scope_failure() {
+        let err =
+            SdkError::OAuthServer { status: 403, body: "ACCESS_TOKEN_SCOPE_INSUFFICIENT".to_owned() };
+        let mapped = classify_agy_error("generateContent", err).to_string();
+        assert!(mapped.contains("403"), "status surfaced: {mapped}");
+        assert!(
+            !mapped.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT"),
+            "raw body must not leak: {mapped}"
+        );
+    }
+
+    #[test]
+    fn classify_agy_error_preserves_non_auth_errors() {
+        // A non-auth SDK error keeps the contextual stage + full message so
+        // debugging information is not lost.
+        let mapped = classify_agy_error("loadCodeAssist", SdkError::EmptyCredential).to_string();
+        assert!(mapped.contains("loadCodeAssist"), "stage preserved: {mapped}");
+    }
+
+    #[test]
+    fn classify_agy_error_preserves_non_401_oauth_status() {
+        // A 5xx from the OAuth server is a transient server fault, not an
+        // expired token — it must keep the raw detail (stage + status).
+        let err = SdkError::OAuthServer { status: 503, body: "upstream unavailable".to_owned() };
+        let mapped = classify_agy_error("generateContent", err).to_string();
+        assert!(mapped.contains("generateContent"), "stage preserved: {mapped}");
+        assert!(mapped.contains("503"), "status preserved: {mapped}");
     }
 }
