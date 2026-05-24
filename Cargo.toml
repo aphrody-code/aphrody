@@ -9,6 +9,9 @@ members = [
     # aphrody-ffi — the full CLI as a native C-ABI cdylib for Bun (bun:ffi) and
     # any C host. Wraps the `aphrody` library's run_from_args; host-only.
     "crates/aphrody-ffi",
+    # aphrody-stdio-capture — in-process stdout/stderr capture (dup2 / SetStdHandle),
+    # shared by aphrody-ffi + the Tauri app. Distinct from aphrody-capture (screen).
+    "crates/aphrody-stdio-capture",
     "crates/backend",
     "crates/base",
     "crates/google_mcp",
@@ -392,6 +395,7 @@ aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canar
 # --- aphrody-embed (local offline text embeddings, fastembed/ONNX) --------
 # Default-features off so consumers opt into the heavy `embeddings` feature.
 aphrody-embed      = { path = "crates/aphrody-embed", version = "1.0.0-canary", default-features = false }
+aphrody-stdio-capture = { path = "crates/aphrody-stdio-capture", version = "1.0.0-canary" }
 
 # `fastembed` declared ONCE here as the single source of truth (CLAUDE.md §2 /
 # §5). Pulled only by aphrody-embed behind its `embeddings` feature + a

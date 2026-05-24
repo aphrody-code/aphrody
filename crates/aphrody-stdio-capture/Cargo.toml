@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-stdio-capture"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+license.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+description            = "Cross-platform in-process stdout/stderr capture (dup2 on unix / SetStdHandle on Windows, to a temp file). Shared by aphrody-ffi and the Tauri app. Distinct from aphrody-capture (Windows screen capture)."
+
+[lints]
+workspace = true
+
+# Host-only: the capture mechanism redirects the OS standard streams. On wasm32
+# the crate is an empty module so a workspace-wide `cargo check --target wasm32`
+# stays green.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tempfile = { workspace = true }
+
+[target.'cfg(all(not(target_arch = "wasm32"), unix))'.dependencies]
+libc = { workspace = true }
+
+[target.'cfg(all(not(target_arch = "wasm32"), windows))'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+] }

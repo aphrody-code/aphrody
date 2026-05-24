@@ -46,9 +46,6 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[cfg(not(target_arch = "wasm32"))]
-mod capture;
-
-#[cfg(not(target_arch = "wasm32"))]
 pub use native::*;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -59,7 +56,7 @@ mod native {
     use std::ptr;
     use std::sync::{Mutex, OnceLock};
 
-    use crate::capture::with_captured_stdio;
+    use aphrody_stdio_capture::with_captured_stdio;
 
     /// ABI version of the exported symbol set. Bump on any incompatible change.
     ///

@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Plan — aphrody desktop/mobile GUI on Tauri v2
 
-**Status: PLANNED** — decision settled, awaiting go-ahead to implement P0.
+**Status: P0 DONE** — pure-Rust foundation landed (commit pending); P1 (Tauri scaffold) next.
 
 Decision basis (read these first): `docs/tauri/{README,architecture,aphrody-integration,risks,ui-framework}.md`
 and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practices}.md`.
@@ -27,9 +27,9 @@ and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practice
 ## Phases
 
 ### P0 — Foundation (pure Rust, reversible, improves the core now)
-- [ ] **T0.1** `crates/aphrody-capture`: lift `with_captured_stdio` (dup2 / SetStdHandle + tempfile + mutex) out of `crates/aphrody-ffi/src/capture.rs` into a new shared workspace-member crate; `aphrody-ffi` depends on it (dedup, no behaviour change).
-- [ ] **T0.2** cli lib structured entry: `pub async fn run_captured(args) -> CapturedRun { code, stdout, stderr }` in `crates/cli/src/lib.rs`, using `aphrody-capture`. Closes the one gap (`run_async` only returns an exit code + inherits stdio). `aphrody-ffi::aphrody_run_captured` re-points to it (single capture path, more dedup).
-- [ ] **T0.3** Gate: clippy `-D warnings` + nextest + 3-target check + `cargo check -p aphrody`. Mergeable independently of Tauri — it is a clean refactor that benefits the existing FFI surface.
+- [x] **T0.1** `crates/aphrody-stdio-capture` (the name avoids a collision with the existing `aphrody-capture` = Windows screen capture): lift `with_captured_stdio` (dup2 / SetStdHandle, temp file) out of `crates/aphrody-ffi/src/capture.rs` into a new shared, host-only workspace-member crate (wasm = empty module); `aphrody-ffi` depends on it (dedup, no behaviour change). **DONE.**
+- [x] **T0.2** cli lib structured entry: `pub fn run_captured(args) -> CapturedRun { code, stdout, stderr }` (sync; wraps the dispatch in `aphrody_stdio_capture::with_captured_stdio`) + `CapturedRun` (`Serialize`, for Tauri `#[command]`s) in `crates/cli/src/lib.rs`. Closes the one gap (`run_async` only returns an exit code + inherits stdio). aphrody-ffi keeps its own persistent-runtime path but shares the capture crate. **DONE.**
+- [x] **T0.3** Gate: clippy `-D warnings` + nextest 16/16 (incl. 2 new capture tests) + wasm32 check + cdylib rebuild + Bun smoke. All green. **DONE.**
 
 ### P1 — `crates/aphrody-app` scaffold (Tauri, build-excluded)
 - [ ] **T1.1** `crates/aphrody-app` added to `[workspace.exclude]` (NOT members); own `Cargo.toml` + `Cargo.lock`. Deps: `aphrody` (cli lib, path), `aphrody-capture`, `tauri` v2, `serde`.
@@ -61,4 +61,4 @@ and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practice
 
 ## First step
 
-**T0.1 + T0.2** (`crates/aphrody-capture` + `aphrody::run_captured`) — pure Rust, reversible, and it de-duplicates `aphrody-ffi`'s capture path as a bonus. Safe to land before committing to the rest of the Tauri tree.
+**T0.1 + T0.2 are DONE** (`crates/aphrody-stdio-capture` + `aphrody::run_captured`) — pure Rust, reversible, and it de-duplicated `aphrody-ffi`'s capture path as a bonus. Next: **P1** (`crates/aphrody-app`, the build-excluded Tauri scaffold).

@@ -161,6 +161,9 @@ antigravity-sdk           = { path = "../antigravity-sdk" }
 # and `aphrody doctor` reports its bootstrap-budget health. The `git` feature
 # lets oc-onboard git-back the seeded workspace.
 aphrody-agent-home        = { workspace = true, features = ["git"] }
+# In-process stdout/stderr capture backing `aphrody::run_captured` (the
+# structured entry the Tauri app + aphrody-ffi consume). Host-only.
+aphrody-stdio-capture     = { workspace = true }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
