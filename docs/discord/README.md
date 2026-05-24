@@ -30,6 +30,7 @@ Documentation Discord pour aphrody, sous **deux angles complementaires** :
 |---|---|
 | [`client-electron-re.md`](client-electron-re.md) | Anatomie du client desktop : Electron, Chromium 138, asar, 15 modules natifs, V8, Squirrel |
 | [`web-network-recon.md`](web-network-recon.md) | DNS/IP/Cloudflare, 51 sous-domaines, frameworks frontend/backend, modele d'authentification |
+| [`client-poc.md`](client-poc.md) | Preuves de concept : langage/framework, lecture memoire (CDP+RPM), plugin BetterDiscord, injection (Frida/CIG), chargement de discord_voice.node |
 
 ## Faits cles (synthese)
 
