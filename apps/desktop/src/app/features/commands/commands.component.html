@@ -1,0 +1,159 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<div class="cmd-page">
+  <header class="cmd-head">
+    <div class="cmd-icon">
+      <mat-icon class="material-symbols-outlined">apps</mat-icon>
+    </div>
+    <div class="cmd-head-text">
+      <h1>Commandes</h1>
+      <p>
+        Toute la surface du CLI aphrody — {{ allCommands.length }} commandes, chacune exécutable.
+        Les vues spécialisées (reverse, réseau, forensics, diagnostic) restent accessibles via les
+        liens des cartes concernées.
+      </p>
+    </div>
+  </header>
+
+  <div class="search-bar">
+    <mat-icon class="material-symbols-outlined">search</mat-icon>
+    <input
+      placeholder="Filtrer par nom, description ou groupe…"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+      aria-label="Filtrer les commandes"
+    />
+    @if (query()) {
+      <button class="clear-btn" (click)="query.set('')" aria-label="Effacer">
+        <mat-icon class="material-symbols-outlined">close</mat-icon>
+      </button>
+    }
+    @if (probing()) {
+      <mat-spinner diameter="16" class="probe-spinner"></mat-spinner>
+    }
+  </div>
+
+  @if (filteredGroups().length === 0) {
+    <p class="empty">Aucune commande ne correspond à « {{ query() }} ».</p>
+  }
+
+  @for (group of filteredGroups(); track group.label) {
+    <section class="cmd-group">
+      <div class="group-header">
+        <mat-icon class="material-symbols-outlined group-icon">{{ group.icon }}</mat-icon>
+        <h2>{{ group.label }}</h2>
+        <span class="group-count">{{ group.commands.length }}</span>
+      </div>
+
+      <div class="cmd-grid">
+        @for (cmd of group.commands; track cmd.name) {
+          <div
+            class="cmd-card"
+            [class.expanded]="card(cmd.name).expanded"
+            [class.absent]="card(cmd.name).absent"
+          >
+            <!-- Card header row -->
+            <div class="cmd-row" (click)="toggle(cmd)">
+              <mat-icon class="material-symbols-outlined cmd-glyph" [class.gated]="cmd.gate !== null">
+                {{ cmd.icon }}
+              </mat-icon>
+              <div class="cmd-text">
+                <div class="cmd-name-row">
+                  <code class="cmd-name">aphrody {{ cmd.name }}</code>
+                  @if (cmd.gate !== null) {
+                    <span class="gate-badge" [matTooltip]="featureNote(cmd.gate)">(F)</span>
+                  }
+                  @if (cmd.deepLink) {
+                    <a
+                      class="deep-link"
+                      [routerLink]="cmd.deepLink"
+                      (click)="$event.stopPropagation()"
+                      matTooltip="Ouvrir la vue dédiée"
+                      aria-label="Vue dédiée"
+                    >
+                      <mat-icon class="material-symbols-outlined">open_in_new</mat-icon>
+                    </a>
+                  }
+                </div>
+                <span class="cmd-desc">{{ cmd.desc }}</span>
+              </div>
+              <button class="expand-btn" [attr.aria-label]="card(cmd.name).expanded ? 'Réduire' : 'Développer'">
+                <mat-icon class="material-symbols-outlined">
+                  {{ card(cmd.name).expanded ? "expand_less" : "expand_more" }}
+                </mat-icon>
+              </button>
+            </div>
+
+            <!-- Expanded body: feature-gate note OR help + run form -->
+            @if (card(cmd.name).expanded) {
+              <div class="cmd-body">
+                @if (card(cmd.name).absent) {
+                  <p class="gate-note">
+                    <mat-icon class="material-symbols-outlined">construction</mat-icon>
+                    {{ featureNote(cmd.gate) }} — cette commande est absente du binaire en cours.
+                  </p>
+                } @else {
+                  <!-- Real --help output -->
+                  @if (card(cmd.name).helpLoading) {
+                    <div class="help-loading">
+                      <mat-spinner diameter="16"></mat-spinner>
+                      <span>Chargement de l'aide…</span>
+                    </div>
+                  } @else if (card(cmd.name).helpText) {
+                    <pre class="help-pre">{{ card(cmd.name).helpText }}</pre>
+                  }
+
+                  <!-- Run form -->
+                  <div class="run-form">
+                    <input
+                      class="args-input"
+                      type="text"
+                      [placeholder]="cmd.argsHint ?? '--help'"
+                      [value]="card(cmd.name).extraArgs"
+                      (input)="setExtraArgs(cmd.name, $any($event.target).value)"
+                      (keyup.enter)="run(cmd)"
+                      aria-label="Arguments supplémentaires"
+                      spellcheck="false"
+                    />
+                    <button
+                      class="run-btn"
+                      (click)="run(cmd)"
+                      [disabled]="card(cmd.name).running || card(cmd.name).absent"
+                      matTooltip="Exécuter la commande"
+                    >
+                      @if (card(cmd.name).running) {
+                        <mat-spinner diameter="16"></mat-spinner>
+                      } @else {
+                        <mat-icon class="material-symbols-outlined">play_arrow</mat-icon>
+                      }
+                      <span>{{ card(cmd.name).running ? "Exécution…" : "Exécuter" }}</span>
+                    </button>
+                  </div>
+
+                  <!-- Result panel (same pattern as mcp/skills views) -->
+                  @if (card(cmd.name).ranLabel) {
+                    <div class="result-panel">
+                      <div class="result-head">
+                        <mat-icon class="material-symbols-outlined">terminal</mat-icon>
+                        <span class="result-cmd">{{ card(cmd.name).ranLabel }}</span>
+                        @if (card(cmd.name).result; as r) {
+                          <span
+                            class="result-code"
+                            [class.ok]="r.code === 0"
+                            [class.err]="r.code !== 0"
+                          >code {{ r.code }}</span>
+                        }
+                      </div>
+                      <pre class="result-body">@if (card(cmd.name).running) {
+Exécution en cours…} @else if (card(cmd.name).result; as r) {{{ r.stdout }}@if (r.stderr) {
+{{ r.stderr }}}}</pre>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
