@@ -1,0 +1,385 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.cmd-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 28px 64px;
+}
+
+/* ── Header ── */
+.cmd-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.cmd-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+.cmd-icon mat-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+}
+.cmd-head-text h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 400;
+}
+.cmd-head-text p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+  max-width: 72ch;
+}
+
+/* ── Search bar ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 26px;
+  background: var(--mat-sys-surface-container);
+  margin-bottom: 24px;
+}
+.search-bar > mat-icon {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.search-bar input {
+  flex: 1 1 auto;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font-family: inherit;
+  font-size: 15px;
+}
+.clear-btn {
+  border: none;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.clear-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.probe-spinner {
+  flex: 0 0 auto;
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+  padding: 32px;
+}
+
+/* ── Groups ── */
+.cmd-group {
+  margin-bottom: 28px;
+}
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.group-icon {
+  color: var(--mat-sys-primary);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.group-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+.group-count {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+/* ── Command grid ── */
+.cmd-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Command card ── */
+.cmd-card {
+  border-radius: 14px;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid transparent;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.cmd-card:hover {
+  border-color: var(--mat-sys-outline-variant);
+}
+.cmd-card.expanded {
+  border-color: var(--mat-sys-primary);
+  border-color: color-mix(in srgb, var(--mat-sys-primary) 45%, transparent);
+}
+.cmd-card.absent {
+  opacity: 0.65;
+}
+
+/* ── Card header row ── */
+.cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.cmd-row:hover {
+  background: color-mix(in srgb, var(--mat-sys-on-surface) 4%, transparent);
+}
+.cmd-glyph {
+  color: var(--mat-sys-primary);
+  flex: 0 0 auto;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+.cmd-glyph.gated {
+  color: var(--mat-sys-on-surface-variant);
+}
+.cmd-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cmd-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cmd-name {
+  font-family: "Google Sans Code", ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface);
+}
+.gate-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mat-sys-secondary) 16%, transparent);
+  color: var(--mat-sys-secondary);
+  cursor: help;
+}
+.deep-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  padding: 2px;
+  border-radius: 4px;
+}
+.deep-link mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+.deep-link:hover {
+  background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
+}
+.cmd-desc {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expand-btn {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* ── Expanded body ── */
+.cmd-body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gate-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--mat-sys-secondary) 8%, transparent);
+}
+.gate-note mat-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-secondary);
+}
+
+/* Help pre */
+.help-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+}
+.help-pre {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: "Google Sans Code", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--mat-sys-on-surface-variant);
+  background: var(--mat-sys-surface-container);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+/* Run form */
+.run-form {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.args-input {
+  flex: 1 1 auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+  font-family: "Google Sans Code", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+}
+.args-input:focus {
+  border-color: var(--mat-sys-primary);
+}
+.run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-primary);
+  white-space: nowrap;
+}
+.run-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.run-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Result panel */
+.result-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-lowest);
+}
+.result-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+.result-head mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+.result-cmd {
+  flex: 1 1 auto;
+  font-family: "Google Sans Code", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-code {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+.result-code.ok {
+  background: rgba(109, 213, 140, 0.18);
+  color: #6dd58c;
+}
+.result-code.err {
+  background: rgba(242, 184, 181, 0.18);
+  color: #f2b8b5;
+}
+.result-body {
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 300px;
+  overflow: auto;
+  font-family: "Google Sans Code", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--mat-sys-on-surface);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

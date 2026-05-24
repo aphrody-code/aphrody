@@ -1,0 +1,50 @@
+# Self-rooted: this Tauri+Angular desktop app lives INSIDE the aphrody repo
+# (apps/desktop) but is EXCLUDED from the core cargo workspace (see the root
+# Cargo.toml `exclude`). Its own `[workspace]` table stops `cargo` at the root
+# from absorbing it, and it carries its own Cargo.lock. It is built via bun
+# (Angular) + `cargo`/`tauri`, never by `cargo ci-offline`. Mirrors the
+# crates/aphrody-app precedent. The toolchain is inherited from the aphrody
+# root rust-toolchain.toml (same nightly pin).
+[workspace]
+
+[package]
+name = "desktop"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# In-process Rust -> Rust: aphrody is the CLI library (crate `aphrody`, dir
+# crates/cli in THIS repo). Default features only (no magika/forensics/index
+# -> no ort, rusqlite, C toolchain) so the shell stays lean. Mirrors
+# crates/aphrody-app. Relative path: src-tauri -> desktop -> apps -> repo root.
+aphrody = { path = "../../../crates/cli" }
+
+# Voice I/O (TTS + STT): default features only — no local-whisper / ort / C toolchain.
+# Relative path mirrors the CLI dep above.
+aphrody-voice = { path = "../../../crates/aphrody-voice" }
+base64 = "0.22"
+
+# rustls 0.23 CryptoProvider — installed once at startup so the native voice
+# commands' reqwest client does not panic "no process-level CryptoProvider".
+# `ring` matches the aphrody workspace (CLAUDE.md §7); features unify with reqwest.
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+

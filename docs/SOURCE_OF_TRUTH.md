@@ -101,6 +101,8 @@ Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
 ### Exclus du workspace
 
 - `crates/aphrody-app` — coquille Tauri v2, workspace propre (voir §3.1).
+- `apps/desktop/src-tauri` — app desktop Tauri 2 + Angular 21 (grand public),
+  rapatriée depuis `aphrody-ts` le 2026-05-24 ; self-rooted, voir §3.1.
 - `aphrody-x-client`, `a2a-slimrpc` — bloqués upstream.
 - `gui`, `agui-bridge`, `mui-rs*` (6), `tuono*` (4) — **extraits vers
   `C:\src\aphrody-ts` le 2026-05-23** ; ces chemins n'existent plus dans ce
@@ -120,27 +122,33 @@ Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
   `mrx` ; orphelins `aphrody-shell`, `aphrody-sandbox`).
 - `vendor/` retiré (ne contenait que des stubs Bun/uv).
 
-### 3.1 Surface GUI desktop (cross-repo)
+### 3.1 Surface GUI desktop (in-repo)
 
-L'application desktop graphique d'aphrody s'étend sur deux repos :
+L'application desktop graphique — **l'agent autonome grand public** — vit
+désormais **entièrement dans CE repo** sous `apps/desktop` (rapatriée depuis
+`aphrody-ts` le 2026-05-24) :
 
-- **Backend Rust** — `crates/aphrody-app` (ce repo, exclu du workspace core).
-  Expose la commande Tauri `aphrody_exec` qui appelle `aphrody::run_captured`
-  en in-process (Rust vers Rust, sans saut FFI) : une action GUI emprunte
-  exactement le chemin de code du terminal.
-- **Frontend Angular 21.2 + Angular Material 21.2** —
-  `C:\src\aphrody-ts\apps\desktop` (repo frère). UI style Gemini pixel-fidele,
-  polices vendorisees hors-CDN. Committe sur `aphrody-ts` `main`.
+- **Frontend** — `apps/desktop/src/` — Angular 21.2 + Angular Material 21.2,
+  UI style Gemini pixel-fidèle, polices vendorisées hors-CDN. Seule exception
+  polyglotte (TypeScript) de ce repo par ailleurs Rust-only.
+- **Coquille Rust** — `apps/desktop/src-tauri/` — Tauri 2, self-rooted
+  (`[workspace]` + `Cargo.lock` propre), **exclue** du workspace core. Ses
+  `#[tauri::command]` appellent `aphrody::run_captured` (CLI in-process, Rust
+  vers Rust, sans saut FFI) et `aphrody-voice` pour la voix native (TTS/STT) :
+  une action GUI emprunte exactement le chemin de code du terminal.
+- **Héritage** — `crates/aphrody-app` est l'ancienne coquille Tauri minimale
+  (aussi exclue) ; `apps/desktop` la supersède comme app canonique.
 
-Positionnement : **assistant IA autonome grand public propulse par Gemini** —
+Positionnement : **assistant IA autonome grand public propulsé par Gemini** —
 pas un outil de reverse engineering. Surfaces : chat Assistant (`aphrody chat`),
-Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (surface CLI
-complete), Settings multi-onglets (Compte via `aphrody antigravity whoami`,
-Apparence, Backend conversation agy/web/stub, Memoire, Ame/soul, Identite,
-Canaux, Actions, Agents, A propos), voice-to-voice, pieces jointes.
+Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (les 37 commandes
+CLI), Settings multi-onglets (Compte via `aphrody antigravity whoami`, Apparence,
+Backend conversation agy/web/stub, Mémoire, Âme/soul, Identité, Canaux, Actions,
+Agents, À propos), voice-to-voice native (aphrody-voice + repli Web Speech),
+pièces jointes.
 
-Build : `scripts/tauri.{ps1,sh}` (depuis la racine de ce repo, apres
-`cd C:\src\aphrody-ts\apps\desktop && bun install`).
+Build : `cd apps/desktop && bun install && bun run build`, puis `cargo`/`tauri`
+dans `apps/desktop/src-tauri`.
 
 ## 4. Politique de langages
 

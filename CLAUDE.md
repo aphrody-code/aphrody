@@ -67,6 +67,17 @@ Le `justfile` racine d'aphrody pilote **uniquement** le workspace Rust
 (`just build|test|lint|fmt|ci`). Pour go/python/ts, lancer les runners dans le
 dépôt frère correspondant.
 
+> **Rapatriement 2026-05-24** : l'**app desktop grand public** (`apps/desktop`,
+> Tauri 2 + Angular 21.2 + Angular Material 21.2 — l'agent autonome grand public
+> propulsé par Gemini) a été **ramenée dans CE dépôt** depuis `aphrody-ts`. C'est
+> la **seule surface non-Rust** d'aphrody : frontend Angular (TS) sous
+> `apps/desktop/src/`, coquille Tauri sous `apps/desktop/src-tauri/` (self-rooted
+> `[workspace]` + `Cargo.lock` propre, **exclue** du workspace core comme
+> `crates/aphrody-app`, jamais touchée par `cargo ci-offline`). Ses commandes
+> appellent `aphrody::run_captured` + `aphrody-voice` in-process. Build :
+> `cd apps/desktop && bun install && bun run build` puis `cargo`/`tauri`. Les
+> surfaces Go/Python et le reste du TS/UI restent dans les dépôts frères.
+
 - **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
 - **Bun** (`aphrody-ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Web Components 3** (fork `packages/material-web`). Les forks `packages/*` gardent leur PM natif (npm/pnpm) et leur propre `.git`, hors workspace bun.
 - **Python** (`aphrody-py`) : géré par **uv**, lint/format **ruff**, tests **pytest**.
