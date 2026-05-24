@@ -209,6 +209,14 @@ exclude = [
     # scripts/tauri.{ps1,sh}. Path (a): its #[tauri::command]s call
     # `aphrody::run_captured` in-process (Rust->Rust, no FFI hop).
     "crates/aphrody-app",
+    # apps/desktop — Tauri 2 + Angular 21 desktop app (the mainstream consumer
+    # agent UI), rapatriée depuis C:\src\aphrody-ts le 2026-05-24. Same model as
+    # aphrody-app: self-rooted ([workspace] in src-tauri/Cargo.toml) + own
+    # Cargo.lock, EXCLUDED from the core lock / `cargo ci-offline`, built via bun
+    # (Angular) + tauri. Its commands call aphrody::run_captured + aphrody-voice
+    # in-process. The Angular frontend (TS) is the one polyglot exception in this
+    # otherwise Rust-only repo (cf. CLAUDE.md §2).
+    "apps/desktop/src-tauri",
     "crates/a2a-slimrpc",
     # ------------------------------------------------------------------------
     # Build-perf (2026-05-21) : clusters UI lourds sortis du workspace par
