@@ -1527,6 +1527,40 @@ pub fn run_native() -> std::process::ExitCode {
     std::process::ExitCode::from(u8::try_from(code).unwrap_or(1))
 }
 
+/// Structured result of a captured command run: the process exit code plus the
+/// captured stdout and stderr. `Serialize` so a Tauri `#[command]` can return it
+/// straight to the webview.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CapturedRun {
+    /// Process exit code (0 on success).
+    pub code: i32,
+    /// Captured stdout (lossy UTF-8).
+    pub stdout: String,
+    /// Captured stderr (lossy UTF-8).
+    pub stderr: String,
+}
+
+/// Run the full native command surface from `args` (`args[0]` is the program
+/// name, per the argv/clap convention) with stdout AND stderr captured
+/// in-process, returning the structured [`CapturedRun`].
+///
+/// The structured counterpart to [`run_from_args`] (which inherits stdio): it
+/// wraps the same dispatch in `aphrody_stdio_capture::with_captured_stdio`. The
+/// Tauri app and any host that wants the output back (rather than on the
+/// terminal) use this. The redirect is process-global, so concurrent callers
+/// must serialise around it.
+#[cfg(not(target_arch = "wasm32"))]
+#[must_use]
+pub fn run_captured<I, T>(args: I) -> CapturedRun
+where
+    I: IntoIterator<Item = T>,
+    T: Into<std::ffi::OsString> + Clone,
+{
+    let (code, stdout, stderr) = aphrody_stdio_capture::with_captured_stdio(|| run_from_args(args));
+    CapturedRun { code, stdout, stderr }
+}
+
 // ===========================================================================
 // wasm entry point — parses the clap surface so `--version` / `--help`
 // behave identically; every command short-circuits to a "not available on
