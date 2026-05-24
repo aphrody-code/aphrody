@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# aphrody-app — the Tauri v2 desktop shell for aphrody.
+#
+# This crate is EXCLUDED from the core workspace (see the root Cargo.toml
+# [workspace.exclude]). The empty [workspace] table below makes it its own
+# workspace root, so it resolves an independent Cargo.lock and the
+# wry/tao/gtk-rs/webkit2gtk tree it pulls never touches `cargo ci-offline`
+# or the core binary's lock. Build it via scripts/tauri.{ps1,sh}.
+#
+# Architecture: Path (a) — the #[tauri::command]s call `aphrody::run_captured`
+# IN-PROCESS (Rust -> Rust, no FFI hop), so a GUI command is the same code path
+# as the CLI, with the captured stdout/stderr handed straight to the webview.
+[workspace]
+
+[package]
+name = "aphrody-app"
+version = "1.0.0-canary"
+edition = "2024"
+rust-version = "1.97"
+license = "Apache-2.0"
+authors = ["aphrody-code"]
+homepage = "https://github.com/aphrody-code/aphrody"
+repository = "https://github.com/aphrody-code/aphrody"
+description = "aphrody desktop shell (Tauri v2) — runs the aphrody CLI in-process and renders it in an M3 webview."
+publish = false # host-only GUI shell, never published, never in the CLI distribution
+
+[lib]
+# Tauri v2 canonical layout: the binary is a thin shell over this lib so the
+# same entry point (`run`) serves desktop and (later) the mobile entry macro.
+name = "aphrody_app_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# In-process Rust -> Rust: aphrody is the CLI library (crate `aphrody`, dir
+# crates/cli). Default features only (no magika/forensics/index -> no ort,
+# rusqlite, C toolchain), so the shell stays lean and hermetic-friendly.
+aphrody = { path = "../cli" }
+
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Same global allocator as the CLI binary (latency objective): mimalloc.
+mimalloc = "0.1"
+
+# --- Shell-only capability plugins (curated set, docs/tauri/plugins.md) ------
+# Everything the webview needs that the Rust CLI does NOT already own. All
+# fs/shell/http/scan/process *work* goes through `aphrody_exec`, never a plugin.
+tauri-plugin-os                = "2" # platform / version / arch / locale for the UI header
+tauri-plugin-dialog            = "2" # native file picker -> path fed to aphrody_exec
+tauri-plugin-clipboard-manager = "2" # copy command output
+tauri-plugin-notification      = "2" # "command finished" toasts
+tauri-plugin-process           = "2" # restart / exit from the UI
+tauri-plugin-log               = "2" # structured app logging
+tauri-plugin-window-state      = "2" # remember window geometry across launches
+tauri-plugin-single-instance   = "2" # one window; focus the existing one on relaunch
+tauri-plugin-global-shortcut   = "2" # summon the window with a hotkey
