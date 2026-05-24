@@ -141,27 +141,25 @@ strings are French (enforced by `aphrody-translate` which also scrubs
 AI-isms). Linux Ubuntu 26.04 is the mandatory build target; Windows MSVC and
 `wasm32-unknown-unknown` are co-required for merge; macOS is best-effort.
 
-## 7. Excluded from the default workspace (present on disk)
+## 7. Excluded from the default workspace
 
-These crates exist under `crates/` but are listed in the `Cargo.toml`
-`exclude` block. They are **not deleted** — they are kept out of the default
-build because they pull heavy UI/web toolchains (wgpu/vello/winit/wasmtime,
-Next.js/SWC/lightningcss/napi) that dominated `cargo nextest run --workspace`
-on a 4c/8t/16 GB machine, and the `aphrody` binary does not depend on any of
-them. Rebuild them by re-listing them in `members` temporarily or with an
-ad-hoc workspace.
+These crates are listed in the `Cargo.toml` `exclude` block.
 
-- `gui` — aggregates the `mui-rs*` and `tuono*` clusters (wry + tao desktop).
-- `agui-bridge` — consumes `mui-rs-components`.
-- `mui-rs`, `mui-rs-core`, `mui-rs-components`, `mui-rs-macros`,
-  `mui-rs-motion`, `mui-rs-renderer` — native MD3 renderer (wgpu, vello,
-  winit, wasmtime, parley, fontique).
-- `tuono`, `tuono_internal`, `tuono_lib`, `tuono_lib_macros` — Next.js SSR
-  integration (swc_core, lightningcss, mdxjs, napi).
+- `crates/aphrody-app` — the Tauri v2 desktop shell. It carries its own
+  `[workspace]` table and its own `Cargo.lock` so the wry/tao/webkit2gtk
+  tree it pulls never touches `cargo ci-offline` or the core lock. The
+  Angular frontend that drives it lives in the sibling repo
+  `C:\src\aphrody-ts\apps\desktop` (see section 9.1 below).
 - `aphrody-x-client` — self-rooted workspace, pending `agent-twitter-client`
   stabilisation.
 - `a2a-slimrpc` — blocked on the upstream `agntcy-slim-mls` nightly
   lifetime / async-trait incompatibility.
+
+**Extracted to `C:\src\aphrody-ts` on 2026-05-23 (no longer on disk here):**
+`gui`, `agui-bridge`, `mui-rs*` (6 crates), `tuono*` (4 crates). These were
+formerly present in this repo as build-perf exclusions; they are now in
+`aphrody-ts/rust-ui`. There is no `crates/gui` or `crates/agui-bridge` in
+this workspace — any reference to them as present here is stale.
 
 `crates/coreutils` and `crates/util-linux` are still referenced in the
 `exclude` block for historical reasons but no longer exist on disk.
@@ -190,7 +188,29 @@ To shortcut the usual "where is X?" search, the following were **removed**:
   `mrx-{core,detect,audit,watch,cli}` → `mrx`;
   plus the orphan crates `aphrody-shell` and `aphrody-sandbox`.
 
-## 9. Related
+## 9. Desktop GUI surface (cross-repo)
+
+The graphical desktop application spans two repos:
+
+- **Rust backend** — `crates/aphrody-app` (this repo, excluded from the core
+  workspace). Exposes one Tauri command `aphrody_exec` that calls
+  `aphrody::run_captured` in-process (Rust to Rust, no FFI hop), so every GUI
+  action is the same code path the terminal runs.
+- **Angular 21.2 + Angular Material 21.2 frontend** —
+  `C:\src\aphrody-ts\apps\desktop` (sibling repo). Pixel-faithful Gemini-style
+  UI with fonts vendored offline. Committed on `aphrody-ts` `main`.
+
+Positioning: a general-public autonomous AI assistant powered by Gemini, NOT a
+reverse-engineering tool. Surfaces: Assistant chat (`aphrody chat`),
+Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (full CLI),
+multi-tab Settings (Compte, Apparence, Conversation backend agy/web/stub,
+Memoire, Ame/soul, Identite, Canaux, Actions, Agents, A propos),
+voice-to-voice, attachments.
+
+Build: `scripts/tauri.{ps1,sh}` after running
+`cd C:\src\aphrody-ts\apps\desktop && bun install`.
+
+## 10. Related
 
 - `docs/SOURCE_OF_TRUTH.md` — consolidated platform / deliverable view.
 - `docs/PLAN.md`, `docs/ROADMAP.md` — planning surface.
