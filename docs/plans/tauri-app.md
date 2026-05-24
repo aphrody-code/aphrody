@@ -1,7 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Plan — aphrody desktop/mobile GUI on Tauri v2
 
-**Status: P0 DONE** — pure-Rust foundation landed (commit pending); P1 (Tauri scaffold) next.
+**Status: P0 + P1 + P2 DONE** — the Tauri shell (`crates/aphrody-app`, build-excluded)
+compiles the full CLI in-process and embeds the complete French React frontend
+(`apps/desktop-react`, modeled on the gemini.google.com/app maquette). P3 (more
+panels / packaging / mobile) next.
 
 Decision basis (read these first): `docs/tauri/{README,architecture,aphrody-integration,risks,ui-framework}.md`
 and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practices}.md`.
@@ -31,16 +34,16 @@ and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practice
 - [x] **T0.2** cli lib structured entry: `pub fn run_captured(args) -> CapturedRun { code, stdout, stderr }` (sync; wraps the dispatch in `aphrody_stdio_capture::with_captured_stdio`) + `CapturedRun` (`Serialize`, for Tauri `#[command]`s) in `crates/cli/src/lib.rs`. Closes the one gap (`run_async` only returns an exit code + inherits stdio). aphrody-ffi keeps its own persistent-runtime path but shares the capture crate. **DONE.**
 - [x] **T0.3** Gate: clippy `-D warnings` + nextest 16/16 (incl. 2 new capture tests) + wasm32 check + cdylib rebuild + Bun smoke. All green. **DONE.**
 
-### P1 — `crates/aphrody-app` scaffold (Tauri, build-excluded)
-- [ ] **T1.1** `crates/aphrody-app` added to `[workspace.exclude]` (NOT members); own `Cargo.toml` + `Cargo.lock`. Deps: `aphrody` (cli lib, path), `aphrody-capture`, `tauri` v2, `serde`.
-- [ ] **T1.2** `tauri.conf.json`: `frontendDist` = the Bun-built frontend `dist/`; minimal capabilities / permissions (v2 ACL); productName / identifier / window config.
-- [ ] **T1.3** typed `#[tauri::command]` surface: `run_command(args) -> CapturedRun`, `version() -> VersionInfo`, `doctor() -> DoctorReport`; long / streaming commands via **Tauri Channels** (stream stdout lines).
-- [ ] **T1.4** `scripts/tauri.{ps1,sh}` (+ `just tauri`) to build the app (cargo + tauri-cli) WITHOUT touching the core build.
+### P1 — `crates/aphrody-app` scaffold (Tauri, build-excluded) — DONE
+- [x] **T1.1** `crates/aphrody-app` in `[workspace.exclude]` (empty `[workspace]` table -> its own `Cargo.lock`). Deps: `aphrody` (cli lib, path), `tauri` v2 + 9 shell plugins (os/dialog/clipboard/notification/process/log/window-state/single-instance/global-shortcut), `serde`, `mimalloc`. (No `aphrody-capture`: `aphrody::run_captured` already wraps the stdio capture.)
+- [x] **T1.2** `tauri.conf.json`: `frontendDist = "dist"`, `withGlobalTauri`, dark 1280x832 window; `capabilities/main.json` is v2 default-deny (shell-layer perms only, no fs/shell/http/sql).
+- [~] **T1.3** `#[tauri::command]` surface: `aphrody_exec(args) -> { code, stdout, stderr }` (in-process `run_captured`, serialised behind a Mutex, on the blocking pool) + `aphrody_meta()`. Typed `version`/`doctor` structs and Tauri-`Channel` streaming deferred — the UI runs `aphrody_exec` + reveals client-side, so the bounded command set needs no streaming command yet.
+- [x] **T1.4** `scripts/tauri.{ps1,sh}`: build the frontend (Bun) -> copy `dist/` -> `cargo` on the excluded crate (shared target dir), without touching the core build.
 
-### P2 — Frontend (in aphrody-ts, Bun-built)
-- [ ] **T2.1** Frontend app: Vanilla TS + Lit / Material Web, imports `@aphrody-code/theme/tokens.css`, built by Bun with `NODE_ENV=production` to a `dist/` consumed by Tauri `frontendDist`.
-- [ ] **T2.2** **Transport-abstracted command client**: detect Tauri (`window.__TAURI__`) and call `@tauri-apps/api` `invoke` + Channels; otherwise fall back to the `apps/console` `fetch /api/run`. One frontend, two shells (Bun.serve for web/dev, Tauri for desktop) sharing the M3 UI.
-- [ ] **T2.3** Reuse `apps/console`'s console UX + M3 layout; add command panels.
+### P2 — Frontend (in aphrody-ts, Bun-built) — DONE
+- [x] **T2.1** `apps/desktop-react` (React 19, chosen over the vanilla shell at the user's request) imports `@aphrody-code/theme/tokens.css`, built by Bun (`NODE_ENV=production`) to a `dist/` embedded by Tauri. 100% French UI.
+- [x] **T2.2** Transport-abstract client (`transport.ts`): detects `window.__TAURI__` -> `invoke('aphrody_exec')`; otherwise `fetch /api/run` (the apps/console contract). Identical bundle for both hosts (no `@tauri-apps/api` dep).
+- [x] **T2.3** Multi-view app modeled on the Gemini maquette: icon rail (Console / Diagnostic / Reverse / Réseau / À propos), centered home + pill composer, Gemini-style client-side output reveal, M3 panels per command. Verified in a real webview.
 
 ### P3 — Feature surface + UX
 - [ ] **T3.1** Typed M3 panels: `doctor` dashboard, version/system, the high-value command surfaces (re / forensics / chat / image / ...) as views; streaming output via Channels.

@@ -203,6 +203,12 @@ members = [
     # Next.js / Turbopack integration (excluded)
 ]
 exclude = [
+    # aphrody-app — Tauri v2 desktop shell (pulls wry/tao/gtk-rs/webkit2gtk).
+    # EXCLUDED so that tree never enters the core lock or `cargo ci-offline`;
+    # it carries its own [workspace] table + Cargo.lock and is built via
+    # scripts/tauri.{ps1,sh}. Path (a): its #[tauri::command]s call
+    # `aphrody::run_captured` in-process (Rust->Rust, no FFI hop).
+    "crates/aphrody-app",
     "crates/a2a-slimrpc",
     # ------------------------------------------------------------------------
     # Build-perf (2026-05-21) : clusters UI lourds sortis du workspace par
