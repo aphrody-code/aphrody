@@ -98,12 +98,14 @@ Familles principales (inventaire exhaustif dans `CRATES.md`) :
 Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
 `google_mcp`.
 
-### Exclus du workspace (présents sur disque, 14 crates)
+### Exclus du workspace
 
-Clusters UI/web lourds sortis du build par défaut (perf, machine 4c/8t/16 Go) ;
-le binaire `aphrody` n'en dépend pas : `gui`, `agui-bridge`, `mui-rs*` (6),
-`tuono*` (4), `aphrody-x-client`, `a2a-slimrpc`. `coreutils`/`util-linux` sont
-encore listés dans `exclude` mais n'existent plus sur disque.
+- `crates/aphrody-app` — coquille Tauri v2, workspace propre (voir §3.1).
+- `aphrody-x-client`, `a2a-slimrpc` — bloqués upstream.
+- `gui`, `agui-bridge`, `mui-rs*` (6), `tuono*` (4) — **extraits vers
+  `C:\src\aphrody-ts` le 2026-05-23** ; ces chemins n'existent plus dans ce
+  dépôt. `coreutils`/`util-linux` sont encore listés dans `exclude` mais
+  n'existent plus sur disque.
 
 ### Supprimés (historique)
 
@@ -117,6 +119,28 @@ encore listés dans `exclude` mais n'existent plus sur disque.
   `aphrody-voice-stt`→`aphrody-voice` ; `mrx-{core,detect,audit,watch,cli}`→
   `mrx` ; orphelins `aphrody-shell`, `aphrody-sandbox`).
 - `vendor/` retiré (ne contenait que des stubs Bun/uv).
+
+### 3.1 Surface GUI desktop (cross-repo)
+
+L'application desktop graphique d'aphrody s'étend sur deux repos :
+
+- **Backend Rust** — `crates/aphrody-app` (ce repo, exclu du workspace core).
+  Expose la commande Tauri `aphrody_exec` qui appelle `aphrody::run_captured`
+  en in-process (Rust vers Rust, sans saut FFI) : une action GUI emprunte
+  exactement le chemin de code du terminal.
+- **Frontend Angular 21.2 + Angular Material 21.2** —
+  `C:\src\aphrody-ts\apps\desktop` (repo frère). UI style Gemini pixel-fidele,
+  polices vendorisees hors-CDN. Committe sur `aphrody-ts` `main`.
+
+Positionnement : **assistant IA autonome grand public propulse par Gemini** —
+pas un outil de reverse engineering. Surfaces : chat Assistant (`aphrody chat`),
+Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (surface CLI
+complete), Settings multi-onglets (Compte via `aphrody antigravity whoami`,
+Apparence, Backend conversation agy/web/stub, Memoire, Ame/soul, Identite,
+Canaux, Actions, Agents, A propos), voice-to-voice, pieces jointes.
+
+Build : `scripts/tauri.{ps1,sh}` (depuis la racine de ce repo, apres
+`cd C:\src\aphrody-ts\apps\desktop && bun install`).
 
 ## 4. Politique de langages
 
@@ -208,9 +232,11 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 | `tracing-subscriber 0.3.23+` | Pinné à `0.3.22` (bug `mod env` packaging). |
 | `path-bases` (RFC 3529) | Instable nightly 1.97, à activer quand stable. |
 | `rand 0.8` imposé par `denokv_proto` | Ne pas migrer vers 0.9 avant que `denokv_proto` accepte. |
-| GTK3 CVE (RUSTSEC-2024-04xx) | Ignorés dans `deny.toml`. `cli` n'est PAS lié à GTK ; seul `gui` l'est. |
+| GTK3 CVE (RUSTSEC-2024-04xx) | Ignorés dans `deny.toml`. `cli` n'est PAS lié à GTK. `gui` a été extrait vers `aphrody-ts` (2026-05-23) ; seul `aphrody-app` (Tauri, exclu) pull wry/webkit2gtk. |
 | `tokio` ne compile pas sur wasm | Utiliser features sélectives (`tokio-stream` + `js-sys` + `wasm-bindgen-futures`). |
 | pty cross-platform | `portable-pty` (ConPTY Windows / openpty Unix) dans `aphrody-terminal-backend`. Pas de `node-pty`. |
+| `aphrody chat` + token agy expiré | `classify_agy_error` dans `crates/cli/src/agy_backend.rs` intercepte `SdkError::OAuthServer{401|403}` et retourne un message court actionnable (re-auth `aphrody antigravity login`, ou `--web` / `--stub`) au lieu de dumper le JSON Google. Commit : `e5a932da2`. |
+| `aphrody antigravity refresh` cassé | Google retourne `400 client_secret is missing` : le client OAuth public Antigravity ne fournit pas de `client_secret` pour le refresh grant. Workaround : relancer `agy` en arriere-plan (re-mint le token). Re-auth : `aphrody antigravity login`. |
 
 ## 9. Roadmap (post-pivot)
 
