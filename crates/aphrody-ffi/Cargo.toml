@@ -45,18 +45,9 @@ yara      = ["aphrody/yara"]
 aphrody    = { path = "../cli" }
 mimalloc   = { workspace = true }
 serde_json = { workspace = true }
-tempfile   = { workspace = true }
+# Shared cross-platform stdout/stderr capture (dup2 on unix / SetStdHandle on
+# Windows); pulls tempfile/libc/windows-sys transitively, host-only.
+aphrody-stdio-capture = { workspace = true }
 # Persistent multi-thread runtime that drives `aphrody::run_async`, so repeated
 # FFI calls amortise the worker-thread spawn cost instead of paying it per call.
 tokio      = { workspace = true }
-
-[target.'cfg(all(not(target_arch = "wasm32"), unix))'.dependencies]
-libc = { workspace = true }
-
-[target.'cfg(all(not(target_arch = "wasm32"), windows))'.dependencies]
-# Same major as the cli crate (0.61) so cargo-deny sees a single resolved
-# version; features unioned across the graph.
-windows-sys = { version = "0.61", features = [
-    "Win32_Foundation",
-    "Win32_System_Console",
-] }

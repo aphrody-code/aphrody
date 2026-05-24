@@ -367,6 +367,7 @@ dependencies = [
  "aphrody-memory",
  "aphrody-messaging",
  "aphrody-re",
+ "aphrody-stdio-capture",
  "aphrody-terminal-backend",
  "aphrody-voice",
  "assert_cmd",
@@ -519,12 +520,10 @@ name = "aphrody-ffi"
 version = "1.0.0-canary"
 dependencies = [
  "aphrody",
- "libc",
+ "aphrody-stdio-capture",
  "mimalloc",
  "serde_json",
- "tempfile",
  "tokio",
- "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -912,6 +911,15 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "walkdir",
+]
+
+[[package]]
+name = "aphrody-stdio-capture"
+version = "1.0.0-canary"
+dependencies = [
+ "libc",
+ "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
