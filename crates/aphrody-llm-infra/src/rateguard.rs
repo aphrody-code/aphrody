@@ -237,7 +237,7 @@ pub fn default_provider_quotas() -> HashMap<Provider, ProviderQuota> {
     let mut gemini_overrides = HashMap::new();
     gemini_overrides.insert("gemini-2.5-pro".to_string(), Quota::new(1_000, 2_000_000));
     gemini_overrides.insert(
-        "gemini-2.5-flash".to_string(),
+        "gemini-3.5-flash".to_string(),
         Quota::new(2_000, 4_000_000),
     );
     out.insert(
