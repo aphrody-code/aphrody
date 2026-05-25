@@ -63,16 +63,16 @@ override `$APHRODY_WORKSPACE` puis profil `$APHRODY_PROFILE` →
 
 | # | Gap openclaw non comblé | Item PLAN | Statut |
 |---|--------------------------|-----------|:---:|
-| G1 | Pas de `SOUL.md` ni couche persona | AH-1 `Soul` typé + validation | ⏳ |
-| G2 | `oc-onboard` seed un workspace **vide** | AH-4 seeding file-map + templates | ⏳ |
-| G3 | Pas de chargement runtime dans le system prompt | AH-5 assembleur `SystemPromptView` | ⏳ |
-| G4 | Pas de budget anti-bloat | AH-6 `BootstrapBudget` (per-file + total) | ⏳ |
-| G5 | Pas d'`IDENTITY.md` (nom/vibe/emoji) | AH-2 `Identity` typé | ⏳ |
-| G6 | Pas d'`USER.md` / `TOOLS.md` structurés | AH-3 `UserProfile` + `ToolsDoc` | ⏳ |
-| G7 | Pas de `HEARTBEAT.md` / `BOOT.md` | AH-7 hooks heartbeat/boot | ⏳ |
-| G8 | Pas de garde sandbox workspace | AH-8 `WorkspaceGuard` path-containment | ⏳ |
-| G9 | Pas de workspace git-backed | AH-9 git-backup via `gix` | ⏳ |
-| G10 | Pas de profils multi-agents | AH-10 résolution profil/multi-agent | ⏳ |
+| G1 | Pas de `SOUL.md` ni couche persona | AH-1 `Soul` typé + validation | ✅ |
+| G2 | `oc-onboard` seed un workspace **vide** | AH-4 seeding file-map + templates | ✅ |
+| G3 | Pas de chargement runtime dans le system prompt | AH-5 assembleur `SystemPromptView` | ✅ |
+| G4 | Pas de budget anti-bloat | AH-6 `BootstrapBudget` (per-file + total) | ✅ |
+| G5 | Pas d'`IDENTITY.md` (nom/vibe/emoji) | AH-2 `Identity` typé | ✅ |
+| G6 | Pas d'`USER.md` / `TOOLS.md` structurés | AH-3 `UserProfile` + `ToolsDoc` | ✅ |
+| G7 | Pas de `HEARTBEAT.md` / `BOOT.md` | AH-7 hooks heartbeat/boot | ✅ |
+| G8 | Pas de garde sandbox workspace | AH-8 `WorkspaceGuard` path-containment | ✅ |
+| G9 | Pas de workspace git-backed | AH-9 git-backup via `gix` | ✅ |
+| G10 | Pas de profils multi-agents | AH-10 résolution profil/multi-agent | ✅ |
 
 ---
 
@@ -152,7 +152,7 @@ ratio de phrases « philosophiques vagues » — message actionnable, pas de pan
 
 ## 5. Phases & items actionnables
 
-### P0 — Scaffolding crate (⏳ AH-0)
+### P0 — Scaffolding crate (✅ AH-0)
 - `crates/aphrody-agent-home/` : `Cargo.toml` (membre workspace), `lib.rs`,
   `#![forbid(unsafe_code)]` global + `unsafe` localisé/justifié dans `mmap.rs`.
 - Deps : `serde`, `thiserror`, `blake3`, `memmap2` (host-only), `arc-swap`,
@@ -163,51 +163,51 @@ ratio de phrases « philosophiques vagues » — message actionnable, pas de pan
   avant d'épingler — `memmap2`, `arc-swap`, `notify`, `gix`, `blake3`.
 
 ### P1 — Modèle de données typé
-- ⏳ AH-1 `soul.rs` : `Soul` + parse frontmatter + lints anti-pattern + 6 tests.
-- ⏳ AH-2 `identity.rs` : `Identity` (name/vibe/emoji) + parse + tests.
-- ⏳ AH-3 `user.rs` + `tools.rs` : `UserProfile`, `ToolsDoc` + tests.
+- ✅ AH-1 `soul.rs` : `Soul` + parse frontmatter + lints anti-pattern + 6 tests.
+- ✅ AH-2 `identity.rs` : `Identity` (name/vibe/emoji) + parse + tests.
+- ✅ AH-3 `user.rs` + `tools.rs` : `UserProfile`, `ToolsDoc` + tests.
 
 ### P2 — Workspace & cache
-- ⏳ AH-11 `mmap.rs` : `FileCache` mmap zero-copy `Arc<Mmap>`, gated host-only.
-- ⏳ AH-12 `cache.rs` : index content-addressed blake3 + identité `(dev,ino,size,mtime)`,
+- ✅ AH-11 `mmap.rs` : `FileCache` mmap zero-copy `Arc<Mmap>`, gated host-only.
+- ✅ AH-12 `cache.rs` : index content-addressed blake3 + identité `(dev,ino,size,mtime)`,
   persistant `.aphrody/workspace-state.json` (v1), re-parse incrémental.
-- ⏳ AH-8 `guard.rs` : `WorkspaceGuard` (canonicalize + containment, réutilise le
+- ✅ AH-8 `guard.rs` : `WorkspaceGuard` (canonicalize + containment, réutilise le
   pattern `contained_in` de `aphrody-skills::plugin_manifest`), cap 2 MiB/fichier
   (`MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES`).
 
 ### P3 — Assemblage system prompt
-- ⏳ AH-6 `budget.rs` : `BootstrapBudget` + `BudgetWriter` streaming (per-file +
+- ✅ AH-6 `budget.rs` : `BootstrapBudget` + `BudgetWriter` streaming (per-file +
   total + near-limit 0.85), `TruncationReport` + signature stable + warning
   dedup (off/once/always), cas spécial `AGENTS.md` — parité `bootstrap-budget.ts`.
-- ⏳ AH-5 `assemble.rs` : `system_prompt()` → `SystemPromptView<'_>` (Cow borrowed),
+- ✅ AH-5 `assemble.rs` : `system_prompt()` → `SystemPromptView<'_>` (Cow borrowed),
   ordre déterministe (cache-friendly, cf. CLAUDE.md prompt-cache), tests de parité.
-- ⏳ AH-7 `heartbeat.rs` + `boot.rs` : injection conditionnelle `HEARTBEAT.md`/`BOOT.md`.
+- ✅ AH-7 `heartbeat.rs` + `boot.rs` : injection conditionnelle `HEARTBEAT.md`/`BOOT.md`.
 
 ### P4 — Cycle de vie
-- ⏳ AH-4 `onboard.rs` + templates `include_str!` : seed `SOUL/AGENTS/IDENTITY/USER/`
+- ✅ AH-4 `onboard.rs` + templates `include_str!` : seed `SOUL/AGENTS/IDENTITY/USER/`
   `TOOLS/HEARTBEAT/BOOTSTRAP.md` ; flag `--skip-bootstrap`, refus d'écrasement
   sans `--force`, suppression auto `BOOTSTRAP.md` après premier run.
-- ⏳ AH-13 `watch.rs` : `HomeWatcher` (notify + arc-swap), hot-reload SOUL/IDENTITY/USER.
-- ⏳ AH-9 `git.rs` (feature `git`) : `git_backup()` via `gix` (init/add/commit),
+- ✅ AH-13 `watch.rs` : `HomeWatcher` (notify + arc-swap), hot-reload SOUL/IDENTITY/USER.
+- ✅ AH-9 `git.rs` (feature `git`) : `git_backup()` via `gix` (init/add/commit),
   restore/clone multi-machine.
-- ⏳ AH-10 `profile.rs` : résolution `$APHRODY_PROFILE` → `workspace-<profile>`,
+- ✅ AH-10 `profile.rs` : résolution `$APHRODY_PROFILE` → `workspace-<profile>`,
   multi-agent (workspace par agentId).
 
 ### P5 — Intégration CLI & runtime
-- ⏳ AH-14 brancher `oc_cmd.rs::OcOnboard` sur `AgentHome::onboard` (remplace le
+- ✅ AH-14 brancher `oc_cmd.rs::OcOnboard` sur `AgentHome::onboard` (remplace le
   `create_dir_all` nu lignes 181-214) — seed la file-map, garde la compat
   `aphrody.json`.
-- ⏳ AH-15 brancher `aphrody-chat` / `aphrody-prompts` : injecter
+- ✅ AH-15 brancher `aphrody-chat` / `aphrody-prompts` : injecter
   `system_prompt(&budget)` à chaque session (le SOUL « a un vrai poids », parité
   openclaw). Consommé aussi par `agy-loop` et `hermes`.
-- ⏳ AH-16 `aphrody doctor` : check workspace (taille bootstrap, troncatures,
+- ✅ AH-16 `aphrody doctor` : check workspace (taille bootstrap, troncatures,
   fichiers manquants) — port `doctor-workspace.ts` + `doctor-bootstrap-size.ts`.
 
 ### P6 — Durcissement
-- ⏳ AH-17 cross-target : `cargo check -p aphrody-agent-home` sur les 3 cibles
+- ✅ AH-17 cross-target : `cargo check -p aphrody-agent-home` sur les 3 cibles
   (linux-gnu #1, windows-msvc #2, wasm32 #3) — wasm via fallback no-mmap.
-- ⏳ AH-18 bench criterion : cold-load workspace (mmap vs read) + assemblage prompt.
-- ⏳ AH-19 mémoire institutionnelle : memory `agent-home-crate` + lien
+- ✅ AH-18 bench criterion : cold-load workspace (mmap vs read) + assemblage prompt.
+- ✅ AH-19 mémoire institutionnelle : memory `agent-home-crate` + lien
   `[[vercel-skills-integration]]` (`skills/` du workspace).
 
 ---
