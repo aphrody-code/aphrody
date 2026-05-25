@@ -348,7 +348,7 @@ mod tests {
             creds: GeminiCliCredentials::default(),
         };
         let err = adapter
-            .chat(ChatRequest::new("gemini-3.5-flash", vec![]))
+            .chat(ChatRequest::new("gemini-2.5-flash", vec![]))
             .await
             .unwrap_err();
         match err {

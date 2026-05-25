@@ -80,7 +80,11 @@ use tokio::{
 /// understood by `buildArgs` (maps to no `--model` flag).
 pub const FALLBACK_MODELS: &[(&str, &str)] = &[
     ("default", "Default"),
-    ("gemini-3.5-flash", "gemini-3.5-flash"),
+    ("gemini-3-pro-preview", "gemini-3-pro-preview"),
+    ("gemini-3-flash-preview", "gemini-3-flash-preview"),
+    ("gemini-2.5-pro", "gemini-2.5-pro"),
+    ("gemini-2.5-flash", "gemini-2.5-flash"),
+    ("gemini-2.5-flash-lite", "gemini-2.5-flash-lite"),
 ];
 
 // ---------------------------------------------------------------------------
@@ -605,10 +609,13 @@ mod tests {
 
     #[test]
     fn fallback_models_count_and_first() {
-        assert_eq!(FALLBACK_MODELS.len(), 2);
+        assert_eq!(FALLBACK_MODELS.len(), 6);
         assert_eq!(FALLBACK_MODELS[0].0, "default");
+        // Gemini 3 entries must be present.
         let ids: Vec<&str> = FALLBACK_MODELS.iter().map(|m| m.0).collect();
-        assert!(ids.contains(&"gemini-3.5-flash"));
+        assert!(ids.contains(&"gemini-3-pro-preview"));
+        assert!(ids.contains(&"gemini-3-flash-preview"));
+        assert!(ids.contains(&"gemini-2.5-flash-lite"));
     }
 
     /// When no `gemini` binary is resolvable, the detector must return

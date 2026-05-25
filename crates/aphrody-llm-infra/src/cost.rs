@@ -174,7 +174,7 @@ impl PricingTable {
             },
             ModelPricing {
                 provider: Provider::Gemini,
-                model: "gemini-3.5-flash".to_string(),
+                model: "gemini-2.5-flash".to_string(),
                 input_per_million_tokens: 0.075,
                 output_per_million_tokens: 0.30,
                 cache_read_per_million: Some(0.01875),

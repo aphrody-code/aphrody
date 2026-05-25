@@ -7,7 +7,7 @@
 //! content → parts` + `groundingMetadata.groundingChunks` payload, and
 //! returns structured [`SearchResults`].
 //!
-//! Default model: `gemini-3.5-flash` (matches `DEFAULT_GEMINI_WEB_SEARCH_MODEL`
+//! Default model: `gemini-2.5-flash` (matches `DEFAULT_GEMINI_WEB_SEARCH_MODEL`
 //! in the upstream TS file). Default base URL:
 //! `https://generativelanguage.googleapis.com/v1beta` (matches
 //! `DEFAULT_GOOGLE_API_BASE_URL` in `provider-policy.ts`).
@@ -26,7 +26,7 @@ use url::Url;
 pub const DEFAULT_BASE_URL: &str = "https://generativelanguage.googleapis.com/v1beta";
 
 /// Default model id for web-search-grounded queries.
-pub const DEFAULT_MODEL: &str = "gemini-3.5-flash";
+pub const DEFAULT_MODEL: &str = "gemini-2.5-flash";
 
 /// Default request timeout.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -360,7 +360,7 @@ mod tests {
         let url = build_endpoint_url(DEFAULT_BASE_URL, DEFAULT_MODEL).expect("url");
         assert_eq!(
             url.as_str(),
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         );
     }
 
