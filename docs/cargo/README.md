@@ -9,7 +9,7 @@ Dernière mise à jour : 2026-05-16.
 | Page | Contenu |
 |---|---|
 | [`WORKSPACE.md`](./WORKSPACE.md) | Architecture du workspace (resolver, members, exclude, metadata) |
-| [`CRATES.md`](./CRATES.md) | Liste des 16 crates membres, rôle et statut |
+| [`CRATES.md`](./CRATES.md) | Liste des 58 crates membres, rôle et statut |
 | [`PROFILES.md`](./PROFILES.md) | 6 profils : `dev`, `release`, `dist`, `release-fast`, `release-debug`, `bench` |
 | [`LINTS.md`](./LINTS.md) | Policy `[workspace.lints]` rust/rustdoc/clippy |
 | [`DEPENDENCIES.md`](./DEPENDENCIES.md) | 80 deps centralisées dans `[workspace.dependencies]` |
@@ -31,7 +31,7 @@ Le workspace Aphrody suit les **best practices Cargo 2026** :
 ┌──────────────────────────────────────────────────────────────────┐
 │  Cargo workspace (root Cargo.toml)                               │
 │  ────────────────────────────────                                │
-│   resolver = "3"   edition = "2024"   rust-version = "1.93"      │
+│   resolver = "3"   edition = "2024"   rust-version = "1.97"      │
 │   [workspace.package]    — métadonnées héritées                  │
 │   [workspace.dependencies] — 80 deps centralisées (caret minor)  │
 │   [workspace.lints]      — policy stricte avec assouplissements  │
@@ -39,14 +39,14 @@ Le workspace Aphrody suit les **best practices Cargo 2026** :
 │   [profile.dist]         — LTO fat + strip + panic=abort         │
 │   [profile.release-fast] — LTO thin + codegen-units=16 (CI)      │
 │                                                                  │
-│   members  : 16 crates (cli, gui, backend, ...)                  │
+│   members  : 58 crates (cli, backend, mrx, ...)                  │
 │   exclude  : coreutils, util-linux, a2a-slimrpc, vendor          │
 └──────────────────────────────────────────────────────────────────┘
                               │
-                              ├── crates/                  (16 sources)
+                              ├── crates/                  (58 active members)
                               ├── supply-chain/            (cargo-vet)
                               ├── deny.toml                (cargo-deny)
-                              ├── rust-toolchain.toml      (nightly 1.97)
+                              ├── rust-toolchain.toml      (nightly 2026-05-17)
                               └── .cargo/config.toml       (MSVC + alias)
 ```
 

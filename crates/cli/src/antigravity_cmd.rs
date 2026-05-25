@@ -27,7 +27,7 @@ use serde_json::json;
 /// Default Gemini model used by `aphrody antigravity chat` when `--model` is
 /// not supplied. The bare model id (no `models/` prefix) is what the Cloud Code
 /// `v1internal:generateContent` envelope expects.
-const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
+const DEFAULT_GEMINI_MODEL: &str = "gemini-3.5-flash";
 
 /// Cloud Code endpoint selector for `aphrody antigravity cloud-code`.
 #[derive(Debug, Clone, clap::ValueEnum, Default)]

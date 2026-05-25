@@ -392,6 +392,13 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
   /** MIME type reported by the active MediaRecorder. */
   private recordingMime = "audio/webm";
 
+  private audioContext: AudioContext | null = null;
+  private analyser: AnalyserNode | null = null;
+  private micStream: MediaStream | null = null;
+  private silenceIntervalId: any = null;
+  private maxDurationTimeoutId: any = null;
+  private lastActiveTime = 0;
+
   ngOnInit(): void {
     if (!this.speech.supported()) {
       this.errorText.set("La reconnaissance vocale n'est pas disponible dans cet environnement.");
@@ -450,6 +457,8 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
+      this.micStream = stream;
+
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
@@ -467,20 +476,60 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
       };
 
       recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
+        this.stopMediaRecorder();
         if (!this.destroyed && !this.muted() && !this.processing) {
           void this.processNativeRecording();
         }
       };
 
-      // Record in 3-second slices so we get a natural utterance boundary.
-      recorder.start(3000);
-      // Stop after 6 seconds to capture a full utterance and send it.
-      setTimeout(() => {
+      // Configure Web Audio API for VAD (silence detection)
+      const AudioCtx = globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+      if (AudioCtx) {
+        try {
+          const ctx = new AudioCtx();
+          this.audioContext = ctx;
+          const source = ctx.createMediaStreamSource(stream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          this.analyser = analyser;
+
+          this.lastActiveTime = Date.now();
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+
+          this.silenceIntervalId = setInterval(() => {
+            if (!this.analyser || this.muted() || this.processing) return;
+            this.analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / bufferLength;
+            const now = Date.now();
+
+            if (average > 8) {
+              this.lastActiveTime = now;
+            } else if (now - this.lastActiveTime > 1500) {
+              if (recorder.state === "recording") {
+                recorder.stop();
+              }
+            }
+          }, 100);
+        } catch {
+          // ignore context creation errors
+        }
+      }
+
+      recorder.start(1000);
+
+      // Max recording duration safety cap: 15 seconds
+      this.maxDurationTimeoutId = setTimeout(() => {
         if (recorder.state === "recording") {
           recorder.stop();
         }
-      }, 6000);
+      }, 15000);
     } catch {
       // Mic permission denied or no microphone — fall back to Web Speech.
       this.beginWebSpeechListening();
@@ -537,14 +586,37 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
   }
 
   private stopMediaRecorder(): void {
-    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
+    const rec = this.mediaRecorder;
+    this.mediaRecorder = null; // Prevent recursion
+    if (rec && rec.state !== "inactive") {
       try {
-        this.mediaRecorder.stop();
+        rec.stop();
       } catch {
         // already stopped
       }
     }
-    this.mediaRecorder = null;
+
+    if (this.silenceIntervalId) {
+      clearInterval(this.silenceIntervalId);
+      this.silenceIntervalId = null;
+    }
+    if (this.maxDurationTimeoutId) {
+      clearTimeout(this.maxDurationTimeoutId);
+      this.maxDurationTimeoutId = null;
+    }
+    if (this.audioContext) {
+      try {
+        void this.audioContext.close();
+      } catch {
+        // ignore
+      }
+      this.audioContext = null;
+    }
+    this.analyser = null;
+    if (this.micStream) {
+      this.micStream.getTracks().forEach((t) => t.stop());
+      this.micStream = null;
+    }
   }
 
   // ── Web Speech fallback path ──────────────────────────────────────────────────

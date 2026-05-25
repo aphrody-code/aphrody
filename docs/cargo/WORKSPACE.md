@@ -8,7 +8,7 @@
 ```toml
 [workspace]
 resolver = "3"        # MSRV-aware resolver (Cargo 1.93+)
-members  = [57 crates]
+members  = [58 crates]
 exclude  = [gui, agui-bridge, mui-rs*, tuono*, aphrody-x-client,
             a2a-slimrpc, coreutils, util-linux]
 
@@ -26,10 +26,10 @@ Cargo 1.93+ supporte `resolver = "3"` qui rend la résolution **MSRV-aware** :
 - Change le défaut de `resolver.incompatible-rust-versions` de `allow` → `fallback`.
 - Stable depuis Rust 1.84.
 
-## Membres (57 crates)
+## Membres (58 crates)
 
-Le workspace compte **57 membres actifs**. Au total **71 crates existent sur
-disque** sous `crates/` : 57 dans `members`, 14 dans `exclude` (clusters UI/web
+Le workspace compte **58 membres actifs**. Au total **71 crates existent sur
+disque** sous `crates/` : 58 dans `members`, 13 dans `exclude` (clusters UI/web
 lourds, voir plus bas). La liste exhaustive et les rôles sont décrits dans
 [`CRATES.md`](./CRATES.md). Vue d'ensemble par famille :
 
