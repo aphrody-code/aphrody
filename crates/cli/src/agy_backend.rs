@@ -21,7 +21,7 @@ use async_trait::async_trait;
 /// Default bare Gemini model id used when `--model` is not supplied. Mirrors the
 /// Code Assist default; the Cloud Code `:generateContent` envelope expects the
 /// bare id (no `models/` prefix).
-const DEFAULT_AGY_MODEL: &str = "gemini-2.5-flash";
+const DEFAULT_AGY_MODEL: &str = "gemini-3.5-flash";
 
 /// Chat backend authenticating via the agy (Antigravity) token and dispatching
 /// turns through the **Cloud Code modelbackend** (`cloudcode-pa.googleapis.com/
@@ -91,18 +91,9 @@ impl AgyBackend {
     }
 }
 
-/// Map a (possibly vendor-qualified) model slug to the bare Gemini id the
-/// `generateContent` path expects. `gemini/default` and the empty string both
-/// resolve to [`DEFAULT_AGY_MODEL`]; a `gemini/<id>` slug is reduced to `<id>`.
-fn normalise_model(model: Option<&str>) -> String {
-    let raw = model.map(str::trim).unwrap_or("");
-    // Strip a leading `gemini/` vendor qualifier if present.
-    let bare = raw.strip_prefix("gemini/").unwrap_or(raw);
-    if bare.is_empty() || bare == "default" {
-        DEFAULT_AGY_MODEL.to_owned()
-    } else {
-        bare.to_owned()
-    }
+/// Map any model slug to the bare Gemini 3.5 Flash id, which is our only supported model.
+fn normalise_model(_model: Option<&str>) -> String {
+    DEFAULT_AGY_MODEL.to_owned()
 }
 
 /// Classify an [`SdkError`] from an authenticated Cloud Code call into a
@@ -208,9 +199,9 @@ mod tests {
     }
 
     #[test]
-    fn normalise_model_strips_vendor_prefix() {
-        assert_eq!(normalise_model(Some("gemini/gemini-2.5-flash")), "gemini-2.5-flash");
-        assert_eq!(normalise_model(Some("gemini-2.0-flash")), "gemini-2.0-flash");
+    fn normalise_model_forces_only_model() {
+        assert_eq!(normalise_model(Some("gemini/gemini-3.5-flash")), "gemini-3.5-flash");
+        assert_eq!(normalise_model(Some("gemini-2.0-flash")), "gemini-3.5-flash");
     }
 
     #[test]

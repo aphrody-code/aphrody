@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Crates — 57 membres du workspace
+# Crates — 58 membres du workspace
 
 > Réf. : `Cargo.toml` racine, `crates/*/Cargo.toml`.
-> Dernière mise à jour : 2026-05-21.
+> Dernière mise à jour : 2026-05-24.
 
-Le workspace compte **57 membres actifs**. Au total **71 crates existent sur
-disque** : 57 dans `members`, 14 dans `exclude` (clusters UI/web lourds). Tous
+Le workspace compte **58 membres actifs**. Au total **71 crates existent sur
+disque** : 58 dans `members`, 14 dans `exclude` (clusters UI/web lourds). Tous
 nos crates internes ont `publish = false`.
 
 ## Cœur
@@ -16,6 +16,7 @@ nos crates internes ont `publish = false`.
 | `base` | `base` | Primitives no_std partagées (IDs, erreurs, time). |
 | `backend` | `backend` | Forensics, DNS recon, réseau, parser Chromium. |
 | `mrx` | `mrx` | Monorepo mapper unifié (ex `mrx-{core,detect,audit,watch,cli}`). |
+| `aphrody-ffi` | `aphrody-ffi` | Native C-ABI surface. Load the full CLI in-process from Bun (`bun:ffi`) or any C host. |
 
 ## Agent-to-Agent (A2A)
 
@@ -51,6 +52,12 @@ nos crates internes ont `publish = false`.
 | `aphrody-sdk` | SDK public d'embarquement (Agent + Session + Tools). |
 | `gemini-runtime` | Adaptateur runtime Gemini CLI (detect + version + stream). |
 | `notebooklm` | Client Rust pur NotebookLM Boq RPC. |
+| `antigravity-sdk` | Native Rust SDK for Antigravity (Google AI Ultra / Gemini): token extraction from Windows Credential Manager, OAuth refresh, typed HTTP client. |
+| `aphrody-embed` | Local, offline text embeddings (fastembed/ONNX Runtime) text vectorisation with no external API. Feeds semantic memory/search. |
+| `gemini-web` | Gemini web app (`gemini.google.com`) Boq RPC client: cookie auth, page-bootstrap token scrape, batchexecute envelope codec. Mirrors the `notebooklm` crate transport. |
+| `aphrody-agent-home` | The agent's persistent home: Soul / Identity / User / Tools, mmap zero-copy file cache, content-addressed cache, bootstrap budget, system-prompt assembler, hot-reload, git backup. |
+| `aphrody-images` | Nano Banana image generation, editing and composition. Async-native, concurrent batch generation, handles URLs and data-URI decoding, typed outputs, atomic writes. |
+| `aphrody-firefly` | Pure-Rust Adobe Firefly Services client: IMS OAuth S2S token core, v3 async image generation, job polling and output download. Backs `aphrody firefly` CLI. |
 
 ## Skills / marketplace / orchestration
 
@@ -77,6 +84,9 @@ nos crates internes ont `publish = false`.
 | `ievr-tools` | Analyse d'inventaire binaire IEVR. |
 | `aphrody-translate` | Traduction FR + scrub AI-isms (style Aphrody). |
 | `aphrody-summary` | Génère `docs/SUMMARY.md` + `docs/llms.txt`. |
+| `aphrody-capture` | Native Windows screen and window capture to PNG (GDI-based, zero unsafe outside FFI wrappers, RAII GDI handle guards). Non-Windows targets compile to stubs. |
+| `aphrody-stdio-capture` | Cross-platform in-process stdout/stderr capture (`dup2` on Unix / `SetStdHandle` on Windows to a temp file). Shared by `aphrody-ffi` and Tauri app. |
+| `obscura-runtime` | Headless browser façade for scraping (locates `obscura` or `obscura.exe` binary and executes `fetch` / `scrape`). |
 
 ## Design / UI / terminal
 
@@ -96,6 +106,7 @@ nos crates internes ont `publish = false`.
 | `aphrody-terminal-json-out` | Sortie JSON. |
 | `aphrody-terminal-markdown` | Rendu markdown inline (comrak). |
 | `aphrody-terminal-config` | Config JSON full. |
+| `aphrody-logo` | The canonical aphrody character icon (`assets/aphrody.webp`) embedded once, with derivations: multi-resolution `.ico`, scalable `.svg`, and pixel-perfect terminal rendering. |
 
 ## WASM
 
