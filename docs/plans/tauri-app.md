@@ -49,8 +49,8 @@ and `docs/research/{gui-options-2026,bun-vs-vite-2026,bun-rust-ffi-best-practice
 - [ ] **T3.1** Typed M3 panels: `doctor` dashboard, version/system, the high-value command surfaces (re / forensics / chat / image / ...) as views; streaming output via Channels.
 
 ### P4 — Packaging + cross-platform CI
-- [ ] **T4.1** Tauri bundler: Linux `.deb` / `.AppImage` (webkit2gtk runtime dep), Windows `.msi` / `.exe` (WebView2 bootstrap), macOS `.app` / `.dmg`.
-- [ ] **T4.2** CI: build the excluded crate separately; `deny.toml` already ignores the wry/tao GTK CVEs.
+- [x] **T4.1** Tauri bundler: Linux `.deb` / `.AppImage` (webkit2gtk runtime dep), Windows `.msi` / `.exe` (WebView2 bootstrap), macOS `.app` / `.dmg`. Config hardened in `apps/desktop/src-tauri/tauri.conf.json` — bundle keys verified against `tauri-utils 2.9.2` (explicit `targets`, `deb.depends` libwebkit2gtk-4.1-0/libgtk-3-0, `windows.webviewInstallMode` downloadBootstrapper + NSIS `installMode: both`, `macOS` minimumSystemVersion, real publisher/category/copyright/license/descriptions). Verified `tauri info` + `cargo metadata` exit 0. Actual installers are emitted by the T4.2 workflow on push.
+- [x] **T4.2** CI: build the excluded crate separately; `deny.toml` already ignores the wry/tao GTK CVEs. `.github/workflows/desktop.yml` — 3-OS matrix (Linux #1 + Windows #2 blocking, macOS best-effort), pinned toolchain SHA, Tauri Linux system deps, frozen-lockfile `bun run build`, locked `cargo build` compile gate, then `tauri build` bundle + artifact upload. YAML validated locally; first green run lands on next push touching `apps/desktop/**`.
 
 ### P5 — Mobile (deferred)
 - [ ] **T5.1** Tauri v2 iOS / Android once desktop is solid (maturity caveats in `risks.md`).
