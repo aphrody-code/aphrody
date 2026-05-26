@@ -11,13 +11,30 @@ interface McpTool {
   description: string;
   /** JSON schema of the tool's arguments (rendered on demand). */
   input_schema?: unknown;
+  /** Originating MCP server (added when flattening across servers). */
+  server: string;
 }
 
-/** The `aphrody mcp list` JSON envelope (only the fields we render). */
-interface McpListJson {
+/**
+ * One server line of `aphrody mcp list`. The command emits **NDJSON** — one such
+ * object per line, one per configured server (aphrody, winclean-core, …) — so we
+ * parse line-by-line rather than as a single object.
+ */
+interface McpServerJson {
   server?: string;
   server_info?: { name?: string; version?: string; protocol_version?: string };
-  tools?: McpTool[];
+  tools?: Omit<McpTool, "server">[];
+  /** Present when a server failed to probe (rendered as a degraded row). */
+  error?: string;
+}
+
+/** A parsed server with its (tagged) tools, for the summary bar. */
+interface McpServer {
+  name: string;
+  version: string;
+  protocol: string;
+  toolCount: number;
+  error?: string;
 }
 
 /**
@@ -45,16 +62,16 @@ interface McpListJson {
         </button>
       </header>
 
-      @if (server(); as s) {
+      @if (servers().length > 0) {
         <div class="server-bar">
-          <span class="badge"><mat-icon class="material-symbols-outlined">dns</mat-icon>{{ s }}</span>
-          @if (serverVersion()) {
-            <span class="meta">rmcp {{ serverVersion() }}</span>
+          @for (s of servers(); track s.name) {
+            <span class="badge" [class.badge-err]="s.error">
+              <mat-icon class="material-symbols-outlined">{{ s.error ? "error" : "dns" }}</mat-icon>
+              {{ s.name }}
+              <span class="badge-count">{{ s.toolCount }}</span>
+            </span>
           }
-          @if (protocol()) {
-            <span class="meta">protocole {{ protocol() }}</span>
-          }
-          <span class="meta">{{ tools().length }} outil(s)</span>
+          <span class="meta">{{ servers().length }} serveur(s) · {{ tools().length }} outil(s)</span>
         </div>
       }
 
@@ -90,7 +107,10 @@ interface McpListJson {
               <div class="tool-row" (click)="toggle(t.name)">
                 <mat-icon class="material-symbols-outlined tool-glyph">build</mat-icon>
                 <div class="tool-text">
-                  <code class="tool-name">{{ t.name }}</code>
+                  <span class="tool-name-row">
+                    <code class="tool-name">{{ t.name }}</code>
+                    <span class="tool-server">{{ t.server }}</span>
+                  </span>
                   <span class="tool-desc">{{ t.description || "(sans description)" }}</span>
                 </div>
                 @if (t.input_schema) {
@@ -193,6 +213,32 @@ interface McpListJson {
         font-size: 16px;
         width: 16px;
         height: 16px;
+      }
+      .badge-err {
+        background: var(--mat-sys-error-container);
+        color: var(--mat-sys-on-error-container);
+      }
+      .badge-count {
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--mat-sys-on-primary-container) 16%, transparent);
+      }
+      .tool-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .tool-server {
+        flex: 0 0 auto;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1px 7px;
+        border-radius: 6px;
+        background: var(--mat-sys-surface-container-highest);
+        color: var(--mat-sys-on-surface-variant);
       }
       .meta {
         font-size: 12px;
@@ -310,9 +356,8 @@ export class McpComponent implements OnInit {
   readonly loading = signal(false);
   readonly error = signal("");
   readonly tools = signal<McpTool[]>([]);
-  readonly server = signal("");
-  readonly serverVersion = signal("");
-  readonly protocol = signal("");
+  /** All configured MCP servers (for the summary bar). */
+  readonly servers = signal<McpServer[]>([]);
   readonly expanded = signal<string | null>(null);
 
   readonly filtered = computed(() => {
@@ -320,7 +365,10 @@ export class McpComponent implements OnInit {
     const list = this.tools();
     if (!q) return list;
     return list.filter(
-      (t) => t.name.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q),
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.description ?? "").toLowerCase().includes(q) ||
+        t.server.toLowerCase().includes(q),
     );
   });
 
@@ -346,24 +394,63 @@ export class McpComponent implements OnInit {
     try {
       const res = await this.aphrody.exec(["mcp", "list"]);
       const out = res.stdout.trim();
-      if (res.code !== 0 || !out.startsWith("{")) {
+      if (res.code !== 0 && !out) {
         this.error.set(
-          (res.stderr || out || "sortie inattendue").slice(0, 400) ||
+          (res.stderr || "sortie inattendue").slice(0, 400) ||
             "La commande mcp list n'a renvoyé aucune donnée.",
         );
         this.tools.set([]);
+        this.servers.set([]);
         return;
       }
-      const json = JSON.parse(out) as McpListJson;
-      this.server.set(json.server ?? "aphrody");
-      this.serverVersion.set(json.server_info?.version ?? "");
-      this.protocol.set(json.server_info?.protocol_version ?? "");
+
+      // `aphrody mcp list` is NDJSON: one server object per line. Parse each
+      // line independently so one malformed/oversized line does not blank the
+      // whole view, and aggregate every server's tools into one tagged list.
+      const servers: McpServer[] = [];
+      const allTools: McpTool[] = [];
+      for (const line of out.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("{")) continue;
+        let obj: McpServerJson;
+        try {
+          obj = JSON.parse(trimmed) as McpServerJson;
+        } catch {
+          continue; // skip an unparseable line rather than failing everything
+        }
+        const name = obj.server ?? obj.server_info?.name ?? "(serveur)";
+        const tools = obj.tools ?? [];
+        servers.push({
+          name,
+          version: obj.server_info?.version ?? "",
+          protocol: obj.server_info?.protocol_version ?? "",
+          toolCount: tools.length,
+          error: obj.error,
+        });
+        for (const t of tools) {
+          allTools.push({ ...t, server: name });
+        }
+      }
+
+      if (servers.length === 0) {
+        this.error.set(
+          (res.stderr || out || "aucun serveur MCP configuré").slice(0, 400),
+        );
+        this.tools.set([]);
+        this.servers.set([]);
+        return;
+      }
+
+      this.servers.set(servers);
       this.tools.set(
-        (json.tools ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
+        allTools
+          .slice()
+          .sort((a, b) => a.server.localeCompare(b.server) || a.name.localeCompare(b.name)),
       );
     } catch (err) {
       this.error.set(`Lecture impossible : ${String(err)}`);
       this.tools.set([]);
+      this.servers.set([]);
     } finally {
       this.loading.set(false);
     }
