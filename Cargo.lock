@@ -749,6 +749,7 @@ dependencies = [
 name = "aphrody-re"
 version = "1.0.0-canary"
 dependencies = [
+ "criterion",
  "fancy-regex 0.18.0",
  "goblin",
  "googletest",
