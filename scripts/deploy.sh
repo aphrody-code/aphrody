@@ -11,7 +11,16 @@
 #    ./scripts/deploy.sh --prefixes aphrody     # restreindre aux bins aphrody*
 #    ./scripts/deploy.sh --target x86_64-unknown-linux-gnu
 #    ./scripts/deploy.sh --dest /opt/bin --dry-run
+#    ./scripts/deploy.sh --include-gui          # + copie aphrody-gui (app desktop)
 #  Parité : scripts/deploy.ps1 (Windows).
+#
+#  Note GUI : l'app desktop (apps/desktop) est un workspace SELF-ROOTED exclu du
+#  workspace core, donc `cargo build --release` ne la construit PAS. --include-gui
+#  copie le binaire `aphrody-gui` déjà bâti (copy-only) depuis
+#  apps/desktop/src-tauri/target/{release,debug} à côté d'aphrody, pour que le
+#  resolver sibling de `aphrody gui` le trouve une fois déployé. Construire la
+#  GUI d'abord : cd apps/desktop && bun install && bun run build && cd src-tauri
+#  && cargo build --release.
 # ============================================================================
 set -euo pipefail
 
@@ -20,15 +29,17 @@ PREFIXES="aphrody,mrx,notebooklm"
 DEST=""
 TARGET=""
 DRY_RUN=0
+INCLUDE_GUI=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --no-build)  NO_BUILD=1; shift ;;
-        --prefixes)  PREFIXES="$2"; shift 2 ;;
-        --dest)      DEST="$2"; shift 2 ;;
-        --target)    TARGET="$2"; shift 2 ;;
-        --dry-run)   DRY_RUN=1; shift ;;
-        -h|--help)   sed -n '2,20p' "$0"; exit 0 ;;
+        --no-build)    NO_BUILD=1; shift ;;
+        --prefixes)    PREFIXES="$2"; shift 2 ;;
+        --dest)        DEST="$2"; shift 2 ;;
+        --target)      TARGET="$2"; shift 2 ;;
+        --include-gui) INCLUDE_GUI=1; shift ;;
+        --dry-run)     DRY_RUN=1; shift ;;
+        -h|--help)     sed -n '2,28p' "$0"; exit 0 ;;
         *) echo "Argument inconnu : $1" >&2; exit 2 ;;
     esac
 done
@@ -94,6 +105,34 @@ for dir in "${CANDIDATE_DIRS[@]}"; do
 done
 [ "${#BINS[@]}" -gt 0 ] || { echo "Aucun binaire exécutable matchant $PREFIXES dans : ${CANDIDATE_DIRS[*]} (build manqué ?)" >&2; exit 1; }
 echo "[deploy] artefacts depuis $RELEASE_DIR"
+
+# --- GUI desktop (opt-in) : binaire hors-workspace, build séparé ------------
+# `aphrody-gui` est produit par le cargo self-rooted de apps/desktop/src-tauri
+# (target propre), jamais par le build core. On l'ajoute au lot de copie pour
+# qu'il atterrisse à côté d'aphrody (le resolver sibling de `aphrody gui` le
+# trouve alors en prod). Copy-only : aucun build déclenché ici.
+if [ "$INCLUDE_GUI" -eq 1 ]; then
+    GUI_DIRS=()
+    if [ -n "$TARGET" ]; then
+        GUI_DIRS+=("$REPO_ROOT/apps/desktop/src-tauri/target/$TARGET/release")
+    else
+        GUI_DIRS+=("$REPO_ROOT/apps/desktop/src-tauri/target/release" \
+                   "$REPO_ROOT/apps/desktop/src-tauri/target/debug")
+    fi
+    gui_bin=""
+    for gd in "${GUI_DIRS[@]}"; do
+        for name in aphrody-gui aphrody-gui.exe; do
+            if [ -f "$gd/$name" ]; then gui_bin="$gd/$name"; break 2; fi
+        done
+    done
+    if [ -n "$gui_bin" ]; then
+        BINS+=("$gui_bin")
+        echo "[deploy] +GUI : $gui_bin"
+    else
+        echo "[warn] --include-gui demandé mais aphrody-gui introuvable dans : ${GUI_DIRS[*]}" >&2
+        echo "       Build : cd apps/desktop && bun install && bun run build && cd src-tauri && cargo build --release" >&2
+    fi
+fi
 
 [ "$DRY_RUN" -eq 0 ] && mkdir -p "$DEST"
 
