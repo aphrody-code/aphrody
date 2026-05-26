@@ -125,6 +125,14 @@ LIB     = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\V
 RUST_MIN_STACK      = { value = "16777216", force = true }
 # Override stale VS 2022 generator inherited from the system env.
 CMAKE_GENERATOR     = { value = "Ninja", force = true }
+# Ninja is a single-config, single-platform generator and ABORTS if a platform
+# is specified. A VS Developer shell exports CMAKE_GENERATOR_PLATFORM=x64
+# alongside the VS generator; CMake reads that env var directly and applies it
+# to the forced Ninja generator above, failing with:
+#   "Generator Ninja does not support platform specification, but platform x64
+#    was specified." (panics whisper-rs-sys / any cmake-rs build under
+#    `cargo clippy --all-targets`). Force it empty so Ninja sees no platform.
+CMAKE_GENERATOR_PLATFORM = { value = "", force = true }
 # aws-lc-sys: use prebuilt NASM + skip the VS 17 hardcoded generator path.
 AWS_LC_SYS_PREBUILT_NASM = { value = "1", force = true }
 AWS_LC_SYS_CMAKE_BUILDER = { value = "1", force = true }
