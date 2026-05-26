@@ -17,10 +17,12 @@
 #  Note GUI : l'app desktop (apps/desktop) est un workspace SELF-ROOTED exclu du
 #  workspace core, donc `cargo build --release` ne la construit PAS. --include-gui
 #  copie le binaire `aphrody-gui` déjà bâti (copy-only) depuis
-#  apps/desktop/src-tauri/target/{release,debug} à côté d'aphrody, pour que le
-#  resolver sibling de `aphrody gui` le trouve une fois déployé. Construire la
-#  GUI d'abord : cd apps/desktop && bun install && bun run build && cd src-tauri
-#  && cargo build --release.
+#  apps/desktop/src-tauri/target/[<triple>/]{release,debug} à côté d'aphrody,
+#  pour que le resolver sibling de `aphrody gui` le trouve une fois déployé.
+#  Construire la GUI en PRODUCTION d'abord (charge les assets bundlés, sinon le
+#  binaire cherche le serveur dev http://localhost:1420) :
+#    cd apps/desktop && bun install && bun run tauri build
+#  (ou, binaire seul sans Node : cargo build --release --features custom-protocol)
 # ============================================================================
 set -euo pipefail
 
@@ -39,7 +41,7 @@ while [ $# -gt 0 ]; do
         --target)      TARGET="$2"; shift 2 ;;
         --include-gui) INCLUDE_GUI=1; shift ;;
         --dry-run)     DRY_RUN=1; shift ;;
-        -h|--help)     sed -n '2,28p' "$0"; exit 0 ;;
+        -h|--help)     sed -n '2,26p' "$0"; exit 0 ;;
         *) echo "Argument inconnu : $1" >&2; exit 2 ;;
     esac
 done
@@ -146,7 +148,7 @@ if [ "$INCLUDE_GUI" -eq 1 ]; then
         echo "[deploy] +GUI : $gui_bin"
     else
         echo "[warn] --include-gui demandé mais aphrody-gui introuvable dans : ${GUI_DIRS[*]}" >&2
-        echo "       Build : cd apps/desktop && bun install && bun run build && cd src-tauri && cargo build --release" >&2
+        echo "       Build production : cd apps/desktop && bun install && bun run tauri build" >&2
     fi
 fi
 

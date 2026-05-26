@@ -35,6 +35,17 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "aphrody-gui"
 path = "src/main.rs"
 
+[features]
+# PRODUCTION GATE -- DO NOT REMOVE. Tauri decides dev-vs-production purely by
+# `tauri::is_dev() == !cfg!(feature = "custom-protocol")` (tauri 2.11
+# src/lib.rs:308). With this feature OFF (a bare `cargo build`/`cargo run`, even
+# `--release`) the webview loads `build.devUrl` (http://localhost:1420) and shows
+# "localhost refused to connect" when no `ng serve` is up. With it ON the webview
+# serves the embedded `build.frontendDist` over the `tauri://` protocol.
+# `tauri build` enables it automatically; for a cargo-only production binary use
+# `cargo build --release --features custom-protocol`.
+custom-protocol = ["tauri/custom-protocol"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
