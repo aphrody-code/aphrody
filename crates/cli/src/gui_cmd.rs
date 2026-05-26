@@ -185,15 +185,51 @@ fn not_found_report() -> miette::Report {
          Résolution tentée (premier match gagnant) :\n\
          1. ${ENV} (fichier existant)\n\
          2. voisin de l'exécutable : `aphrody-gui[.exe]`\n\
-         3. build in-tree : `apps/desktop/src-tauri/target/{{release,debug}}/aphrody-gui[.exe]`\n\
+         3. build in-tree : `apps/desktop/src-tauri/target/[<triple>/]{{release,debug}}/aphrody-gui[.exe]`\n\
          4. PATH : `aphrody-gui`\n\n\
          Remèdes :\n\
-         (a) Construire : `cd apps/desktop && bun install && bun run build && \
-             cd src-tauri && cargo build --release`\n\
+         (a) Construire (production, charge les assets bundlés) :\n\
+         \x20    `cd apps/desktop && bun install && bun run tauri build`\n\
+         \x20    Binaire seul, sans Node : `cargo build --release --features custom-protocol`\n\
+         \x20    (un simple `cargo build` produit un binaire DEV qui cherche le serveur\n\
+         \x20     `bun run start` sur http://localhost:1420 — d'où « localhost refused ».)\n\
          (b) Définir l'override : `{ENV}=/chemin/aphrody-gui`\n\
-         (c) Déployer le binaire : `scripts/deploy.ps1` (Windows) ou `scripts/deploy.sh` (Unix).",
+         (c) Déployer le binaire : `scripts/deploy.ps1 -IncludeGui` (Windows) ou \
+             `scripts/deploy.sh --include-gui` (Unix).",
         ENV = ENV_GUI_BIN,
     )
+}
+
+/// Spawn the GUI binary **detached** from this launcher so the window outlives
+/// the `aphrody` process in every context (interactive shell, piped output, or
+/// a kill-on-close job object):
+///
+/// - **Windows**: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` — the child
+///   inherits no console and gets its own process group, so closing the parent
+///   console (or a job that kills its tree on close, which is what made a naive
+///   spawn die the instant `aphrody` exited) does not take the window down.
+/// - **Unix**: a fresh process group via `process_group(0)` — a terminal SIGINT
+///   to the launcher's group is not delivered to the GUI, and an un-`wait`ed
+///   child is naturally orphaned to init when `aphrody` exits.
+///
+/// Both paths are safe (no `unsafe`, no extra dependency). Output handles are
+/// left inherited; the GUI does not write to them.
+fn spawn_detached(bin_path: &Path, args: &[String]) -> std::io::Result<std::process::Child> {
+    let mut cmd = std::process::Command::new(bin_path);
+    cmd.args(args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+        cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+    cmd.spawn()
 }
 
 /// Implementation of `aphrody gui [--print-path] [-- <args…>]`.
@@ -232,13 +268,11 @@ impl GuiCommand {
         }
 
         // Fire-and-forget: the GUI owns its own window/event loop, so we spawn
-        // without inheriting stdio-blocking semantics and never `.wait()`.
-        let child = std::process::Command::new(&bin_path)
-            .args(&self.args)
-            .spawn()
-            .map_err(|e| {
-                miette::miette!("Échec du lancement de `{}` : {e}", display_path.display())
-            })?;
+        // it detached (see `spawn_detached`) and never `.wait()`, so the
+        // terminal returns immediately and the window outlives this launcher.
+        let child = spawn_detached(&bin_path, &self.args).map_err(|e| {
+            miette::miette!("Échec du lancement de `{}` : {e}", display_path.display())
+        })?;
 
         println!("aphrody-gui lancé (pid {})", child.id());
         Ok(())

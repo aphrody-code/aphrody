@@ -77,7 +77,11 @@ fn gui_print_path_without_binary_errors_with_guidance() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("aphrody-gui").and(
-            predicate::str::contains("APHRODY_GUI_BIN").and(predicate::str::contains("bun run build")),
+            // The guidance must name the env override and the PRODUCTION build
+            // command (`bun run tauri build`) -- a bare `cargo build` yields a
+            // dev-mode binary that fails with "localhost refused to connect".
+            predicate::str::contains("APHRODY_GUI_BIN")
+                .and(predicate::str::contains("bun run tauri build")),
         ));
 }
 
