@@ -17,10 +17,12 @@
 #  Note GUI : l'app desktop (apps/desktop) est un workspace SELF-ROOTED exclu du
 #  workspace core, donc `cargo build --release` ci-dessous ne la construit PAS.
 #  -IncludeGui copie le binaire `aphrody-gui` déjà bâti (copy-only) depuis
-#  apps/desktop/src-tauri/target/{release,debug} à côté d'aphrody, pour que le
-#  resolver sibling de `aphrody gui` le trouve une fois déployé. Construire la
-#  GUI d'abord : cd apps/desktop && bun install && bun run build && cd src-tauri
-#  && cargo build --release.
+#  apps/desktop/src-tauri/target/[<triple>/]{release,debug} à côté d'aphrody,
+#  pour que le resolver sibling de `aphrody gui` le trouve une fois déployé.
+#  Construire la GUI en PRODUCTION d'abord (charge les assets bundlés, sinon le
+#  binaire cherche le serveur dev http://localhost:1420) :
+#    cd apps/desktop ; bun install ; bun run tauri build
+#  (ou, binaire seul sans Node : cargo build --release --features custom-protocol)
 # ============================================================================
 [CmdletBinding()]
 param(
@@ -132,7 +134,7 @@ if ($IncludeGui) {
         Write-Host "[deploy] +GUI : $($guiBin.FullName)" -ForegroundColor Cyan
     } else {
         Write-Host "[warn] -IncludeGui demandé mais aphrody-gui.exe introuvable dans $($guiDirs -join ', ')." -ForegroundColor Yellow
-        Write-Host "       Build : cd apps/desktop; bun install; bun run build; cd src-tauri; cargo build --release" -ForegroundColor Yellow
+        Write-Host "       Build production : cd apps/desktop; bun install; bun run tauri build" -ForegroundColor Yellow
     }
 }
 
