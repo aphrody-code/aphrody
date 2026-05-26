@@ -618,7 +618,65 @@ async fn voice_transcribe(audio_b64: String, mime: String) -> Result<String, Str
         return Ok(transcript.text);
     }
 
-    Err("no-stt-key".to_owned())
+    // Keyless fallback: transcribe via Gemini using the agy (Antigravity) OAuth
+    // token — the same Cloud Code path the chat uses, so live voice needs NO API
+    // key. `audio_b64` is already base64 (what `inlineData` wants); no re-encode.
+    transcribe_via_agy(&audio_b64, &mime).await
+}
+
+/// Keyless speech-to-text: POST the recorded audio to Gemini
+/// (`gemini-3-flash-preview` on the Daily Cloud Code endpoint) via the agy OAuth
+/// token and return the verbatim transcription. Mirrors the keyless chat path,
+/// so the live voice overlay works with no Whisper/ElevenLabs key. Gemini accepts
+/// `audio/wav` (and mp3/ogg/aac/flac/aiff); the overlay records WAV for this path.
+async fn transcribe_via_agy(audio_b64: &str, mime: &str) -> Result<String, String> {
+    use antigravity_sdk::client::AntigravityClient;
+    use antigravity_sdk::endpoints::{CloudCodeEndpoint, METHOD_GENERATE_CONTENT};
+
+    let client = AntigravityClient::from_credential_manager()
+        .map_err(|e| format!("agy token unavailable: {e}"))?;
+    let project = client
+        .resolve_cloudcode_project()
+        .await
+        .map_err(|e| format!("loadCodeAssist: {e}"))?
+        .ok_or_else(|| "no cloudaicompanionProject (run `aphrody antigravity onboard`)".to_owned())?;
+
+    let body = serde_json::json!({
+        "model": "gemini-3-flash-preview",
+        "project": project,
+        "request": {
+            "contents": [{
+                "role": "user",
+                "parts": [
+                    { "inlineData": { "mimeType": mime, "data": audio_b64 } },
+                    { "text": "Transcris cet audio mot a mot dans sa langue d'origine. \
+                               Reponds UNIQUEMENT par la transcription brute, sans prologue, \
+                               sans guillemets. Si l'audio est silencieux ou inintelligible, \
+                               reponds par une chaine vide." }
+                ]
+            }]
+        }
+    });
+
+    let resp = client
+        .cloud_code(CloudCodeEndpoint::Daily, METHOD_GENERATE_CONTENT, &body)
+        .await
+        .map_err(|e| format!("agy transcribe: {e}"))?;
+
+    // Cloud Code wraps the reply under `response`; join the first candidate's
+    // text parts.
+    let text = resp
+        .pointer("/response/candidates/0/content/parts")
+        .and_then(serde_json::Value::as_array)
+        .map(|parts| {
+            parts
+                .iter()
+                .filter_map(|p| p.get("text").and_then(serde_json::Value::as_str))
+                .collect::<String>()
+        })
+        .unwrap_or_default();
+
+    Ok(text.trim().to_owned())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -631,6 +689,24 @@ pub fn run() {
     // panic. Install once here, at startup, so the order is guaranteed.
     // Idempotent: the later `run_async` install is a no-op (CLAUDE.md §7).
     let _ = rustls::crypto::ring::default_provider().install_default();
+
+    // Microphone for the live voice overlay. The WebView2 (Windows) / WebKitGTK
+    // webview gates `getUserMedia` behind a permission prompt that, with no host
+    // handler, defaults to DENY — so the mic never opens and the voice loop is
+    // dead. wry forwards `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` to the embedded
+    // Chromium; `--use-fake-ui-for-media-stream` auto-accepts the getUserMedia
+    // permission using the REAL microphone device (it skips only the prompt UI,
+    // not the device). Must be set before the webview is created.
+    #[cfg(target_os = "windows")]
+    if std::env::var_os("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").is_none() {
+        // SAFETY: single-threaded startup, before any webview/thread is spawned.
+        unsafe {
+            std::env::set_var(
+                "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+                "--use-fake-ui-for-media-stream",
+            );
+        }
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
