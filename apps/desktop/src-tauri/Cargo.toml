@@ -24,6 +24,17 @@ edition = "2021"
 name = "desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+# Explicit binary target so `cargo build` emits `aphrody-gui(.exe)` (instead of
+# the default, which derives from the package name `desktop`). The package name
+# and `[lib] name = "desktop_lib"` are intentionally left unchanged so `main.rs`
+# keeps calling `desktop_lib::run()`. This matches the `aphrody gui` resolver in
+# the core CLI, which looks for an `aphrody-gui` binary sibling to `aphrody`.
+# Tauri's `tauri build`/`bundle` rename is locked to the same name via
+# `mainBinaryName` in tauri.conf.json, keeping `cargo` and `tauri` consistent.
+[[bin]]
+name = "aphrody-gui"
+path = "src/main.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
