@@ -1857,15 +1857,31 @@ impl TerminalCommand for ChatCommand {
             match GeminiWebBackend::connect_for(Some(config.model.as_str())).await {
                 Ok(web) => Box::new(web),
                 Err(web_err) => {
+                    // The web transport serves real Gemini 3.5 Flash but needs the
+                    // signed-in Google cookie jar (~/.aphrody/google-cookies.json).
+                    // When it is absent, do NOT drop to a useless stub: fall back
+                    // to the agy token backend so the turn still gets a real reply.
+                    // The agy/Cloud Code path does not serve `gemini-3.5-flash`
+                    // (404), so let it pick its default served model (`None` ->
+                    // gemini-2.5-flash) rather than forwarding `config.model`.
                     eprintln!(
-                        "[chat] keyless Gemini web transport unavailable ({web_err}). Sign in \
-                         to gemini.google.com and export the cookie jar to \
-                         ~/.aphrody/google-cookies.json, or drop `--web` to use the agy token. \
-                         Falling back to the stub backend."
+                        "[chat] keyless Gemini web transport unavailable ({web_err}). For real \
+                         Gemini 3.5 Flash, export your signed-in Google cookies (Cookie-Editor \
+                         JSON) to ~/.aphrody/google-cookies.json. Falling back to the agy token \
+                         backend for this turn."
                     );
-                    Box::new(StubBackend::with_reply(
-                        "(stub backend reply — keyless web transport unavailable)",
-                    ))
+                    match AgyBackend::connect(None) {
+                        Ok(agy) => Box::new(agy),
+                        Err(agy_err) => {
+                            eprintln!(
+                                "[chat] agy token also unavailable ({agy_err}). Falling back to \
+                                 the stub backend."
+                            );
+                            Box::new(StubBackend::with_reply(
+                                "(stub backend reply — neither web cookies nor agy token available)",
+                            ))
+                        },
+                    }
                 },
             }
         } else {
