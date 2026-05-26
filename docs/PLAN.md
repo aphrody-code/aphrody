@@ -207,7 +207,7 @@ tools = Phase 2.
 | R3 | Providers externes wired | 3 (lancedb + honcho + mem0) | 3 (HonchoProvider + Mem0Provider + SqliteLocal ✅ R3.2-R3.3 DONE) |
 | R4 | bxc DOM-only scrape p50 | < 200 ms | non mesuré (mais bxc `example.com` < 1s end-to-end mesuré 2026-05-19) |
 | R4 | Cloudflare bypass success rate | ≥ 95 % | non mesuré (CF identifié sur example.com mais pas testé contre protection active) |
-| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | non mesuré (lib shippée R5.1-R5.4, bench a faire) |
+| R5 | `aphrody re triage` p50 sur PE 5MB | < 1 s | ✅ **8.83 ms** (566 MiB/s, dev host Win11 MSVC) — cible tenue ~113× ; `cargo bench -p aphrody-re --bench triage`, ledger §4.4 (2026-05-26) |
 | R5 | MCP tools reverse | 4 | 4 (re_triage, re_disasm, re_strings, re_sections — ✅ R5.7 DONE) |
 
 ---
@@ -568,7 +568,7 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | Chaîne bxc live (2026-05-19) | ✅ `bxc-engine` (Rust, 49 MB) + `packages/bxc/rust-bridge/bxc_rust_bridge.dll` + `bxc api` Bun server tournent ; `/api/scrape` extrait "Example Domain" depuis example.com en <1s ; `/api/detect` identifie Cloudflare CDN. aphrody attache requires 3 patches docs §gap #1 | aphrody scrape live |
 | Repo size (sans target, sans mdi) | ~7 Go (vendor/bun dominant) | optimisé |
 | Disque libéré (P1+pivot) | 1.2 Go (vendor/crates.io) + 4.6 Go (material-design-icons) | n/a |
-| CVE ignorés (justifiés) | 12 | < 5 (après upstream alignment) |
+| CVE ignorés (justifiés) | 5 (4 stale retirés 2026-05-26, cf. `docs/audits/2026-05-26-supply-chain-hygiene.md`) | < 5 (après upstream alignment) |
 | Cibles cross-platform bloquantes | 3 (Linux/Win/wasm) | 3 |
 
 ---
