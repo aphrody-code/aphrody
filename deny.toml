@@ -38,32 +38,31 @@ ignore = [
     # Re-evaluate when reqwest 0.13 lets us disable aws-lc-sys cleanly.
     # 2026-05-17: RUSTSEC-2026-0045/-0046/-0047/-0048 cleared from advisory-db
     # after upstream patch — kept removed; will re-add if regression detected.
+    # 2026-05-26: supply-chain hygiene pass — removed four stale ignores that no
+    # longer match any crate in the graph (cargo deny flagged each as
+    # `advisory-not-detected`):
+    #   * RUSTSEC-2025-0141 (bincode 1.x) — syntect/bincode-1 gone; only the
+    #     bgw-patched bincode v2.0.1 remains, which the advisory does not target.
+    #   * RUSTSEC-2024-0320 (yaml-rust)  — crate absent from graph entirely.
+    #   * RUSTSEC-2025-0052 (async-std)  — came via dark-light -> mui-rs, both
+    #     extracted to the aphrody-ts sibling repo on 2026-05-23; absent now.
+    #   * RUSTSEC-2026-0114 (wasmtime)   — wasmtime is now v43.0.2 (via yara-x,
+    #     not mui-rs); v43.0.2 IS the patched version the advisory points to.
+    # See docs/audits/2026-05-26-supply-chain-hygiene.md for cargo tree -i proof.
+    #
     # rustls-pemfile unmaintained — used only in a2a-grpc test/TLS paths. The
     # replacement (rustls-pki-types) is not yet integrated upstream. Track when
     # tonic-tls migrates away from rustls-pemfile.
     { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; optional test dep in a2a-grpc, no prod code path" },
-    # bincode 1.3.3 — pulled transitively by syntect (used by comrak + aphrody-terminal-markdown).
-    # bincode 1.x is considered feature-complete by the upstream team; no security issues.
-    { id = "RUSTSEC-2025-0141", reason = "bincode 1.3.3 declared feature-complete by authors; transitive via syntect, no exploit path" },
-    # encoding crate — transitive via quick-xml encoding feature (comrak/sidecar). No safe upgrade.
-    { id = "RUSTSEC-2021-0153", reason = "encoding unmaintained; transitive via quick-xml, no exec path in aphrody" },
+    # encoding crate — transitive via lindera -> lance -> lancedb. No safe upgrade.
+    { id = "RUSTSEC-2021-0153", reason = "encoding unmaintained; transitive via lindera/lance/lancedb, no exec path in aphrody" },
     # paste — back in dep graph via lancedb/datafusion macro paths. No safe upgrade.
     { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; transitive via lancedb datafusion macros, no runtime impact" },
-    # rsa Marvin Attack — back in dep graph via lancedb/datafusion. Timing side-channel in
+    # rsa Marvin Attack — pulled via octocrab -> jsonwebtoken. Timing side-channel in
     # RSA PKCS#1 v1.5 decrypt only; aphrody never decrypts RSA ciphertexts in hot path.
-    { id = "RUSTSEC-2023-0071", reason = "rsa Marvin Attack timing side-channel; transitive via lancedb, no RSA decrypt in aphrody hot path" },
-    # serial crate — unmaintained, transitive via testing = 22 dev-dep.
-    { id = "RUSTSEC-2017-0008", reason = "serial unmaintained; transitive via testing dev-dep, no runtime exposure" },
-    # yaml-rust — unmaintained, transitive via serde_yaml 0.9 (aphrody-skills/marketplace).
-    # serde_yaml 0.9 bundles its own yaml-rust fork; no safe upgrade path until serde_yaml 1.0.
-    { id = "RUSTSEC-2024-0320", reason = "yaml-rust unmaintained; bundled in serde_yaml 0.9 transitive dep, upgrade blocked by upstream" },
-    # async-std -- unmaintained (RUSTSEC-2025-0052). Pulled transitively by dark-light -> mui-rs.
-    # mui-rs is not in the aphrody binary dep chain; tracked for eventual dark-light upgrade.
-    { id = "RUSTSEC-2025-0052", reason = "async-std unmaintained; transitive via dark-light->mui-rs, not reachable from aphrody binary" },
-    # wasmtime RUSTSEC-2026-0114 -- OOM/panic on 32-bit when allocating table exceeding address space.
-    # wasmtime v42.0.2 pulled by mui-rs (wasm component model), not the aphrody binary.
-    # Fix: upgrade to >=36.0.8 or >=43.0.2. Tracked for next mui-rs dependency update.
-    { id = "RUSTSEC-2026-0114", reason = "wasmtime OOM/panic on 32-bit table alloc; transitive via mui-rs, not in aphrody binary path; upgrade tracked" },
+    { id = "RUSTSEC-2023-0071", reason = "rsa Marvin Attack timing side-channel; transitive via octocrab/jsonwebtoken, no RSA decrypt in aphrody hot path" },
+    # serial crate — unmaintained, transitive via portable-pty -> aphrody-terminal-backend.
+    { id = "RUSTSEC-2017-0008", reason = "serial unmaintained; transitive via portable-pty, no runtime exposure" },
 ]
 
 # ----------------------------------------------------------------------------
