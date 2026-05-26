@@ -41,10 +41,11 @@ interface Suggestion {
   prompt: string;
 }
 
-const MODELS = [
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-] as const;
+// Gemini 3.5 Flash is aphrody's canonical chat model (the gemini-web backend
+// verifies it; hermes and the command palette use it). A prior revert wrongly
+// swapped this to 2.5 — restored here, and the selection is now actually passed
+// to `aphrody chat --model` below (it used to be cosmetic).
+const MODELS = [{ id: "gemini-3.5-flash", label: "Gemini 3.5 Flash" }] as const;
 
 /** Accept filters for the native file picker, per media menu entry. */
 const ACCEPT: Record<"image" | "video" | "audio", string> = {
@@ -461,6 +462,8 @@ export class AssistantComponent implements AfterViewChecked {
         "chat",
         "--prompt",
         fullPrompt,
+        "--model",
+        this.model().id,
         ...this.settings.extraChatArgs(),
       ]);
       reply = (res.stdout || res.stderr || "").trim() || "(réponse vide)";
