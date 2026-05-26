@@ -385,17 +385,20 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
   /** Guards against re-entrant sends while a turn is in flight. */
   private processing = false;
 
-  /** Active MediaRecorder for native STT capture path. */
-  private mediaRecorder: MediaRecorder | null = null;
-  /** Accumulated chunks from the current MediaRecorder recording. */
-  private recordingChunks: Blob[] = [];
-  /** MIME type reported by the active MediaRecorder. */
-  private recordingMime = "audio/webm";
-
+  // ── Native STT capture (Web Audio PCM -> WAV) ────────────────────────────────
+  // We capture raw PCM via the Web Audio graph (not MediaRecorder, which only
+  // emits webm/opus — a format Gemini's audio input does NOT accept) and encode
+  // a 16-bit mono WAV. That WAV is what the keyless Gemini STT path transcribes.
   private audioContext: AudioContext | null = null;
-  private analyser: AnalyserNode | null = null;
   private micStream: MediaStream | null = null;
-  private silenceIntervalId: any = null;
+  private sourceNode: MediaStreamAudioSourceNode | null = null;
+  private processorNode: ScriptProcessorNode | null = null;
+  /** Accumulated PCM frames (copies — the Web Audio buffer is reused). */
+  private pcmChunks: Float32Array[] = [];
+  /** Sample rate of the active capture context (for the WAV header). */
+  private captureSampleRate = 16000;
+  /** True while a capture is live (gates the processor callback). */
+  private capturing = false;
   private maxDurationTimeoutId: any = null;
   private lastActiveTime = 0;
 
@@ -410,7 +413,7 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyed = true;
-    this.stopMediaRecorder();
+    this.teardownCapture();
     this.speech.stop();
     this.speech.shutUp();
     this.stopNativeAudio();
@@ -451,121 +454,106 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
 
   private async beginNativeListening(): Promise<void> {
     if (this.destroyed || this.muted() || this.processing) return;
+    const AudioCtx = globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+    if (!AudioCtx) {
+      this.beginWebSpeechListening();
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
       if (this.destroyed || this.muted()) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
       this.micStream = stream;
 
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "";
-      this.recordingMime = mime || "audio/webm";
-      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      this.mediaRecorder = recorder;
-      this.recordingChunks = [];
+      const ctx: AudioContext = new AudioCtx();
+      this.audioContext = ctx;
+      this.captureSampleRate = ctx.sampleRate;
+      const source = ctx.createMediaStreamSource(stream);
+      this.sourceNode = source;
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      this.processorNode = processor;
 
-      recorder.ondataavailable = (ev) => {
-        if (ev.data && ev.data.size > 0) {
-          this.recordingChunks.push(ev.data);
+      this.pcmChunks = [];
+      this.capturing = true;
+      this.lastActiveTime = Date.now();
+      let sawSpeech = false;
+
+      // One node both captures PCM and runs voice-activity detection (RMS):
+      // we stop ~1.2s after speech tails off, or at the 15s safety cap.
+      processor.onaudioprocess = (ev) => {
+        if (!this.capturing || this.muted() || this.processing) return;
+        const input = ev.inputBuffer.getChannelData(0);
+        this.pcmChunks.push(new Float32Array(input)); // copy: buffer is reused
+
+        let sum = 0;
+        for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+        const rms = Math.sqrt(sum / input.length);
+        const now = Date.now();
+        if (rms > 0.012) {
+          this.lastActiveTime = now;
+          sawSpeech = true;
+        } else if (sawSpeech && now - this.lastActiveTime > 1200) {
+          this.finishCapture();
         }
       };
 
-      recorder.onstop = () => {
-        this.stopMediaRecorder();
-        if (!this.destroyed && !this.muted() && !this.processing) {
-          void this.processNativeRecording();
-        }
-      };
+      source.connect(processor);
+      // ScriptProcessor only fires when connected to a destination; route it to
+      // a muted gain so nothing is actually played back to the speakers.
+      const sink = ctx.createGain();
+      sink.gain.value = 0;
+      processor.connect(sink);
+      sink.connect(ctx.destination);
 
-      // Configure Web Audio API for VAD (silence detection)
-      const AudioCtx = globalThis.AudioContext || (globalThis as any).webkitAudioContext;
-      if (AudioCtx) {
-        try {
-          const ctx = new AudioCtx();
-          this.audioContext = ctx;
-          const source = ctx.createMediaStreamSource(stream);
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          source.connect(analyser);
-          this.analyser = analyser;
-
-          this.lastActiveTime = Date.now();
-          const bufferLength = analyser.frequencyBinCount;
-          const dataArray = new Uint8Array(bufferLength);
-
-          this.silenceIntervalId = setInterval(() => {
-            if (!this.analyser || this.muted() || this.processing) return;
-            this.analyser.getByteFrequencyData(dataArray);
-
-            let sum = 0;
-            for (let i = 0; i < bufferLength; i++) {
-              sum += dataArray[i];
-            }
-            const average = sum / bufferLength;
-            const now = Date.now();
-
-            if (average > 8) {
-              this.lastActiveTime = now;
-            } else if (now - this.lastActiveTime > 1500) {
-              if (recorder.state === "recording") {
-                recorder.stop();
-              }
-            }
-          }, 100);
-        } catch {
-          // ignore context creation errors
-        }
-      }
-
-      recorder.start(1000);
-
-      // Max recording duration safety cap: 15 seconds
-      this.maxDurationTimeoutId = setTimeout(() => {
-        if (recorder.state === "recording") {
-          recorder.stop();
-        }
-      }, 15000);
+      this.maxDurationTimeoutId = setTimeout(() => this.finishCapture(), 15000);
     } catch {
       // Mic permission denied or no microphone — fall back to Web Speech.
+      this.teardownCapture();
       this.beginWebSpeechListening();
     }
   }
 
-  private async processNativeRecording(): Promise<void> {
+  /** Stop the live capture and hand the accumulated PCM to transcription. */
+  private finishCapture(): void {
+    if (!this.capturing) return;
+    this.capturing = false;
+    const chunks = this.pcmChunks;
+    this.pcmChunks = [];
+    const rate = this.captureSampleRate;
+    this.teardownCapture();
+    if (!this.destroyed && !this.muted() && !this.processing) {
+      void this.processNativeRecording(chunks, rate);
+    }
+  }
+
+  private async processNativeRecording(chunks: Float32Array[], sampleRate: number): Promise<void> {
     if (this.processing || this.destroyed) return;
-
-    const chunks = this.recordingChunks;
-    this.recordingChunks = [];
-    this.mediaRecorder = null;
-
     if (!chunks.length) {
-      // Nothing recorded; loop back.
       this.beginListening();
       return;
     }
 
-    const blob = new Blob(chunks, { type: this.recordingMime });
-    // Convert to base64 for the Tauri IPC.
-    const b64 = await blobToBase64(blob);
+    // Encode 16-bit mono WAV (the format Gemini's audio input accepts) and hand
+    // it to the keyless transcription path.
+    const wav = encodeWavFromFloat32(chunks, sampleRate);
+    const b64 = await blobToBase64(new Blob([wav], { type: "audio/wav" }));
 
     let utterance = "";
     try {
-      utterance = await this.agent.voiceTranscribe(b64, this.recordingMime);
-      utterance = utterance.trim();
+      utterance = (await this.agent.voiceTranscribe(b64, "audio/wav")).trim();
     } catch (err) {
       const msg = String(err);
-      if (msg === "no-stt-key" || err instanceof HostUnavailableError) {
-        // No native STT key configured — fall back to Web Speech for this turn.
+      if (err instanceof HostUnavailableError) {
+        // No Tauri host (ng serve) — use Web Speech recognition instead.
         this.beginWebSpeechListening();
         return;
       }
-      // Transient API error: show briefly, then loop.
-      this.errorText.set(`STT indisponible : ${msg}`);
+      // Transient backend error (e.g. agy token expired): show briefly, loop.
+      this.errorText.set(`Transcription indisponible : ${msg}`);
       setTimeout(() => {
         if (!this.destroyed) {
           this.errorText.set("");
@@ -585,24 +573,29 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
     await this.handleUtterance(utterance);
   }
 
-  private stopMediaRecorder(): void {
-    const rec = this.mediaRecorder;
-    this.mediaRecorder = null; // Prevent recursion
-    if (rec && rec.state !== "inactive") {
-      try {
-        rec.stop();
-      } catch {
-        // already stopped
-      }
-    }
-
-    if (this.silenceIntervalId) {
-      clearInterval(this.silenceIntervalId);
-      this.silenceIntervalId = null;
-    }
+  /** Tear down the Web Audio capture graph + mic stream + timers. */
+  private teardownCapture(): void {
+    this.capturing = false;
     if (this.maxDurationTimeoutId) {
       clearTimeout(this.maxDurationTimeoutId);
       this.maxDurationTimeoutId = null;
+    }
+    if (this.processorNode) {
+      try {
+        this.processorNode.disconnect();
+        this.processorNode.onaudioprocess = null;
+      } catch {
+        // ignore
+      }
+      this.processorNode = null;
+    }
+    if (this.sourceNode) {
+      try {
+        this.sourceNode.disconnect();
+      } catch {
+        // ignore
+      }
+      this.sourceNode = null;
     }
     if (this.audioContext) {
       try {
@@ -612,7 +605,6 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
       }
       this.audioContext = null;
     }
-    this.analyser = null;
     if (this.micStream) {
       this.micStream.getTracks().forEach((t) => t.stop());
       this.micStream = null;
@@ -662,7 +654,7 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
       return;
     }
     this.processing = true;
-    this.stopMediaRecorder();
+    this.teardownCapture();
     this.speech.stop(); // pause the recogniser while we think + speak
     this.phase.set("thinking");
     this.errorText.set("");
@@ -745,7 +737,7 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
     const next = !this.muted();
     this.muted.set(next);
     if (next) {
-      this.stopMediaRecorder();
+      this.teardownCapture();
       this.speech.stop();
       this.speech.shutUp();
       this.stopNativeAudio();
@@ -756,7 +748,7 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
   }
 
   close(): void {
-    this.stopMediaRecorder();
+    this.teardownCapture();
     this.speech.stop();
     this.speech.shutUp();
     this.stopNativeAudio();
@@ -765,6 +757,46 @@ export class VoiceOverlayComponent implements OnInit, OnDestroy {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Encode accumulated Float32 PCM frames as a 16-bit mono PCM WAV
+ * (`audio/wav`) — the format Gemini's audio input accepts. `sampleRate` is the
+ * capture context's native rate (the WAV header carries it; no resampling).
+ */
+function encodeWavFromFloat32(chunks: Float32Array[], sampleRate: number): ArrayBuffer {
+  let total = 0;
+  for (const c of chunks) total += c.length;
+
+  const buffer = new ArrayBuffer(44 + total * 2);
+  const view = new DataView(buffer);
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+  };
+
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + total * 2, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true); // fmt chunk size
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate (mono, 16-bit)
+  view.setUint16(32, 2, true); // block align
+  view.setUint16(34, 16, true); // bits per sample
+  writeStr(36, "data");
+  view.setUint32(40, total * 2, true);
+
+  let offset = 44;
+  for (const c of chunks) {
+    for (let i = 0; i < c.length; i++) {
+      const s = Math.max(-1, Math.min(1, c[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      offset += 2;
+    }
+  }
+  return buffer;
+}
 
 /** Convert a Blob to a base64 string (data URL prefix stripped). */
 function blobToBase64(blob: Blob): Promise<string> {

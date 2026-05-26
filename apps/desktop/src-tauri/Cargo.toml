@@ -66,6 +66,11 @@ aphrody = { path = "../../../crates/cli" }
 aphrody-voice = { path = "../../../crates/aphrody-voice" }
 base64 = "0.22"
 
+# Keyless STT fallback: when no Whisper/ElevenLabs key is set, `voice_transcribe`
+# sends the recorded audio to Gemini via the agy (Antigravity) OAuth token —
+# the same keyless Cloud Code path the chat uses (cf. crates/cli agy_backend).
+antigravity-sdk = { path = "../../../crates/antigravity-sdk" }
+
 # rustls 0.23 CryptoProvider — installed once at startup so the native voice
 # commands' reqwest client does not panic "no process-level CryptoProvider".
 # `ring` matches the aphrody workspace (CLAUDE.md §7); features unify with reqwest.
