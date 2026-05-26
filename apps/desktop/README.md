@@ -44,10 +44,26 @@ The built `dist/` references **no** network resource.
 
 ```bash
 bun install
-bun run build      # ng build -> dist/desktop/browser
-bun run start      # ng serve  -> http://localhost:1420
-bun run tauri dev  # full desktop shell (requires the sibling aphrody repo)
+bun run build       # ng build  -> dist/desktop/browser (frontend only)
+bun run start       # ng serve  -> http://localhost:1420
+bun run tauri dev   # dev shell: live frontend over the ng serve devUrl
+bun run tauri build # PRODUCTION shell: embeds dist/, loads no dev server
 ```
+
+### Production vs dev (read before shipping)
+
+Tauri decides dev-vs-production purely by `tauri::is_dev()`, which is
+`!cfg!(feature = "custom-protocol")` (tauri 2.11 `src/lib.rs:308`). So:
+
+- A **bare `cargo build` / `cargo run`** — *even `--release`* — leaves
+  `custom-protocol` **off**, so the webview loads `build.devUrl`
+  (`http://localhost:1420`). With no `bun run start` running you get
+  **"localhost refused to connect"**. This is a dev artifact, not shippable.
+- The **production binary** has `custom-protocol` **on**, so the webview serves
+  the embedded `build.frontendDist` over the `tauri://` protocol — no network.
+  Produce it with either:
+  - `bun run tauri build` (also makes installers), or
+  - `cargo build --release --features custom-protocol` (binary only, no Node).
 
 `src-tauri/rust-toolchain.toml` pins the same nightly as the core aphrody
 workspace, required because the in-process CLI dependency uses Edition 2024.
@@ -59,23 +75,28 @@ embedding a webview in `aphrody` (the wry/tao/GTK stack stays out of the core
 supply-chain — `apps/desktop` is a self-rooted workspace excluded from the
 core, cf. `CLAUDE.md` §2/§7).
 
-- **Binary name** — `cargo build` here emits **`aphrody-gui`** (`.exe` on
-  Windows), set via `[[bin]] name = "aphrody-gui"` in `src-tauri/Cargo.toml`;
-  `tauri build`/bundle is locked to the same name via `mainBinaryName` in
+- **Binary name** — the build emits **`aphrody-gui`** (`.exe` on Windows), set
+  via `[[bin]] name = "aphrody-gui"` in `src-tauri/Cargo.toml`; `tauri
+  build`/bundle is locked to the same name via `mainBinaryName` in
   `tauri.conf.json` (the package stays `desktop`, `[lib] desktop_lib` so
   `main.rs` keeps calling `desktop_lib::run()`). `productName` stays `aphrody`.
+  Use a **production** build (see above) — `aphrody gui` will happily launch a
+  dev-mode binary, which then shows the localhost error.
 - **Launch** — `aphrody gui` resolves the binary in this order (first match
-  wins) and spawns it fire-and-forget (the terminal is never blocked):
+  wins) and spawns it **detached** (the window outlives the launcher; the
+  terminal is never blocked):
   1. `$APHRODY_GUI_BIN` (explicit path to an existing file),
   2. an `aphrody-gui[.exe]` sibling of the running `aphrody` (the deployed
      case),
   3. an in-tree build at
-     `apps/desktop/src-tauri/target/{release,debug}/aphrody-gui[.exe]`,
+     `apps/desktop/src-tauri/target/[<triple>/]{release,debug}/aphrody-gui[.exe]`
+     — the `<triple>` segment is present when a `build.target` is forced (the
+     repo `.cargo/config.toml` pins `x86_64-pc-windows-msvc`),
   4. `aphrody-gui` on `PATH`.
   `aphrody gui --print-path` resolves and prints the path without launching
   (scriptable); `aphrody gui -- <args…>` forwards trailing args to the GUI.
 - **Deploy** — `scripts/deploy.{ps1,sh}` build only the core workspace, which
   excludes this app. Pass `-IncludeGui` / `--include-gui` to copy an
   already-built `aphrody-gui` next to `aphrody` in `~/.local/bin`, so the
-  sibling lookup (step 2) succeeds after install. Build the GUI first with the
-  commands above, then `cd src-tauri && cargo build --release`.
+  sibling lookup (step 2) succeeds after install. Build the production GUI
+  first: `cd apps/desktop && bun install && bun run tauri build`.
