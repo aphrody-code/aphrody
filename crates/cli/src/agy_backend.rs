@@ -130,6 +130,16 @@ fn classify_agy_error(stage: &str, err: SdkError) -> ChatError {
                  `aphrody chat --web` (keyless web transport) or `--stub` (offline)."
             ))
         },
+        // 429 only reaches here after the SDK has already retried with back-off
+        // (see `AntigravityClient::post_json_with_retry`). A clean, actionable
+        // message — never the raw quota JSON, which the GUI renders verbatim.
+        SdkError::OAuthServer { status: 429, .. } => ChatError::BackendFailure(
+            "agy: model quota exhausted (HTTP 429) and still rate-limited after automatic \
+             retries. This Code Assist tier enforces a tight per-model quota — wait ~1 min, \
+             switch to a higher-quota model (e.g. `--model gemini-2.5-flash`), or use \
+             `aphrody chat --web` (keyless web transport, no Cloud Code quota)."
+                .to_owned(),
+        ),
         other => ChatError::BackendFailure(format!("agy {stage}: {other}")),
     }
 }
@@ -249,6 +259,26 @@ mod tests {
         assert!(
             !mapped.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT"),
             "raw body must not leak: {mapped}"
+        );
+    }
+
+    #[test]
+    fn classify_agy_error_maps_429_to_actionable_message_without_leaking_body() {
+        // After the SDK's retries are exhausted, a 429 must become a short,
+        // actionable message — never the raw RESOURCE_EXHAUSTED JSON (the GUI
+        // renders stderr verbatim).
+        let err = SdkError::OAuthServer {
+            status: 429,
+            body: "{\"error\":{\"message\":\"You have exhausted your capacity on this model.\",\
+                   \"status\":\"RESOURCE_EXHAUSTED\"}}"
+                .to_owned(),
+        };
+        let mapped = classify_agy_error("generateContent", err).to_string();
+        assert!(mapped.contains("429"), "status surfaced: {mapped}");
+        assert!(mapped.contains("--web"), "actionable alternative present: {mapped}");
+        assert!(
+            !mapped.contains("RESOURCE_EXHAUSTED"),
+            "raw quota JSON must not leak: {mapped}"
         );
     }
 
