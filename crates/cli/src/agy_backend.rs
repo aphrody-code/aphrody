@@ -18,10 +18,17 @@ use aphrody_chat::error::ChatError;
 use aphrody_chat::{Message, MessageRole};
 use async_trait::async_trait;
 
-/// Default bare Gemini model id used when `--model` is not supplied. Mirrors the
-/// Code Assist default; the Cloud Code `:generateContent` envelope expects the
-/// bare id (no `models/` prefix).
-const DEFAULT_AGY_MODEL: &str = "gemini-3.5-flash";
+/// Default bare Gemini model id used when `--model` is not supplied. The Cloud
+/// Code `:generateContent` envelope expects the bare id (no `models/` prefix).
+///
+/// **Must be a model the Cloud Code backend actually serves.** `gemini-3.5-flash`
+/// exists only on the public `generativelanguage` API (which the agy OAuth token
+/// cannot reach); requesting it here returns `404 NOT_FOUND` ("Requested entity
+/// was not found"). Empirically, the Cloud Code modelbackend serves
+/// `gemini-2.5-flash` / `gemini-2.5-pro` (stable) and `gemini-3-flash-preview`
+/// (Gemini 3 Flash, preview). We default to the stable `gemini-2.5-flash`; real
+/// "3.5 Flash" is reached via the keyless web transport (`aphrody chat --web`).
+const DEFAULT_AGY_MODEL: &str = "gemini-2.5-flash";
 
 /// Chat backend authenticating via the agy (Antigravity) token and dispatching
 /// turns through the **Cloud Code modelbackend** (`cloudcode-pa.googleapis.com/
