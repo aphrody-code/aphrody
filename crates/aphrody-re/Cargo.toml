@@ -92,6 +92,13 @@ tempfile   = { workspace = true }
 # GoogleTest-style rich matchers (Apache-2.0). Replaces bare `assert_eq!` in
 # the aphrody-re test suite for clearer failure messages.
 googletest = { workspace = true }
+# Criterion harness for benches/triage.rs (RE triage p50 metric, PLAN R5).
+# Reuses the existing workspace pin (also used by cli/backend benches).
+criterion  = { workspace = true }
+
+[[bench]]
+name    = "triage"
+harness = false
 
 [package.metadata.cargo-machete]
 # Optional deps guarded by feature flags — machete cannot see their uses when
