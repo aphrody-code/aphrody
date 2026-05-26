@@ -5,7 +5,7 @@
 //! [`OAuthToken`] and automatically injects a `Bearer` authorization header
 //! on every request.
 
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::auth::{OAuthToken, token_from_credential_manager};
 use crate::error::SdkError;
@@ -164,16 +164,69 @@ impl AntigravityClient {
     /// [`CloudCodeEndpoint`](crate::endpoints::CloudCodeEndpoint) and a
     /// `METHOD_*` path constant.
     ///
+    /// Automatically retries on HTTP 429 (`RESOURCE_EXHAUSTED`): the Cloud Code
+    /// modelbackend enforces a tight per-model quota on lower Code Assist tiers
+    /// ("Your quota will reset after Ns"), and a single retryable 429 should not
+    /// fail the whole turn. See [`post_json_with_retry`](Self::post_json_with_retry).
+    ///
     /// # Errors
     ///
-    /// Same as [`AntigravityClient::post_json`].
+    /// Same as [`AntigravityClient::post_json`]; a 429 is only surfaced after the
+    /// retry budget is exhausted.
     pub async fn cloud_code(
         &self,
         endpoint: crate::endpoints::CloudCodeEndpoint,
         method: &str,
         body: &serde_json::Value,
     ) -> Result<serde_json::Value, SdkError> {
-        self.post_json(&endpoint.url(method), body).await
+        self.post_json_with_retry(&endpoint.url(method), body).await
+    }
+
+    /// [`post_json`](Self::post_json) with automatic back-off on HTTP 429.
+    ///
+    /// On a `429 RESOURCE_EXHAUSTED` the Cloud Code body carries the reset delay
+    /// (a structured `google.rpc.RetryInfo.retryDelay`, and/or the human message
+    /// "…reset after Ns"). We wait that long (plus a small margin, capped) and
+    /// retry, up to [`MAX_RETRY_ATTEMPTS`] total attempts. Non-429 errors (401
+    /// token expiry, 403 scope, 404 model) are returned immediately — they are
+    /// not transient and waiting would not help. Every other status is returned
+    /// as-is.
+    async fn post_json_with_retry(
+        &self,
+        url: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, SdkError> {
+        /// Total attempts (1 initial + up to N-1 retries).
+        const MAX_RETRY_ATTEMPTS: u32 = 3;
+        /// Hard cap on any single back-off wait, so a pathological server delay
+        /// cannot hang an interactive turn indefinitely.
+        const MAX_WAIT_SECS: u64 = 65;
+
+        let mut attempt: u32 = 0;
+        loop {
+            attempt += 1;
+            match self.post_json(url, body).await {
+                Err(SdkError::OAuthServer { status: 429, body: err_body })
+                    if attempt < MAX_RETRY_ATTEMPTS =>
+                {
+                    // Prefer the server-advertised delay; fall back to a small
+                    // exponential back-off (2, 4, … s) when the body omits it.
+                    let advertised = parse_retry_delay_secs(&err_body);
+                    let wait = advertised
+                        .unwrap_or_else(|| 2u64.saturating_pow(attempt))
+                        .saturating_add(1) // +1s margin so the window has surely rolled over
+                        .min(MAX_WAIT_SECS);
+                    warn!(
+                        attempt,
+                        wait_secs = wait,
+                        advertised = advertised.is_some(),
+                        "Cloud Code 429 RESOURCE_EXHAUSTED — backing off then retrying"
+                    );
+                    tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
+                },
+                other => return other,
+            }
+        }
     }
 
     /// `loadCodeAssist` — bootstrap the Code Assist session for the user on the
@@ -369,5 +422,87 @@ impl AntigravityClient {
             .get("cloudaicompanionProject")
             .and_then(serde_json::Value::as_str)
             .map(str::to_owned))
+    }
+}
+
+/// Extract the quota-reset delay (whole seconds) from a Cloud Code `429`
+/// response body, used to back off before a retry.
+///
+/// Two sources are checked, in order:
+/// 1. the structured `google.rpc.RetryInfo` detail (`retryDelay: "12s"` /
+///    `"12.5s"`) under `error.details[]`;
+/// 2. the human-readable message `error.message` ("…reset after 50s.").
+///
+/// Returns `None` when neither is present (the caller then uses a default
+/// exponential back-off). A fractional `retryDelay` is rounded **up** so we
+/// never wake before the window rolls over.
+fn parse_retry_delay_secs(body: &str) -> Option<u64> {
+    let v: serde_json::Value = serde_json::from_str(body).ok()?;
+
+    // 1) Structured RetryInfo.retryDelay.
+    if let Some(details) = v.pointer("/error/details").and_then(serde_json::Value::as_array) {
+        for d in details {
+            let is_retry_info = d
+                .get("@type")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|t| t.ends_with("RetryInfo"));
+            if is_retry_info
+                && let Some(delay) = d.get("retryDelay").and_then(serde_json::Value::as_str)
+                && let Some(secs) = parse_duration_secs_ceil(delay)
+            {
+                return Some(secs);
+            }
+        }
+    }
+
+    // 2) Human message: "...reset after <N>s.".
+    let msg = v.pointer("/error/message").and_then(serde_json::Value::as_str)?;
+    let after = msg.split("reset after ").nth(1)?;
+    let digits: String = after.chars().take_while(char::is_ascii_digit).collect();
+    digits.parse::<u64>().ok()
+}
+
+/// Parse a protobuf-style duration string (`"12s"`, `"12.5s"`) to whole seconds,
+/// rounding any fraction **up**.
+fn parse_duration_secs_ceil(s: &str) -> Option<u64> {
+    let trimmed = s.trim().strip_suffix('s').unwrap_or(s.trim());
+    match trimmed.split_once('.') {
+        None => trimmed.parse::<u64>().ok(),
+        Some((whole, frac)) => {
+            let base = whole.parse::<u64>().ok()?;
+            // Any non-zero fractional part rounds the second up.
+            let bump = u64::from(frac.bytes().any(|b| b != b'0'));
+            Some(base.saturating_add(bump))
+        },
+    }
+}
+
+#[cfg(test)]
+mod retry_delay_tests {
+    use super::parse_retry_delay_secs;
+
+    #[test]
+    fn parses_human_message_reset_after() {
+        let body = r#"{"error":{"code":429,"message":"You have exhausted your capacity on this model. Your quota will reset after 50s.","status":"RESOURCE_EXHAUSTED"}}"#;
+        assert_eq!(parse_retry_delay_secs(body), Some(50));
+    }
+
+    #[test]
+    fn prefers_structured_retry_info() {
+        let body = r#"{"error":{"code":429,"message":"reset after 9s.","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"12.5s"}]}}"#;
+        // Structured RetryInfo (12.5s -> 13) wins over the message (9s).
+        assert_eq!(parse_retry_delay_secs(body), Some(13));
+    }
+
+    #[test]
+    fn integer_retry_delay() {
+        let body = r#"{"error":{"details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"7s"}]}}"#;
+        assert_eq!(parse_retry_delay_secs(body), Some(7));
+    }
+
+    #[test]
+    fn none_when_absent() {
+        assert_eq!(parse_retry_delay_secs(r#"{"error":{"code":403,"message":"nope"}}"#), None);
+        assert_eq!(parse_retry_delay_secs("not json"), None);
     }
 }
