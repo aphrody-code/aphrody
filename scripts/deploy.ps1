@@ -11,7 +11,16 @@
 #    ./scripts/deploy.ps1 -Prefixes aphrody     # restreindre aux bins aphrody*
 #    ./scripts/deploy.ps1 -Target x86_64-pc-windows-msvc
 #    ./scripts/deploy.ps1 -Dest D:\bin -DryRun  # simulation, dest custom
+#    ./scripts/deploy.ps1 -IncludeGui           # + copie aphrody-gui (app desktop)
 #  Parité : scripts/deploy.sh (Linux/macOS).
+#
+#  Note GUI : l'app desktop (apps/desktop) est un workspace SELF-ROOTED exclu du
+#  workspace core, donc `cargo build --release` ci-dessous ne la construit PAS.
+#  -IncludeGui copie le binaire `aphrody-gui` déjà bâti (copy-only) depuis
+#  apps/desktop/src-tauri/target/{release,debug} à côté d'aphrody, pour que le
+#  resolver sibling de `aphrody gui` le trouve une fois déployé. Construire la
+#  GUI d'abord : cd apps/desktop && bun install && bun run build && cd src-tauri
+#  && cargo build --release.
 # ============================================================================
 [CmdletBinding()]
 param(
@@ -19,6 +28,7 @@ param(
     [string]$Prefixes = "aphrody,mrx,notebooklm",
     [string]$Dest,
     [string]$Target,
+    [switch]$IncludeGui,
     [switch]$DryRun
 )
 
@@ -83,6 +93,32 @@ if (-not $bins) {
     throw "Aucun binaire *.exe matchant $($prefixList -join ',') dans : $($candidateDirs -join ', ') (build manqué ?)"
 }
 Write-Host "[deploy] artefacts depuis $releaseDir" -ForegroundColor Cyan
+
+# --- GUI desktop (opt-in) : binaire hors-workspace, build séparé ------------
+# `aphrody-gui` est produit par le cargo self-rooted de apps/desktop/src-tauri
+# (target propre), jamais par le build core ci-dessus. On l'ajoute au lot de
+# copie pour qu'il atterrisse à côté d'aphrody (le resolver sibling de
+# `aphrody gui` le trouve alors en prod). Copy-only : aucun build déclenché ici.
+if ($IncludeGui) {
+    $guiTargetRoot = Join-Path $RepoRoot "apps\desktop\src-tauri\target"
+    $guiDirs = if ($Target) {
+        @(Join-Path (Join-Path $guiTargetRoot $Target) "release")
+    } else {
+        @((Join-Path $guiTargetRoot "release"), (Join-Path $guiTargetRoot "debug"))
+    }
+    $guiBin = $null
+    foreach ($gd in $guiDirs) {
+        $cand = Join-Path $gd "aphrody-gui.exe"
+        if (Test-Path $cand) { $guiBin = Get-Item $cand; break }
+    }
+    if ($guiBin) {
+        $bins = @($bins) + $guiBin
+        Write-Host "[deploy] +GUI : $($guiBin.FullName)" -ForegroundColor Cyan
+    } else {
+        Write-Host "[warn] -IncludeGui demandé mais aphrody-gui.exe introuvable dans $($guiDirs -join ', ')." -ForegroundColor Yellow
+        Write-Host "       Build : cd apps/desktop; bun install; bun run build; cd src-tauri; cargo build --release" -ForegroundColor Yellow
+    }
+}
 
 if (-not $DryRun) { New-Item -ItemType Directory -Force -Path $Dest | Out-Null }
 
