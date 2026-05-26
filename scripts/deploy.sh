@@ -112,12 +112,28 @@ echo "[deploy] artefacts depuis $RELEASE_DIR"
 # qu'il atterrisse à côté d'aphrody (le resolver sibling de `aphrody gui` le
 # trouve alors en prod). Copy-only : aucun build déclenché ici.
 if [ "$INCLUDE_GUI" -eq 1 ]; then
+    gui_root="$REPO_ROOT/apps/desktop/src-tauri/target"
+    # Candidate <profile> dirs in priority order (release before debug),
+    # honouring both the plain layout (target/<profile>) and a forced
+    # build.target layout (target/<triple>/<profile>).
     GUI_DIRS=()
     if [ -n "$TARGET" ]; then
-        GUI_DIRS+=("$REPO_ROOT/apps/desktop/src-tauri/target/$TARGET/release")
+        GUI_DIRS+=("$gui_root/$TARGET/release" "$gui_root/$TARGET/debug")
     else
-        GUI_DIRS+=("$REPO_ROOT/apps/desktop/src-tauri/target/release" \
-                   "$REPO_ROOT/apps/desktop/src-tauri/target/debug")
+        gui_triples=()
+        if [ -d "$gui_root" ]; then
+            for d in "$gui_root"/*/; do
+                base="$(basename "$d")"
+                case "$base" in release|debug) continue ;; esac
+                [ -d "$d" ] && gui_triples+=("${d%/}")
+            done
+        fi
+        for prof in release debug; do
+            GUI_DIRS+=("$gui_root/$prof")
+            if [ "${#gui_triples[@]}" -gt 0 ]; then
+                for t in "${gui_triples[@]}"; do GUI_DIRS+=("$t/$prof"); done
+            fi
+        done
     fi
     gui_bin=""
     for gd in "${GUI_DIRS[@]}"; do
