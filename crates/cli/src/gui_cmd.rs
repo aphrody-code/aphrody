@@ -104,27 +104,74 @@ pub(crate) fn resolve_gui_bin() -> Result<PathBuf, GuiResolveError> {
     }
 }
 
-/// Walk up from `start`, probing each ancestor for the Tauri release/debug
-/// build artifact at `apps/desktop/src-tauri/target/<profile>/aphrody-gui[.exe]`.
-/// `release` is preferred over `debug`. Returns the first existing match.
+/// Walk up from `start`, probing each ancestor for the Tauri build artifact
+/// under `apps/desktop/src-tauri/target/`. `release` is preferred over `debug`.
+/// Returns the first existing match.
 fn find_in_tree_gui(start: &Path) -> Option<PathBuf> {
     let mut here: Option<&Path> = Some(start);
     while let Some(dir) = here {
-        for profile in ["release", "debug"] {
-            let target_dir = dir
-                .join("apps")
-                .join("desktop")
-                .join("src-tauri")
-                .join("target")
-                .join(profile);
-            for cand in gui_bin_names() {
-                let p = target_dir.join(&cand);
-                if p.is_file() {
-                    return Some(p);
-                }
-            }
+        let target_dir = dir
+            .join("apps")
+            .join("desktop")
+            .join("src-tauri")
+            .join("target");
+        if let Some(p) = probe_cargo_target(&target_dir) {
+            return Some(p);
         }
         here = dir.parent();
+    }
+    None
+}
+
+/// Probe a Cargo `target/` directory for `aphrody-gui[.exe]`, honouring **both**
+/// layouts:
+/// - plain `target/<profile>/` (no forced target), and
+/// - `target/<triple>/<profile>/` — what Cargo emits when a `build.target` is
+///   forced (e.g. the repo `.cargo/config.toml` pins `x86_64-pc-windows-msvc`,
+///   which the self-rooted desktop build inherits by config-walk-up).
+///
+/// `release` wins over `debug` across every layout: the release sweep (plain
+/// then each `<triple>`) runs fully before any debug probe. `<triple>` subdirs
+/// are enumerated in sorted order for determinism.
+fn probe_cargo_target(target_dir: &Path) -> Option<PathBuf> {
+    // Immediate subdirs that look like target triples (everything except the
+    // plain profile dirs themselves), sorted for a stable resolution order.
+    let mut triples: Vec<PathBuf> = std::fs::read_dir(target_dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_dir()
+                && !matches!(
+                    p.file_name().and_then(|n| n.to_str()),
+                    Some("release" | "debug")
+                )
+        })
+        .collect();
+    triples.sort();
+
+    for profile in ["release", "debug"] {
+        if let Some(p) = probe_profile_dir(&target_dir.join(profile)) {
+            return Some(p);
+        }
+        for triple in &triples {
+            if let Some(p) = probe_profile_dir(&triple.join(profile)) {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+/// Probe a single `target/<…>/<profile>/` directory for the GUI binary under
+/// either platform file name. Returns the first existing match.
+fn probe_profile_dir(profile_dir: &Path) -> Option<PathBuf> {
+    for cand in gui_bin_names() {
+        let p = profile_dir.join(&cand);
+        if p.is_file() {
+            return Some(p);
+        }
     }
     None
 }
@@ -304,5 +351,51 @@ mod tests {
         if let Ok(p) = resolved {
             assert_ne!(p, bogus, "a non-existent env path must never be returned");
         }
+    }
+
+    /// Regression: when `build.target` is forced (the repo pins
+    /// `x86_64-pc-windows-msvc`, inherited by the self-rooted desktop build),
+    /// Cargo emits `target/<triple>/<profile>/aphrody-gui`. `probe_cargo_target`
+    /// must find it there, not only under the plain `target/<profile>/`.
+    #[test]
+    fn probe_finds_binary_under_triple_subdir() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let target = tmp.path().join("target");
+        let profile_dir = target.join("x86_64-pc-windows-msvc").join("debug");
+        std::fs::create_dir_all(&profile_dir).expect("mkdir profile");
+        let bin = profile_dir.join("aphrody-gui");
+        std::fs::write(&bin, b"fake").expect("write fake bin");
+
+        let found = probe_cargo_target(&target).expect("must find binary under triple/debug");
+        assert_eq!(found, bin);
+    }
+
+    /// `release` must win over `debug` even when the release copy lives under a
+    /// `<triple>` subdir and a plain `debug` copy also exists.
+    #[test]
+    fn probe_prefers_release_under_triple_over_plain_debug() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let target = tmp.path().join("target");
+
+        let debug_plain = target.join("debug");
+        std::fs::create_dir_all(&debug_plain).expect("mkdir debug");
+        std::fs::write(debug_plain.join("aphrody-gui"), b"debug").expect("write debug");
+
+        let release_triple = target.join("x86_64-unknown-linux-gnu").join("release");
+        std::fs::create_dir_all(&release_triple).expect("mkdir release triple");
+        let release_bin = release_triple.join("aphrody-gui");
+        std::fs::write(&release_bin, b"release").expect("write release");
+
+        let found = probe_cargo_target(&target).expect("must find a binary");
+        assert_eq!(found, release_bin, "release (even under a triple) must beat plain debug");
+    }
+
+    /// An empty `target/` yields no match (and does not panic on `read_dir`).
+    #[test]
+    fn probe_empty_target_is_none() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let target = tmp.path().join("target");
+        std::fs::create_dir_all(&target).expect("mkdir target");
+        assert!(probe_cargo_target(&target).is_none());
     }
 }

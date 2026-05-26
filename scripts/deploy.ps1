@@ -101,10 +101,26 @@ Write-Host "[deploy] artefacts depuis $releaseDir" -ForegroundColor Cyan
 # `aphrody gui` le trouve alors en prod). Copy-only : aucun build déclenché ici.
 if ($IncludeGui) {
     $guiTargetRoot = Join-Path $RepoRoot "apps\desktop\src-tauri\target"
-    $guiDirs = if ($Target) {
-        @(Join-Path (Join-Path $guiTargetRoot $Target) "release")
+    # Candidate <profile> dirs in priority order (release before debug), honouring
+    # both the plain layout (target/<profile>) and a forced build.target layout
+    # (target/<triple>/<profile> -- e.g. .cargo/config.toml pins the MSVC triple,
+    # inherited by the self-rooted desktop build via config walk-up).
+    $guiDirs = @()
+    if ($Target) {
+        foreach ($prof in @("release", "debug")) {
+            $guiDirs += (Join-Path (Join-Path $guiTargetRoot $Target) $prof)
+        }
     } else {
-        @((Join-Path $guiTargetRoot "release"), (Join-Path $guiTargetRoot "debug"))
+        $triples = @()
+        if (Test-Path $guiTargetRoot) {
+            $triples = Get-ChildItem -Path $guiTargetRoot -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -notin @("release", "debug") } |
+                Sort-Object Name | ForEach-Object { $_.FullName }
+        }
+        foreach ($prof in @("release", "debug")) {
+            $guiDirs += (Join-Path $guiTargetRoot $prof)
+            foreach ($t in $triples) { $guiDirs += (Join-Path $t $prof) }
+        }
     }
     $guiBin = $null
     foreach ($gd in $guiDirs) {
