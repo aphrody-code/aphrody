@@ -3,8 +3,11 @@ import { Injectable, signal } from "@angular/core";
 
 /**
  * Which transport `aphrody chat` uses:
- * - `agy`  : default — the Antigravity OAuth token (Google AI Ultra tier).
- * - `web`  : keyless Gemini web app (signed-in Google cookie jar).
+ * - `web`  : DEFAULT — keyless Gemini web app (signed-in Google cookie jar).
+ *   This is the only transport that serves real Gemini 3.5 Flash. When the
+ *   cookie jar is absent the CLI falls back to the agy token for the turn.
+ * - `agy`  : the Antigravity OAuth token (Google AI Ultra tier). Its Cloud Code
+ *   backend does NOT serve gemini-3.5-flash (404) -- it serves gemini-2.5-flash.
  * - `stub` : offline deterministic reply (no network, no auth).
  */
 export type ChatBackend = "agy" | "web" | "stub";
@@ -33,8 +36,9 @@ export class SettingsService {
   }
 
   /**
-   * The extra `aphrody chat` flags implied by the current backend. `agy` is the
-   * CLI default and needs no flag; `web`/`stub` map to their opt-in flags.
+   * The extra `aphrody chat` flags implied by the current backend. `web` (the
+   * default, real Gemini 3.5 Flash) and `stub` map to their flags; `agy` is the
+   * CLI's own default backend and needs no flag.
    */
   extraChatArgs(): string[] {
     switch (this.backend()) {
@@ -56,6 +60,9 @@ export class SettingsService {
     } catch {
       // ignore
     }
-    return "agy";
+    // Default to the web transport: it is the one that serves real Gemini 3.5
+    // Flash. The CLI gracefully falls back to the agy token when the Google
+    // cookie jar is absent, so this default never leaves the chat broken.
+    return "web";
   }
 }
