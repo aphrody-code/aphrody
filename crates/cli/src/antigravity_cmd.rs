@@ -489,7 +489,16 @@ pub(crate) async fn run(action: AntigravityAction) -> miette::Result<()> {
         // -----------------------------------------------------------------------
         AntigravityAction::CloudCode { endpoint, method, body, json } => {
             let client = build_client().map_err(|e| map_sdk_err("cloud-code", e))?;
-            let body_value: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
+            // `--body @path` reads the JSON from a file (the OS caps a literal
+            // command-line arg at ~32 KB on Windows, too small for e.g. audio
+            // `inlineData` payloads); a literal `{...}` is used as-is.
+            let body_src = if let Some(path) = body.strip_prefix('@') {
+                std::fs::read_to_string(path)
+                    .map_err(|e| miette::miette!("antigravity cloud-code: --body @{path}: {e}"))?
+            } else {
+                body
+            };
+            let body_value: serde_json::Value = serde_json::from_str(&body_src).map_err(|e| {
                 miette::miette!("antigravity cloud-code: --body is not valid JSON: {e}")
             })?;
             let endpoint: CloudCodeEndpoint = endpoint.into();
