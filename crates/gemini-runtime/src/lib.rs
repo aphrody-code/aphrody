@@ -80,6 +80,10 @@ use tokio::{
 /// understood by `buildArgs` (maps to no `--model` flag).
 pub const FALLBACK_MODELS: &[(&str, &str)] = &[
     ("default", "Default"),
+    // Gemini 3.5 Flash — canonical stable id (DeepMind model card, May 2026);
+    // `gemini-3-flash-preview` below is its preview-channel alias. This is the
+    // aphrody chat default (cf. gemini-web `GeminiModel::Flash`).
+    ("gemini-3.5-flash", "gemini-3.5-flash"),
     ("gemini-3-pro-preview", "gemini-3-pro-preview"),
     ("gemini-3-flash-preview", "gemini-3-flash-preview"),
     ("gemini-2.5-pro", "gemini-2.5-pro"),
@@ -609,10 +613,14 @@ mod tests {
 
     #[test]
     fn fallback_models_count_and_first() {
-        assert_eq!(FALLBACK_MODELS.len(), 6);
+        assert_eq!(FALLBACK_MODELS.len(), 7);
         assert_eq!(FALLBACK_MODELS[0].0, "default");
+        // `gemini-3.5-flash` is the canonical chat default and must be the
+        // first concrete model after the synthetic "default" token.
+        assert_eq!(FALLBACK_MODELS[1].0, "gemini-3.5-flash");
         // Gemini 3 entries must be present.
         let ids: Vec<&str> = FALLBACK_MODELS.iter().map(|m| m.0).collect();
+        assert!(ids.contains(&"gemini-3.5-flash"));
         assert!(ids.contains(&"gemini-3-pro-preview"));
         assert!(ids.contains(&"gemini-3-flash-preview"));
         assert!(ids.contains(&"gemini-2.5-flash-lite"));
