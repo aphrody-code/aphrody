@@ -1290,12 +1290,20 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
-            clap_complete::generate(
-                clap_complete::Shell::from(shell),
-                &mut cmd,
-                "aphrody",
-                &mut std::io::stdout(),
-            );
+            // clap_complete::generate writes straight to the sink and `expect`s
+            // on any write error, so `aphrody completions bash | head` (consumer
+            // closes stdout early) would crash with a BrokenPipe panic (exit
+            // 101/109). Buffer first, then write, treating a closed pipe as a
+            // clean exit like a well-behaved filter (portable: EPIPE on Unix,
+            // ERROR_BROKEN_PIPE on Windows both surface as BrokenPipe).
+            let mut buf = Vec::new();
+            clap_complete::generate(clap_complete::Shell::from(shell), &mut cmd, "aphrody", &mut buf);
+            use std::io::Write as _;
+            match std::io::stdout().write_all(&buf) {
+                Ok(()) => {},
+                Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {},
+                Err(e) => return Err(miette::miette!("failed to write completions: {e}")),
+            }
         },
         Some(Commands::SelfCmd { action }) => match action {
             SelfAction::InstallPath { bin, build, dry_run } => {
