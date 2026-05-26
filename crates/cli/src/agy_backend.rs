@@ -21,21 +21,29 @@ use async_trait::async_trait;
 /// Default bare Gemini model id used when `--model` is not supplied. The Cloud
 /// Code `:generateContent` envelope expects the bare id (no `models/` prefix).
 ///
-/// **Must be a model the Cloud Code backend actually serves.** `gemini-3.5-flash`
-/// exists only on the public `generativelanguage` API (which the agy OAuth token
-/// cannot reach); requesting it here returns `404 NOT_FOUND` ("Requested entity
-/// was not found"). Empirically, the Cloud Code modelbackend serves
-/// `gemini-2.5-flash` / `gemini-2.5-pro` (stable) and `gemini-3-flash-preview`
-/// (Gemini 3 Flash, preview). We default to the stable `gemini-2.5-flash`; real
-/// "3.5 Flash" is reached via the keyless web transport (`aphrody chat --web`).
-const DEFAULT_AGY_MODEL: &str = "gemini-2.5-flash";
+/// This is exactly the model `agy.exe` itself sends when its UI shows
+/// **"Gemini 3.5 Flash"**: the agy binary contains no literal `gemini-3.5-flash`
+/// id (that one lives only on the public `generativelanguage` API the OAuth
+/// token cannot reach — it 404s on Cloud Code); its "3.5 Flash" label maps to
+/// the wire id `gemini-3-flash-preview`. We pair it with the **Daily** Cloud
+/// Code endpoint (see [`AGY_ENDPOINT`]), which is the host agy uses and which
+/// serves this model with a usable quota (Prod 429s it almost immediately).
+const DEFAULT_AGY_MODEL: &str = "gemini-3-flash-preview";
+
+/// Cloud Code endpoint the agy backend targets. `agy.exe` talks to the **Daily**
+/// host (`daily-cloudcode-pa.googleapis.com`), confirmed from its own logs; it
+/// serves the Gemini 3 preview models with a far more generous per-model quota
+/// than Prod (which rate-limits `gemini-3-flash-preview` after a single call).
+/// Transient 429s are still absorbed by the SDK's back-off retry.
+const AGY_ENDPOINT: antigravity_sdk::endpoints::CloudCodeEndpoint =
+    antigravity_sdk::endpoints::CloudCodeEndpoint::Daily;
 
 /// Chat backend authenticating via the agy (Antigravity) token and dispatching
-/// turns through the **Cloud Code modelbackend** (`cloudcode-pa.googleapis.com/
-/// v1internal:generateContent`) — the exact path agy.exe uses. The agy OAuth
-/// token is scoped for this host (the public `generativelanguage` host rejects
-/// it with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`), and it carries the account's
-/// Code Assist tier (e.g. Google One AI Ultra).
+/// turns through the **Cloud Code modelbackend** (`daily-cloudcode-pa.googleapis.com/
+/// v1internal:generateContent`, see [`AGY_ENDPOINT`]) — the exact host+path
+/// `agy.exe` uses. The agy OAuth token is scoped for this host (the public
+/// `generativelanguage` host rejects it with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`),
+/// and it carries the account's Code Assist tier (e.g. Google One AI Ultra).
 pub(crate) struct AgyBackend {
     client: AntigravityClient,
     model: String,
@@ -101,12 +109,21 @@ impl AgyBackend {
 /// Map a (possibly vendor-qualified) model slug to the bare Gemini id the
 /// `generateContent` path expects. `gemini/default` and the empty string both
 /// resolve to [`DEFAULT_AGY_MODEL`]; a `gemini/<id>` slug is reduced to `<id>`.
+///
+/// The public-API id `gemini-3.5-flash` (which Cloud Code 404s) is rewritten to
+/// the wire id Cloud Code actually serves for that model, `gemini-3-flash-preview`
+/// — the same mapping `agy.exe` applies behind its "Gemini 3.5 Flash" label — so
+/// a caller (e.g. the desktop GUI) that requests `gemini-3.5-flash` on the agy
+/// path still gets a working turn instead of a 404.
 fn normalise_model(model: Option<&str>) -> String {
     let raw = model.map(str::trim).unwrap_or("");
     // Strip a leading `gemini/` vendor qualifier if present.
     let bare = raw.strip_prefix("gemini/").unwrap_or(raw);
     if bare.is_empty() || bare == "default" {
         DEFAULT_AGY_MODEL.to_owned()
+    } else if matches!(bare, "gemini-3.5-flash" | "3.5-flash" | "gemini-flash") {
+        // No literal gemini-3.5-flash on Cloud Code -> the served Gemini 3 Flash.
+        "gemini-3-flash-preview".to_owned()
     } else {
         bare.to_owned()
     }
@@ -186,7 +203,7 @@ impl ModelBackend for AgyBackend {
         let resp = self
             .client
             .generate_content_cloud_code(
-                antigravity_sdk::endpoints::CloudCodeEndpoint::Prod,
+                AGY_ENDPOINT,
                 &self.model,
                 project,
                 &req,
@@ -228,6 +245,16 @@ mod tests {
     fn normalise_model_strips_vendor_prefix() {
         assert_eq!(normalise_model(Some("gemini/gemini-2.5-flash")), "gemini-2.5-flash");
         assert_eq!(normalise_model(Some("gemini-2.0-flash")), "gemini-2.0-flash");
+    }
+
+    #[test]
+    fn normalise_model_rewrites_public_3_5_flash_to_served_wire_id() {
+        // The public-API id 404s on Cloud Code; it must map to the id agy uses.
+        assert_eq!(normalise_model(Some("gemini-3.5-flash")), "gemini-3-flash-preview");
+        assert_eq!(normalise_model(Some("gemini/gemini-3.5-flash")), "gemini-3-flash-preview");
+        assert_eq!(normalise_model(Some("3.5-flash")), "gemini-3-flash-preview");
+        // And the default is already the served wire id.
+        assert_eq!(DEFAULT_AGY_MODEL, "gemini-3-flash-preview");
     }
 
     #[test]

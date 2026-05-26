@@ -28,11 +28,16 @@ use serde_json::json;
 /// not supplied. The bare model id (no `models/` prefix) is what the Cloud Code
 /// `v1internal:generateContent` envelope expects.
 ///
-/// Must be a model Cloud Code actually serves: `gemini-3.5-flash` 404s here (it
-/// lives only on the public `generativelanguage` API the agy token cannot
-/// reach). Cloud Code serves `gemini-2.5-flash`/`-pro` and the preview
-/// `gemini-3-flash-preview`; we default to stable `gemini-2.5-flash`.
-const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
+/// `gemini-3-flash-preview` is the wire id `agy.exe` sends for its "Gemini 3.5
+/// Flash" label (no literal `gemini-3.5-flash` exists on Cloud Code — it 404s,
+/// living only on the public `generativelanguage` API). Paired with the Daily
+/// endpoint ([`AGY_CHAT_ENDPOINT`]) it has a usable quota.
+const DEFAULT_GEMINI_MODEL: &str = "gemini-3-flash-preview";
+
+/// Cloud Code endpoint for `aphrody antigravity chat` — the **Daily** host that
+/// `agy.exe` uses; it serves the Gemini 3 preview models with a far more
+/// generous quota than Prod.
+const AGY_CHAT_ENDPOINT: CloudCodeEndpoint = CloudCodeEndpoint::Daily;
 
 /// Cloud Code endpoint selector for `aphrody antigravity cloud-code`.
 #[derive(Debug, Clone, clap::ValueEnum, Default)]
@@ -321,7 +326,7 @@ pub(crate) async fn run(action: AntigravityAction) -> miette::Result<()> {
                 }
             });
             let response = client
-                .cloud_code(CloudCodeEndpoint::Prod, METHOD_GENERATE_CONTENT, &body)
+                .cloud_code(AGY_CHAT_ENDPOINT, METHOD_GENERATE_CONTENT, &body)
                 .await
                 .map_err(|e| map_sdk_err("chat", e))?;
             // Unwrap the Cloud Code `response` envelope so the printed JSON keeps
