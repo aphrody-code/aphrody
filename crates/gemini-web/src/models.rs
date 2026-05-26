@@ -84,7 +84,9 @@ impl GeminiModel {
     pub fn from_id(s: &str) -> Option<Self> {
         match s.trim().to_ascii_lowercase().as_str() {
             "flash-lite" | "flashlite" | "flash_lite" | "3.1-flash-lite" => Some(Self::FlashLite),
-            "flash" | "3.5-flash" | "flash-3.5" => Some(Self::Flash),
+            "flash" | "3.5-flash" | "flash-3.5" | "gemini-3.5-flash" | "gemini-flash" => {
+                Some(Self::Flash)
+            },
             "pro" | "3.1-pro" | "pro-3.1" => Some(Self::Pro),
             _ => None,
         }
