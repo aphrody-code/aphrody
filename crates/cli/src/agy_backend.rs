@@ -21,7 +21,7 @@ use async_trait::async_trait;
 /// Default bare Gemini model id used when `--model` is not supplied. Mirrors the
 /// Code Assist default; the Cloud Code `:generateContent` envelope expects the
 /// bare id (no `models/` prefix).
-const DEFAULT_AGY_MODEL: &str = "gemini-2.5-flash";
+const DEFAULT_AGY_MODEL: &str = "gemini-3.5-flash";
 
 /// Chat backend authenticating via the agy (Antigravity) token and dispatching
 /// turns through the **Cloud Code modelbackend** (`cloudcode-pa.googleapis.com/
