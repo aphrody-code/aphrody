@@ -83,12 +83,17 @@ impl CookieJar {
     ///
     /// Returns [`GeminiError::Auth`] when a mandatory cookie is absent.
     pub fn require_google_session(&self) -> Result<()> {
-        for needed in ["SAPISID", "__Secure-1PSID"] {
-            if !self.cookies.contains_key(needed) {
-                return Err(GeminiError::Auth(format!(
-                    "cookie jar is missing `{needed}` — re-export the Google session"
-                )));
-            }
+        // `__Secure-1PSID` is the first-party session cookie the Gemini web app
+        // (`batchexecute`) authenticates with; the `at` anti-CSRF token is
+        // scraped from the page, not derived from cookies. `SAPISID` is only
+        // needed to mint a `SAPISIDHASH` for the cross-origin APIs gateway,
+        // which this client does not use — so it is NOT required here (many
+        // exports, e.g. a single-profile Cookie-Editor dump, omit it).
+        if !self.cookies.contains_key("__Secure-1PSID") {
+            return Err(GeminiError::Auth(
+                "cookie jar is missing `__Secure-1PSID` — re-export the signed-in Google session"
+                    .to_owned(),
+            ));
         }
         Ok(())
     }
