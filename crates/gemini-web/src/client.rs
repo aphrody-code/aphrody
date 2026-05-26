@@ -50,7 +50,12 @@ impl GeminiWebClient {
         Self::from_auth(auth, language).await
     }
 
-    /// Build a client from the default cookie-jar path.
+    /// Build a client from the default jar path, accepting either on-disk
+    /// source: the Cookie-Editor jar (`~/.aphrody/google-cookies.json`,
+    /// preferred) or the `chromium export-session` envelope
+    /// (`~/.aphrody/google-session.json`). The first that exists is used;
+    /// [`Auth::from_cookie_file`] auto-detects its format. When neither exists,
+    /// the conventional `google-cookies.json` path is surfaced in the error.
     ///
     /// # Errors
     ///
@@ -58,9 +63,21 @@ impl GeminiWebClient {
     /// errors as [`Self::from_cookie_file`].
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn from_default_cookie_file(language: &str) -> Result<Self> {
-        let path = Self::default_cookie_path().ok_or_else(|| {
-            GeminiError::Auth("cannot resolve HOME/USERPROFILE for default cookie path".into())
-        })?;
+        let home = std::env::var_os("HOME")
+            .or_else(|| std::env::var_os("USERPROFILE"))
+            .ok_or_else(|| {
+                GeminiError::Auth("cannot resolve HOME/USERPROFILE for default cookie path".into())
+            })?;
+        let dir = PathBuf::from(home).join(".aphrody");
+        let cookies = dir.join("google-cookies.json");
+        let session = dir.join("google-session.json");
+        let path = if cookies.is_file() {
+            cookies
+        } else if session.is_file() {
+            session
+        } else {
+            cookies
+        };
         Self::from_cookie_file(path, language).await
     }
 
