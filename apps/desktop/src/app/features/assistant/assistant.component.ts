@@ -41,10 +41,12 @@ interface Suggestion {
   prompt: string;
 }
 
-// Gemini 3.5 Flash is aphrody's canonical chat model (the gemini-web backend
-// verifies it; hermes and the command palette use it). A prior revert wrongly
-// swapped this to 2.5 — restored here, and the selection is now actually passed
-// to `aphrody chat --model` below (it used to be cosmetic).
+// Gemini 3.5 Flash is the chat model. It is served by the keyless Gemini web
+// transport (the default backend, see SettingsService) -- the agy/Cloud Code
+// token path does NOT serve gemini-3.5-flash (404), so the GUI defaults to
+// `--web`. The id below is passed to `aphrody chat --model`; the web backend
+// maps it to its "3.5 Flash" model, and on the agy fallback it is ignored in
+// favour of a served model.
 const MODELS = [{ id: "gemini-3.5-flash", label: "Gemini 3.5 Flash" }] as const;
 
 /** Accept filters for the native file picker, per media menu entry. */
