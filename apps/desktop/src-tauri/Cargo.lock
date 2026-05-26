@@ -2817,6 +2817,7 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
+ "antigravity-sdk",
  "aphrody",
  "aphrody-voice",
  "base64 0.22.1",
