@@ -438,6 +438,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-agent-runtime"
+version = "1.0.0-canary"
+dependencies = [
+ "aphrody-agent-proto",
+ "aphrody-agent-tools",
+ "aphrody-engine",
+ "aphrody-model-client",
+ "aphrody-rollout",
+ "aphrody-toolcall",
+ "async-trait",
+ "futures",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
 name = "aphrody-agent-tools"
 version = "1.0.0-canary"
 dependencies = [
@@ -1026,6 +1048,26 @@ version = "1.0.0-canary"
 dependencies = [
  "anyhow",
  "tempfile",
+]
+
+[[package]]
+name = "aphrody-supervisor"
+version = "1.0.0-canary"
+dependencies = [
+ "aphrody-agent-proto",
+ "aphrody-engine",
+ "aphrody-model-client",
+ "aphrody-rollout",
+ "aphrody-toolcall",
+ "async-trait",
+ "futures",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
