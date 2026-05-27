@@ -15,6 +15,7 @@
 //! linked on wasm and live behind `cfg(not(target_arch = "wasm32"))`.
 
 #[cfg(not(target_arch = "wasm32"))] mod agent_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod agent_run;
 #[cfg(not(target_arch = "wasm32"))] mod agy_backend;
 #[cfg(not(target_arch = "wasm32"))] mod agy_loop;
 #[cfg(not(target_arch = "wasm32"))] mod antigravity_cmd;
@@ -313,6 +314,9 @@ enum Commands {
         /// cookie jar) instead of the default `agy` (Antigravity) token path.
         #[arg(long, short = 'w')]
         web: bool,
+        /// Attach one or more local files (images, PDFs, documents, etc.) to the chat.
+        #[arg(long, short, value_name = "PATH")]
+        attach: Vec<std::path::PathBuf>,
     },
     /// Agent multi-canaux voice-to-voice (Discord + X) — surpasse hermes-agent.
     ///
@@ -347,6 +351,44 @@ enum Commands {
         /// Traite un message synthétique et sort (vérification headless, sans token canal).
         #[arg(long)]
         simulate: Option<String>,
+    },
+    /// Launch an autonomous agent — aphrody's flagship Antigravity-in-Rust surface.
+    ///
+    /// `aphrody agent "do X"` assembles the agent engine
+    /// (`aphrody-agent-runtime`) and runs it immediately. By default it drives
+    /// one full headless turn and prints the final agent message; `--tui`
+    /// launches the full-screen interactive surface (`aphrody-tui`) instead.
+    ///
+    /// The backend is a live Gemini client (`GEMINI_API_KEY` / `GOOGLE_API_KEY`)
+    /// unless `--stub` selects a deterministic offline replay (no network, no
+    /// key — handy for CI / smoke runs). Autonomy is full-auto per CLAUDE.md
+    /// §0.1; `--gated` requires approval for each tool call. When no prompt is
+    /// given in headless mode, one is read from stdin.
+    #[cfg(not(target_arch = "wasm32"))]
+    Agent {
+        /// The task prompt. When omitted (and not `--tui`), read from stdin.
+        prompt: Option<String>,
+        /// Launch the full-screen interactive TUI instead of a headless turn.
+        #[arg(long)]
+        tui: bool,
+        /// Deterministic offline backend (no network, no API key). For smoke / CI.
+        #[arg(long)]
+        stub: bool,
+        /// Model id (default: a fast Gemini flash tier).
+        #[arg(long, short)]
+        model: Option<String>,
+        /// Override the system prompt prepended to every model request.
+        #[arg(long)]
+        system: Option<String>,
+        /// Require approval for each tool call (`AutonomyMode::Gated`).
+        #[arg(long)]
+        gated: bool,
+        /// Working directory the tools resolve relative paths against.
+        #[arg(long)]
+        cwd: Option<PathBuf>,
+        /// In headless mode, echo streamed text / tool events on stderr.
+        #[arg(long, short)]
+        verbose: bool,
     },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
@@ -1309,8 +1351,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Forensics { action }) => {
             forensics_cmd::run(action).await?;
         },
-        Some(Commands::Chat { prompt, model, system, stub, web }) => {
-            commands::ChatCommand { prompt, model, system, stub, web }.execute(ctx).await?;
+        Some(Commands::Chat { prompt, model, system, stub, web, attach }) => {
+            commands::ChatCommand { prompt, model, system, stub, web, attach }.execute(ctx).await?;
         },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
@@ -1322,6 +1364,12 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 HermesChannelArg::X => agent_cmd::HermesChannel::X,
             };
             agent_cmd::run(ch, voice, trigger, model, web, stub, simulate).await?;
+        },
+        #[cfg(not(target_arch = "wasm32"))]
+        Some(Commands::Agent { prompt, tui, stub, model, system, gated, cwd, verbose }) => {
+            agent_run::run(agent_run::AgentArgs {
+                prompt, tui, stub, model, system, gated, cwd, verbose,
+            }).await?;
         },
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
