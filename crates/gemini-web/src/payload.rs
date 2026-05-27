@@ -20,15 +20,35 @@ use serde_json::{json, Value};
 
 use crate::boq::parse_envelopes;
 use crate::error::{GeminiError, Result};
-use crate::types::{ChatReply, ConversationMetadata};
+use crate::types::{ChatReply, ConversationMetadata, UploadedAttachment};
 
-/// Build the `StreamGenerate` `inner_list` for a prompt.
+/// Build the `StreamGenerate` `inner_list` for a prompt, optionally including attachments.
 ///
 /// `language` is the `hl` locale (e.g. `"fr"`). `meta` threads a prior turn;
 /// pass [`ConversationMetadata::default`] for a fresh conversation.
 #[must_use]
-pub fn build_send_payload(prompt: &str, language: &str, meta: &ConversationMetadata) -> Value {
-    let message_content = json!([prompt, 0, Value::Null, Value::Null, Value::Null, Value::Null, 0]);
+pub fn build_send_payload(
+    prompt: &str,
+    language: &str,
+    meta: &ConversationMetadata,
+    attachments: Option<&[UploadedAttachment]>,
+) -> Value {
+    let image_list = if let Some(atts) = attachments {
+        let list: Vec<Value> = atts
+            .iter()
+            .map(|att| {
+                json!([
+                    [att.url.clone(), 1],
+                    att.name.clone()
+                ])
+            })
+            .collect();
+        Value::Array(list)
+    } else {
+        Value::Null
+    };
+
+    let message_content = json!([prompt, 0, Value::Null, image_list, Value::Null, Value::Null, 0]);
     let language_tuple = json!([language]);
     let chat_metadata = json!([
         opt_str(meta.conversation_id.as_deref()),
@@ -197,7 +217,7 @@ mod tests {
 
     #[test]
     fn fresh_payload_has_prompt_lang_and_null_metadata() {
-        let p = build_send_payload("hello", "fr", &ConversationMetadata::default());
+        let p = build_send_payload("hello", "fr", &ConversationMetadata::default(), None);
         assert_eq!(p[0][0], "hello");
         assert_eq!(p[1], json!(["fr"]));
         assert_eq!(p[2], json!([null, null, null]));
@@ -210,8 +230,23 @@ mod tests {
             response_id: Some("r_1".into()),
             choice_id: Some("rc_1".into()),
         };
-        let p = build_send_payload("again", "en", &meta);
+        let p = build_send_payload("again", "en", &meta, None);
         assert_eq!(p[2], json!(["c_1", "r_1", "rc_1"]));
+    }
+
+    #[test]
+    fn payload_carries_attachments() {
+        let atts = vec![UploadedAttachment {
+            url: "https://lh3.googleusercontent.com/chat/abc".to_string(),
+            name: "test.png".to_string(),
+        }];
+        let p = build_send_payload("describe", "en", &ConversationMetadata::default(), Some(&atts));
+        assert_eq!(
+            p[0][3],
+            json!([
+                [["https://lh3.googleusercontent.com/chat/abc", 1], "test.png"]
+            ])
+        );
     }
 
     #[test]

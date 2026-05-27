@@ -311,6 +311,159 @@ impl HttpTransport {
         }
         first_envelope(&text)
     }
+
+    /// Upload a file to Gemini using Google's resumable Scotty upload flow.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GeminiError::Network`] on failures.
+    // The two Scotty preflight bindings (preflight_resp / preflight2_resp) are
+    // intentionally parallel names for the two OPTIONS round trips.
+    #[allow(clippy::similar_names)]
+    pub async fn upload_file(&self, file_name: &str, data: &[u8]) -> Result<String> {
+        let upload_url_base = "https://content-push.googleapis.com/upload/";
+        
+        let mut base_headers = HeaderMap::new();
+        base_headers.insert(
+            HeaderName::from_static("authority"),
+            HeaderValue::from_static("content-push.googleapis.com"),
+        );
+        base_headers.insert(
+            reqwest::header::ACCEPT,
+            HeaderValue::from_static("*/*"),
+        );
+        base_headers.insert(
+            reqwest::header::ACCEPT_LANGUAGE,
+            HeaderValue::from_static("en-US,en;q=0.7"),
+        );
+        base_headers.insert(
+            reqwest::header::AUTHORIZATION,
+            HeaderValue::from_static("Basic c2F2ZXM6cyNMdGhlNmxzd2F2b0RsN3J1d1U="),
+        );
+        base_headers.insert(
+            HeaderName::from_static("push-id"),
+            HeaderValue::from_static("feeds/mcudyrk2a4khkz"),
+        );
+        base_headers.insert(
+            HeaderName::from_static("x-tenant-id"),
+            HeaderValue::from_static("bard-storage"),
+        );
+        base_headers.insert(
+            HeaderName::from_static("origin"),
+            HeaderValue::from_static(URL_ORIGIN),
+        );
+        base_headers.insert(
+            HeaderName::from_static("referer"),
+            HeaderValue::from_static("https://gemini.google.com/"),
+        );
+
+        // 1. OPTIONS preflight to base upload URL
+        let preflight_resp = self.client.request(reqwest::Method::OPTIONS, upload_url_base)
+            .headers(base_headers.clone())
+            .send()
+            .await
+            .map_err(|e| GeminiError::Network(format!("upload preflight 1: {e}")))?;
+        if !preflight_resp.status().is_success() {
+            return Err(GeminiError::Network(format!("upload preflight 1 failed: {}", preflight_resp.status())));
+        }
+
+        // 2. POST start request to establish resumable session
+        let mut start_headers = base_headers.clone();
+        start_headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            HeaderValue::from_static("application/x-www-form-urlencoded;charset=UTF-8"),
+        );
+        start_headers.insert(
+            HeaderName::from_static("x-goog-upload-protocol"),
+            HeaderValue::from_static("resumable"),
+        );
+        start_headers.insert(
+            HeaderName::from_static("x-goog-upload-command"),
+            HeaderValue::from_static("start"),
+        );
+        start_headers.insert(
+            HeaderName::from_static("x-goog-upload-header-content-length"),
+            HeaderValue::from_str(&data.len().to_string())
+                .map_err(|e| GeminiError::Network(format!("invalid file size: {e}")))?,
+        );
+        start_headers.insert(
+            HeaderName::from_static("size"),
+            HeaderValue::from_str(&data.len().to_string())
+                .map_err(|e| GeminiError::Network(format!("invalid file size: {e}")))?,
+        );
+
+        let start_body = format!("File name: {file_name}");
+        let start_resp = self.client.post(upload_url_base)
+            .headers(start_headers)
+            .body(start_body)
+            .send()
+            .await
+            .map_err(|e| GeminiError::Network(format!("upload start: {e}")))?;
+        if !start_resp.status().is_success() {
+            return Err(GeminiError::Network(format!("upload start failed: {}", start_resp.status())));
+        }
+
+        let upload_url = start_resp.headers()
+            .get("x-goog-upload-url")
+            .and_then(|v| v.to_str().ok())
+            .ok_or_else(|| GeminiError::Network("upload start response missing x-goog-upload-url header".to_string()))?
+            .to_string();
+
+        // 3. OPTIONS preflight to custom upload URL
+        let mut custom_options_headers = base_headers.clone();
+        custom_options_headers.insert(
+            HeaderName::from_static("size"),
+            HeaderValue::from_str(&data.len().to_string())
+                .map_err(|e| GeminiError::Network(format!("invalid file size: {e}")))?,
+        );
+        custom_options_headers.insert(
+            HeaderName::from_static("x-goog-upload-command"),
+            HeaderValue::from_static("start"),
+        );
+
+        let preflight2_resp = self.client.request(reqwest::Method::OPTIONS, &upload_url)
+            .headers(custom_options_headers)
+            .send()
+            .await
+            .map_err(|e| GeminiError::Network(format!("upload preflight 2: {e}")))?;
+        if !preflight2_resp.status().is_success() {
+            return Err(GeminiError::Network(format!("upload preflight 2 failed: {}", preflight2_resp.status())));
+        }
+
+        // 4. POST the raw data bytes
+        let mut upload_headers = base_headers.clone();
+        upload_headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            HeaderValue::from_static("application/x-www-form-urlencoded;charset=UTF-8"),
+        );
+        upload_headers.insert(
+            HeaderName::from_static("x-goog-upload-command"),
+            HeaderValue::from_static("upload, finalize"),
+        );
+        upload_headers.insert(
+            HeaderName::from_static("x-goog-upload-offset"),
+            HeaderValue::from_static("0"),
+        );
+        upload_headers.insert(
+            HeaderName::from_static("size"),
+            HeaderValue::from_str(&data.len().to_string())
+                .map_err(|e| GeminiError::Network(format!("invalid file size: {e}")))?,
+        );
+
+        let upload_resp = self.client.post(&upload_url)
+            .headers(upload_headers)
+            .body(data.to_vec())
+            .send()
+            .await
+            .map_err(|e| GeminiError::Network(format!("upload bytes: {e}")))?;
+        if !upload_resp.status().is_success() {
+            return Err(GeminiError::Network(format!("upload bytes failed: {}", upload_resp.status())));
+        }
+
+        let response_text = upload_resp.text().await
+            .map_err(|e| GeminiError::Network(format!("upload read text: {e}")))?;
+        Ok(response_text)
+    }
 }
 
 /// RFC 3986 `application/x-www-form-urlencoded`: unreserved set passes through,

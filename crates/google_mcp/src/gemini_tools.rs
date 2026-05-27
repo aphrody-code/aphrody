@@ -146,7 +146,7 @@ async fn send_once(prompt: &str, model: GeminiModel) -> Result<gemini_web::ChatR
     let meta = gemini_web::ConversationMetadata::default();
     {
         let guard = cell.lock().await;
-        match guard.send(prompt, Some(header.as_str()), &meta).await {
+        match guard.send(prompt, Some(header.as_str()), &meta, None).await {
             Ok(reply) => return Ok(reply),
             Err(gemini_web::GeminiError::Auth(_)) => {}, // fall through to refresh
             Err(e) => return Err(format!("gemini-web send: {e}")),
@@ -157,7 +157,7 @@ async fn send_once(prompt: &str, model: GeminiModel) -> Result<gemini_web::ChatR
         let mut guard = cell.lock().await;
         guard.refresh().await.map_err(|e| format!("gemini-web refresh: {e}"))?;
         guard
-            .send(prompt, Some(header.as_str()), &meta)
+            .send(prompt, Some(header.as_str()), &meta, None)
             .await
             .map_err(|e| format!("gemini-web send (post-refresh): {e}"))
     }

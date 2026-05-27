@@ -11,7 +11,7 @@ use crate::error::{GeminiError, Result};
 use crate::payload::{build_send_payload, parse_stream_response};
 use crate::rpc_ids::GET_CONFIG_FLAG;
 use crate::transport::HttpTransport;
-use crate::types::{ChatReply, ConversationMetadata};
+use crate::types::{ChatReply, ConversationMetadata, UploadedAttachment};
 use serde_json::json;
 
 /// Scriptable, non-interactive Gemini web (`gemini.google.com/app`) client.
@@ -110,6 +110,7 @@ impl GeminiWebClient {
     /// prior reply's [`ChatReply::metadata`] to continue the same thread.
     /// `model` is an optional [`crate::rpc_ids`] model-selector token
     /// (`MODEL_FLASH` / `MODEL_PRO` / `MODEL_THINKING`); `None` = account default.
+    /// Optionally pass a list of attachments previously uploaded via [`Self::upload_file`].
     ///
     /// # Errors
     ///
@@ -120,8 +121,9 @@ impl GeminiWebClient {
         prompt: &str,
         model: Option<&str>,
         meta: &ConversationMetadata,
+        attachments: Option<&[UploadedAttachment]>,
     ) -> Result<ChatReply> {
-        let payload = build_send_payload(prompt, &self.language, meta);
+        let payload = build_send_payload(prompt, &self.language, meta, attachments);
         // Follow-up turns are threaded via the inner metadata; the optional
         // source-path mirrors the web UI for parity.
         let source_path = meta.conversation_id.as_ref().map(|cid| format!("/app/{cid}"));
@@ -138,7 +140,20 @@ impl GeminiWebClient {
     ///
     /// See [`Self::send`].
     pub async fn ask(&self, prompt: &str, model: Option<&str>) -> Result<ChatReply> {
-        self.send(prompt, model, &ConversationMetadata::default()).await
+        self.send(prompt, model, &ConversationMetadata::default(), None).await
+    }
+
+    /// Upload a local file to Google's Scotty storage, returning an `UploadedAttachment` that can be attached to a message.
+    ///
+    /// # Errors
+    ///
+    /// Propagates network and protocol errors.
+    pub async fn upload_file(&self, file_name: &str, data: &[u8]) -> Result<UploadedAttachment> {
+        let url = self.transport.upload_file(file_name, data).await?;
+        Ok(UploadedAttachment {
+            url,
+            name: file_name.to_string(),
+        })
     }
 
     /// Read a server config flag (`ESY5D`), e.g. `bard_activity_enabled`.

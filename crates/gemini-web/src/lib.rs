@@ -38,7 +38,7 @@
 //! println!("{}", reply.text);
 //!
 //! // Continue the same conversation:
-//! let follow = client.send("And epoll?", None, &reply.metadata).await?;
+//! let follow = client.send("And epoll?", None, &reply.metadata, None).await?;
 //! println!("{}", follow.text);
 //! # Ok(())
 //! # }
@@ -69,7 +69,7 @@ pub use client::GeminiWebClient;
 pub use error::{GeminiError, Result};
 pub use models::{GeminiModel, ReasoningLevel};
 pub use transport::{HttpTransport, SessionTokens};
-pub use types::{ChatReply, ConversationMetadata};
+pub use types::{ChatReply, ConversationMetadata, UploadedAttachment};
 
 /// Curated re-exports for a single `use gemini_web::prelude::*;`.
 pub mod prelude {
@@ -78,5 +78,5 @@ pub mod prelude {
     pub use crate::error::{GeminiError, Result};
     pub use crate::models::{GeminiModel, ReasoningLevel};
     pub use crate::transport::{HttpTransport, SessionTokens};
-    pub use crate::types::{ChatReply, ConversationMetadata};
+    pub use crate::types::{ChatReply, ConversationMetadata, UploadedAttachment};
 }
