@@ -106,14 +106,14 @@ C'est ce qui fait d'aphrody « Antigravity en Rust » plutôt qu'un simple agent
 
 | Capacité | Brique aphrody | État |
 |---|---|---|
-| Lancer/superviser/tuer des agents | superviseur (à créer) + `aphrody-task-runner` | À bâtir |
-| Approbations exec/patch | protocole `ExecApprovalRequest` + `oneshot` | À bâtir (GC-5) |
-| Steering en cours de turn | `steer_input` (modèle Codex) | À bâtir |
+| Lancer/superviser/tuer des agents | `aphrody-supervisor` (fan-in + lifecycle) sur `aphrody-engine::spawn_session` | En cours (Phase 3a) |
+| Approbations exec/patch | protocole `ExecApprovalRequest` + `ApprovalGate` (mode `Gated`) | **Livré** (engine) |
+| Steering en cours de turn | `Op::Interrupt` + `InterruptFlag` coopératif | **Livré** (interrupt) ; steer_input à porter |
 | Garde-fous (sandbox, command-safety) | `aphrody-guard` (opt-in) | **Livré** |
 | Hooks de cycle de vie | `aphrody-skills/hooks` | Présent |
 | Coordination multi-agents | `a2a-*`, `.coord` | Présent |
 | Boucles autonomes | `agy-loop`, autopilot | Présent |
-| Persistence/replay de session | rollout JSONL (`aphrody-session`) | À bâtir (GC-7) |
+| Persistence/replay de session | rollout JSONL (`aphrody-rollout`, miroir des events) | **Livré** |
 | Scheduling | `aphrody-cron` | Présent |
 | Observabilité | `aphrody-telemetry`, rollout-trace | Partiel |
 
@@ -159,14 +159,22 @@ de 40 outils.
 
 ## 6. Roadmap par phases
 
-- **Phase 0 — Fondations (en cours)** : `aphrody-guard` livré ; cartographies
+- **Phase 0 — Fondations** : **Livré** — `aphrody-guard` ; cartographies
   Codex + Ratatui ; plans `gemini-codex.md` + ce `VISION.md`.
-- **Phase 1 — ENGINE** : moteur d'agent unifié (boucle de turn + trait
-  `ModelClient` + `apply-patch` + tools + protocole NDJSON + rollout) — jalons
-  **GC-1..GC-7** de `gemini-codex.md`.
-- **Phase 2 — CONTROL PLANE** : superviseur multi-agents, modes d'autonomie,
-  approbations/steering, intégration `aphrody-guard` + A2A + agy-loop.
-- **Phase 3 — SURFACES** : TUI (GC-8), réorganisation CLI agent-centrique (§4),
+- **Phase 1 — ENGINE** : **Livré** — moteur d'agent unifié. Substrat :
+  `aphrody-agent-proto` (protocole SQ/EQ NDJSON), `aphrody-model-client`
+  (trait `ModelClient` + `GeminiClient`), `aphrody-toolcall` (`ToolRegistry`),
+  `aphrody-patch` (apply-patch), `aphrody-rollout` (JSONL). Cœur :
+  `aphrody-engine` (`run_turn` : stream → `EventMsg` → tool calls → réinjection
+  multi-tour → rollout ; modes `FullAuto`/`Gated` ; `spawn_session` actor) +
+  `aphrody-agent-tools` (shell-exec streaming + apply-patch). Jalons GC-1..GC-7.
+- **Phase 2/3a — CONTROL PLANE + câblage** : **en cours** —
+  `aphrody-agent-runtime` (factory : assemble `ModelClient` + `ToolRegistry` +
+  rollout → session) et `aphrody-supervisor` (N agents nommés, fan-in d'events
+  taggés, lifecycle). Restent : intégration `aphrody-guard` + A2A + agy-loop,
+  steer_input.
+- **Phase 3b — SURFACES** : `aphrody-tui` (Ratatui 0.30, GC-8) **livré** ;
+  restent la réorganisation CLI agent-centrique (`aphrody agent`, §4) et les
   surfaces MCP/A2A unifiées sur le moteur.
 - **Phase 4 — DESKTOP** : clone Antigravity IDE sur `apps/desktop` (éditeur +
   panneau d'agents + navigateur), branché in-process sur le moteur.
