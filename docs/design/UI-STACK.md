@@ -35,7 +35,7 @@ parallel approach.
 | App | Package | Role |
 |---|---|---|
 | `apps/theme` | `@aphrody-code/theme` | canonical M3 fusion tokens (this stack's foundation). |
-| `apps/native` | `@aphrody-code/native` | in-process bridge to the aphrody cdylib (`bun:ffi`). |
+| `packages/native` | `@aphrody-code/native` | in-process bridge to the aphrody cdylib (`bun:ffi`). |
 | `apps/console` | `@aphrody-code/console` | live M3 web console driving the real CLI (the reference UI). |
 | `apps/m3-react` | `@aphrody-code/m3-react` | React 19 wrappers for Material Web. |
 | `apps/design` | `@aphrody/design` | M3 / Google Design generation engine (HCT, token authoring). |

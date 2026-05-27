@@ -63,6 +63,7 @@ rustflags = [
     "-C", "link-arg=/DEBUG:NONE",
     # /INCREMENTAL:NO: incompatible with fat LTO+strip; saves link time in release/dist.
     "-C", "link-arg=/INCREMENTAL:NO",
+    "-C", "link-arg=/STACK:8388608",
 ]
 
 [target.aarch64-pc-windows-msvc]
