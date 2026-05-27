@@ -15,8 +15,16 @@ WorkingDirectory=/opt/aphrody
 
 # Site root / host / port come from this env file (edit, then `systemctl restart`).
 EnvironmentFile=/etc/aphrody/serve.env
+# High-performance environment variables for Python
+CacheDirectory=aphrody
+Environment=LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONMALLOC=malloc
+Environment=PYTHONPYCACHEPREFIX=/var/cache/aphrody/pycache
+
 # --cache preloads the whole site into RAM (zero disk hits on every request).
-ExecStart=/opt/aphrody/venv/bin/aphrody serve ${APHRODY_SITE_ROOT} --host ${APHRODY_HOST} --port ${APHRODY_PORT} --cache
+# Run in optimized Python mode (-O)
+ExecStart=/opt/aphrody/venv/bin/python3 -O /opt/aphrody/venv/bin/aphrody serve ${APHRODY_SITE_ROOT} --host ${APHRODY_HOST} --port ${APHRODY_PORT} --cache
 
 Restart=always
 RestartSec=2

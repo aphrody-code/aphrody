@@ -45,11 +45,33 @@ fi
 
 echo "==> Configuring systemd memory limits: High=${MEM_HIGH}, Max=${MEM_MAX}"
 
-echo "==> Python venv + install"
-python3 -m venv "$APP/venv"
-"$APP/venv/bin/pip" install --quiet --upgrade pip
+# Locate uv for high-performance Python environment management
+UV_BIN=""
+if command -v uv &>/dev/null; then
+  UV_BIN=$(command -v uv)
+elif [[ -x "/home/ubuntu/.local/bin/uv" ]]; then
+  UV_BIN="/home/ubuntu/.local/bin/uv"
+elif [[ -x "/root/.local/bin/uv" ]]; then
+  UV_BIN="/root/.local/bin/uv"
+fi
+
 [[ -n "$WHEEL" ]] || { echo "provide --wheel <path-to-aphrody-*.whl>" >&2; exit 1; }
-"$APP/venv/bin/pip" install --quiet "$WHEEL"
+
+if [[ -n "$UV_BIN" ]]; then
+  echo "==> High-performance Python venv + install via uv ($UV_BIN)"
+  # Setup uv cache directory to leverage host caching
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-/opt/aphrody/.uv-cache}"
+  mkdir -p "$UV_CACHE_DIR"
+  chown -R aphrody:aphrody "$UV_CACHE_DIR" || true
+  
+  $UV_BIN venv "$APP/venv" --allow-existing
+  $UV_BIN pip install --python "$APP/venv/bin/python" --quiet "$WHEEL"
+else
+  echo "==> Python venv + install (uv not found, falling back to standard pip)"
+  python3 -m venv "$APP/venv"
+  "$APP/venv/bin/pip" install --quiet --upgrade pip
+  "$APP/venv/bin/pip" install --quiet "$WHEEL"
+fi
 
 case "$MODE" in
   react)
