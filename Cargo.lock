@@ -362,6 +362,7 @@ dependencies = [
  "aphrody-chat",
  "aphrody-firefly",
  "aphrody-fsindex",
+ "aphrody-guard",
  "aphrody-images",
  "aphrody-logo",
  "aphrody-memory",
@@ -567,6 +568,14 @@ dependencies = [
  "tokio",
  "url",
  "which 8.0.2",
+]
+
+[[package]]
+name = "aphrody-guard"
+version = "1.0.0-canary"
+dependencies = [
+ "libc",
+ "pretty_assertions",
 ]
 
 [[package]]
