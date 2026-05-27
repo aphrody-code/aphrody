@@ -394,3 +394,16 @@ lefthook.yml
 /test_localsystem.txt
 /webview2_analysis_results.jsonl
 /webview2_visualization.html
+
+# ── Réunification 2026-05-27 : sous-arbres py/ go/ ts/ ─────────────────────────
+# Les patterns Rust-root ci-dessus (bun.lock, bunfig.toml, tsconfig.json,
+# secrets/, …) ne doivent PAS fuir dans les sous-arbres rapatriés : leur propre
+# .gitignore imbriqué gouverne leurs vrais artefacts (.venv, node_modules,
+# target, results_lora…). On ré-inclut ici leurs fichiers de config/lock suivis.
+!go/gogcli/internal/secrets/
+!go/**/pnpm-lock.yaml
+!go/gogcli/.lefthook.yml
+!ts/bun.lock
+!ts/bunfig.toml
+!ts/**/tsconfig.json
+!ts/**/tsconfig.*.json

@@ -52,20 +52,26 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 > Rust toolchain pinned `nightly-2026-05-17` via `rust-toolchain.toml` ;
 > Bun/Go/Python pinnés via `mise.toml`. Re-pin requires PR.
 
-**Extraction 2026-05-23 : ce dépôt (`C:\src\aphrody`) ne garde QUE le Rust.**
-Les trois autres surfaces langage vivent désormais dans des **dépôts FRÈRES
-indépendants** (git séparés, pas de submodule) :
+**Réunification 2026-05-27 : retour au monorepo unique (`C:\src\aphrody`).**
+L'extraction du 2026-05-23 vers des dépôts frères est **annulée** : les trois
+autres surfaces langage sont **rapatriées en sous-dossiers de CE dépôt** (un
+seul git, snapshot — l'historique propre des frères reste sur leurs remotes
+GitHub) :
 
-| Langage | Dépôt frère | Workspace / manifeste | Toolchain |
-|---------|-------------|-----------------------|-----------|
-| **Rust** (primaire, ici) | `C:\src\aphrody` | `Cargo.toml` (`crates/*`) | `rust-toolchain.toml` |
-| **Bun** (TS/JS) | `C:\src\aphrody-ts` | `package.json` + `bunfig.toml` + `.oxlintrc.json` (`apps/*` + `packages/*`) | `mise.toml` (dans aphrody-ts) |
-| **Python** | `C:\src\aphrody-py` | `pyproject.toml` (uv, membres à la racine) | `mise.toml` (dans aphrody-py) |
-| **Go** | `C:\src\aphrody-go` | `go.work` | `mise.toml` (dans aphrody-go) |
+| Langage | Emplacement (in-tree) | Workspace / manifeste | Toolchain |
+|---------|-----------------------|-----------------------|-----------|
+| **Rust** (primaire) | racine `crates/*` | `Cargo.toml` | `rust-toolchain.toml` |
+| **Bun** (TS/JS) | `ts/` (`ts/apps/*`) | `ts/package.json` + `ts/bunfig.toml` + `ts/.oxlintrc.json` | `ts/mise.toml` |
+| **Python** | `py/` | `py/pyproject.toml` (uv) | `py/.python-version` |
+| **Go** | `go/` (`go/gogcli`, `go/antigravity-langserver-re`) | `go/go.work` | `go/mise.toml` |
 
-Le `justfile` racine d'aphrody pilote **uniquement** le workspace Rust
-(`just build|test|lint|fmt|ci`). Pour go/python/ts, lancer les runners dans le
-dépôt frère correspondant.
+Chaque sous-dossier garde son `CLAUDE.md`, son `.gitignore` (imbriqué — git le
+respecte, donc `.venv`/`node_modules`/`target`/caches restent ignorés) et ses
+runners natifs (`uv`/`ruff`/`pytest` dans `py/`, `bun`/`oxlint` dans `ts/`,
+`go vet`/`go test` dans `go/`). Le `justfile` racine pilote **le workspace
+Rust** ; pour go/python/ts, lancer les runners dans le sous-dossier
+correspondant. Les remotes `aphrody-{py,go,ts}` sur GitHub sont désormais des
+archives gelées.
 
 > **Rapatriement 2026-05-24** : l'**app desktop grand public** (`apps/desktop`,
 > Tauri 2 + Angular 21.2 + Angular Material 21.2 — l'agent autonome grand public

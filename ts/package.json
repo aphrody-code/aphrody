@@ -1,0 +1,39 @@
+{
+  "name": "@aphrody/ts",
+  "version": "1.0.0-canary",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "aphrody-ts — Bun workspace for aphrody's first-party TypeScript/JS (apps/*). Extracted 2026-05-23 from the aphrody monorepo (C:\\src\\aphrody, Rust core). UI forks under packages/* (material-web, ui, tailwindcss, lit, gts, bxc, lightpanda) keep their own .git and native package managers (npm/pnpm) and are NOT bun workspace members.",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/skills"
+    ],
+    "catalog": {
+      "typescript": "^6.0.3",
+      "@types/bun": "^1.3.14",
+      "oxlint": "^1.66.0",
+      "oxfmt": "^0.51.0"
+    }
+  },
+  "scripts": {
+    "test": "bun test",
+    "lint": "oxlint",
+    "fmt": "oxfmt apps/",
+    "fmt:check": "oxfmt --check apps/"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "oxfmt": "0.51.0",
+    "oxlint": "1.66.0",
+    "typescript": "6.0.3"
+  },
+  "trustedDependencies": [
+    "@parcel/watcher",
+    "bun",
+    "esbuild",
+    "lmdb",
+    "msgpackr-extract"
+  ]
+}

@@ -1,0 +1,42 @@
+# systemd unit — aphrody static/SPA site server (e.g. a built React dist).
+# Install: /etc/systemd/system/aphrody.service  (see deploy-vps.sh)
+# SPDX-License-Identifier: Apache-2.0
+[Unit]
+Description=aphrody — static/SPA web server
+Documentation=https://github.com/aphrody-code/aphrody
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aphrody
+Group=aphrody
+WorkingDirectory=/opt/aphrody
+
+# Site root / host / port come from this env file (edit, then `systemctl restart`).
+EnvironmentFile=/etc/aphrody/serve.env
+# --cache preloads the whole site into RAM (zero disk hits on every request).
+ExecStart=/opt/aphrody/venv/bin/aphrody serve ${APHRODY_SITE_ROOT} --host ${APHRODY_HOST} --port ${APHRODY_PORT} --cache
+
+Restart=always
+RestartSec=2
+
+# --- RAM: exploit available memory (in-RAM file cache); generous soft/hard caps.
+MemoryHigh=2G
+MemoryMax=4G
+# Many concurrent connections need many file descriptors.
+LimitNOFILE=65536
+# Use all CPUs for the threaded server.
+TasksMax=infinity
+
+# --- Hardening (least privilege).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/aphrody /var/log/aphrody
+# Allow binding ports < 1024 without root (e.g. :80) if APHRODY_PORT needs it.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

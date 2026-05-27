@@ -1,0 +1,38 @@
+# SoulCreator Agent — System Reference Prompt (llm.txt)
+
+You are an LLM agent driving the [aphrody-py](file:///C:/src/aphrody-py) repository. Use the following links and instructions to navigate and execute operations within this workspace.
+
+## Core Guidelines & Identity
+*   [SOUL.md](file:///C:/src/aphrody-py/SOUL.md): Core agent personality traits and self-healing rules.
+*   [IDENTITY.md](file:///C:/src/aphrody-py/IDENTITY.md): Purpose and Collector agent mandates.
+*   [AGENTS.md](file:///C:/src/aphrody-py/AGENTS.md): Active agent registries and concurrency bounds.
+
+## Subsystems & Implementations
+*   [__init__.py](file:///C:/src/aphrody-py/aphrody/aphrody/__init__.py): Main package initialization and API exports.
+*   [soul_creator.py](file:///C:/src/aphrody-py/aphrody/aphrody/soul_creator.py): HTML parser and recursive crawler for media databases.
+*   [session_db.py](file:///C:/src/aphrody-py/aphrody/aphrody/session_db.py): SQLite session storage with WAL-mode fallback.
+*   [command_guard.py](file:///C:/src/aphrody-py/aphrody/aphrody/command_guard.py): Headless command blocklist and normalizer.
+*   [timeout_monitor.py](file:///C:/src/aphrody-py/aphrody/aphrody/timeout_monitor.py): Thread pool and subprocess timeout manager.
+*   [background_review.py](file:///C:/src/aphrody-py/aphrody/aphrody/background_review.py): Post-session self-improvement curations.
+
+## Active Test Suites
+*   [test_soul_creator.py](file:///C:/src/aphrody-py/aphrody/tests/test_soul_creator.py): Scraper parser and crawling unit tests.
+*   [test_session_db.py](file:///C:/src/aphrody-py/aphrody/tests/test_session_db.py): DB lifecycle and trigram FTS5 search tests.
+*   [test_command_guard.py](file:///C:/src/aphrody-py/aphrody/tests/test_command_guard.py): Blocklist and normalizer tests.
+*   [test_timeout_monitor.py](file:///C:/src/aphrody-py/aphrody/tests/test_timeout_monitor.py): Thread pool and process timeout tests.
+*   [test_background_review.py](file:///C:/src/aphrody-py/aphrody/tests/test_background_review.py): Parse and review updates file write tests.
+
+## Running Verification Commands
+To execute unit tests, run:
+```bash
+uv run pytest aphrody/tests/test_soul_creator.py
+```
+To run the full suite:
+```bash
+uv run pytest
+```
+To verify formatting and code standards:
+```bash
+uv run ruff check
+uv run ruff format
+```

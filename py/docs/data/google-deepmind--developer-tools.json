@@ -1,0 +1,44 @@
+[
+  {
+    "createdAt": "2020-12-02T10:39:46Z",
+    "description": "Annotating tensor shapes using Python types",
+    "forksCount": 12,
+    "fullName": "google-deepmind/tensor_annotations",
+    "homepage": "",
+    "isArchived": true,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "tensor_annotations",
+    "openIssuesCount": 7,
+    "pushedAt": "2023-07-07T15:37:03Z",
+    "stargazersCount": 159,
+    "updatedAt": "2026-02-26T17:57:39Z",
+    "url": "https://github.com/google-deepmind/tensor_annotations",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2018-06-06T13:23:17Z",
+    "description": "This is an implementation of LeapsAndBounds and Structured Procrastination for approximately optimal algorithm configuration.",
+    "forksCount": 7,
+    "fullName": "google-deepmind/leaps-and-bounds",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "leaps-and-bounds",
+    "openIssuesCount": 1,
+    "pushedAt": "2020-01-26T09:17:04Z",
+    "stargazersCount": 8,
+    "updatedAt": "2021-08-04T16:13:37Z",
+    "url": "https://github.com/google-deepmind/leaps-and-bounds",
+    "visibility": "public"
+  }
+]
