@@ -141,6 +141,9 @@ m3-tokens                 = { path = "../m3-tokens" }
 # prompts + router + cost + context + events). Phase 1 wires --prompt
 # one-shot mode; ratatui REPL + slash-commands land in Phase 2.
 aphrody-chat              = { path = "../aphrody-chat" }
+# Pre-main process hardening (no-dump / no-ptrace / strip LD_*-DYLD_*) wired into
+# the binary's `main`. Native-only effect; no-op on wasm. cf. CLAUDE.md §0.1.
+aphrody-guard             = { path = "../aphrody-guard" }
 # `aphrody memory migrate` — provider-to-provider migration (R3.4). Native-only
 # because the SqliteLocal provider uses rusqlite (libsqlite3 bundled C lib) and
 # the Mem0/Honcho providers use reqwest, neither of which compile on wasm32.
