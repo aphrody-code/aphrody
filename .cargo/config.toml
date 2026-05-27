@@ -21,7 +21,8 @@ rustc-wrapper  = "sccache"
 # i7-11370H : 4 physical / 8 logical cores. Saturate all logical cores — the
 # linker + sccache run mostly I/O-bound so the extra job overlaps with them.
 # Overridable via env CARGO_BUILD_JOBS. Tune down to 6 if the 16 GB box swaps.
-jobs           = 8
+# Commented out to allow Cargo to dynamically use all host CPU cores during VPS deployment.
+# jobs           = 8
 
 
 # Default host target. Override with `--target <triple>` for cross-builds
@@ -35,7 +36,8 @@ target          = "x86_64-pc-windows-msvc"
 # Reproducibility flags remap build-host paths so the binary is byte-identical
 # regardless of where it was compiled (Chromium-grade hermeticity).
 rustflags = [
-    "-Z", "threads=8",
+    # Commented out to allow compiler front-end threads to scale to available host cores:
+    # "-Z", "threads=8",
     "-Z", "share-generics=y",
     "-C", "symbol-mangling-version=v0",
     "--remap-path-prefix=/home/runner=.",
