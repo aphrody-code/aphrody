@@ -45,3 +45,11 @@ pub struct ChatReply {
     /// Number of reply candidates the server returned.
     pub candidate_count: usize,
 }
+
+/// Represents a successfully uploaded file to Google's Scotty server, ready to attach to a prompt.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UploadedAttachment {
+    pub url: String,
+    pub name: String,
+}
+
