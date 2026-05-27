@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-rollout"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Resilient agent-session recorder: appends timestamped JSONL items to ~/.aphrody/sessions/rollout-*.jsonl through an async actor (mpsc + background writer task with Flush/Persist/Shutdown), and resumes a prior session by replaying its JSONL. Inspired by OpenAI Codex rollout (Apache-2.0)."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+uuid       = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+tokio      = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync", "time"] }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tempfile          = { workspace = true }
+tokio             = { workspace = true, features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
