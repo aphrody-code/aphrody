@@ -166,6 +166,17 @@ members = [
     "crates/aphrody-toolcall",
     # aphrody-rollout — JSONL session recorder (async actor) + resume/replay.
     "crates/aphrody-rollout",
+    # ── Phase 2/3 — agent runtime + capabilities + surface (docs/VISION.md) ───
+    # aphrody-engine — the unified agent turn loop: drives a ModelClient stream,
+    # maps ModelStreamEvent -> EventMsg, runs tool calls via ToolRegistry,
+    # re-injects results for multi-turn, records to rollout. The keystone.
+    "crates/aphrody-engine",
+    # aphrody-agent-tools — concrete ToolExecutors for the engine: sandboxed
+    # shell exec (streaming) + apply_patch (wraps aphrody-patch).
+    "crates/aphrody-agent-tools",
+    # aphrody-tui — Ratatui 0.30 full-screen agent surface over the SQ/EQ
+    # protocol (renders Event stream, emits Submission/UserInput).
+    "crates/aphrody-tui",
     # aphrody-settings — hierarchical JSON settings loader (user / project /
     # local / env) with deep-merge precedence, dotted-path navigation, env
     # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
