@@ -1,0 +1,99 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .tools
+          key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}
+      - name: Install tools
+        run: make tools
+      - name: Format check
+        run: make fmt-check
+      - name: Test
+        run: make test
+      - name: Lint
+        run: make lint
+      - name: Docs check
+        run: make docs-check
+
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.33.2 --activate
+      - name: Install dependencies
+        run: pnpm -C internal/tracking/worker install --frozen-lockfile
+      - name: Lint
+        run: pnpm -C internal/tracking/worker lint
+      - name: Build
+        run: pnpm -C internal/tracking/worker build
+      - name: Test
+        run: pnpm -C internal/tracking/worker test
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .tools
+          key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}
+      - name: Install tools
+        run: make tools
+        shell: bash
+      - name: Format check
+        run: make fmt-check
+        shell: bash
+      - name: Test
+        # Skip tests that depend on macOS Keychain / Linux keyring or Unix path semantics.
+        # These are covered by ubuntu-latest and macos-latest jobs.
+        # See https://github.com/openclaw/gogcli/issues/395
+        run: make test
+        shell: bash
+        env:
+          TEST_FLAGS: >-
+            -skip 'TestAuth|TestListClientCredentials|TestReadClientCredentials|TestConfigExists|TestExpandPath|TestResolveKeyringBackendInfo|TestLoadSecrets_LegacyFallback'
+      - name: Lint
+        run: make lint
+        shell: bash
+      - name: Build
+        run: go build ./cmd/gog
+
+  darwin-cgo-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Test
+        run: make test
+      - name: Build (Keychain / cgo)
+        run: CGO_ENABLED=1 go build ./cmd/gog

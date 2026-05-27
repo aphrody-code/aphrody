@@ -1,0 +1,14 @@
+{
+  "id": "318afa40-1fec-4d2b-a8bc-92c054f01421",
+  "name": "C:\\src\\aphrody-go",
+  "projectResources": {
+    "resources": [
+      {
+        "gitFolder": {
+          "folderUri": "file://C:/src/aphrody-go",
+          "allowWrite": true
+        }
+      }
+    ]
+  }
+}

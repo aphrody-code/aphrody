@@ -1,0 +1,58 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "promise", "node"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off",
+    "pedantic": "off",
+    "restriction": "off"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "eqeqeq": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "block-scoped-var": "error",
+    "prefer-arrow-callback": "error",
+    "no-restricted-properties": [
+      "error",
+      {"object": "describe", "property": "only"},
+      {"object": "it", "property": "only"}
+    ],
+    "@typescript-eslint/array-type": ["error", {"default": "array-simple"}],
+    "@typescript-eslint/ban-ts-comment": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-require-imports": "off",
+    "no-console": "off",
+    "no-debugger": "error"
+  },
+  "ignorePatterns": [
+    "build/**",
+    "node_modules/**",
+    "template/**",
+    "test/fixtures/**",
+    "**/*.d.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["test/**/*.ts", "**/*.test.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-restricted-properties": "off"
+      }
+    },
+    {
+      "files": ["**/*.js", "**/*.cjs"],
+      "rules": {
+        "@typescript-eslint/no-require-imports": "off"
+      }
+    }
+  ]
+}

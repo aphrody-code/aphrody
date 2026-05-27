@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# bunfig.toml — Bun config for the aphrody polyglot monorepo workspace root.
+# See https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Reproducible installs: write an exact lockfile, pin resolved versions.
+exact = true
+# Hoist workspace dependencies to the root node_modules where safe.
+linker = "hoisted"
+
+[install.cache]
+# Keep the global module cache; disable only if hermetic CI requires it.
+disable = false
+
+[test]
+# Coverage off by default (opt in with `bun test --coverage`); keep CI fast.
+coverage = false

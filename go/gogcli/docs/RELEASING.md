@@ -1,0 +1,128 @@
+---
+summary: "Release checklist for gogcli (GitHub release + Homebrew tap)"
+---
+
+# Releasing `gogcli`
+
+This playbook mirrors the Homebrew + GitHub flow used in `../camsnap`.
+
+Always do **all** steps below (CI + changelog + tag + GitHub release artifacts + tap update + Homebrew sanity install). No partial releases.
+
+Shortcut scripts (preferred, keep notes non-empty):
+```sh
+scripts/release.sh X.Y.Z
+scripts/verify-release.sh X.Y.Z
+```
+
+Assumptions:
+- Repo: `openclaw/gogcli`
+- Tap repo: `../openclaw-homebrew-tap` (tap: `openclaw/tap`)
+- Homebrew formula name: `gogcli` (installs the `gog` binary)
+
+## 0) Prereqs
+- Clean working tree on `main`.
+- Go toolchain installed (Go version comes from `go.mod`).
+- `make` works locally.
+- Access to the tap repo (e.g. `openclaw/homebrew-tap`).
+- For signed macOS release binaries (required):
+  GitHub Actions secrets must be set, or the release workflow fails before
+  producing Darwin artifacts:
+  - `MACOS_SIGNING_CERT_BASE64` (base64-encoded `.p12`)
+  - `MACOS_SIGNING_CERT_PASSWORD`
+  - `MACOS_CODESIGN_IDENTITY` (e.g. `Developer ID Application: …`)
+
+## 1) Verify build is green
+```sh
+make ci
+```
+
+Confirm GitHub Actions `ci` is green for the commit you’re tagging:
+```sh
+gh run list -L 5 --branch main
+```
+
+## 2) Update changelog
+- Update `CHANGELOG.md` for the version you’re releasing.
+- Update `internal/cmd/VERSION` to `vX.Y.Z` before tagging. The post-release
+  bump workflow rewrites it to `vX.Y.Z-dev` on `main` after the tag is pushed.
+
+Example heading:
+- `## 0.1.0 - 2025-12-12`
+
+## 3) Commit, tag & push
+```sh
+git checkout main
+git pull
+
+# commit changelog, internal/cmd/VERSION, and any release tweaks
+git commit -am "release: vX.Y.Z"
+
+git tag -a vX.Y.Z -m "Release X.Y.Z"
+git push origin main --tags
+```
+
+## 4) Verify GitHub release artifacts
+The tag push triggers `.github/workflows/release.yml` (GoReleaser). Ensure it completes successfully and the release has assets.
+
+```sh
+gh run list -L 5 --workflow release.yml
+gh release view vX.Y.Z
+```
+
+Ensure GitHub release notes are not empty (mirror the changelog section).
+The release workflow fails closed if macOS signing secrets are missing; Darwin
+artifacts must be signed with a stable identity, not ad-hoc/linker signatures.
+
+If the workflow needs a rerun:
+```sh
+gh workflow run release.yml -f tag=vX.Y.Z
+```
+
+## 5) Update (or add) the Homebrew formula
+In the tap repo (assumed sibling at `../openclaw-homebrew-tap`), create/update `Formula/gogcli.rb`.
+
+Recommended formula shape (download GitHub release assets; preserves macOS code signature):
+- `version "X.Y.Z"`
+- `url "https://github.com/openclaw/gogcli/releases/download/vX.Y.Z/gogcli_X.Y.Z_darwin_arm64.tar.gz"` (or `darwin_amd64`)
+- `sha256 "<sha256>"`
+- Install:
+  - `bin.install "gog"`
+
+Alternative (build-from-source; macOS binary will be ad-hoc signed, which can trigger repeated Keychain prompts with `KeychainTrustApplication`):
+- `version "X.Y.Z"`
+- `url "https://github.com/openclaw/gogcli/archive/refs/tags/vX.Y.Z.tar.gz"`
+- `sha256 "<sha256>"`
+- `depends_on "go" => :build`
+- Build:
+  - `system "go", "build", *std_go_args(ldflags: "-s -w"), "./cmd/gog"`
+
+Compute the SHA256 for the tag tarball:
+```sh
+curl -L -o /tmp/gogcli.tar.gz https://github.com/openclaw/gogcli/archive/refs/tags/vX.Y.Z.tar.gz
+shasum -a 256 /tmp/gogcli.tar.gz
+```
+
+Commit + push in the tap repo:
+```sh
+cd ../openclaw-homebrew-tap
+git add Formula/gogcli.rb
+git commit -m "gogcli vX.Y.Z"
+git push origin main
+```
+
+## 6) Sanity-check install from tap
+```sh
+brew update
+brew uninstall gogcli || true
+brew untap openclaw/tap || true
+brew tap openclaw/tap
+brew install openclaw/tap/gogcli
+brew test openclaw/tap/gogcli
+
+gog --help
+```
+
+## Notes
+- `gog --version` / `gog version` should report the release version post-install.
+- `scripts/verify-release.sh` checks Darwin release assets with `codesign` on
+  macOS and rejects ad-hoc signatures or missing TeamIdentifier values.

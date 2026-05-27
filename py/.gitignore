@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Python / uv build artifacts and caches — reproducible, never tracked.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+.uv-cache/
+**/.uv-cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+target/
+
+# Vendored third-party clone with its own .git (text extraction lib).
+/langextract/
+
+# Local secrets and caches
+.env
+var/
+
+# ML training outputs (LoRA adapters, checkpoints, optimizer state) — large
+# binaries reproduced by the fine-tune scripts, never tracked.
+results_lora/
+*.safetensors
+*.pt
+*.pth
+
