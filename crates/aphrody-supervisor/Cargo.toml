@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-supervisor"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Multi-agent control plane for aphrody: spawns and tracks N named engine sessions, routes submissions to a chosen agent, fans-in every agent's event stream into one tagged channel, and drives lifecycle (list / interrupt / shutdown) plus per-agent autonomy policy. The orchestration layer above aphrody-engine."
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-engine       = { path = "../aphrody-engine" }
+aphrody-agent-proto  = { path = "../aphrody-agent-proto" }
+aphrody-model-client = { path = "../aphrody-model-client" }
+aphrody-toolcall     = { path = "../aphrody-toolcall" }
+aphrody-rollout      = { path = "../aphrody-rollout" }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+thiserror           = { workspace = true }
+tokio               = { workspace = true }
+tokio-stream        = { workspace = true }
+futures             = { workspace = true }
+async-trait         = { workspace = true }
+tracing             = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio             = { workspace = true }

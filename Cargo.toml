@@ -177,6 +177,14 @@ members = [
     # aphrody-tui — Ratatui 0.30 full-screen agent surface over the SQ/EQ
     # protocol (renders Event stream, emits Submission/UserInput).
     "crates/aphrody-tui",
+    # aphrody-agent-runtime — wiring/factory that assembles a ready-to-run
+    # agent: builds a ModelClient + a ToolRegistry (shell-exec + apply-patch)
+    # + optional rollout, and spawns an engine session (the control-plane glue).
+    "crates/aphrody-agent-runtime",
+    # aphrody-supervisor — multi-agent control plane: spawns/tracks N named
+    # engine sessions, routes submissions, fans-in their events, drives
+    # lifecycle (list / interrupt / shutdown) and per-agent autonomy policy.
+    "crates/aphrody-supervisor",
     # aphrody-settings — hierarchical JSON settings loader (user / project /
     # local / env) with deep-merge precedence, dotted-path navigation, env
     # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
