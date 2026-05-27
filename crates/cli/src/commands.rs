@@ -1767,6 +1767,8 @@ pub(crate) struct ChatCommand {
     /// Use the keyless Gemini web app transport instead of the default `agy`
     /// (Antigravity) credential-store token path.
     pub web: bool,
+    /// Local files to attach to the chat (images, PDFs, documents).
+    pub attach: Vec<std::path::PathBuf>,
 }
 
 #[async_trait]
@@ -1785,6 +1787,23 @@ impl TerminalCommand for ChatCommand {
                  Cascade-style template (the ratatui REPL lands in a later sprint)"
             ));
         };
+
+        // Attachments are validated up-front (fail-fast, no silent drop). Inline
+        // forwarding to the model rides the gemini-web Scotty upload path, which
+        // is still being wired end-to-end; until that lands we refuse rather than
+        // pretend the files were sent.
+        if !self.attach.is_empty() {
+            for path in &self.attach {
+                if !path.exists() {
+                    return Err(miette::miette!("attachment not found: {}", path.display()));
+                }
+            }
+            return Err(miette::miette!(
+                "--attach: {} file(s) validated, but inline attachment forwarding is not yet \
+                 wired into the chat backend (the gemini-web upload path is in progress)",
+                self.attach.len()
+            ));
+        }
 
         let mut config = ChatConfig::default();
         if let Some(m) = self.model.clone() {

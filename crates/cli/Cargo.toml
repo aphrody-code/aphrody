@@ -167,6 +167,15 @@ aphrody-agent-home        = { workspace = true, features = ["git"] }
 # In-process stdout/stderr capture backing `aphrody::run_captured` (the
 # structured entry the Tauri app + aphrody-ffi consume). Host-only.
 aphrody-stdio-capture     = { workspace = true }
+# `aphrody agent "..."` — the flagship autonomous-agent surface (Antigravity
+# rewrite, docs/VISION.md Phase 3b). aphrody-agent-runtime is the wiring/factory
+# that assembles a ready-to-run agent (model client + tool registry + engine);
+# aphrody-tui is the Ratatui full-screen surface; aphrody-agent-proto carries the
+# SQ/EQ Op/Event wire the TUI bridge forwards. All three are native-only
+# (reqwest / rustls / ring / crossterm) and never link on wasm32.
+aphrody-agent-runtime     = { path = "../aphrody-agent-runtime" }
+aphrody-tui               = { path = "../aphrody-tui" }
+aphrody-agent-proto       = { path = "../aphrody-agent-proto" }
 
 # --- Windows-only deps (HKCU registry edit for `aphrody self install-path`) -
 [target.'cfg(target_os = "windows")'.dependencies]
