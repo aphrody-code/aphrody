@@ -145,7 +145,8 @@ dans `provider.rs:60`. Les items R3.1-R3.3 sont donc **clos** sur API v1
 
 #### R4 — Scraping bas niveau
 
-> **🚫 PILIER OBSOLÈTE (audit 2026-05-23)** : `bxc-engine` a été supprimé du workspace (aucun crate `bxc`/`scrape` sur disque). R4.1-R4.7 ci-dessous sont abandonnés ; le scraping deep a été livré ailleurs (cf. R-D).
+> **✅ LIVRÉ DANS LE DÉPÔT PYTHON** (`aphrody-py` à `C:\src\aphrody-py`) :
+> Le scraping statique et l'analyse de code du client Gemini ont été entièrement implémentés en Python via un crawler asynchrone Scrapy avec isolation de processus (Twisted multiprocessing) et fallback HTTPX (`aphrody web scrape`). Un module d'auto-upgrade autonome (`aphrody web auto-upgrade`) utilisant Gemini Vertex LLM (avec fallback programmatique) a été livré pour mettre à jour automatiquement les hashes d'action Boq en production de manière robuste et stable.
 
 | # | Tâche | Verify |
 |---|---|---|

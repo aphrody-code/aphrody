@@ -394,7 +394,7 @@ impl ModelBackend for GeminiWebBackend {
         let header = self.model.header();
         let reply = self
             .client
-            .send(&prompt, Some(header.as_str()), &meta)
+            .send(&prompt, Some(header.as_str()), &meta, None)
             .await
             .map_err(|e| ChatError::BackendFailure(format!("gemini-web send: {e}")))?;
         *meta = reply.metadata.clone();
