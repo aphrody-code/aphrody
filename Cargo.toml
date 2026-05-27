@@ -151,6 +151,21 @@ members = [
     # (no-dump / no-ptrace / strip LD_*-DYLD_*) + a cross-platform command-safety
     # classifier (Allow / Prompt / Forbidden) for gating agent-issued shell calls.
     "crates/aphrody-guard",
+    # ── Phase 1 ENGINE (docs/VISION.md) — agent runtime foundations ──────────
+    # aphrody-patch — LLM-native `*** Begin Patch` edit format (parser + fuzzy
+    # seek + streaming + apply via a FS trait). Ported from Codex apply-patch.
+    "crates/aphrody-patch",
+    # aphrody-agent-proto — SQ/EQ agent protocol: Submission/Op + Event/EventMsg,
+    # NDJSON wire codec. The single fil between engine and every surface.
+    "crates/aphrody-agent-proto",
+    # aphrody-model-client — `ModelClient` trait + unified `ModelStreamEvent`
+    # + Gemini generateContent streaming impl (SSE → unified events).
+    "crates/aphrody-model-client",
+    # aphrody-toolcall — tool catalogue model: ToolDefinition, ToolExecutor
+    # trait, ToolExposure, JsonSchema with prompt-budget compaction.
+    "crates/aphrody-toolcall",
+    # aphrody-rollout — JSONL session recorder (async actor) + resume/replay.
+    "crates/aphrody-rollout",
     # aphrody-settings — hierarchical JSON settings loader (user / project /
     # local / env) with deep-merge precedence, dotted-path navigation, env
     # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
