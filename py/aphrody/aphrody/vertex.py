@@ -94,7 +94,19 @@ class GeminiVertex:
         self.project = resolve_project(project)
         self.location = resolve_location(location)
         self.model = model
-        credentials = creds or _credentials.load_google_credentials()
+        if creds is not None:
+            credentials = creds
+        else:
+            import google.auth
+            from google.auth.exceptions import DefaultCredentialsError
+            try:
+                credentials, _ = google.auth.default()
+                if hasattr(credentials, "with_scopes"):
+                    credentials = credentials.with_scopes(
+                        ["https://www.googleapis.com/auth/cloud-platform"]
+                    )
+            except DefaultCredentialsError:
+                credentials = _credentials.load_google_credentials()
         self._client = genai.Client(
             vertexai=True,
             project=self.project,
