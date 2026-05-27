@@ -21,14 +21,12 @@ aphrody-agent-tools  = { path = "../aphrody-agent-tools" }
 aphrody-model-client = { path = "../aphrody-model-client" }
 aphrody-toolcall     = { path = "../aphrody-toolcall" }
 aphrody-rollout      = { path = "../aphrody-rollout" }
-serde               = { workspace = true }
 serde_json          = { workspace = true }
 thiserror           = { workspace = true }
 tokio               = { workspace = true }
-tokio-stream        = { workspace = true }
 futures             = { workspace = true }
 async-trait         = { workspace = true }
-tracing             = { workspace = true }
+rustls              = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
