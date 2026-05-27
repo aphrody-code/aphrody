@@ -460,7 +460,14 @@ fn process_file(entry: &DirEntry, root: &Path, acc: &ScanAccumulator) {
 }
 
 fn workspace_key(rel: &Path) -> Option<String> {
-    let mut comps = rel.components();
+    let path_str = rel.to_string_lossy();
+    let normalized = if path_str.contains('\\') {
+        std::path::PathBuf::from(path_str.replace('\\', "/"))
+    } else {
+        rel.to_path_buf()
+    };
+
+    let mut comps = normalized.components();
     let top = comps.next()?.as_os_str().to_string_lossy().into_owned();
     if top != "apps" && top != "packages" {
         return None;
