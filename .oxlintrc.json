@@ -29,6 +29,8 @@
     ".uv-cache/**",
     ".git/**",
     ".claude/**",
+    "go/**",
+    "py/**",
     "packages/**",
     "apps/photoshop-*/**",
     "**/examples/**",

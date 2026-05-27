@@ -9,11 +9,10 @@ managed = true
 members = [
     "aphrody",
     "antigravity-sdk-python",
-    "langextract",
 ]
 
 [tool.uv.sources]
-langextract = { workspace = true }
+langextract = { git = "https://github.com/google/langextract.git" }
 google-antigravity = { workspace = true }
 
 [tool.pytest.ini_options]

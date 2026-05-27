@@ -1,4 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # aphrody desktop
 
 A pixel-faithful Gemini-style desktop client for the **aphrody** CLI, built on
@@ -55,7 +56,7 @@ bun run tauri build # PRODUCTION shell: embeds dist/, loads no dev server
 Tauri decides dev-vs-production purely by `tauri::is_dev()`, which is
 `!cfg!(feature = "custom-protocol")` (tauri 2.11 `src/lib.rs:308`). So:
 
-- A **bare `cargo build` / `cargo run`** — *even `--release`* — leaves
+- A **bare `cargo build` / `cargo run`** — _even `--release`_ — leaves
   `custom-protocol` **off**, so the webview loads `build.devUrl`
   (`http://localhost:1420`). With no `bun run start` running you get
   **"localhost refused to connect"**. This is a dev artifact, not shippable.
@@ -77,7 +78,7 @@ core, cf. `CLAUDE.md` §2/§7).
 
 - **Binary name** — the build emits **`aphrody-gui`** (`.exe` on Windows), set
   via `[[bin]] name = "aphrody-gui"` in `src-tauri/Cargo.toml`; `tauri
-  build`/bundle is locked to the same name via `mainBinaryName` in
+build`/bundle is locked to the same name via `mainBinaryName` in
   `tauri.conf.json` (the package stays `desktop`, `[lib] desktop_lib` so
   `main.rs` keeps calling `desktop_lib::run()`). `productName` stays `aphrody`.
   Use a **production** build (see above) — `aphrody gui` will happily launch a
@@ -93,8 +94,8 @@ core, cf. `CLAUDE.md` §2/§7).
      — the `<triple>` segment is present when a `build.target` is forced (the
      repo `.cargo/config.toml` pins `x86_64-pc-windows-msvc`),
   4. `aphrody-gui` on `PATH`.
-  `aphrody gui --print-path` resolves and prints the path without launching
-  (scriptable); `aphrody gui -- <args…>` forwards trailing args to the GUI.
+     `aphrody gui --print-path` resolves and prints the path without launching
+     (scriptable); `aphrody gui -- <args…>` forwards trailing args to the GUI.
 - **Deploy** — `scripts/deploy.{ps1,sh}` build only the core workspace, which
   excludes this app. Pass `-IncludeGui` / `--include-gui` to copy an
   already-built `aphrody-gui` next to `aphrody` in `~/.local/bin`, so the

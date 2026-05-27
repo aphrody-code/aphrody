@@ -12,61 +12,61 @@ export type SiblingBin = "aphrody-skills" | "aphrody-mcp";
 
 /** Mirrors the Rust `ConfigDoc` returned by read/write_agent_config. */
 export interface ConfigDoc {
-  which: string;
-  path: string;
-  exists: boolean;
-  content: string;
+    which: string;
+    path: string;
+    exists: boolean;
+    content: string;
 }
 
 /** Mirrors the Rust `PersonaDoc` returned by read/write_agent_home. */
 export interface PersonaDoc {
-  which: string;
-  path: string;
-  workspace: string;
-  exists: boolean;
-  content: string;
+    which: string;
+    path: string;
+    workspace: string;
+    exists: boolean;
+    content: string;
 }
 
 /** Mirrors the Rust `ChannelsState`. Secrets are NEVER present in `values`. */
 export interface ChannelsState {
-  path: string;
-  exists: boolean;
-  /** key -> is a non-empty value stored on disk. */
-  configured: Record<string, boolean>;
-  /** NON-secret handles only (X_HANDLE, channel/room IDs, homeserver…). */
-  values: Record<string, string>;
+    path: string;
+    exists: boolean;
+    /** key -> is a non-empty value stored on disk. */
+    configured: Record<string, boolean>;
+    /** NON-secret handles only (X_HANDLE, channel/room IDs, homeserver…). */
+    values: Record<string, string>;
 }
 
 /** A single channel field update (empty value clears the key). */
 export interface ChannelUpdate {
-  key: string;
-  value: string;
+    key: string;
+    value: string;
 }
 
 /** Mirrors the Rust `StatResult`. */
 export interface StatResult {
-  which: string;
-  path: string;
-  exists: boolean;
-  size: number;
-  modified_secs: number;
+    which: string;
+    path: string;
+    exists: boolean;
+    size: number;
+    modified_secs: number;
 }
 
 /** Mirrors the Rust `ExecResult` (sibling exec). */
 export interface SiblingResult {
-  code: number;
-  stdout: string;
-  stderr: string;
+    code: number;
+    stdout: string;
+    stderr: string;
 }
 
 type TauriInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
 
 /** Raised when a host-only command is called in a plain browser (no Tauri). */
 export class HostUnavailableError extends Error {
-  constructor() {
-    super("Cette fonction nécessite l'application de bureau (binaire aphrody local).");
-    this.name = "HostUnavailableError";
-  }
+    constructor() {
+        super("Cette fonction nécessite l'application de bureau (binaire aphrody local).");
+        this.name = "HostUnavailableError";
+    }
 }
 
 /**
@@ -81,110 +81,112 @@ export class HostUnavailableError extends Error {
  */
 @Injectable({ providedIn: "root" })
 export class AgentService {
-  private invokeFn: TauriInvoke | null = null;
-  private invokeReady: Promise<void>;
+    private invokeFn: TauriInvoke | null = null;
+    private invokeReady: Promise<void>;
 
-  constructor() {
-    this.invokeReady = this.resolveInvoke();
-  }
-
-  /** True when running inside the Tauri webview (real backend available). */
-  get isTauri(): boolean {
-    return typeof (globalThis as Record<string, unknown>)["__TAURI_INTERNALS__"] !== "undefined";
-  }
-
-  private async resolveInvoke(): Promise<void> {
-    if (!this.isTauri) {
-      return;
+    constructor() {
+        this.invokeReady = this.resolveInvoke();
     }
-    try {
-      const mod = (await import("@tauri-apps/api/core")) as { invoke: TauriInvoke };
-      this.invokeFn = mod.invoke;
-    } catch {
-      this.invokeFn = null;
+
+    /** True when running inside the Tauri webview (real backend available). */
+    get isTauri(): boolean {
+        return (
+            typeof (globalThis as Record<string, unknown>)["__TAURI_INTERNALS__"] !== "undefined"
+        );
     }
-  }
 
-  private async invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-    await this.invokeReady;
-    if (!this.invokeFn) {
-      throw new HostUnavailableError();
+    private async resolveInvoke(): Promise<void> {
+        if (!this.isTauri) {
+            return;
+        }
+        try {
+            const mod = (await import("@tauri-apps/api/core")) as { invoke: TauriInvoke };
+            this.invokeFn = mod.invoke;
+        } catch {
+            this.invokeFn = null;
+        }
     }
-    return this.invokeFn<T>(cmd, args);
-  }
 
-  // ── Agent config (JSON editors) ──────────────────────────────────────────
+    private async invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+        await this.invokeReady;
+        if (!this.invokeFn) {
+            throw new HostUnavailableError();
+        }
+        return this.invokeFn<T>(cmd, args);
+    }
 
-  readAgentConfig(which: ConfigWhich): Promise<ConfigDoc> {
-    return this.invoke<ConfigDoc>("read_agent_config", { which });
-  }
+    // ── Agent config (JSON editors) ──────────────────────────────────────────
 
-  writeAgentConfig(which: ConfigWhich, content: string): Promise<ConfigDoc> {
-    return this.invoke<ConfigDoc>("write_agent_config", { which, content });
-  }
+    readAgentConfig(which: ConfigWhich): Promise<ConfigDoc> {
+        return this.invoke<ConfigDoc>("read_agent_config", { which });
+    }
 
-  // ── Agent-home persona (soul / identity) ─────────────────────────────────
+    writeAgentConfig(which: ConfigWhich, content: string): Promise<ConfigDoc> {
+        return this.invoke<ConfigDoc>("write_agent_config", { which, content });
+    }
 
-  readAgentHome(which: PersonaWhich): Promise<PersonaDoc> {
-    return this.invoke<PersonaDoc>("read_agent_home", { which });
-  }
+    // ── Agent-home persona (soul / identity) ─────────────────────────────────
 
-  writeAgentHome(which: PersonaWhich, content: string): Promise<PersonaDoc> {
-    return this.invoke<PersonaDoc>("write_agent_home", { which, content });
-  }
+    readAgentHome(which: PersonaWhich): Promise<PersonaDoc> {
+        return this.invoke<PersonaDoc>("read_agent_home", { which });
+    }
 
-  // ── Channels ─────────────────────────────────────────────────────────────
+    writeAgentHome(which: PersonaWhich, content: string): Promise<PersonaDoc> {
+        return this.invoke<PersonaDoc>("write_agent_home", { which, content });
+    }
 
-  readChannels(): Promise<ChannelsState> {
-    return this.invoke<ChannelsState>("read_channels");
-  }
+    // ── Channels ─────────────────────────────────────────────────────────────
 
-  writeChannels(updates: ChannelUpdate[]): Promise<ChannelsState> {
-    return this.invoke<ChannelsState>("write_channels", { updates });
-  }
+    readChannels(): Promise<ChannelsState> {
+        return this.invoke<ChannelsState>("read_channels");
+    }
 
-  // ── Stat ─────────────────────────────────────────────────────────────────
+    writeChannels(updates: ChannelUpdate[]): Promise<ChannelsState> {
+        return this.invoke<ChannelsState>("write_channels", { updates });
+    }
 
-  stat(which: StatWhich): Promise<StatResult> {
-    return this.invoke<StatResult>("aphrody_stat", { which });
-  }
+    // ── Stat ─────────────────────────────────────────────────────────────────
 
-  // ── Sibling binaries ─────────────────────────────────────────────────────
+    stat(which: StatWhich): Promise<StatResult> {
+        return this.invoke<StatResult>("aphrody_stat", { which });
+    }
 
-  siblingExec(bin: SiblingBin, args: string[]): Promise<SiblingResult> {
-    return this.invoke<SiblingResult>("aphrody_sibling_exec", { bin, args });
-  }
+    // ── Sibling binaries ─────────────────────────────────────────────────────
 
-  // ── Voice (native TTS + STT via aphrody-voice) ────────────────────────────
+    siblingExec(bin: SiblingBin, args: string[]): Promise<SiblingResult> {
+        return this.invoke<SiblingResult>("aphrody_sibling_exec", { bin, args });
+    }
 
-  /**
-   * Synthesise `text` via ElevenLabs and return the audio as a base64-encoded
-   * MPEG string (play via `new Audio("data:audio/mpeg;base64,<result>")`).
-   *
-   * Rejects with `"no-tts-key"` when no ElevenLabs key is configured; the
-   * caller should fall back to `speechSynthesis.speak()`.
-   *
-   * Throws {@link HostUnavailableError} in a plain browser.
-   */
-  voiceSynthesize(text: string, voiceId?: string): Promise<string> {
-    return this.invoke<string>("voice_synthesize", {
-      text,
-      voiceId: voiceId ?? null,
-    });
-  }
+    // ── Voice (native TTS + STT via aphrody-voice) ────────────────────────────
 
-  /**
-   * Transcribe base64-encoded audio via OpenAI Whisper or ElevenLabs STT.
-   *
-   * `audioB64` is the base64-encoded audio blob (from `MediaRecorder`).
-   * `mime` is the MIME type string (e.g. `"audio/webm;codecs=opus"`).
-   *
-   * Rejects with `"no-stt-key"` when no API key is configured; the caller
-   * should fall back to the Web Speech recogniser.
-   *
-   * Throws {@link HostUnavailableError} in a plain browser.
-   */
-  voiceTranscribe(audioB64: string, mime: string): Promise<string> {
-    return this.invoke<string>("voice_transcribe", { audioB64, mime });
-  }
+    /**
+     * Synthesise `text` via ElevenLabs and return the audio as a base64-encoded
+     * MPEG string (play via `new Audio("data:audio/mpeg;base64,<result>")`).
+     *
+     * Rejects with `"no-tts-key"` when no ElevenLabs key is configured; the
+     * caller should fall back to `speechSynthesis.speak()`.
+     *
+     * Throws {@link HostUnavailableError} in a plain browser.
+     */
+    voiceSynthesize(text: string, voiceId?: string): Promise<string> {
+        return this.invoke<string>("voice_synthesize", {
+            text,
+            voiceId: voiceId ?? null,
+        });
+    }
+
+    /**
+     * Transcribe base64-encoded audio via OpenAI Whisper or ElevenLabs STT.
+     *
+     * `audioB64` is the base64-encoded audio blob (from `MediaRecorder`).
+     * `mime` is the MIME type string (e.g. `"audio/webm;codecs=opus"`).
+     *
+     * Rejects with `"no-stt-key"` when no API key is configured; the caller
+     * should fall back to the Web Speech recogniser.
+     *
+     * Throws {@link HostUnavailableError} in a plain browser.
+     */
+    voiceTranscribe(audioB64: string, mime: string): Promise<string> {
+        return this.invoke<string>("voice_transcribe", { audioB64, mime });
+    }
 }

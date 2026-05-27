@@ -5,11 +5,11 @@
   "description": "In-process bridge to the aphrody native library (Rust crate aphrody-ffi) via Bun bun:ffi. Drives the ENTIRE aphrody CLI in-process, no subprocess. Requires the cdylib built in the sibling Rust repo (C:\\src\\aphrody): cargo build --release -p aphrody-ffi.",
   "keywords": [
     "aphrody",
-    "ffi",
     "bun",
-    "native",
     "cli",
-    "dlopen"
+    "dlopen",
+    "ffi",
+    "native"
   ],
   "homepage": "https://github.com/aphrody-code/aphrody-ts/tree/main/apps/native#readme",
   "bugs": {
