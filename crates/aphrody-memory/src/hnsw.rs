@@ -216,11 +216,19 @@ impl HnswBackend {
     /// product and the candidate norm into a single pass over `embedding`.
     #[inline]
     fn scaled_cosine(query: &[f32], query_norm: f32, embedding: &[f32]) -> f32 {
+        let len = query.len().min(embedding.len());
+        if len == 0 {
+            return 0.0;
+        }
+        let q = &query[..len];
+        let e = &embedding[..len];
         let mut dot = 0.0_f32;
         let mut norm_sq = 0.0_f32;
-        for (q, e) in query.iter().zip(embedding.iter()) {
-            dot += q * e;
-            norm_sq += e * e;
+        for i in 0..len {
+            let q_val = q[i];
+            let e_val = e[i];
+            dot += q_val * e_val;
+            norm_sq += e_val * e_val;
         }
         if norm_sq == 0.0 { 0.0 } else { dot / (query_norm * norm_sq.sqrt()) }
     }
@@ -229,7 +237,11 @@ impl HnswBackend {
 /// L2 (Euclidean) norm of a vector.
 #[inline]
 fn l2_norm(v: &[f32]) -> f32 {
-    v.iter().map(|x| x * x).sum::<f32>().sqrt()
+    let mut sum = 0.0_f32;
+    for &x in v {
+        sum += x * x;
+    }
+    sum.sqrt()
 }
 
 // ---------------------------------------------------------------------------
