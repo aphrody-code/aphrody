@@ -17,8 +17,15 @@ workspace = true
 [dependencies]
 serde      = { workspace = true }
 serde_json = { workspace = true }
-uuid       = { workspace = true }
 thiserror  = { workspace = true }
+
+# The workspace `uuid` is declared with the `v4` feature but no wasm randomness
+# source (`js` / `rng-getrandom`), which makes the crate fail to compile on
+# `wasm32-unknown-unknown`. This crate must stay wasm-pure, so `uuid` is only
+# pulled on non-wasm targets; the wasm build synthesizes v4-shaped ids without
+# it (see `gen_uuid_v4` in src/lib.rs).
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
+uuid = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
