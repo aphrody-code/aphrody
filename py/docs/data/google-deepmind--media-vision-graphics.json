@@ -1,0 +1,275 @@
+[
+  {
+    "createdAt": "2017-08-02T12:23:13Z",
+    "description": "Convolutional neural network model for video classification trained on the Kinetics dataset.",
+    "forksCount": 469,
+    "fullName": "google-deepmind/kinetics-i3d",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "kinetics-i3d",
+    "openIssuesCount": 95,
+    "pushedAt": "2019-09-12T14:04:07Z",
+    "stargazersCount": 1834,
+    "updatedAt": "2026-05-11T14:53:00Z",
+    "url": "https://github.com/google-deepmind/kinetics-i3d",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2021-06-30T16:25:50Z",
+    "description": "PIX is an image processing library in JAX, for JAX.",
+    "forksCount": 27,
+    "fullName": "google-deepmind/dm_pix",
+    "homepage": "https://dm-pix.readthedocs.io",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "dm_pix",
+    "openIssuesCount": 2,
+    "pushedAt": "2025-03-06T03:24:32Z",
+    "stargazersCount": 438,
+    "updatedAt": "2026-05-14T18:13:30Z",
+    "url": "https://github.com/google-deepmind/dm_pix",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2025-05-29T19:25:15Z",
+    "description": "Official repository for \"VideoPrism: A Foundational Visual Encoder for Video Understanding\" (ICML 2024)",
+    "forksCount": 37,
+    "fullName": "google-deepmind/videoprism",
+    "homepage": "https://arxiv.org/abs/2402.13217",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "videoprism",
+    "openIssuesCount": 9,
+    "pushedAt": "2026-05-14T21:55:03Z",
+    "stargazersCount": 372,
+    "updatedAt": "2026-05-20T23:56:13Z",
+    "url": "https://github.com/google-deepmind/videoprism",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2024-12-14T05:07:19Z",
+    "description": "Benchmarking physical understanding in generative video models",
+    "forksCount": 31,
+    "fullName": "google-deepmind/physics-IQ-benchmark",
+    "homepage": "https://physics-iq.github.io/",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "url": ""
+    },
+    "name": "physics-IQ-benchmark",
+    "openIssuesCount": 3,
+    "pushedAt": "2026-05-05T11:12:27Z",
+    "stargazersCount": 293,
+    "updatedAt": "2026-05-19T04:18:13Z",
+    "url": "https://github.com/google-deepmind/physics-IQ-benchmark",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2019-08-30T09:12:57Z",
+    "description": "Multi-object image datasets with ground-truth segmentation masks and generative factors.",
+    "forksCount": 28,
+    "fullName": "google-deepmind/multi_object_datasets",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "multi_object_datasets",
+    "openIssuesCount": 10,
+    "pushedAt": "2026-03-03T08:58:15Z",
+    "stargazersCount": 288,
+    "updatedAt": "2026-05-15T00:10:23Z",
+    "url": "https://github.com/google-deepmind/multi_object_datasets",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2018-03-12T17:26:17Z",
+    "description": "Datasets used to train Generative Query Networks (GQNs) in the ‘Neural Scene Representation and Rendering’ paper.",
+    "forksCount": 45,
+    "fullName": "google-deepmind/gqn-datasets",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "gqn-datasets",
+    "openIssuesCount": 9,
+    "pushedAt": "2022-02-27T19:18:00Z",
+    "stargazersCount": 274,
+    "updatedAt": "2026-04-22T16:37:31Z",
+    "url": "https://github.com/google-deepmind/gqn-datasets",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2024-06-20T16:53:34Z",
+    "description": "[ICML'24 Oral] \"MagicLens: Self-Supervised Image Retrieval with Open-Ended Instructions\"",
+    "forksCount": 15,
+    "fullName": "google-deepmind/magiclens",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "magiclens",
+    "openIssuesCount": 8,
+    "pushedAt": "2024-10-28T21:45:00Z",
+    "stargazersCount": 210,
+    "updatedAt": "2026-05-12T02:30:21Z",
+    "url": "https://github.com/google-deepmind/magiclens",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2024-12-07T05:35:11Z",
+    "description": "Code release for the paper, \"Proactive Agents for Text-to-Image Generation under Uncertainty\"",
+    "forksCount": 7,
+    "fullName": "google-deepmind/proactive_t2i_agents",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "proactive_t2i_agents",
+    "openIssuesCount": 1,
+    "pushedAt": "2025-07-28T19:01:11Z",
+    "stargazersCount": 71,
+    "updatedAt": "2026-05-10T20:15:29Z",
+    "url": "https://github.com/google-deepmind/proactive_t2i_agents",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2021-10-14T12:02:42Z",
+    "description": "A JAX implementation of Broaden Your Views for Self-Supervised Video Learning, or BraVe for short.",
+    "forksCount": 1,
+    "fullName": "google-deepmind/brave",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "brave",
+    "openIssuesCount": 4,
+    "pushedAt": "2026-03-17T16:39:17Z",
+    "stargazersCount": 51,
+    "updatedAt": "2026-05-10T20:13:07Z",
+    "url": "https://github.com/google-deepmind/brave",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2023-01-26T20:31:28Z",
+    "description": "",
+    "forksCount": 1,
+    "fullName": "google-deepmind/image_obfuscation_benchmark",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "image_obfuscation_benchmark",
+    "openIssuesCount": 9,
+    "pushedAt": "2026-05-20T01:35:00Z",
+    "stargazersCount": 27,
+    "updatedAt": "2026-05-16T07:00:10Z",
+    "url": "https://github.com/google-deepmind/image_obfuscation_benchmark",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2026-03-10T22:46:46Z",
+    "description": "",
+    "forksCount": 4,
+    "fullName": "google-deepmind/serial_depth",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "serial_depth",
+    "openIssuesCount": 0,
+    "pushedAt": "2026-03-10T23:00:48Z",
+    "stargazersCount": 18,
+    "updatedAt": "2026-05-10T20:13:14Z",
+    "url": "https://github.com/google-deepmind/serial_depth",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2025-01-18T18:12:27Z",
+    "description": "Code for CUBE extraction and cultural diversity metric introduced in \"Beyond Aesthetics: Cultural Competence in Text-to-Image Models\"",
+    "forksCount": 0,
+    "fullName": "google-deepmind/cube",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "cube",
+    "openIssuesCount": 0,
+    "pushedAt": "2025-01-20T11:45:11Z",
+    "stargazersCount": 8,
+    "updatedAt": "2026-05-10T20:16:40Z",
+    "url": "https://github.com/google-deepmind/cube",
+    "visibility": "public"
+  },
+  {
+    "createdAt": "2026-04-22T19:30:55Z",
+    "description": "",
+    "forksCount": 1,
+    "fullName": "google-deepmind/platonic_rep_video",
+    "homepage": "",
+    "isArchived": false,
+    "isFork": false,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "url": "https://api.github.com/licenses/apache-2.0"
+    },
+    "name": "platonic_rep_video",
+    "openIssuesCount": 0,
+    "pushedAt": "2026-04-22T19:43:13Z",
+    "stargazersCount": 6,
+    "updatedAt": "2026-05-15T22:28:19Z",
+    "url": "https://github.com/google-deepmind/platonic_rep_video",
+    "visibility": "public"
+  }
+]

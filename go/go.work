@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+// go.work — Go workspace for aphrody-go (extracted 2026-05-23 from the aphrody
+// monorepo into the sibling repo C:\src\aphrody-go).
+//
+// Aggregates every Go module so `go build`, `go test` and the gopls language
+// server resolve cross-module imports without per-module replace directives.
+// Add new modules with `go work use ./path/to/module`.
+
+go 1.26.3
+
+use (
+	./antigravity-langserver-re
+	./gogcli
+)

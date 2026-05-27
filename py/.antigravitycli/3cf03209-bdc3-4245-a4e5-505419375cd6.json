@@ -1,0 +1,14 @@
+{
+  "id": "3cf03209-bdc3-4245-a4e5-505419375cd6",
+  "name": "C:\\src\\aphrody-py",
+  "projectResources": {
+    "resources": [
+      {
+        "gitFolder": {
+          "folderUri": "file://C:/src/aphrody-py",
+          "allowWrite": true
+        }
+      }
+    ]
+  }
+}
