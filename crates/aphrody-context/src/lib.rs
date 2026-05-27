@@ -260,13 +260,19 @@ impl GoTokenEstimator {
             }
         }
 
-        // Step 2: Sibling of the running binary
+        // Step 2: Sibling of the running binary (supporting nextest where binary is in deps/)
         if let Ok(exe) = std::env::current_exe() {
             if let Some(dir) = exe.parent() {
                 for cand in ["aphrody-tokenizer-go.exe", "aphrody-tokenizer-go"] {
                     let p = dir.join(cand);
                     if p.exists() {
                         return Some(p);
+                    }
+                    if let Some(parent) = dir.parent() {
+                        let p2 = parent.join(cand);
+                        if p2.exists() {
+                            return Some(p2);
+                        }
                     }
                 }
             }
@@ -284,11 +290,16 @@ impl GoTokenEstimator {
             }
         }
 
-        // Étape 4 : binaire compilé sous go/aphrody-tokenizer-go/ (dev local).
+        // Étape 4 : binaire compilé sous go/ (dev local).
         if let Ok(cwd) = std::env::current_dir() {
             let mut current = Some(cwd.as_path());
             while let Some(path) = current {
-                for cand in ["go/aphrody-tokenizer-go/aphrody-tokenizer-go.exe", "go/aphrody-tokenizer-go/aphrody-tokenizer-go"] {
+                for cand in [
+                    "go/gogcli/cmd/aphrody-tokenizer-go/aphrody-tokenizer-go.exe",
+                    "go/gogcli/cmd/aphrody-tokenizer-go/aphrody-tokenizer-go",
+                    "go/aphrody-tokenizer-go/aphrody-tokenizer-go.exe",
+                    "go/aphrody-tokenizer-go/aphrody-tokenizer-go",
+                ] {
                     let p = path.join(cand);
                     if p.exists() {
                         return Some(p);
