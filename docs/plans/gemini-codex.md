@@ -185,7 +185,8 @@ Gemini `streamGenerateContent` ≠ OpenAI Responses. Différences à gérer :
 6. **GC-6 CLI** : `aphrody exec` (JSONL/human) + `aphrody session serve`
    (app-server stdio/UDS).
 7. **GC-7 persistence** : rollout JSONL `~/.aphrody/sessions/` + reprise.
-8. **GC-8 TUI** : cloner `tui`, rebrand, pointer sur le client app-server aphrody.
+8. **GC-8 TUI** : nouveau crate `aphrody-tui` sur **Ratatui 0.30 upstream**
+   (`var/ratatui`, **MIT**, compatible). Décision de stack ci-dessous.
 9. **GC-9 skills injection** : `build_skill_injections` + rendu `## Skills`.
 10. **GC-10 MCP server** : tools `gemini`/`gemini-reply` dans `google_mcp`.
 11. **GC-11 SDK/desktop** : SDK TS dans `aphrody-ts` ; l'app Tauri appelle le
@@ -205,6 +206,51 @@ Gemini `streamGenerateContent` ≠ OpenAI Responses. Différences à gérer :
   opt-in `APHRODY_GUARD=1`.
 - **Latence** : réutiliser le client Gemini (cf. objectif projet latence
   minimale), streaming dès le premier delta, pas de hop proxy si Option B.
+
+## 6.1 Décision de stack TUI (GC-8)
+
+aphrody est **déjà** sur `ratatui 0.30` + `crossterm 0.29` (workspace). Les **4
+features instables** dont dépend le TUI Codex existent toutes en **0.30 upstream,
+mêmes noms** → **le fork nornagon-0.29 de Codex est inutile**, on reste upstream.
+Ratatui 0.30 est **MIT** (compatible Apache-2.0).
+
+Crate dédié `crates/aphrody-tui` :
+```toml
+ratatui = { version = "0.30", features = [
+  "crossterm", "underline-color", "macros", "layout-cache",
+  "scrolling-regions",            # insert_before flicker-free → transcript streaming
+  "unstable-rendered-line-info",  # Paragraph::line_count(w) → auto-scroll
+  "unstable-widget-ref",          # Box<dyn WidgetRef> → composants hétérogènes/overlays
+  "unstable-backend-writer",      # CrosstermBackend::writer_mut() → OSC / bracketed paste
+] }
+crossterm = "0.29"
+```
+À quoi servent les features dans un TUI d'agent :
+- `scrolling-regions` → `Terminal::insert_before(h, |buf| …)` pousse les anciennes
+  lignes sans flicker pendant le streaming token-par-token.
+- `unstable-rendered-line-info` → `Paragraph::line_count(width)` pré-calcule la
+  hauteur wrappée pour l'auto-scroll (garder le bas du transcript visible).
+- `unstable-widget-ref` → stocker `ChatPanel`/`ToolCallCard`/`ApprovalPopup` en
+  `Box<dyn WidgetRef>` et re-rendre par référence sans ownership.
+- `unstable-backend-writer` → injecter des séquences OSC hors cycle de rendu.
+
+Boucle recommandée : `ratatui::run(|term| …)` (nouveau en 0.30, cleanup auto) ;
+`Viewport::Fullscreen` (mode agent plein écran) ou `Viewport::Inline(N)` (mode CLI
+léger sans alt-screen) ; `frame.set_cursor_position()` pour le curseur du composer ;
+`Clear` + render-en-dernier pour les overlays.
+
+**Effort portage du TUI Codex (0.29 fork → 0.30 upstream) : MOYEN.** Frictions :
+1. `WidgetRef` blanket **inversé** : réécrire `impl WidgetRef for Foo` →
+   `impl Widget for &Foo` (le blanket fournit alors `WidgetRef`).
+2. `block::Title` **supprimé** : `Title::from(…)` → `Line::from(…)` +
+   `title_bottom(line.centered())`.
+3. `FrameExt` à importer pour `frame.render_widget_ref()`.
+4. Conversions crossterm `From`/`Into` → traits `FromCrossterm`/`IntoCrossterm`.
+5. `Backend` a un type `Error` associé : génériques `fn f<B: Backend>() ->
+   io::Result` → `Result<(), B::Error>`.
+
+Les 4 features elles-mêmes ne cassent pas ; le gros chantier = inversion
+`WidgetRef` + nettoyage `block::Title`.
 
 ## 7. Références
 
