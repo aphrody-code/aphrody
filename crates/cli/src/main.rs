@@ -16,6 +16,13 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> std::process::ExitCode {
+    // Opt-in process hardening (disable core dumps, block ptrace attach, strip
+    // LD_*/DYLD_* loader-injection env vars). DISABLED by default: aphrody runs
+    // fully autonomous with guardrails off (cf. CLAUDE.md §0.1) unless
+    // `APHRODY_GUARD=1` is set. No-op otherwise, and on wasm. Only the
+    // standalone binary is hardened — never the `aphrody-ffi` cdylib, which runs
+    // inside a host process (Bun) we must not strip or mark non-dumpable.
+    aphrody_guard::pre_main_hardening_if_enabled();
     aphrody::run_native()
 }
 

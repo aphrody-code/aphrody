@@ -147,6 +147,10 @@ members = [
     # AES-256-GCM/Argon2id encrypted file + composite) with redacted Display/
     # Debug, constant-time equality, Zeroize-on-drop SecretValue.
     "crates/aphrody-secrets",
+    # aphrody-guard — autonomous-agent safety: pre-main process hardening
+    # (no-dump / no-ptrace / strip LD_*-DYLD_*) + a cross-platform command-safety
+    # classifier (Allow / Prompt / Forbidden) for gating agent-issued shell calls.
+    "crates/aphrody-guard",
     # aphrody-settings — hierarchical JSON settings loader (user / project /
     # local / env) with deep-merge precedence, dotted-path navigation, env
     # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
