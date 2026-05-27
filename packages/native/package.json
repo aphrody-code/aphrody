@@ -11,7 +11,7 @@
     "ffi",
     "native"
   ],
-  "homepage": "https://github.com/aphrody-code/aphrody-ts/tree/main/apps/native#readme",
+  "homepage": "https://github.com/aphrody-code/aphrody-ts/tree/main/packages/native#readme",
   "bugs": {
     "url": "https://github.com/aphrody-code/aphrody/issues"
   },
@@ -19,7 +19,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aphrody-code/aphrody-ts.git",
-    "directory": "apps/native"
+    "directory": "packages/native"
   },
   "type": "module",
   "module": "src/index.ts",

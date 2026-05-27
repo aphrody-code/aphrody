@@ -7,7 +7,8 @@
   "description": "aphrody-ts — Bun workspace for aphrody's first-party TypeScript/JS (apps/*). Extracted 2026-05-23 from the aphrody monorepo (C:\\src\\aphrody, Rust core). UI forks under packages/* (material-web, ui, tailwindcss, lit, gts, bxc, lightpanda) keep their own .git and native package managers (npm/pnpm) and are NOT bun workspace members.",
   "workspaces": {
     "packages": [
-      "apps/*"
+      "apps/*",
+      "packages/native"
     ],
     "catalog": {
       "typescript": "^6.0.3",
