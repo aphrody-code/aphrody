@@ -125,12 +125,14 @@ impl TerminalCommand for ChromiumSyncCommand {
 // `aphrody chromium export-session` — unified Google session JSON
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 pub(crate) struct ChromiumExportSessionCommand {
     pub profile: String,
     pub out: Option<PathBuf>,
     pub domain: String,
 }
 
+#[cfg(target_os = "windows")]
 #[derive(serde::Serialize)]
 struct GoogleSessionExport {
     schema: &'static str,
@@ -143,6 +145,7 @@ struct GoogleSessionExport {
     stats: ExportStats,
 }
 
+#[cfg(target_os = "windows")]
 #[derive(serde::Serialize)]
 struct ExportStats {
     total_cookies: usize,
