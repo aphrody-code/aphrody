@@ -30,6 +30,21 @@ APP=/opt/aphrody ETC=/etc/aphrody LOG=/var/log/aphrody
 id aphrody &>/dev/null || useradd --system --home-dir "$APP" --shell /usr/sbin/nologin aphrody
 mkdir -p "$APP" "$ETC" "$LOG"
 
+# Calculate dynamic memory limits based on available physical memory (for large servers like 40 GB RAM)
+MEM_HIGH="2G"
+MEM_MAX="4G"
+if [[ -f /proc/meminfo ]]; then
+  TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+  if [[ $TOTAL_RAM_GB -gt 8 ]]; then
+    # Scale: High = 75% of total RAM, Max = 90% of total RAM
+    MEM_HIGH="$((TOTAL_RAM_GB * 75 / 100))G"
+    MEM_MAX="$((TOTAL_RAM_GB * 90 / 100))G"
+  fi
+fi
+
+echo "==> Configuring systemd memory limits: High=${MEM_HIGH}, Max=${MEM_MAX}"
+
 echo "==> Python venv + install"
 python3 -m venv "$APP/venv"
 "$APP/venv/bin/pip" install --quiet --upgrade pip
@@ -44,14 +59,24 @@ APHRODY_SITE_ROOT=$SITE
 APHRODY_HOST=$HOST
 APHRODY_PORT=$PORT
 EOF
-    install -m 0644 "$HERE/aphrody.service" /etc/systemd/system/aphrody.service
+    # Inject dynamic memory limits into systemd service unit
+    sed -e "s/MemoryHigh=2G/MemoryHigh=${MEM_HIGH}/" \
+        -e "s/MemoryMax=4G/MemoryMax=${MEM_MAX}/" \
+        "$HERE/aphrody.service" > /tmp/aphrody.service
+    install -m 0644 /tmp/aphrody.service /etc/systemd/system/aphrody.service
+    rm -f /tmp/aphrody.service
     UNIT=aphrody.service
     ;;
   rust)
     [[ -n "$BINARY" ]] || { echo "rust mode needs --binary <path>" >&2; exit 1; }
     echo "==> Rust app mode (binary=$BINARY)"
     echo "APHRODY_RUST_BIN=$BINARY" > "$ETC/rust.env"
-    install -m 0644 "$HERE/aphrody-rust.service" /etc/systemd/system/aphrody-rust.service
+    # Inject dynamic memory limits into systemd service unit
+    sed -e "s/MemoryHigh=2G/MemoryHigh=${MEM_HIGH}/" \
+        -e "s/MemoryMax=4G/MemoryMax=${MEM_MAX}/" \
+        "$HERE/aphrody-rust.service" > /tmp/aphrody-rust.service
+    install -m 0644 /tmp/aphrody-rust.service /etc/systemd/system/aphrody-rust.service
+    rm -f /tmp/aphrody-rust.service
     UNIT=aphrody-rust.service
     ;;
   *) echo "bad --mode: $MODE (react|rust)" >&2; exit 2 ;;
