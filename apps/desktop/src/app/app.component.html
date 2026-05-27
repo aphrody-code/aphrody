@@ -1,66 +1,73 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <div class="shell">
-  <nav class="rail" aria-label="Navigation principale">
-    <a class="rail-brand" routerLink="/assistant" matTooltip="aphrody" matTooltipPosition="right">
-      <img src="assets/aphrody.webp" alt="aphrody" />
-    </a>
-
-    <div class="rail-items">
-      @for (item of nav; track item.path) {
+    <nav class="rail" aria-label="Navigation principale">
         <a
-          class="rail-item"
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          [matTooltip]="item.label"
-          matTooltipPosition="right"
-          [attr.aria-label]="item.label"
+            class="rail-brand"
+            routerLink="/assistant"
+            matTooltip="aphrody"
+            matTooltipPosition="right"
         >
-          <mat-icon class="material-symbols-outlined">{{ item.icon }}</mat-icon>
+            <img src="assets/aphrody.webp" alt="aphrody" />
         </a>
-      }
-    </div>
 
-    <div class="rail-bottom">
-      <button
-        class="rail-item"
-        (click)="theme.toggle()"
-        [matTooltip]="theme.mode() === 'dark' ? 'Thème clair' : 'Thème sombre'"
-        matTooltipPosition="right"
-        aria-label="Basculer le thème"
-      >
-        <mat-icon class="material-symbols-outlined">{{
-          theme.mode() === "dark" ? "light_mode" : "dark_mode"
-        }}</mat-icon>
-      </button>
+        <div class="rail-items">
+            @for (item of nav; track item.path) {
+                <a
+                    class="rail-item"
+                    [routerLink]="item.path"
+                    routerLinkActive="active"
+                    [matTooltip]="item.label"
+                    matTooltipPosition="right"
+                    [attr.aria-label]="item.label"
+                >
+                    <mat-icon class="material-symbols-outlined">{{ item.icon }}</mat-icon>
+                </a>
+            }
+        </div>
 
-      <a
-        class="rail-account"
-        routerLink="/settings"
-        [matTooltip]="account.account().connected ? account.account().email : 'Compte Google'"
-        matTooltipPosition="right"
-        aria-label="Compte"
-      >
-        @if (account.account().connected) {
-          <span class="acct-monogram">{{ account.account().initials }}</span>
-        } @else {
-          <mat-icon class="material-symbols-outlined">account_circle</mat-icon>
-        }
-      </a>
+        <div class="rail-bottom">
+            <button
+                class="rail-item"
+                (click)="theme.toggle()"
+                [matTooltip]="theme.mode() === 'dark' ? 'Thème clair' : 'Thème sombre'"
+                matTooltipPosition="right"
+                aria-label="Basculer le thème"
+            >
+                <mat-icon class="material-symbols-outlined">{{
+                    theme.mode() === "dark" ? "light_mode" : "dark_mode"
+                }}</mat-icon>
+            </button>
 
-      <a
-        class="rail-item"
-        routerLink="/settings"
-        routerLinkActive="active"
-        matTooltip="Paramètres"
-        matTooltipPosition="right"
-        aria-label="Paramètres"
-      >
-        <mat-icon class="material-symbols-outlined">settings</mat-icon>
-      </a>
-    </div>
-  </nav>
+            <a
+                class="rail-account"
+                routerLink="/settings"
+                [matTooltip]="
+                    account.account().connected ? account.account().email : 'Compte Google'
+                "
+                matTooltipPosition="right"
+                aria-label="Compte"
+            >
+                @if (account.account().connected) {
+                    <span class="acct-monogram">{{ account.account().initials }}</span>
+                } @else {
+                    <mat-icon class="material-symbols-outlined">account_circle</mat-icon>
+                }
+            </a>
 
-  <main class="content">
-    <router-outlet />
-  </main>
+            <a
+                class="rail-item"
+                routerLink="/settings"
+                routerLinkActive="active"
+                matTooltip="Paramètres"
+                matTooltipPosition="right"
+                aria-label="Paramètres"
+            >
+                <mat-icon class="material-symbols-outlined">settings</mat-icon>
+            </a>
+        </div>
+    </nav>
+
+    <main class="content">
+        <router-outlet />
+    </main>
 </div>

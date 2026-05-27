@@ -26,36 +26,37 @@
 /* Google Sans Flex — the real Gemini typeface (variable, weight 1..1000).
    Two subsets fetched from Google Fonts (OFL): latin + latin-ext. */
 @font-face {
-  font-family: "Google Sans Flex";
-  font-style: normal;
-  font-weight: 1 1000;
-  font-stretch: 100%;
-  font-display: swap;
-  src: url("./assets/fonts/google-sans-flex-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
-    U+2212, U+2215, U+FEFF, U+FFFD;
+    font-family: "Google Sans Flex";
+    font-style: normal;
+    font-weight: 1 1000;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url("./assets/fonts/google-sans-flex-latin.woff2") format("woff2");
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+        U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: "Google Sans Flex";
-  font-style: normal;
-  font-weight: 1 1000;
-  font-stretch: 100%;
-  font-display: swap;
-  src: url("./assets/fonts/google-sans-flex-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
-    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
-    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    font-family: "Google Sans Flex";
+    font-style: normal;
+    font-weight: 1 1000;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url("./assets/fonts/google-sans-flex-latin-ext.woff2") format("woff2");
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+        U+2C60-2C7F, U+A720-A7FF;
 }
 
 /* Material Symbols Outlined — the icon font `mat-icon` resolves ligatures
    against. Variable axis weight 100..700 (Apache-2.0). */
 @font-face {
-  font-family: "Material Symbols Outlined";
-  font-style: normal;
-  font-weight: 100 700;
-  font-display: block;
-  src: url("./assets/fonts/material-symbols-outlined.woff2") format("woff2");
+    font-family: "Material Symbols Outlined";
+    font-style: normal;
+    font-weight: 100 700;
+    font-display: block;
+    src: url("./assets/fonts/material-symbols-outlined.woff2") format("woff2");
 }
 
 /* The ligature glyph class Material's `<mat-icon>` emits. Mirrors the upstream
@@ -63,176 +64,184 @@
    GRAD/opsz variation axes so active icons can render filled. */
 .material-symbols-outlined,
 mat-icon.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: "liga";
-  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    font-family: "Material Symbols Outlined";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "liga";
+    font-variation-settings:
+        "FILL" 0,
+        "wght" 400,
+        "GRAD" 0,
+        "opsz" 24;
 }
 .material-symbols-outlined.fill,
 mat-icon.material-symbols-outlined.fill {
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+    font-variation-settings:
+        "FILL" 1,
+        "wght" 400,
+        "GRAD" 0,
+        "opsz" 24;
 }
 
 /* ---- Material 3 theme + Gemini palette ---------------------------------- */
 
 html {
-  color-scheme: dark;
+    color-scheme: dark;
 
-  @include mat.theme(
-    (
-      color: (
-        theme-type: dark,
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: "Google Sans Flex",
-      density: 0,
-    )
-  );
+    @include mat.theme(
+        (
+            color: (
+                theme-type: dark,
+                primary: mat.$azure-palette,
+                tertiary: mat.$blue-palette,
+            ),
+            typography: "Google Sans Flex",
+            density: 0,
+        )
+    );
 
-  /* Gemini DARK palette — override the M3 system colour tokens so every
+    /* Gemini DARK palette — override the M3 system colour tokens so every
      Material component renders in Gemini's exact colours. Values captured
      2026-05-24 (docs/design/gemini, spec --gem-sys-*). */
-  --mat-sys-primary: #a8c7fa;
-  --mat-sys-on-primary: #062e6f;
-  --mat-sys-primary-container: #1f3760;
-  --mat-sys-on-primary-container: #d3e3fd;
-  --mat-sys-secondary: #7fcfff;
-  --mat-sys-on-secondary: #003355;
-  --mat-sys-secondary-container: #004a77;
-  --mat-sys-on-secondary-container: #c2e7ff;
-  --mat-sys-tertiary: #6dd58c;
-  --mat-sys-on-tertiary: #003919;
-  --mat-sys-error: #f2b8b5;
-  --mat-sys-on-error: #601410;
-  --mat-sys-surface: #131314;
-  --mat-sys-on-surface: #e3e3e3;
-  --mat-sys-surface-dim: #131314;
-  --mat-sys-surface-bright: #37393b;
-  --mat-sys-surface-container-lowest: #0e0e0e;
-  --mat-sys-surface-container-low: #1b1b1b;
-  --mat-sys-surface-container: #1e1f20;
-  --mat-sys-surface-container-high: #282a2c;
-  --mat-sys-surface-container-highest: #333537;
-  --mat-sys-surface-variant: #444746;
-  --mat-sys-on-surface-variant: #c4c7c5;
-  --mat-sys-outline: #8e918f;
-  --mat-sys-outline-variant: #444746;
-  --mat-sys-inverse-surface: #e3e3e3;
-  --mat-sys-inverse-on-surface: #2f3033;
-  --mat-sys-background: #131314;
-  --mat-sys-on-background: #e3e3e3;
+    --mat-sys-primary: #a8c7fa;
+    --mat-sys-on-primary: #062e6f;
+    --mat-sys-primary-container: #1f3760;
+    --mat-sys-on-primary-container: #d3e3fd;
+    --mat-sys-secondary: #7fcfff;
+    --mat-sys-on-secondary: #003355;
+    --mat-sys-secondary-container: #004a77;
+    --mat-sys-on-secondary-container: #c2e7ff;
+    --mat-sys-tertiary: #6dd58c;
+    --mat-sys-on-tertiary: #003919;
+    --mat-sys-error: #f2b8b5;
+    --mat-sys-on-error: #601410;
+    --mat-sys-surface: #131314;
+    --mat-sys-on-surface: #e3e3e3;
+    --mat-sys-surface-dim: #131314;
+    --mat-sys-surface-bright: #37393b;
+    --mat-sys-surface-container-lowest: #0e0e0e;
+    --mat-sys-surface-container-low: #1b1b1b;
+    --mat-sys-surface-container: #1e1f20;
+    --mat-sys-surface-container-high: #282a2c;
+    --mat-sys-surface-container-highest: #333537;
+    --mat-sys-surface-variant: #444746;
+    --mat-sys-on-surface-variant: #c4c7c5;
+    --mat-sys-outline: #8e918f;
+    --mat-sys-outline-variant: #444746;
+    --mat-sys-inverse-surface: #e3e3e3;
+    --mat-sys-inverse-on-surface: #2f3033;
+    --mat-sys-background: #131314;
+    --mat-sys-on-background: #e3e3e3;
 
-  /* aphrody brand convenience tokens (not part of M3; used by the shell). */
-  --aphrody-glow: radial-gradient(100% 100% at 50% 8%, #0f0f0f 0%, #14204f 55%, #0f0f0f 100%);
-  --aphrody-composer-bg: #1e1f20;
-  --aphrody-composer-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.16);
-  --aphrody-rail-width: 72px;
+    /* aphrody brand convenience tokens (not part of M3; used by the shell). */
+    --aphrody-glow: radial-gradient(100% 100% at 50% 8%, #0f0f0f 0%, #14204f 55%, #0f0f0f 100%);
+    --aphrody-composer-bg: #1e1f20;
+    --aphrody-composer-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.16);
+    --aphrody-rail-width: 72px;
 }
 
 /* ---- LIGHT theme (the working light/dark toggle flips `.aphrody-light`) -- */
 
 html.aphrody-light {
-  color-scheme: light;
+    color-scheme: light;
 
-  @include mat.theme(
-    (
-      color: (
-        theme-type: light,
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: "Google Sans Flex",
-      density: 0,
-    )
-  );
+    @include mat.theme(
+        (
+            color: (
+                theme-type: light,
+                primary: mat.$azure-palette,
+                tertiary: mat.$blue-palette,
+            ),
+            typography: "Google Sans Flex",
+            density: 0,
+        )
+    );
 
-  /* Gemini LIGHT palette. */
-  --mat-sys-primary: #0b57d0;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-primary-container: #d3e3fd;
-  --mat-sys-on-primary-container: #041e49;
-  --mat-sys-secondary: #00639b;
-  --mat-sys-on-secondary: #ffffff;
-  --mat-sys-secondary-container: #c2e7ff;
-  --mat-sys-on-secondary-container: #001d35;
-  --mat-sys-tertiary: #146c2e;
-  --mat-sys-error: #b3261e;
-  --mat-sys-surface: #ffffff;
-  --mat-sys-on-surface: #1f1f1f;
-  --mat-sys-surface-dim: #d3dbe5;
-  --mat-sys-surface-bright: #ffffff;
-  --mat-sys-surface-container-lowest: #ffffff;
-  --mat-sys-surface-container-low: #f8fafd;
-  --mat-sys-surface-container: #f0f4f9;
-  --mat-sys-surface-container-high: #e9eef6;
-  --mat-sys-surface-container-highest: #dde3ea;
-  --mat-sys-surface-variant: #e1e3e1;
-  --mat-sys-on-surface-variant: #444746;
-  --mat-sys-outline: #747775;
-  --mat-sys-outline-variant: #c4c7c5;
-  --mat-sys-background: #ffffff;
-  --mat-sys-on-background: #1f1f1f;
+    /* Gemini LIGHT palette. */
+    --mat-sys-primary: #0b57d0;
+    --mat-sys-on-primary: #ffffff;
+    --mat-sys-primary-container: #d3e3fd;
+    --mat-sys-on-primary-container: #041e49;
+    --mat-sys-secondary: #00639b;
+    --mat-sys-on-secondary: #ffffff;
+    --mat-sys-secondary-container: #c2e7ff;
+    --mat-sys-on-secondary-container: #001d35;
+    --mat-sys-tertiary: #146c2e;
+    --mat-sys-error: #b3261e;
+    --mat-sys-surface: #ffffff;
+    --mat-sys-on-surface: #1f1f1f;
+    --mat-sys-surface-dim: #d3dbe5;
+    --mat-sys-surface-bright: #ffffff;
+    --mat-sys-surface-container-lowest: #ffffff;
+    --mat-sys-surface-container-low: #f8fafd;
+    --mat-sys-surface-container: #f0f4f9;
+    --mat-sys-surface-container-high: #e9eef6;
+    --mat-sys-surface-container-highest: #dde3ea;
+    --mat-sys-surface-variant: #e1e3e1;
+    --mat-sys-on-surface-variant: #444746;
+    --mat-sys-outline: #747775;
+    --mat-sys-outline-variant: #c4c7c5;
+    --mat-sys-background: #ffffff;
+    --mat-sys-on-background: #1f1f1f;
 
-  --aphrody-glow: radial-gradient(100% 100% at 50% 6%, #ffffff 0%, #c5d6f7 55%, #ffffff 100%);
-  --aphrody-composer-bg: #f0f4f9;
-  --aphrody-composer-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --aphrody-glow: radial-gradient(100% 100% at 50% 6%, #ffffff 0%, #c5d6f7 55%, #ffffff 100%);
+    --aphrody-composer-bg: #f0f4f9;
+    --aphrody-composer-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 /* ---- Base layout -------------------------------------------------------- */
 
 html,
 body {
-  height: 100%;
+    height: 100%;
 }
 
 body {
-  margin: 0;
-  background: var(--mat-sys-background, #0f0f0f);
-  color: var(--mat-sys-on-surface, #e3e3e3);
-  font-family: "Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+    margin: 0;
+    background: var(--mat-sys-background, #0f0f0f);
+    color: var(--mat-sys-on-surface, #e3e3e3);
+    font-family: "Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
 }
 
 /* The Gemini background glow: a radial gradient anchored near the top-centre
    that blooms a deep blue (#14204f) out of the near-black surface (#0f0f0f).
    Captured verbatim from the live app's `chat-window::before`. */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--aphrody-glow);
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--aphrody-glow);
 }
 
 html.aphrody-light body {
-  background: #ffffff;
+    background: #ffffff;
 }
 
 /* Hide scrollbars Gemini-style (thin, surface-coloured). */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--mat-sys-surface-container-high) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mat-sys-surface-container-high) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+    width: 8px;
+    height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--mat-sys-surface-container-high);
-  border-radius: 8px;
+    background: var(--mat-sys-surface-container-high);
+    border-radius: 8px;
 }

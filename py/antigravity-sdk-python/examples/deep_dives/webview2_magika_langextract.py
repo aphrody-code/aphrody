@@ -30,9 +30,8 @@ from ctypes import wintypes
 from pathlib import Path
 from typing import Any
 
-from magika import Magika
-
 import langextract as lx
+from magika import Magika
 
 
 class CREDENTIALW(ctypes.Structure):

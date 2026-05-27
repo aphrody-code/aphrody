@@ -1,227 +1,243 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <div class="assistant">
-  @if (hasConversation) {
-    <div class="conversation" #scrollPane>
-      <div class="conversation-inner">
-        @for (turn of turns(); track $index) {
-          @if (turn.role === "user") {
-            <div class="turn turn-user">
-              <div class="bubble bubble-user">{{ turn.text }}</div>
-            </div>
-          } @else {
-            <div class="turn turn-assistant">
-              <div class="assistant-avatar">
-                <img src="assets/aphrody.webp" alt="aphrody" />
-              </div>
-              <div class="assistant-body">
-                @if (turn.pending && !turn.text) {
-                  <div class="shimmer" aria-label="aphrody réfléchit">
-                    <span></span><span></span><span></span>
-                  </div>
-                } @else {
-                  <div class="assistant-text" [class.streaming]="turn.pending">{{ turn.text }}</div>
+    @if (hasConversation) {
+        <div class="conversation" #scrollPane>
+            <div class="conversation-inner">
+                @for (turn of turns(); track $index) {
+                    @if (turn.role === "user") {
+                        <div class="turn turn-user">
+                            <div class="bubble bubble-user">{{ turn.text }}</div>
+                        </div>
+                    } @else {
+                        <div class="turn turn-assistant">
+                            <div class="assistant-avatar">
+                                <img src="assets/aphrody.webp" alt="aphrody" />
+                            </div>
+                            <div class="assistant-body">
+                                @if (turn.pending && !turn.text) {
+                                    <div class="shimmer" aria-label="aphrody réfléchit">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                } @else {
+                                    <div class="assistant-text" [class.streaming]="turn.pending">
+                                        {{ turn.text }}
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                 }
-              </div>
             </div>
-          }
-        }
-      </div>
-    </div>
-  } @else {
-    <div class="hero">
-      <h1 class="hero-title">Par où commencer ?</h1>
-    </div>
-  }
-
-  <!-- Composer (the Gemini pill) -->
-  <div class="composer-wrap" [class.docked]="hasConversation">
-    <!-- Attachment chips -->
-    @if (attachments().length > 0) {
-      <div class="chips" aria-label="Pièces jointes">
-        @for (a of attachments(); track a.id) {
-          <div class="att-chip" [class.loading]="a.loading">
-            <mat-icon class="material-symbols-outlined att-ico">{{ kindIcon(a.kind) }}</mat-icon>
-            <span class="att-meta">
-              <span class="att-name" [title]="a.name">{{ a.name }}</span>
-              @if (a.note) {
-                <span class="att-note">{{ a.note }}</span>
-              } @else if (a.detail) {
-                <span class="att-detail">{{ a.detail }}</span>
-              }
-            </span>
-            @if (a.loading) {
-              <mat-icon class="material-symbols-outlined spin">progress_activity</mat-icon>
-            } @else {
-              <button class="att-remove" (click)="removeAttachment(a.id)" aria-label="Retirer">
-                <mat-icon class="material-symbols-outlined">close</mat-icon>
-              </button>
-            }
-          </div>
-        }
-      </div>
+        </div>
+    } @else {
+        <div class="hero">
+            <h1 class="hero-title">Par où commencer ?</h1>
+        </div>
     }
 
-    <!-- Inline link entry panel (URL / GitHub / Drive) -->
-    @if (linkPanel()) {
-      <div class="link-panel">
-        <mat-icon class="material-symbols-outlined">{{ kindIcon(linkPanel()!) }}</mat-icon>
-        <input
-          class="link-input"
-          #linkInput
-          [placeholder]="linkPlaceholder()"
-          (keydown.enter)="submitLink(linkInput.value)"
-          (keydown.escape)="closeLinkPanel()"
-          aria-label="Adresse"
-        />
-        <button class="link-add" (click)="submitLink(linkInput.value)" aria-label="Ajouter">
-          <mat-icon class="material-symbols-outlined">add</mat-icon>
-        </button>
-        <button class="link-cancel" (click)="closeLinkPanel()" aria-label="Annuler">
-          <mat-icon class="material-symbols-outlined">close</mat-icon>
-        </button>
-      </div>
-    }
+    <!-- Composer (the Gemini pill) -->
+    <div class="composer-wrap" [class.docked]="hasConversation">
+        <!-- Attachment chips -->
+        @if (attachments().length > 0) {
+            <div class="chips" aria-label="Pièces jointes">
+                @for (a of attachments(); track a.id) {
+                    <div class="att-chip" [class.loading]="a.loading">
+                        <mat-icon class="material-symbols-outlined att-ico">{{
+                            kindIcon(a.kind)
+                        }}</mat-icon>
+                        <span class="att-meta">
+                            <span class="att-name" [title]="a.name">{{ a.name }}</span>
+                            @if (a.note) {
+                                <span class="att-note">{{ a.note }}</span>
+                            } @else if (a.detail) {
+                                <span class="att-detail">{{ a.detail }}</span>
+                            }
+                        </span>
+                        @if (a.loading) {
+                            <mat-icon class="material-symbols-outlined spin"
+                                >progress_activity</mat-icon
+                            >
+                        } @else {
+                            <button
+                                class="att-remove"
+                                (click)="removeAttachment(a.id)"
+                                aria-label="Retirer"
+                            >
+                                <mat-icon class="material-symbols-outlined">close</mat-icon>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
 
-    <div class="composer">
-      <button
-        mat-icon-button
-        class="composer-leading"
-        [matMenuTriggerFor]="addMenu"
-        matTooltip="Ajouter"
-        aria-label="Ajouter une pièce jointe"
-      >
-        <mat-icon class="material-symbols-outlined">add</mat-icon>
-      </button>
-      <mat-menu #addMenu="matMenu">
-        <button mat-menu-item (click)="pickMedia('image')">
-          <mat-icon class="material-symbols-outlined">image</mat-icon>
-          <span>Image</span>
-        </button>
-        <button mat-menu-item (click)="pickMedia('video')">
-          <mat-icon class="material-symbols-outlined">movie</mat-icon>
-          <span>Vidéo</span>
-        </button>
-        <button mat-menu-item (click)="pickMedia('audio')">
-          <mat-icon class="material-symbols-outlined">graphic_eq</mat-icon>
-          <span>Audio</span>
-        </button>
-        <button mat-menu-item (click)="pickMedia('file')">
-          <mat-icon class="material-symbols-outlined">description</mat-icon>
-          <span>Fichier (texte / code)</span>
-        </button>
-        <button mat-menu-item (click)="openLinkPanel('github')">
-          <mat-icon class="material-symbols-outlined">code</mat-icon>
-          <span>Lien GitHub</span>
-        </button>
-        <button mat-menu-item (click)="openLinkPanel('url')">
-          <mat-icon class="material-symbols-outlined">link</mat-icon>
-          <span>URL / Lien</span>
-        </button>
-        <button mat-menu-item (click)="openLinkPanel('drive')">
-          <mat-icon class="material-symbols-outlined">cloud</mat-icon>
-          <span>Google Drive</span>
-        </button>
-      </mat-menu>
+        <!-- Inline link entry panel (URL / GitHub / Drive) -->
+        @if (linkPanel()) {
+            <div class="link-panel">
+                <mat-icon class="material-symbols-outlined">{{ kindIcon(linkPanel()!) }}</mat-icon>
+                <input
+                    class="link-input"
+                    #linkInput
+                    [placeholder]="linkPlaceholder()"
+                    (keydown.enter)="submitLink(linkInput.value)"
+                    (keydown.escape)="closeLinkPanel()"
+                    aria-label="Adresse"
+                />
+                <button class="link-add" (click)="submitLink(linkInput.value)" aria-label="Ajouter">
+                    <mat-icon class="material-symbols-outlined">add</mat-icon>
+                </button>
+                <button class="link-cancel" (click)="closeLinkPanel()" aria-label="Annuler">
+                    <mat-icon class="material-symbols-outlined">close</mat-icon>
+                </button>
+            </div>
+        }
 
-      <input
-        #fileInput
-        type="file"
-        multiple
-        class="hidden-file"
-        (change)="onFilesChosen($event)"
-        aria-hidden="true"
-        tabindex="-1"
-      />
-
-      <textarea
-        #promptInput
-        class="composer-input"
-        rows="1"
-        placeholder="Demandez à aphrody"
-        [value]="draft()"
-        (input)="onInput($any($event.target).value)"
-        (keydown)="onKeydown($event)"
-        aria-label="Message"
-      ></textarea>
-
-      <div class="composer-trailing">
-        <button
-          mat-button
-          class="model-pill"
-          [matMenuTriggerFor]="modelMenu"
-          matTooltip="Choisir le modèle"
-        >
-          <span>{{ model().label }}</span>
-          <mat-icon class="material-symbols-outlined chevron">expand_more</mat-icon>
-        </button>
-        <mat-menu #modelMenu="matMenu">
-          @for (m of models; track m.id) {
-            <button mat-menu-item (click)="model.set(m)">
-              <mat-icon class="material-symbols-outlined">{{ model().id === m.id ? "check" : "" }}</mat-icon>
-              <span>{{ m.label }}</span>
-            </button>
-          }
-        </mat-menu>
-
-        @if (speech.supported()) {
-          @if (draft().trim().length > 0) {
-            <!-- While typing, the mic does quick dictation into the field. -->
+        <div class="composer">
             <button
-              mat-icon-button
-              class="mic-btn"
-              [class.recording]="speech.listening()"
-              (click)="dictate()"
-              [matTooltip]="speech.listening() ? 'Arrêter la dictée' : 'Dictée vocale (fr-FR)'"
-              aria-label="Dictée vocale"
+                mat-icon-button
+                class="composer-leading"
+                [matMenuTriggerFor]="addMenu"
+                matTooltip="Ajouter"
+                aria-label="Ajouter une pièce jointe"
             >
-              <mat-icon class="material-symbols-outlined">{{ speech.listening() ? "mic" : "mic_none" }}</mat-icon>
+                <mat-icon class="material-symbols-outlined">add</mat-icon>
             </button>
-          } @else {
-            <!-- Empty field: the mic opens the full voice-to-voice mode. -->
-            <button
-              mat-icon-button
-              class="mic-btn voice"
-              (click)="openVoice()"
-              matTooltip="Mode vocal (conversation à voix haute)"
-              aria-label="Mode vocal"
-            >
-              <mat-icon class="material-symbols-outlined">graphic_eq</mat-icon>
-            </button>
-          }
+            <mat-menu #addMenu="matMenu">
+                <button mat-menu-item (click)="pickMedia('image')">
+                    <mat-icon class="material-symbols-outlined">image</mat-icon>
+                    <span>Image</span>
+                </button>
+                <button mat-menu-item (click)="pickMedia('video')">
+                    <mat-icon class="material-symbols-outlined">movie</mat-icon>
+                    <span>Vidéo</span>
+                </button>
+                <button mat-menu-item (click)="pickMedia('audio')">
+                    <mat-icon class="material-symbols-outlined">graphic_eq</mat-icon>
+                    <span>Audio</span>
+                </button>
+                <button mat-menu-item (click)="pickMedia('file')">
+                    <mat-icon class="material-symbols-outlined">description</mat-icon>
+                    <span>Fichier (texte / code)</span>
+                </button>
+                <button mat-menu-item (click)="openLinkPanel('github')">
+                    <mat-icon class="material-symbols-outlined">code</mat-icon>
+                    <span>Lien GitHub</span>
+                </button>
+                <button mat-menu-item (click)="openLinkPanel('url')">
+                    <mat-icon class="material-symbols-outlined">link</mat-icon>
+                    <span>URL / Lien</span>
+                </button>
+                <button mat-menu-item (click)="openLinkPanel('drive')">
+                    <mat-icon class="material-symbols-outlined">cloud</mat-icon>
+                    <span>Google Drive</span>
+                </button>
+            </mat-menu>
+
+            <input
+                #fileInput
+                type="file"
+                multiple
+                class="hidden-file"
+                (change)="onFilesChosen($event)"
+                aria-hidden="true"
+                tabindex="-1"
+            />
+
+            <textarea
+                #promptInput
+                class="composer-input"
+                rows="1"
+                placeholder="Demandez à aphrody"
+                [value]="draft()"
+                (input)="onInput($any($event.target).value)"
+                (keydown)="onKeydown($event)"
+                aria-label="Message"
+            ></textarea>
+
+            <div class="composer-trailing">
+                <button
+                    mat-button
+                    class="model-pill"
+                    [matMenuTriggerFor]="modelMenu"
+                    matTooltip="Choisir le modèle"
+                >
+                    <span>{{ model().label }}</span>
+                    <mat-icon class="material-symbols-outlined chevron">expand_more</mat-icon>
+                </button>
+                <mat-menu #modelMenu="matMenu">
+                    @for (m of models; track m.id) {
+                        <button mat-menu-item (click)="model.set(m)">
+                            <mat-icon class="material-symbols-outlined">{{
+                                model().id === m.id ? "check" : ""
+                            }}</mat-icon>
+                            <span>{{ m.label }}</span>
+                        </button>
+                    }
+                </mat-menu>
+
+                @if (speech.supported()) {
+                    @if (draft().trim().length > 0) {
+                        <!-- While typing, the mic does quick dictation into the field. -->
+                        <button
+                            mat-icon-button
+                            class="mic-btn"
+                            [class.recording]="speech.listening()"
+                            (click)="dictate()"
+                            [matTooltip]="
+                                speech.listening() ? 'Arrêter la dictée' : 'Dictée vocale (fr-FR)'
+                            "
+                            aria-label="Dictée vocale"
+                        >
+                            <mat-icon class="material-symbols-outlined">{{
+                                speech.listening() ? "mic" : "mic_none"
+                            }}</mat-icon>
+                        </button>
+                    } @else {
+                        <!-- Empty field: the mic opens the full voice-to-voice mode. -->
+                        <button
+                            mat-icon-button
+                            class="mic-btn voice"
+                            (click)="openVoice()"
+                            matTooltip="Mode vocal (conversation à voix haute)"
+                            aria-label="Mode vocal"
+                        >
+                            <mat-icon class="material-symbols-outlined">graphic_eq</mat-icon>
+                        </button>
+                    }
+                }
+
+                @if (draft().trim().length > 0 || attachments().length > 0) {
+                    <button
+                        mat-icon-button
+                        class="send-btn"
+                        (click)="send()"
+                        [disabled]="busy()"
+                        matTooltip="Envoyer"
+                        aria-label="Envoyer"
+                    >
+                        <mat-icon class="material-symbols-outlined fill">arrow_upward</mat-icon>
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (!hasConversation) {
+            <div class="suggestions">
+                @for (s of suggestions; track s.label) {
+                    <button class="chip" (click)="useSuggestion(s)">
+                        <mat-icon class="material-symbols-outlined">{{ s.icon }}</mat-icon>
+                        <span>{{ s.label }}</span>
+                    </button>
+                }
+            </div>
         }
 
-        @if (draft().trim().length > 0 || attachments().length > 0) {
-          <button
-            mat-icon-button
-            class="send-btn"
-            (click)="send()"
-            [disabled]="busy()"
-            matTooltip="Envoyer"
-            aria-label="Envoyer"
-          >
-            <mat-icon class="material-symbols-outlined fill">arrow_upward</mat-icon>
-          </button>
-        }
-      </div>
+        <p class="disclaimer">
+            aphrody peut afficher des informations inexactes. Vérifiez ses réponses.
+        </p>
     </div>
-
-    @if (!hasConversation) {
-      <div class="suggestions">
-        @for (s of suggestions; track s.label) {
-          <button class="chip" (click)="useSuggestion(s)">
-            <mat-icon class="material-symbols-outlined">{{ s.icon }}</mat-icon>
-            <span>{{ s.label }}</span>
-          </button>
-        }
-      </div>
-    }
-
-    <p class="disclaimer">
-      aphrody peut afficher des informations inexactes. Vérifiez ses réponses.
-    </p>
-  </div>
 </div>
 
 @if (voiceMode()) {
-  <app-voice-overlay (closed)="closeVoice()" />
+    <app-voice-overlay (closed)="closeVoice()" />
 }

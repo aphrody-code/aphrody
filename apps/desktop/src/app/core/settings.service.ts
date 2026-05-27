@@ -22,47 +22,47 @@ const STORAGE_KEY = "aphrody.backend";
  */
 @Injectable({ providedIn: "root" })
 export class SettingsService {
-  /** Selected conversation backend (reactive, persisted). */
-  readonly backend = signal<ChatBackend>(this.readStored());
+    /** Selected conversation backend (reactive, persisted). */
+    readonly backend = signal<ChatBackend>(this.readStored());
 
-  /** Persist + apply a backend choice. */
-  setBackend(b: ChatBackend): void {
-    this.backend.set(b);
-    try {
-      localStorage.setItem(STORAGE_KEY, b);
-    } catch {
-      // storage unavailable (private mode) — non-fatal, in-memory only
+    /** Persist + apply a backend choice. */
+    setBackend(b: ChatBackend): void {
+        this.backend.set(b);
+        try {
+            localStorage.setItem(STORAGE_KEY, b);
+        } catch {
+            // storage unavailable (private mode) — non-fatal, in-memory only
+        }
     }
-  }
 
-  /**
-   * The extra `aphrody chat` flags implied by the current backend. `web` (the
-   * default, real Gemini 3.5 Flash) and `stub` map to their flags; `agy` is the
-   * CLI's own default backend and needs no flag.
-   */
-  extraChatArgs(): string[] {
-    switch (this.backend()) {
-      case "web":
-        return ["--web"];
-      case "stub":
-        return ["--stub"];
-      default:
-        return [];
+    /**
+     * The extra `aphrody chat` flags implied by the current backend. `web` (the
+     * default, real Gemini 3.5 Flash) and `stub` map to their flags; `agy` is the
+     * CLI's own default backend and needs no flag.
+     */
+    extraChatArgs(): string[] {
+        switch (this.backend()) {
+            case "web":
+                return ["--web"];
+            case "stub":
+                return ["--stub"];
+            default:
+                return [];
+        }
     }
-  }
 
-  private readStored(): ChatBackend {
-    try {
-      const v = localStorage.getItem(STORAGE_KEY);
-      if (v === "agy" || v === "web" || v === "stub") {
-        return v;
-      }
-    } catch {
-      // ignore
+    private readStored(): ChatBackend {
+        try {
+            const v = localStorage.getItem(STORAGE_KEY);
+            if (v === "agy" || v === "web" || v === "stub") {
+                return v;
+            }
+        } catch {
+            // ignore
+        }
+        // Default to the web transport: it is the one that serves real Gemini 3.5
+        // Flash. The CLI gracefully falls back to the agy token when the Google
+        // cookie jar is absent, so this default never leaves the chat broken.
+        return "web";
     }
-    // Default to the web transport: it is the one that serves real Gemini 3.5
-    // Flash. The CLI gracefully falls back to the agy token when the Google
-    // cookie jar is absent, so this default never leaves the chat broken.
-    return "web";
-  }
 }
