@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-model-client"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Provider abstraction for the aphrody agent engine: the async `ModelClient` trait, a unified `ModelStreamEvent` (text delta / tool call / reasoning / completed+usage), and a Gemini generateContent streaming client that maps Google's SSE wire onto the unified events. Lets the turn loop stay provider-agnostic (Gemini REST / gemini-web / agy)."
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures     = { workspace = true }
+reqwest     = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+bytes       = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+tokio       = { workspace = true, features = ["rt", "macros", "sync", "time"] }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio             = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }

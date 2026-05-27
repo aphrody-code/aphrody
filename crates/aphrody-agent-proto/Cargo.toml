@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-agent-proto"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Agent submission/event protocol: the Submission{id,op} (client to agent) and Event{id,msg} (agent to client) queues, the Op and EventMsg enums, and a newline-delimited JSON (NDJSON) wire codec shared by every aphrody surface (CLI / TUI / desktop / MCP). Inspired by OpenAI Codex protocol (Apache-2.0)."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+uuid       = { workspace = true }
+thiserror  = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

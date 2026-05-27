@@ -427,6 +427,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-agent-proto"
+version = "1.0.0-canary"
+dependencies = [
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "uuid",
+]
+
+[[package]]
 name = "aphrody-capture"
 version = "1.0.0-canary"
 dependencies = [
@@ -734,6 +745,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-model-client"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures",
+ "pretty_assertions",
+ "reqwest 0.13.3",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-patch"
+version = "1.0.0-canary"
+dependencies = [
+ "pretty_assertions",
+ "similar",
+ "tempfile",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "aphrody-prompts"
 version = "1.0.0-canary"
 dependencies = [
@@ -788,6 +825,20 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "aphrody-rollout"
+version = "1.0.0-canary"
+dependencies = [
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -983,6 +1034,18 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tracing",
+]
+
+[[package]]
+name = "aphrody-toolcall"
+version = "1.0.0-canary"
+dependencies = [
+ "async-trait",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
