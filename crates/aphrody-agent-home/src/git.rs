@@ -161,8 +161,7 @@ fn is_empty_tree(repo: &gix::Repository, id: gix::ObjectId) -> bool {
 fn file_mode(path: &Path) -> gix::objs::tree::EntryMode {
     use std::os::unix::fs::PermissionsExt;
     let exec = std::fs::metadata(path)
-        .map(|m| m.permissions().mode() & 0o111 != 0)
-        .unwrap_or(false);
+        .is_ok_and(|m| m.permissions().mode() & 0o111 != 0);
     if exec {
         gix::objs::tree::EntryKind::BlobExecutable.into()
     } else {
