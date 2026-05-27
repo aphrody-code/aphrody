@@ -1,4 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # @aphrody-code/native
 
 In-process bridge from the aphrody-ts (Bun) workspace to the **aphrody native
@@ -26,12 +27,12 @@ Override with `APHRODY_FFI_LIB=/path/to/aphrody_ffi.dll` or `APHRODY_REPO=/path/
 ```ts
 import { run, runCaptured, version, assertCompatible } from "@aphrody-code/native";
 
-assertCompatible();        // throws if the loaded ABI != this binding's
+assertCompatible(); // throws if the loaded ABI != this binding's
 console.log(version());
 
 // Capture output in-process and parse it:
 const r = runCaptured(["version", "--json"]);
-console.log(JSON.parse(r.stdout));   // { version, commit, target, ... }
+console.log(JSON.parse(r.stdout)); // { version, commit, target, ... }
 
 // Or inherit stdio (output goes straight to the terminal):
 run(["doctor"]);
@@ -42,15 +43,15 @@ native layer.
 
 ## API
 
-| Export | Purpose |
-|---|---|
-| `version(): string` | aphrody version. |
-| `abiVersion(): number` / `EXPECTED_ABI_VERSION` | runtime / compile-time ABI. |
-| `assertCompatible(): void` | throw on ABI mismatch (drift guard). |
-| `run(args): number` | run any command, inherited stdio, returns exit code. |
-| `runCaptured(args): { code, stdout, stderr }` | run + capture in-process. |
-| `lastError(): string \| null` | last native error on this thread. |
-| `close(): void` | release the library handle. |
+| Export                                          | Purpose                                              |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `version(): string`                             | aphrody version.                                     |
+| `abiVersion(): number` / `EXPECTED_ABI_VERSION` | runtime / compile-time ABI.                          |
+| `assertCompatible(): void`                      | throw on ABI mismatch (drift guard).                 |
+| `run(args): number`                             | run any command, inherited stdio, returns exit code. |
+| `runCaptured(args): { code, stdout, stderr }`   | run + capture in-process.                            |
+| `lastError(): string \| null`                   | last native error on this thread.                    |
+| `close(): void`                                 | release the library handle.                          |
 
 ## Drift safety
 

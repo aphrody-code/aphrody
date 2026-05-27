@@ -9,9 +9,9 @@ import { AccountService } from "./core/account.service";
 import { ThemeService } from "./core/theme.service";
 
 interface NavItem {
-  path: string;
-  icon: string;
-  label: string;
+    path: string;
+    icon: string;
+    label: string;
 }
 
 /**
@@ -22,32 +22,32 @@ interface NavItem {
  * are reachable from there. Bottom: theme toggle, signed-in account, settings.
  */
 @Component({
-  selector: "app-root",
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
-  ],
-  templateUrl: "./app.component.html",
-  styleUrl: "./app.component.scss",
+    selector: "app-root",
+    imports: [
+        RouterOutlet,
+        RouterLink,
+        RouterLinkActive,
+        MatButtonModule,
+        MatIconModule,
+        MatTooltipModule,
+    ],
+    templateUrl: "./app.component.html",
+    styleUrl: "./app.component.scss",
 })
 export class AppComponent implements OnInit {
-  readonly theme = inject(ThemeService);
-  readonly account = inject(AccountService);
+    readonly theme = inject(ThemeService);
+    readonly account = inject(AccountService);
 
-  readonly nav: NavItem[] = [
-    { path: "/assistant", icon: "chat_bubble", label: "Assistant" },
-    { path: "/dashboard", icon: "dashboard", label: "Accueil" },
-    { path: "/skills", icon: "extension", label: "Skills" },
-    { path: "/mcp", icon: "hub", label: "MCP" },
-    { path: "/commands", icon: "apps", label: "Commandes" },
-  ];
+    readonly nav: NavItem[] = [
+        { path: "/assistant", icon: "chat_bubble", label: "Assistant" },
+        { path: "/dashboard", icon: "dashboard", label: "Accueil" },
+        { path: "/skills", icon: "extension", label: "Skills" },
+        { path: "/mcp", icon: "hub", label: "MCP" },
+        { path: "/commands", icon: "apps", label: "Commandes" },
+    ];
 
-  ngOnInit(): void {
-    // Resolve the signed-in Google account (aphrody auth) for the rail avatar.
-    void this.account.refresh();
-  }
+    ngOnInit(): void {
+        // Resolve the signed-in Google account (aphrody auth) for the rail avatar.
+        void this.account.refresh();
+    }
 }
