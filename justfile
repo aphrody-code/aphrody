@@ -1,51 +1,47 @@
 # SPDX-License-Identifier: Apache-2.0
 # ============================================================================
-#  justfile — task runner for the aphrody Rust monorepo.
+#  justfile — task runner for the unified aphrody polyglot monorepo.
 #
-#  As of 2026-05-23 the non-Rust toolchains were extracted into SIBLING repos:
-#    * Go      → C:\src\aphrody-go   (go.work)
-#    * Python  → C:\src\aphrody-py   (uv / pyproject.toml)
-#    * TS/Bun  → C:\src\aphrody-ts   (apps/* + packages/* + package.json)
-#  Run `just build|test|lint|fmt` in those repos for their respective phases.
-#  This justfile now drives the Rust Cargo workspace (crates/*) only.
+#  This justfile unifies the tasks for all 4 toolchains inside the monorepo:
+#    * Rust   (crates/*)
+#    * Go     (go/gogcli, go/antigravity-langserver-re)
+#    * Python (py/)
+#    * Bun/TS (apps/*)
 #
-#  Toolchain version is pinned in rust-toolchain.toml.
-#  Run `just` with no args to list every recipe.
-#
-#  Recipe lines are single program invocations (or one-line `&&` chains) so
-#  they run identically under POSIX sh and Windows cmd.exe — no shell-specific
-#  syntax, keeping Linux #1 / Windows #2 parity per CLAUDE.md §0.
+#  Runs identically under POSIX sh (Linux) and Windows PowerShell.
 # ============================================================================
+
+# Use powershell on Windows to avoid "sh not found" issues
+set windows-shell := ["powershell", "-NoProfile", "-Command"]
 
 # Default recipe: show the catalogue.
 default:
     @just --list
 
 # ---------------------------------------------------------------------------
-# Aggregate recipes — Rust phases (go/python/ts live in sibling repos).
+# Aggregate recipes — Unified Polyglot Monorepo
 # ---------------------------------------------------------------------------
 
-# Build the Rust workspace.
-build: build-rust
+# Build all compilable workspaces (Rust, Go).
+build: build-rust build-go
 
-# Test the Rust workspace.
-test: test-rust
+# Test all workspaces (Rust, Go, Python, TS/JS).
+test: test-rust test-go test-py test-ts
 
-# Lint the Rust workspace (clippy -D warnings).
-lint: lint-rust
+# Lint all workspaces (Clippy, Go Vet, Ruff, Oxlint).
+lint: lint-rust lint-go lint-py lint-ts
 
-# Format the Rust workspace in place.
-fmt: fmt-rust
+# Format all workspaces in place (rustfmt, go fmt, ruff format, oxfmt).
+fmt: fmt-rust fmt-go fmt-py fmt-ts
 
-# CI gate: lint then test, no formatting side effects.
-ci: lint test
+# CI gate: run all lints and tests.
+ci: lint test check-targets audit
 
-# Fetch Rust dependencies. (go/python/ts: see C:\src\aphrody-{go,py,ts}.)
-install:
-    cargo fetch --locked
+# Install/sync dependencies for all workspaces.
+install: install-rust install-go install-py install-ts
 
 # ---------------------------------------------------------------------------
-# Rust — Cargo workspace (crates/*). Source of truth: Cargo.toml.
+# Rust Crate Workspace (crates/*)
 # ---------------------------------------------------------------------------
 
 build-rust:
@@ -60,18 +56,10 @@ lint-rust:
 fmt-rust:
     cargo fmt --all
 
-# ---------------------------------------------------------------------------
-# Go / Bun / Python were extracted to sibling repos on 2026-05-23.
-# Run their phases there:
-#   Go     → C:\src\aphrody-go   : just build|test|lint|fmt  (go.work)
-#   Python → C:\src\aphrody-py   : uv sync / uv run pytest / uv run ruff
-#   TS/Bun → C:\src\aphrody-ts   : bun test / oxlint / oxfmt  (apps/* + packages/*)
-# ---------------------------------------------------------------------------
+install-rust:
+    cargo fetch --locked
 
-# ---------------------------------------------------------------------------
 # Cross-platform target verification (Rust priority targets, CLAUDE.md §0).
-# ---------------------------------------------------------------------------
-
 check-targets:
     cargo check -p aphrody --target x86_64-unknown-linux-gnu --locked
     cargo check -p aphrody --target x86_64-pc-windows-msvc --locked
@@ -83,6 +71,52 @@ audit:
     cargo machete
 
 # ---------------------------------------------------------------------------
-# packages/* UI forks moved to C:\src\aphrody-ts on 2026-05-23.
-# Their oxlint/oxfmt/n2b sync recipes (sync-packages*) now live there.
+# Go Workspace (go/)
 # ---------------------------------------------------------------------------
+
+build-go:
+    go build -C go ./antigravity-langserver-re/... ./gogcli/...
+
+test-go:
+    go test -C go ./antigravity-langserver-re/... ./gogcli/...
+
+lint-go:
+    go vet -C go ./antigravity-langserver-re/... ./gogcli/...
+
+fmt-go:
+    go fmt -C go ./antigravity-langserver-re/... ./gogcli/...
+
+install-go:
+    go mod download -C go
+
+# ---------------------------------------------------------------------------
+# Python Workspace (py/)
+# ---------------------------------------------------------------------------
+
+test-py:
+    uv --directory py run pytest
+
+lint-py:
+    uv --directory py run --with ruff ruff check .
+
+fmt-py:
+    uv --directory py run --with ruff ruff format .
+
+install-py:
+    uv --directory py sync --all-extras
+
+# ---------------------------------------------------------------------------
+# TypeScript/JS Bun Workspace (root & apps/*)
+# ---------------------------------------------------------------------------
+
+test-ts:
+    bun test apps/
+
+lint-ts:
+    bun run lint
+
+fmt-ts:
+    bun run fmt
+
+install-ts:
+    bun install
