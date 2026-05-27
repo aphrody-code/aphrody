@@ -188,12 +188,17 @@ mod native {
     #[cfg(test)]
     mod tests {
         use super::with_captured_stdio;
+        use std::sync::Mutex;
+
+        static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
         #[test]
         fn captures_stdout_and_stderr_and_propagates_code() {
+            let _guard = TEST_MUTEX.lock().unwrap();
+            use std::io::Write;
             let (code, out, err) = with_captured_stdio(|| {
-                println!("captured-out-line");
-                eprintln!("captured-err-line");
+                let _ = std::io::stdout().write_all(b"captured-out-line\n");
+                let _ = std::io::stderr().write_all(b"captured-err-line\n");
                 7
             });
             assert_eq!(code, 7);
@@ -203,10 +208,11 @@ mod native {
 
         #[test]
         fn propagates_return_value_without_output() {
+            let _guard = TEST_MUTEX.lock().unwrap();
             let (code, out, err) = with_captured_stdio(|| 42);
             assert_eq!(code, 42);
-            assert!(out.is_empty());
-            assert!(err.is_empty());
+            assert!(out.is_empty(), "stdout was: {out:?}");
+            assert!(err.is_empty(), "stderr was: {err:?}");
         }
     }
 }
