@@ -66,8 +66,7 @@ if (!token) {
 // 2. Bump Versions in package.json files
 log("VERSION", `Bumping versions to ${VERSION}...`);
 const packagesToBump = [
-  {path: join(ROOT, 'packages/skills/package.json'), name: 'skills'},
-  {path: join(ROOT, 'apps/design/package.json'), name: 'design'}
+  {path: join(ROOT, 'packages/skills/package.json'), name: 'skills'}
 ];
 
 for (const pkg of packagesToBump) {
@@ -92,11 +91,6 @@ if (!runCmd(['bun', 'build', '--compile', './packages/skills/src/cli.ts', '--out
   process.exit(1);
 }
 
-log("BUILD", "Compiling design CLI binary...");
-if (!runCmd(['bun', 'build', '--compile', './apps/design/src/server.ts', '--outfile', './bin/design.exe'])) {
-  logError("BUILD", "Failed to compile design CLI binary.");
-  process.exit(1);
-}
 logSuccess("BUILD", "Standalone binaries compiled successfully.");
 
 // 4. Update PATH
@@ -162,9 +156,9 @@ logSuccess("TAG", "Git tag created and pushed.");
 log("RELEASE", "Creating draft release and uploading binaries...");
 if (!runCmd([
   'gh', 'release', 'create', `v${VERSION}`,
-  './bin/skills.exe', './bin/design.exe',
+  './bin/skills.exe',
   '--title', `Release v${VERSION}`,
-  '--notes', `Release containing compiled skills and design CLI binaries.`
+  '--notes', `Release containing compiled skills CLI binary.`
 ])) {
   logError("RELEASE", "Failed to create release / upload assets.");
   process.exit(1);

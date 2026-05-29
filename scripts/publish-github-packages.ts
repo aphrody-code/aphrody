@@ -52,7 +52,6 @@ const TARGETS: Target[] = [
   {dir: 'packages/material-web', publishName: '@aphrody-code/material-web', build: MW_BUILD},
   {dir: 'apps/m3-react', publishName: '@aphrody-code/m3-react'},
   {dir: 'packages/skills', publishName: '@aphrody-code/skills'},
-  {dir: 'apps/design', publishName: '@aphrody-code/design'},
   {dir: 'packages/x', publishName: '@aphrody-code/x'},
 ];
 
