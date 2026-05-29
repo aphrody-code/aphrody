@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Store } from "../db/store";
+import { redis } from "bun";
 
 const model = "text-embedding-004";
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -25,7 +26,7 @@ function vectorToBlob(vector: number[]): Buffer {
 async function getGeminiEmbedding(text: string): Promise<number[]> {
   if (!apiKey) {
     // Return mock 768-dimensional normalized vector if offline/no key
-    const mock = new Array(768).fill(0).map(() => Math.random() - 0.5);
+    const mock = Array.from({ length: 768 }, () => Math.random() - 0.5);
     const magnitude = Math.sqrt(mock.reduce((sum, val) => sum + val * val, 0));
     return mock.map(val => val / magnitude);
   }
@@ -84,6 +85,18 @@ async function indexBatch(store: Store): Promise<number> {
         VALUES (?, ?)
       `).run(row.id, blob);
 
+      // Add to Redis Vector Set too
+      try {
+        await redis.send("VADD", [
+          "tweet_embeddings",
+          "FP32",
+          blob as any,
+          row.id
+        ]);
+      } catch (redisErr: any) {
+        console.warn(`[embeddings-loop] Failed to add embedding for tweet ${row.id} to Redis: ${redisErr.message}`);
+      }
+
       successCount++;
       
       // Small delay to respect rate limits if using a live key
@@ -114,12 +127,48 @@ async function main() {
   const store = new Store();
   initEmbeddingsTable(store);
 
+  // Connect to Redis
+  console.log("[embeddings-loop] Connecting to Redis...");
+  try {
+    await redis.connect();
+    console.log("[embeddings-loop] Connected to Redis.");
+    
+    // Sync existing embeddings from SQLite to Redis on startup
+    console.log("[embeddings-loop] Syncing existing embeddings from SQLite to Redis...");
+    const existing = store.db.prepare(`
+      SELECT tweet_id, embedding FROM tweet_embeddings
+    `).all() as { tweet_id: string; embedding: Buffer }[];
+    
+    console.log(`[embeddings-loop] Found ${existing.length} existing embeddings in SQLite. Syncing to Redis...`);
+    let syncedCount = 0;
+    for (const row of existing) {
+      try {
+        await redis.send("VADD", [
+          "tweet_embeddings",
+          "FP32",
+          row.embedding as any,
+          row.tweet_id
+        ]);
+        syncedCount++;
+      } catch (err: any) {
+        console.warn(`[embeddings-loop] Failed to sync embedding for tweet ${row.tweet_id} to Redis: ${err.message}`);
+      }
+    }
+    console.log(`[embeddings-loop] Sync complete. Pushed ${syncedCount}/${existing.length} embeddings to Redis.`);
+  } catch (redisErr: any) {
+    console.error(`[embeddings-loop] Failed to initialize Redis: ${redisErr.message}`);
+    process.exit(1);
+  }
+
   // Set up shutdown handlers
   let running = true;
   process.on("SIGINT", () => {
     console.log("\nShutdown signal received. Exiting loop...");
     running = false;
     store.close();
+    try {
+      redis.close();
+    } catch {}
     process.exit(0);
   });
 

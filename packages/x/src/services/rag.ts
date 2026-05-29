@@ -33,6 +33,41 @@ export class BeybladeXRag {
     this.offlineMock = options.offlineMock ?? false;
   }
 
+  private async getEmbedding(text: string): Promise<Buffer> {
+    if (!this.apiKey || this.offlineMock) {
+      const mock = Array.from({ length: 768 }, () => Math.random() - 0.5);
+      const magnitude = Math.sqrt(mock.reduce((sum, val) => sum + val * val, 0));
+      const norm = mock.map(val => val / magnitude);
+      const floatArray = new Float32Array(norm);
+      return Buffer.from(floatArray.buffer);
+    }
+
+    const modelName = "text-embedding-004";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:embedContent?key=${this.apiKey}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: `models/${modelName}`,
+        content: {
+          parts: [{ text }]
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Embedding API error: ${response.statusText}`);
+    }
+
+    const json = await response.json() as any;
+    if (!json.embedding?.values) {
+      throw new Error("Invalid embedding response format");
+    }
+    const values = json.embedding.values as number[];
+    const floatArray = new Float32Array(values);
+    return Buffer.from(floatArray.buffer);
+  }
+
   /**
    * Helper to parse user query into search keywords.
    * Uses simple keyword extraction fallback if offline or no API key.
@@ -76,13 +111,59 @@ Question: "${query}"`;
    * Query the RAG system to generate an answer based on crawled SQLite data.
    */
   public async query(query: string, store: Store): Promise<RagResult> {
-    // 1. Extract keywords
-    const keywords = await this.extractKeywords(query);
-    
-    // 2. Fetch seed candidate tweets from SQLite FTS
-    const candidates: any[] = [];
     const seenIds = new Set<string>();
+    const candidates: any[] = [];
 
+    // 1. Fetch seed candidate tweets from Redis similarity search
+    try {
+      const queryVector = await this.getEmbedding(query);
+      const { redis } = await import("bun");
+      await redis.connect();
+      
+      const simRes = await redis.send("VSIM", [
+        "tweet_embeddings",
+        "FP32",
+        queryVector as any,
+        "COUNT",
+        this.limit.toString(),
+        "WITHSCORES"
+      ]) as Record<string, number> | null;
+      
+      redis.close();
+
+      if (simRes) {
+        const sortedIds = Object.entries(simRes)
+          .sort((a, b) => b[1] - a[1])
+          .map(entry => entry[0]);
+
+        for (const tweetId of sortedIds) {
+          try {
+            const tweet = store.db.prepare(`
+              SELECT id, author_username, author_name, text, created_at, like_count, conversation_id
+              FROM tweets WHERE id = ?
+            `).get(tweetId) as any;
+
+            if (tweet) {
+              seenIds.add(tweet.id);
+              candidates.push({
+                id: tweet.id,
+                author_username: tweet.author_username,
+                author_name: tweet.author_name,
+                text: tweet.text,
+                created_at: tweet.created_at || undefined,
+                like_count: Number(tweet.like_count),
+                conversation_id: tweet.conversation_id || undefined
+              });
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[rag] Redis vector search failed: ${err.message}. Falling back to keyword search only.`);
+    }
+
+    // 2. Fallback / Hybrid search: FTS5 keyword matching from SQLite
+    const keywords = await this.extractKeywords(query);
     for (const kw of keywords) {
       try {
         const matches = store.search(kw, this.limit);
