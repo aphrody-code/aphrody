@@ -7,6 +7,7 @@ import {
   BeybladeCombo,
   simulateBattle,
   simulateMatch,
+  simulateWboMatch,
   StrategyAdvisor,
 } from "./src/index";
 
@@ -83,5 +84,21 @@ describe("Beyblade X Module Tests", () => {
     const match3on3 = simulateMatch([comboA, comboC], [comboB, comboC], "3on3", 4, { randomFactor: false });
     expect(match3on3.winner).toBeDefined();
     expect(match3on3.rounds.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test("WboMatch simulator simulates Best-of-3 sets and Counter formats", () => {
+    const comboA = new BeybladeCombo("phoenix_wing", "9_60", "flat");
+    const comboB = new BeybladeCombo("wizard_arrow", "5_80", "ball");
+    const comboC = new BeybladeCombo("dran_sword", "3_60", "flat");
+
+    // Test Counter Battle type
+    const counterMatch = simulateWboMatch([comboA, comboC], [comboB, comboC], "counter", "4-point", false);
+    expect(counterMatch.winner).toBeDefined();
+    expect(counterMatch.sets.length).toBe(1);
+
+    // Test Best of 3 Sets format
+    const bestOf3Match = simulateWboMatch([comboA, comboC], [comboB, comboC], "3on3", "best-of-3", false);
+    expect(bestOf3Match.winner).toBeDefined();
+    expect(bestOf3Match.sets.length).toBeGreaterThanOrEqual(2);
   });
 });
