@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-import { XClient } from "./client";
-import { Store } from "./store";
+import { XClient } from "../core/client";
+import { Store } from "../db/store";
 
 export interface SyncOptions {
   cronExpression?: string;

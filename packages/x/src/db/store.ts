@@ -3,7 +3,7 @@ import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { existsSync, mkdirSync } from "node:fs";
-import type { Tweet, User } from "./parse";
+import type { Tweet, User } from "../core/parse";
 
 export const edge = {
   AUTHORED: "authored",

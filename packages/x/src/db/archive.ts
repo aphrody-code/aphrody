@@ -2,7 +2,7 @@
 import { join } from "node:path";
 import { statSync, existsSync } from "node:fs";
 import { Glob } from "bun";
-import type { Tweet } from "./parse";
+import type { Tweet } from "../core/parse";
 import { Store } from "./store";
 
 /** Locate the tweets file inside an archive directory or accept a direct path. */

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-import { XSession } from "../session";
-import { XClient } from "../client";
-import { Store } from "../store";
+import { XSession } from "../core/session";
+import { XClient } from "../core/client";
+import { Store } from "../db/store";
 
 async function main() {
   console.log(`Loading session...`);
