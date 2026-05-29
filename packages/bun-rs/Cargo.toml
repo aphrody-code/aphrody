@@ -1,0 +1,116 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  Bun-RS — Cargo Crate wrapping all Bun Rust Crates as Path Dependencies
+# ============================================================================
+
+[package]
+name = "bun-rs"
+version = "1.0.0-canary"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "High-level bridge re-exporting the entire set of Bun core Rust crates."
+
+[lib]
+name = "bun_rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bun_opaque = { path = "/tmp/bun/src/opaque" }
+bun_analytics = { path = "/tmp/bun/src/analytics" }
+bun_api = { path = "/tmp/bun/src/api" }
+bun_base64 = { path = "/tmp/bun/src/base64" }
+bun_bundler = { path = "/tmp/bun/src/bundler" }
+bun_collections = { path = "/tmp/bun/src/collections" }
+bun_css = { path = "/tmp/bun/src/css" }
+bun_errno = { path = "/tmp/bun/src/errno" }
+bun_glob = { path = "/tmp/bun/src/glob" }
+bun_http = { path = "/tmp/bun/src/http" }
+bun_install = { path = "/tmp/bun/src/install" }
+bun_parsers = { path = "/tmp/bun/src/parsers" }
+bun_io = { path = "/tmp/bun/src/io" }
+bun_js = { path = "/tmp/bun/src/js" }
+bun_libarchive = { path = "/tmp/bun/src/libarchive" }
+bun_md = { path = "/tmp/bun/src/md" }
+bun_paths = { path = "/tmp/bun/src/paths" }
+bun_resolver = { path = "/tmp/bun/src/resolver" }
+bun_safety = { path = "/tmp/bun/src/safety" }
+bun_semver = { path = "/tmp/bun/src/semver" }
+bun_sourcemap = { path = "/tmp/bun/src/sourcemap" }
+bun_sql = { path = "/tmp/bun/src/sql" }
+bun_sys = { path = "/tmp/bun/src/sys" }
+bun_threading = { path = "/tmp/bun/src/threading" }
+bun_valkey = { path = "/tmp/bun/src/valkey" }
+bun_watcher = { path = "/tmp/bun/src/watcher" }
+bun_cares_sys = { path = "/tmp/bun/src/cares_sys" }
+bun_clap = { path = "/tmp/bun/src/clap" }
+bun_clap_macros = { path = "/tmp/bun/src/clap_macros" }
+bun_crash_handler = { path = "/tmp/bun/src/crash_handler" }
+bun_csrf = { path = "/tmp/bun/src/csrf" }
+bun_css_jsc = { path = "/tmp/bun/src/css_jsc" }
+bun_dns = { path = "/tmp/bun/src/dns" }
+bun_dotenv = { path = "/tmp/bun/src/dotenv" }
+bun_event_loop = { path = "/tmp/bun/src/event_loop" }
+bun_exe_format = { path = "/tmp/bun/src/exe_format" }
+bun_highway = { path = "/tmp/bun/src/highway" }
+bun_http_jsc = { path = "/tmp/bun/src/http_jsc" }
+bun_http_types = { path = "/tmp/bun/src/http_types" }
+bun_ini = { path = "/tmp/bun/src/ini" }
+bun_install_jsc = { path = "/tmp/bun/src/install_jsc" }
+bun_install_types = { path = "/tmp/bun/src/install_types" }
+bun_js_parser = { path = "/tmp/bun/src/js_parser" }
+bun_js_parser_jsc = { path = "/tmp/bun/src/js_parser_jsc" }
+bun_js_printer = { path = "/tmp/bun/src/js_printer" }
+bun_libdeflate_sys = { path = "/tmp/bun/src/libdeflate_sys" }
+bun_libuv_sys = { path = "/tmp/bun/src/libuv_sys" }
+bun_ast = { path = "/tmp/bun/src/ast" }
+bun_ast_jsc = { path = "/tmp/bun/src/ast_jsc" }
+bun_lolhtml_sys = { path = "/tmp/bun/src/lolhtml_sys" }
+bun_picohttp = { path = "/tmp/bun/src/picohttp" }
+bun_s3_signing = { path = "/tmp/bun/src/s3_signing" }
+bun_sql_jsc = { path = "/tmp/bun/src/sql_jsc" }
+bun_zlib = { path = "/tmp/bun/src/zlib" }
+bun_patch = { path = "/tmp/bun/src/patch" }
+bun_platform = { path = "/tmp/bun/src/platform" }
+bun_sha_hmac = { path = "/tmp/bun/src/sha_hmac" }
+bun_sys_jsc = { path = "/tmp/bun/src/sys_jsc" }
+bun_zlib_sys = { path = "/tmp/bun/src/zlib_sys" }
+bun_dispatch = { path = "/tmp/bun/src/dispatch" }
+bun_brotli = { path = "/tmp/bun/src/brotli" }
+bun_bundler_jsc = { path = "/tmp/bun/src/bundler_jsc" }
+bun_perf = { path = "/tmp/bun/src/perf" }
+bun_resolve_builtins = { path = "/tmp/bun/src/resolve_builtins" }
+bun_sourcemap_jsc = { path = "/tmp/bun/src/sourcemap_jsc" }
+bun_url = { path = "/tmp/bun/src/url" }
+bun_windows_sys = { path = "/tmp/bun/src/windows_sys" }
+bun_jsc = { path = "/tmp/bun/src/jsc" }
+bun_jsc_macros = { path = "/tmp/bun/src/jsc_macros" }
+bun_ptr = { path = "/tmp/bun/src/ptr" }
+bun_boringssl = { path = "/tmp/bun/src/boringssl" }
+bun_brotli_sys = { path = "/tmp/bun/src/brotli_sys" }
+bun_alloc = { path = "/tmp/bun/src/bun_alloc" }
+bun_mimalloc_sys = { path = "/tmp/bun/src/mimalloc_sys" }
+bun_semver_jsc = { path = "/tmp/bun/src/semver_jsc" }
+bun_standalone_graph = { path = "/tmp/bun/src/standalone_graph" }
+bun_uws = { path = "/tmp/bun/src/uws" }
+bun_wyhash = { path = "/tmp/bun/src/wyhash" }
+bun_hash = { path = "/tmp/bun/src/hash" }
+bun_boringssl_sys = { path = "/tmp/bun/src/boringssl_sys" }
+bun_core = { path = "/tmp/bun/src/bun_core" }
+bun_core_macros = { path = "/tmp/bun/src/bun_core_macros" }
+bun_output_tags = { path = "/tmp/bun/src/bun_output_tags" }
+bun_patch_jsc = { path = "/tmp/bun/src/patch_jsc" }
+bun_router = { path = "/tmp/bun/src/router" }
+bun_shell_parser = { path = "/tmp/bun/src/shell_parser" }
+bun_spawn = { path = "/tmp/bun/src/spawn" }
+bun_spawn_sys = { path = "/tmp/bun/src/spawn_sys" }
+bun_tcc_sys = { path = "/tmp/bun/src/tcc_sys" }
+bun_uws_sys = { path = "/tmp/bun/src/uws_sys" }
+bun_zstd = { path = "/tmp/bun/src/zstd" }
+bun_options_types = { path = "/tmp/bun/src/options_types" }
+bun_bunfig = { path = "/tmp/bun/src/bunfig" }
+bun_output = { path = "/tmp/bun/src/output" }
+bun_runtime = { path = "/tmp/bun/src/runtime", default-features = false }
+bun_simdutf_sys = { path = "/tmp/bun/src/simdutf_sys" }
+bun_which = { path = "/tmp/bun/src/which" }
+bun_transpiler = { path = "/tmp/bun/src/transpiler" }
