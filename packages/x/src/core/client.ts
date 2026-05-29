@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { XSession } from "./session";
-import { QueryIdStore } from "./query-ids";
-import { getOperation } from "./catalog";
+import { QueryIdStore } from "../config/query-ids";
+import { getOperation } from "../config/catalog";
 import { featuresFor, CREATE_TWEET_FEATURES_KNOWN_GOOD, DEFAULT_FEATURES } from "./features";
 import {
   XError,
@@ -12,8 +12,8 @@ import {
   TweetPage,
   UserPage,
 } from "./parse";
-import { NewsItem, NewsOptions, getNews } from "./news";
-import { uploadMedia } from "./media";
+import { NewsItem, NewsOptions, getNews } from "../services/news";
+import { uploadMedia } from "../services/media";
 
 export const WEB_BEARER =
   "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";

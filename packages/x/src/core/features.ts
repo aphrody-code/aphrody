@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { Operation } from "./catalog";
+import type { Operation } from "../config/catalog";
 
 export const CREATE_TWEET_FEATURES_KNOWN_GOOD = {
   "interactive_text_enabled": true,

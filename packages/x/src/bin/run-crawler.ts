@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-import { XSession } from "../session";
-import { XClient } from "../client";
-import { Store } from "../store";
-import { Crawler } from "../crawler";
+import { XSession } from "../core/session";
+import { XClient } from "../core/client";
+import { Store } from "../db/store";
+import { Crawler } from "../services/crawler";
 
 async function main() {
   console.log(`Loading session credentials...`);

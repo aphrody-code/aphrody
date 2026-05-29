@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { XClient } from "./client";
+import type { XClient } from "../core/client";
 
 const UPLOAD_URL = "https://upload.twitter.com/i/media/upload.json";
 const CHUNK_SIZE = 1024 * 1024; // 1 MiB chunk size

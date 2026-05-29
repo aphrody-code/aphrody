@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { XClient } from "./client";
-import { Store } from "./store";
-import { walkTimelineTweets, walkTimelineUsers } from "./parse";
-import { findAndUpsertUsers } from "./ingest";
-import type { User } from "./schemas";
+import type { XClient } from "../core/client";
+import { Store } from "../db/store";
+import { walkTimelineTweets, walkTimelineUsers } from "../core/parse";
+import { findAndUpsertUsers } from "../db/ingest";
+import type { User } from "../core/schemas";
 
 
 export interface CrawlerOptions {

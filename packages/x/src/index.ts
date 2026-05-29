@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { XSession, type XSessionData } from "./session";
+export { XSession, type XSessionData } from "./core/session";
 export {
   XClient,
   type RateLimit,
@@ -8,8 +8,8 @@ export {
   type UserInfo,
   type ListInfo,
   type TimelineTweet,
-} from "./client";
-export { QueryIdStore, type QueryIdSnapshot } from "./query-ids";
+} from "./core/client";
+export { QueryIdStore, type QueryIdSnapshot } from "./config/query-ids";
 export {
   XError,
   checkApiErrors,
@@ -23,14 +23,13 @@ export {
   type TweetPage,
   type User,
   type UserPage,
-} from "./parse";
-export { getNews, parsePostCount, parseNewsItem, parseTabItems, type NewsItem, type NewsOptions } from "./news";
-export { uploadMedia } from "./media";
-export { getOperation, allOperations, queries, mutations, type Operation } from "./catalog";
-export { Store, edge, type StoredTweet, type Stats as StoreStats, type Digest } from "./store";
-export { importArchive, resolveTweetsFile, parseArchiveArray, archiveTweetToTweet } from "./archive";
-export { startSyncCron, type SyncOptions } from "./cron";
-export { AuthorSchema, TweetSchema, UserSchema, ListInfoSchema } from "./schemas";
-export { ingestBeybladeData, type IngestStats } from "./ingest";
-export { Crawler, type CrawlerOptions } from "./crawler";
-
+} from "./core/parse";
+export { getNews, parsePostCount, parseNewsItem, parseTabItems, type NewsItem, type NewsOptions } from "./services/news";
+export { uploadMedia } from "./services/media";
+export { getOperation, allOperations, queries, mutations, type Operation } from "./config/catalog";
+export { Store, edge, type StoredTweet, type Stats as StoreStats, type Digest } from "./db/store";
+export { importArchive, resolveTweetsFile, parseArchiveArray, archiveTweetToTweet } from "./db/archive";
+export { startSyncCron, type SyncOptions } from "./services/cron";
+export { AuthorSchema, TweetSchema, UserSchema, ListInfoSchema } from "./core/schemas";
+export { ingestBeybladeData, type IngestStats } from "./db/ingest";
+export { Crawler, type CrawlerOptions } from "./services/crawler";
