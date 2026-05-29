@@ -210,6 +210,37 @@ describe("X Client Unit Tests", () => {
 
     store.close();
   });
+
+  test("BeybladeXRag pipeline query validation", async () => {
+    const { Store } = await import("./src/db/store");
+    const { BeybladeXRag } = await import("./src/services/rag");
+    const tempDb = new Store(":memory:");
+
+    // Ingest some dummy test data
+    const dummyTweet = {
+      id: "12345",
+      text: "WizardRod 9-60 Ball is the absolute best stamina combo in Beyblade X!",
+      author: { id: "user1", username: "meta_master", name: "Meta Master" },
+      created_at: "2026-05-29T00:00:00Z",
+      like_count: 50,
+      retweet_count: 5,
+      reply_count: 2,
+      quote_count: 0
+    } as any;
+    tempDb.upsertTweet(dummyTweet);
+    tempDb.addEdge("meta_master", "authored", "12345");
+
+    const rag = new BeybladeXRag({ offlineMock: true });
+    const result = await rag.query("What is the best combo for WizardRod?", tempDb);
+
+    expect(result.query).toBe("What is the best combo for WizardRod?");
+    expect(result.sources.length).toBe(1);
+    expect(result.sources[0].author_username).toBe("meta_master");
+    expect(result.answer).toContain("meta_master");
+    expect(result.answer).toContain("WizardRod");
+
+    tempDb.close();
+  });
 });
 
 describe("X Client Integration Tests", () => {
