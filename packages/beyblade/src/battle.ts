@@ -191,3 +191,77 @@ export function simulateBattle(
     ? { winner: "A", finishType: "Spin Finish", points: 1, roundsLog }
     : { winner: "B", finishType: "Spin Finish", points: 1, roundsLog };
 }
+
+export interface MatchResult {
+  winner: "A" | "B" | "Draw";
+  scoreA: number;
+  scoreB: number;
+  rounds: BattleResult[];
+}
+
+/**
+ * Simulates a full WBO match (1on1 or 3on3) until one player reaches the target point limit.
+ */
+export function simulateMatch(
+  combosA: BeybladeCombo[],
+  combosB: BeybladeCombo[],
+  format: "1on1" | "3on3" = "1on1",
+  targetPoints: number = 4,
+  options: BattleOptions = {}
+): MatchResult {
+  if (combosA.length === 0 || combosB.length === 0) {
+    throw new Error("Each player must have at least one combo.");
+  }
+
+  let scoreA = 0;
+  let scoreB = 0;
+  const rounds: BattleResult[] = [];
+
+  let roundIndex = 0;
+
+  while (scoreA < targetPoints && scoreB < targetPoints) {
+    let comboA: BeybladeCombo;
+    let comboB: BeybladeCombo;
+
+    if (format === "3on3") {
+      const idxA = roundIndex % Math.min(3, combosA.length);
+      const idxB = roundIndex % Math.min(3, combosB.length);
+      comboA = combosA[idxA];
+      comboB = combosB[idxB];
+    } else {
+      comboA = combosA[0];
+      comboB = combosB[0];
+    }
+
+    const roundResult = simulateBattle(comboA, comboB, options);
+    rounds.push(roundResult);
+
+    if (roundResult.winner === "A") {
+      scoreA += roundResult.points;
+    } else if (roundResult.winner === "B") {
+      scoreB += roundResult.points;
+    }
+
+    roundIndex++;
+
+    if (roundIndex > 50) {
+      break;
+    }
+  }
+
+  let winner: "A" | "B" | "Draw" = "Draw";
+  if (scoreA >= targetPoints && scoreB >= targetPoints) {
+    winner = scoreA > scoreB ? "A" : (scoreB > scoreA ? "B" : "Draw");
+  } else if (scoreA >= targetPoints) {
+    winner = "A";
+  } else if (scoreB >= targetPoints) {
+    winner = "B";
+  }
+
+  return {
+    winner,
+    scoreA,
+    scoreB,
+    rounds,
+  };
+}
