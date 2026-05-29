@@ -54,10 +54,11 @@ async function main() {
     seedCommunities,
     seedUsers,
     seedHashtags,
-    delayMs: 5000, // 5s politeness delay
-    maxUsersToCrawl: 1000,
-    maxCommunitiesToCrawl: 500,
-    maxHashtagsToCrawl: 500,
+    delayMs: 1500,
+    maxUsersToCrawl: 100000,
+    maxCommunitiesToCrawl: 10000,
+    maxHashtagsToCrawl: 100000,
+    crawlFollowers: true,
   });
 
   // Set up exit handlers
