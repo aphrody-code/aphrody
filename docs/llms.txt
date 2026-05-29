@@ -59456,6 +59456,7 @@ Node runtime, no external service).
 | `edges` | account-scoped membership: `(account, kind, tweet_id)` |
 | `follows` | follow graph: `(account, direction, user_id, …)` |
 | `tweets_fts` | FTS5 virtual table over tweet text, kept in sync on every upsert |
+| `tweet_embeddings` | float32 vector embeddings for search (`tweet_id`, `embedding` BLOB, `updated_at`) |
 
 `edges.kind` ∈ `authored | liked | bookmarked | timeline | mention`. Tweets are
 deduplicated by id and updated in place, so re-syncing or merging an archive
@@ -59541,6 +59542,20 @@ aphrody-x jobs --what timeline --every-minutes 30
 - **Linux** → a systemd `--user` `.service` + `.timer`
 
 This surpasses birdclaw's launchd-only schedulers with cross-OS coverage.
+
+## Vector Embeddings & RAG Search
+
+`packages/x` integrates local SQLite database storage with vector embedding generation and Redis-backed similarity search to build a high-performance Hybrid RAG engine:
+
+1. **Embedding Generation**: Text content is passed to `gemini-embedding-001` (requesting `outputDimensionality: 768`) to yield 768-dimensional normalized float32 vectors, stored directly as BLOBs in the SQLite `tweet_embeddings` table.
+2. **Redis Vector Sync**: Stored embeddings are continuously synchronized to the Redis vector set (`tweet_embeddings`) under key-value indices via the `VADD` command.
+3. **Similarity Search**: Queries utilize the Redis similarity query command `VSIM` with the `WITHSCORES` option to quickly yield the top relevant tweet IDs.
+4. **Hybrid Fallback**: Falls back to or intersects with the SQLite FTS5 search (full-text index matching) to provide robust search results when offline or lacking API keys.
+
+Run continuous embedding generation in the background:
+```bash
+bun run packages/x/src/bin/run-index-embeddings.ts
+```
 
 ## Not included
 
