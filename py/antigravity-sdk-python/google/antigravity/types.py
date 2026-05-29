@@ -31,10 +31,12 @@ import pydantic
 
 __all__ = [
     "AntigravityConnectionError",
+    "AntigravityExecutionError",
     "AntigravityValidationError",
     "AskQuestionEntry",
     "AskQuestionInteractionSpec",
     "AskQuestionOption",
+    "BaseMcpServerConfig",
     "BuiltinTools",
     "CapabilitiesConfig",
     "ChatResponse",
@@ -79,7 +81,7 @@ DEFAULT_MODEL = "gemini-3.5-flash"
 DEFAULT_IMAGE_GENERATION_MODEL = "gemini-3.1-flash-image-preview"
 
 
-class ThinkingLevel(enum.StrEnum):
+class ThinkingLevel(str, enum.Enum):
     """Thinking level for Gemini models that support extended thinking.
 
     Controls the amount of reasoning the model performs before responding.
@@ -161,10 +163,16 @@ class GeminiConfig(pydantic.BaseModel):
     Attributes:
       api_key: Shared API key for all models. Falls back to $GEMINI_API_KEY if not
         set. Individual ModelEntry instances can override this.
+      vertex: If True, uses the Vertex AI backend instead of Gemini Developer API.
+      project: GCP Project ID for Vertex AI.
+      location: GCP Location/Region for Vertex AI (e.g., "us-central1").
       models: Per-modality model selection and configuration.
     """
 
     api_key: str | None = None
+    vertex: bool = False
+    project: str | None = None
+    location: str | None = None
     models: ModelConfig = pydantic.Field(default_factory=ModelConfig)
 
 
@@ -210,7 +218,7 @@ class TemplatedSystemInstructions(pydantic.BaseModel):
 SystemInstructions = CustomSystemInstructions | TemplatedSystemInstructions
 
 
-class BuiltinTools(enum.StrEnum):
+class BuiltinTools(str, enum.Enum):
     """Identifiers for common connection-provided builtin tools.
 
     Attributes:
@@ -365,44 +373,100 @@ class CapabilitiesConfig(pydantic.BaseModel):
         return self
 
 
-class McpStdioServer(pydantic.BaseModel):
+class BaseMcpServerConfig(pydantic.BaseModel):
+    """Base configuration for all Model Context Protocol (MCP) servers.
+
+    Attributes:
+      name: Unique identifier for the MCP server. Must match the regex pattern
+        ^[a-zA-Z0-9_-]+$, which aligns with the naming constraints of the Gemini
+        API tool naming specification (only alphanumeric characters, hyphens, and
+        underscores are permitted).
+    """
+
+    name: Annotated[str, pydantic.Field(pattern=r"^[a-zA-Z0-9_-]+$")]
+
+    @pydantic.model_validator(mode="after")
+    def _check_mutually_exclusive(self) -> BaseMcpServerConfig:
+        # Use getattr to dynamically check subclass fields without causing pytype
+        # errors
+        enabled_tools = getattr(self, "enabled_tools", None)
+        disabled_tools = getattr(self, "disabled_tools", None)
+        if enabled_tools is not None and disabled_tools is not None:
+            raise ValueError(
+                "enabled_tools and disabled_tools should be mutually exclusive."
+            )
+        return self
+
+
+class McpStdioServer(BaseMcpServerConfig):
     """Configuration for an MCP server connected via stdio.
 
     Attributes:
       command: The command to run to start the server.
+      name: Unique identifier for this MCP server.
       type: The type of connection, always "stdio".
       args: Arguments to pass to the command.
+      enabled_tools: Explicit allowlist of tools to enable. Mutually exclusive
+        with disabled_tools. When None, all tools from the server are enabled.
+        Only enabled tools are exposed to the model; others are hidden entirely
+        from the model's context, saving tokens.
+      disabled_tools: Explicit denylist of tools to disable. Mutually exclusive
+        with enabled_tools. When None, all tools from the server are enabled.
+        Disabled tools are removed from the model's context entirely, saving
+        tokens and preventing the model from even considering them.
     """
 
     command: str
     type: Literal["stdio"] = "stdio"
     args: list[str] = pydantic.Field(default_factory=list)
+    enabled_tools: list[str] | None = None
+    disabled_tools: list[str] | None = None
 
 
-class McpSseServer(pydantic.BaseModel):
+class McpSseServer(BaseMcpServerConfig):
     """Configuration for an MCP server connected via SSE.
 
     Attributes:
       url: The URL of the SSE endpoint.
+      name: Unique identifier for this MCP server.
       type: The type of connection, always "sse".
       headers: Optional headers to send with the connection request.
+      enabled_tools: Explicit allowlist of tools to enable. Mutually exclusive
+        with disabled_tools. When None, all tools from the server are enabled.
+        Only enabled tools are exposed to the model; others are hidden entirely
+        from the model's context, saving tokens.
+      disabled_tools: Explicit denylist of tools to disable. Mutually exclusive
+        with enabled_tools. When None, all tools from the server are enabled.
+        Disabled tools are removed from the model's context entirely, saving
+        tokens and preventing the model from even considering them.
     """
 
     url: str
     type: Literal["sse"] = "sse"
     headers: dict[str, str] | None = None
+    enabled_tools: list[str] | None = None
+    disabled_tools: list[str] | None = None
 
 
-class McpStreamableHttpServer(pydantic.BaseModel):
+class McpStreamableHttpServer(BaseMcpServerConfig):
     """Configuration for an MCP server connected via Streamable HTTP.
 
     Attributes:
       url: The URL of the HTTP endpoint.
+      name: Unique identifier for this MCP server.
       type: The type of connection, always "http".
       headers: Optional headers to send with the connection request.
       timeout: Connection timeout in seconds.
       sse_read_timeout: SSE read timeout in seconds.
       terminate_on_close: Whether to terminate the connection on close.
+      enabled_tools: Explicit allowlist of tools to enable. Mutually exclusive
+        with disabled_tools. When None, all tools from the server are enabled.
+        Only enabled tools are exposed to the model; others are hidden entirely
+        from the model's context, saving tokens.
+      disabled_tools: Explicit denylist of tools to disable. Mutually exclusive
+        with enabled_tools. When None, all tools from the server are enabled.
+        Disabled tools are removed from the model's context entirely, saving
+        tokens and preventing the model from even considering them.
     """
 
     url: str
@@ -411,6 +475,8 @@ class McpStreamableHttpServer(pydantic.BaseModel):
     timeout: float = 30.0
     sse_read_timeout: float = 300.0
     terminate_on_close: bool = True
+    enabled_tools: list[str] | None = None
+    disabled_tools: list[str] | None = None
 
 
 McpServerConfig = McpStdioServer | McpSseServer | McpStreamableHttpServer
@@ -499,7 +565,7 @@ class UsageMetadata(pydantic.BaseModel):
     total_token_count: int | None = None
 
 
-class StepType(enum.StrEnum):
+class StepType(str, enum.Enum):
     """High-level type of a step."""
 
     TEXT_RESPONSE = "TEXT_RESPONSE"
@@ -510,7 +576,7 @@ class StepType(enum.StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class StepSource(enum.StrEnum):
+class StepSource(str, enum.Enum):
     """Source of a step."""
 
     SYSTEM = "SYSTEM"
@@ -519,7 +585,7 @@ class StepSource(enum.StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class StepTarget(enum.StrEnum):
+class StepTarget(str, enum.Enum):
     """Target of a step interaction."""
 
     USER = "TARGET_USER"
@@ -528,7 +594,7 @@ class StepTarget(enum.StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class StepStatus(enum.StrEnum):
+class StepStatus(str, enum.Enum):
     """Status of a step."""
 
     ACTIVE = "ACTIVE"
@@ -536,6 +602,7 @@ class StepStatus(enum.StrEnum):
     WAITING_FOR_USER = "WAITING_FOR_USER"
     ERROR = "ERROR"
     CANCELED = "CANCELED"
+    TERMINAL_ERROR = "TERMINAL_ERROR"
     UNKNOWN = "UNKNOWN"
 
 
@@ -670,6 +737,14 @@ class AntigravityConnectionError(Exception):
     """
 
 
+class AntigravityExecutionError(Exception):
+    """Raised when the agent execution encounters a terminal error.
+
+    This indicates that the agent loop has terminated due to a fatal error
+    (e.g. model call failure, system constraint violation) and cannot continue.
+    """
+
+
 class AntigravityValidationError(Exception):
     """Wraps Pydantic ValidationError at the SDK boundary.
 
@@ -705,7 +780,7 @@ class AntigravityValidationError(Exception):
         return cls(message=str(exc), errors=exc.errors())
 
 
-class TriggerDelivery(enum.StrEnum):
+class TriggerDelivery(str, enum.Enum):
     """Controls how trigger messages are delivered to the agent."""
 
     SEND_IMMEDIATELY = "send_immediately"  # Send immediately (non-blocking).
@@ -714,7 +789,7 @@ class TriggerDelivery(enum.StrEnum):
     # safety implications for in-flight tool calls (requires Connection.cancel()).
 
 
-class FileChangeKind(enum.StrEnum):
+class FileChangeKind(str, enum.Enum):
     """Kind of filesystem change detected by a file-watching trigger."""
 
     ADDED = "added"
@@ -967,10 +1042,6 @@ def _read_file_safely(path: str | pathlib.Path) -> bytes:
         OSError: For other filesystem errors.
     """
     file_path = pathlib.Path(path)
-    if file_path.is_dir():
-        raise IsADirectoryError(
-            f"Path is a directory, not a file: '{file_path}'"
-        )
     try:
         return file_path.read_bytes()
     except FileNotFoundError as exc:

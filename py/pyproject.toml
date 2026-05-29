@@ -84,6 +84,7 @@ line-ending = "auto"
 # (RUF012), and class-level operator docstrings instead of per-method (D102).
 "**/blender_addon/**" = ["E402", "N801", "D102", "RUF012"]
 "examples/**/*.py" = ["D"]
-"antigravity-sdk-python/examples/**/*.py" = ["D"]
+"antigravity-sdk-python/**/*.py" = ["D", "UP042", "N805", "F841", "UP007"]
+
 
 

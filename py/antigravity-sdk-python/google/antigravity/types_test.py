@@ -1302,5 +1302,211 @@ class ChatResponseStreamTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await response.text(), "")
 
 
+class McpServerConfigTest(parameterized.TestCase):
+    """Validates the McpServerConfig Pydantic models and required fields."""
+
+    @parameterized.named_parameters(
+        (
+            "stdio",
+            types.McpStdioServer,
+            {"name": "stdio_server", "command": "node", "args": ["index.js"]},
+            {"name": "stdio_server", "command": "node", "args": ["index.js"]},
+        ),
+        (
+            "sse",
+            types.McpSseServer,
+            {"name": "sse_server", "url": "http://localhost/sse"},
+            {"name": "sse_server", "url": "http://localhost/sse"},
+        ),
+        (
+            "http",
+            types.McpStreamableHttpServer,
+            {"name": "http_server", "url": "http://localhost/http"},
+            {"name": "http_server", "url": "http://localhost/http"},
+        ),
+    )
+    def test_server_construction_success(
+        self, server_cls, init_kwargs, expected_attrs
+    ):
+        """Verifies that MCP server configs construct successfully with valid arguments.
+
+        What: Checks basic field assignment with required name and command/url.
+        Why: Validates the happy path for all MCP connection types.
+        How: Constructs the target class with arguments and asserts its properties.
+
+        Args:
+          server_cls: The MCP server class under test.
+          init_kwargs: Dictionary of constructor arguments.
+          expected_attrs: Dict of expected attribute values after construction.
+        """
+        server = server_cls(**init_kwargs)
+        for attr, val in expected_attrs.items():
+            self.assertEqual(getattr(server, attr), val)
+
+    @parameterized.named_parameters(
+        ("stdio", types.McpStdioServer, {"command": "node"}),
+        ("sse", types.McpSseServer, {"url": "http://localhost/sse"}),
+        (
+            "http",
+            types.McpStreamableHttpServer,
+            {"url": "http://localhost/http"},
+        ),
+    )
+    def test_server_missing_name_raises(self, server_cls, init_kwargs):
+        """Verifies that MCP server configs raise ValidationError when name is omitted.
+
+        What: Checks required field validation for name.
+        Why: Enforces mandatory naming constraints across all server types.
+        How: Attempts construction without name and asserts ValidationError.
+
+        Args:
+          server_cls: The MCP server class under test.
+          init_kwargs: Dictionary of constructor arguments missing the name field.
+        """
+        with self.assertRaises(pydantic.ValidationError):
+            server_cls(**init_kwargs)  # type: ignore
+
+    @parameterized.named_parameters(
+        (
+            "stdio_enabled",
+            types.McpStdioServer,
+            {
+                "name": "stdio_server",
+                "command": "node",
+                "enabled_tools": ["tool1"],
+            },
+            "enabled_tools",
+            ["tool1"],
+        ),
+        (
+            "stdio_disabled",
+            types.McpStdioServer,
+            {
+                "name": "stdio_server",
+                "command": "node",
+                "disabled_tools": ["tool2"],
+            },
+            "disabled_tools",
+            ["tool2"],
+        ),
+        (
+            "sse_enabled",
+            types.McpSseServer,
+            {
+                "name": "sse_server",
+                "url": "http://localhost/sse",
+                "enabled_tools": ["tool1"],
+            },
+            "enabled_tools",
+            ["tool1"],
+        ),
+        (
+            "sse_disabled",
+            types.McpSseServer,
+            {
+                "name": "sse_server",
+                "url": "http://localhost/sse",
+                "disabled_tools": ["tool2"],
+            },
+            "disabled_tools",
+            ["tool2"],
+        ),
+    )
+    def test_server_construction_with_filtering(
+        self, server_cls, init_kwargs, expected_attr, expected_val
+    ):
+        """Verifies that MCP server configs construct with enabled or disabled tools."""
+        server = server_cls(**init_kwargs)
+        self.assertEqual(getattr(server, expected_attr), expected_val)
+
+    @parameterized.named_parameters(
+        (
+            "stdio_different_tools",
+            types.McpStdioServer,
+            {
+                "name": "stdio_server",
+                "command": "node",
+                "enabled_tools": ["tool1"],
+                "disabled_tools": ["tool2"],
+            },
+        ),
+        (
+            "stdio_same_tool",
+            types.McpStdioServer,
+            {
+                "name": "stdio_server",
+                "command": "node",
+                "enabled_tools": ["tool1"],
+                "disabled_tools": ["tool1"],
+            },
+        ),
+        (
+            "sse_different_tools",
+            types.McpSseServer,
+            {
+                "name": "sse_server",
+                "url": "http://localhost/sse",
+                "enabled_tools": ["tool1"],
+                "disabled_tools": ["tool2"],
+            },
+        ),
+        (
+            "sse_same_tool",
+            types.McpSseServer,
+            {
+                "name": "sse_server",
+                "url": "http://localhost/sse",
+                "enabled_tools": ["tool1"],
+                "disabled_tools": ["tool1"],
+            },
+        ),
+    )
+    def test_server_exclusive_filtering_raises(self, server_cls, init_kwargs):
+        """Verifies that providing both enabled and disabled tools raises ValidationError."""
+        with self.assertRaises(pydantic.ValidationError) as ctx:
+            server_cls(**init_kwargs)
+        self.assertIn(
+            "enabled_tools and disabled_tools should be mutually exclusive.",
+            str(ctx.exception),
+        )
+
+    def test_union_deserialization(self):
+        """Verifies that TypeAdapter parses McpServerConfig union variants with name correctly.
+
+        What: Checks Pydantic union polymorphic deserialization.
+        Why: Ensures config files or dicts can be parsed polymorphically.
+        How: Validates a stdio dict with name against McpServerConfig TypeAdapter.
+        """
+        adapter = pydantic.TypeAdapter(types.McpServerConfig)
+
+        data = {"type": "stdio", "name": "stdio_server", "command": "node"}
+        server = adapter.validate_python(data)
+        self.assertIsInstance(server, types.McpStdioServer)
+        self.assertEqual(server.name, "stdio_server")
+
+    @parameterized.parameters(
+        "validName",
+        "valid-name",
+        "valid_name",
+        "valid_name-123",
+    )
+    def test_server_valid_names(self, name):
+        """Verifies that Gemini-compliant server names pass validation."""
+        server = types.McpStdioServer(name=name, command="node")
+        self.assertEqual(server.name, name)
+
+    @parameterized.parameters(
+        "invalid name",
+        "invalid.name",
+        "invalid/name",
+        "invalid@name",
+        "invalidName!",
+    )
+    def test_server_invalid_names_raise(self, name):
+        """Verifies that names violating Gemini's regex pattern trigger validation errors."""
+        with self.assertRaises(pydantic.ValidationError):
+            types.McpStdioServer(name=name, command="node")
+
+
 if __name__ == "__main__":
     absltest.main()

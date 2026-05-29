@@ -45,14 +45,22 @@ config = LocalAgentConfig(
 
 ## Policy Resolution Order
 
-Policies are evaluated in the following order of precedence (highest to lowest):
+Policies are evaluated in the following order of precedence (highest to lowest),
+supporting 9 levels of priority:
 
-1. **Specific Deny**: `policy.deny("tool_name", ...)`
+1.  **Specific Deny**: `policy.deny("tool_name", ...)` (e.g.,
+    `policy.deny("run_command")` or `policy.deny(server_cfg, ["tool1"])`)
 2. **Specific Ask**: `policy.ask_user("tool_name", ...)`
 3. **Specific Allow**: `policy.allow("tool_name", ...)`
-4. **Wildcard Deny**: `policy.deny("*", ...)`
-5. **Wildcard Ask**: `policy.ask_user("*", ...)`
-6. **Wildcard Allow**: `policy.allow("*", ...)`
+4.  **Prefix Wildcard Deny**: `policy.deny("server/*", ...)` (e.g.,
+    `policy.deny(server_cfg)`)
+5.  **Prefix Wildcard Ask**: `policy.ask_user("server/*", ...)`
+6.  **Prefix Wildcard Allow**: `policy.allow("server/*", ...)`
+7.  **Global Wildcard Deny**: `policy.deny("*", ...)` (e.g.,
+    `policy.deny_all()`)
+8.  **Global Wildcard Ask**: `policy.ask_user("*", ...)`
+9.  **Global Wildcard Allow**: `policy.allow("*", ...)` (e.g.,
+    `policy.allow_all()`)
 
 Within each priority group, the **first match wins** (short-circuit evaluation).
 
@@ -62,31 +70,45 @@ Use the `google.antigravity.hooks.policy` module to define policies.
 
 ### Allow
 
-Approves tool calls without confirmation.
+Approves tool calls without confirmation. Can be specified as a tool name
+string, a wildcard `*`, or using an MCP server config object.
 
 ```python
 from google.antigravity.hooks import policy
 
-# Allow all calls to view_file
-
+# Allow a standard built-in tool
 policy.allow("view_file")
+
+# Allow all tools on an MCP server
+policy.allow(mcp_server_cfg)
+
+# Allow a specific subset of tools on an MCP server
+policy.allow(mcp_server_cfg, ["tool1", "tool2"])
 ```
 
 ### Deny
 
-Blocks tool calls immediately.
+Blocks tool calls immediately. Can be specified as a tool name string, a
+wildcard `*`, or using an MCP server config object.
 
 ```python
 from google.antigravity.hooks import policy
 
-# Deny all calls to run_command
-
+# Deny a standard built-in tool
 policy.deny("run_command")
+
+# Deny all tools on an MCP server
+policy.deny(mcp_server_cfg)
+
+# Deny a specific subset of tools on an MCP server
+policy.deny(mcp_server_cfg, ["dangerous_tool"])
 ```
 
 ### Ask User
 
-Requires user confirmation before execution. Must provide a handler.
+Requires user confirmation before execution. Must provide a handler. Can be
+specified as a tool name string, a wildcard `*`, or using an MCP server config
+object.
 
 ```python
 from google.antigravity.hooks import policy
@@ -96,7 +118,14 @@ async def my_approval_handler(tool_call):
   # Return True to allow, False to deny
   return True
 
+# Ask for confirmation on a standard tool
 policy.ask_user("run_command", handler=my_approval_handler)
+
+# Ask for confirmation on all tools on an MCP server
+policy.ask_user(mcp_server_cfg, handler=my_approval_handler)
+
+# Ask for confirmation on a specific subset of tools on an MCP server
+policy.ask_user(mcp_server_cfg, ["dangerous_tool"], handler=my_approval_handler)
 ```
 
 ### Wildcards

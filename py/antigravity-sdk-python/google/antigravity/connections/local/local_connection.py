@@ -22,11 +22,15 @@ import importlib.resources
 import json
 import logging
 import os
+import pathlib
+import platform
 import shutil
 import struct
 import subprocess
+import sys
 import threading
 import urllib.parse
+import urllib.request
 from collections.abc import AsyncIterator, Callable, Sequence
 from typing import Any, NamedTuple, cast
 
@@ -93,6 +97,7 @@ _STATUS_MAP = {
     "STATE_DONE": types.StepStatus.DONE,
     "STATE_WAITING_FOR_USER": types.StepStatus.WAITING_FOR_USER,
     "STATE_ERROR": types.StepStatus.ERROR,
+    "STATE_TERMINAL_ERROR": types.StepStatus.TERMINAL_ERROR,
 }
 
 # Map from BuiltinTools enum to the proto field name on StepUpdate.
@@ -213,8 +218,8 @@ def normalize_wire_path(path: str) -> str:
     parsed = urllib.parse.urlparse(path)
     if parsed.scheme == "file":
         # urlparse("file:///abs/path").path == "/abs/path"
-        # unquote decodes percent-encoded chars (e.g., %20 -> space)
-        return urllib.parse.unquote(parsed.path)
+        # url2pathname converts URL path to platform-native path
+        return urllib.request.url2pathname(parsed.path)
     return path
 
 
@@ -327,7 +332,9 @@ class LocalConnectionStep(types.Step):
                     )
 
         error_field = step_dict.get("error", {})
-        error_msg = error_field.get("error_message", "")
+        error_msg = error_field.get("error_message")
+        if not error_msg:
+            error_msg = step_dict.get("error_message", "")
         http_code = error_field.get("http_code", 0)
 
         return cls(
@@ -604,6 +611,7 @@ class LocalConnection(connection.Connection):
                 is_terminal = is_done or step_obj.status in (
                     types.StepStatus.ERROR,
                     types.StepStatus.CANCELED,
+                    types.StepStatus.TERMINAL_ERROR,
                 )
                 is_target_user = (
                     getattr(step_obj, "target", None) == "TARGET_USER"
@@ -619,6 +627,12 @@ class LocalConnection(connection.Connection):
                     # Don't force idle here — wait for the TrajectoryStateUpdate
                     # path to confirm that the parent and all subagent trajectories
                     # have completed.
+
+                if step_obj.status == types.StepStatus.TERMINAL_ERROR:
+                    raise types.AntigravityExecutionError(
+                        step_obj.error
+                        or "Terminal error occurred during execution"
+                    )
         finally:
             self._is_receiving = False
 
@@ -1389,18 +1403,20 @@ def _to_proto_input_content(
     raise TypeError(f"Unsupported prompt content type: {type(content)}")
 
 
+def _get_sdk_version() -> str:
+    """Returns the version of the Google Antigravity SDK."""
+    try:
+        return importlib.metadata.version("google-antigravity")
+    except importlib.metadata.PackageNotFoundError:
+        # Default to a development version if package metadata is not found.
+        return "0.0.0-dev"
+
+
 def _get_default_binary_path() -> str:
     """Finds the default binary path, supporting both internal and external wheels."""
     # 1. Check environment variable first
     if env_path := os.environ.get("ANTIGRAVITY_HARNESS_PATH"):
         return env_path
-
-    # Try internal resources if available
-    if resources is not None:
-        try:
-            return resources.GetResourceFilename("antigravity_harness")
-        except Exception:
-            pass
 
     # 2. Try importlib.metadata (Robust wheel discovery)
     # This is immune to sys.path shadowing by a local repository directory.
@@ -1410,7 +1426,10 @@ def _get_default_binary_path() -> str:
             for f in dist.files:
                 normalized_path = str(f).replace("\\", "/")
                 if normalized_path.endswith(
-                    "google/antigravity/bin/localharness"
+                    (
+                        "google/antigravity/bin/localharness",
+                        "google/antigravity/bin/localharness.exe",
+                    )
                 ):
                     binary_path = os.path.abspath(str(f.locate()))
                     if os.path.exists(binary_path):
@@ -1427,10 +1446,13 @@ def _get_default_binary_path() -> str:
         # Using 'google.antigravity' as the package name.
         # This assumes the binary is located at google/antigravity/bin/localharness
         # in the installed package.
+        suffix = (
+            "bin/localharness.exe"
+            if sys.platform == "win32"
+            else "bin/localharness"
+        )
         binary_path = str(
-            importlib.resources.files("google.antigravity").joinpath(
-                "bin/localharness"
-            )
+            importlib.resources.files("google.antigravity").joinpath(suffix)
         )
         if os.path.exists(binary_path):
             return binary_path
@@ -1556,10 +1578,16 @@ class LocalConnectionStrategy(connection.ConnectionStrategy):
             if thinking_level is not None:
                 gemini_config_proto.thinking_level = thinking_level.value
 
+            gemini_config_proto.use_vertex = self._gemini_config.vertex
+            if self._gemini_config.project is not None:
+                gemini_config_proto.project = self._gemini_config.project
+            if self._gemini_config.location is not None:
+                gemini_config_proto.location = self._gemini_config.location
+
         workspace_protos = [
             localharness_pb2.Workspace(
                 filesystem_workspace=localharness_pb2.FilesystemWorkspace(
-                    directory=p
+                    directory=pathlib.Path(p).as_posix()
                 )
             )
             for p in self._workspaces
@@ -1641,9 +1669,44 @@ class LocalConnectionStrategy(connection.ConnectionStrategy):
 
     async def __aenter__(self) -> None:
         """Starts the backend."""
+        # Fail fast if no API key is available. The localharness binary requires
+        # a Gemini API key to call the Gemini API; without one it silently returns
+        # empty responses.
+        use_vertex = (
+            self._gemini_config.vertex if self._gemini_config else False
+        )
+        api_key = (
+            self._gemini_config.api_key if self._gemini_config else None
+        ) or os.environ.get("GEMINI_API_KEY")
+        if not use_vertex and not api_key:
+            raise types.AntigravityValidationError(
+                "A Gemini API key is required. Set it via"
+                " GeminiConfig(api_key=...) or the GEMINI_API_KEY environment"
+                " variable."
+            )
+        if use_vertex:
+            project = (
+                self._gemini_config.project if self._gemini_config else None
+            )
+            location = (
+                self._gemini_config.location if self._gemini_config else None
+            )
+            if not api_key and not (project and location):
+                raise types.AntigravityValidationError(
+                    "For Vertex AI, either a GCP project and location, or an API key"
+                    " (Express Mode) must be set."
+                )
+
         harness_config = self._build_harness_config()
+        sdk_version = _get_sdk_version()
+        client_info_proto = localharness_pb2.ClientInfo(
+            language="python",
+            version=sdk_version,
+            language_version=platform.python_version(),
+        )
         input_config = localharness_pb2.InputConfig(
             storage_directory=self._save_dir or "",
+            client_info=client_info_proto,
         )
 
         process = subprocess.Popen(

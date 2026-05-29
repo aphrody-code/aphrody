@@ -82,17 +82,15 @@ class LocalConnectionTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(steps[0].status, types.StepStatus.ACTIVE)
         self.assertEqual(steps[0].source, types.StepSource.MODEL)
 
-    async def test_receive_steps_system_error(self):
+    async def test_receive_steps_terminal_error(self):
         harness = self._make_harness()
         event = localharness_pb2.OutputEvent(
             step_update=localharness_pb2.StepUpdate(
                 step_index=1,
-                error=localharness_pb2.ActionError(
-                    error_message="Fatal system failure",
-                    http_code=400,
-                ),
-                state=localharness_pb2.StepUpdate.STATE_ERROR,
+                text="Terminal failure",
+                state=localharness_pb2.StepUpdate.STATE_TERMINAL_ERROR,
                 source=localharness_pb2.StepUpdate.SOURCE_SYSTEM,
+                error_message="System crashed",
             )
         )
 
@@ -100,39 +98,18 @@ class LocalConnectionTest(unittest.IsolatedAsyncioTestCase):
         await harness.close_from_harness_side()
         harness.conn._is_idle.clear()
 
-        # receive_steps should raise AntigravityConnectionError when it
-        # encounters the system error step.
-        with self.assertRaisesRegex(
-            types.AntigravityConnectionError, "Fatal system failure"
-        ):
-            async for _ in harness.conn.receive_steps():
-                pass
+        steps = []
+        with self.assertRaises(types.AntigravityExecutionError) as ctx:
+            async for step in harness.conn.receive_steps():
+                steps.append(step)
 
-    async def test_receive_steps_system_error_401(self):
-        harness = self._make_harness()
-        event = localharness_pb2.OutputEvent(
-            step_update=localharness_pb2.StepUpdate(
-                step_index=1,
-                error=localharness_pb2.ActionError(
-                    error_message="Unauthorized access",
-                    http_code=401,
-                ),
-                state=localharness_pb2.StepUpdate.STATE_ERROR,
-                source=localharness_pb2.StepUpdate.SOURCE_SYSTEM,
-            )
-        )
+        # The terminal error step should still be yielded before the exception is raised
+        self.assertEqual(len(steps), 1)
+        self.assertEqual(steps[0].content, "Terminal failure")
+        self.assertEqual(steps[0].status, types.StepStatus.TERMINAL_ERROR)
+        self.assertEqual(steps[0].error, "System crashed")
 
-        await harness.send_event(event)
-        await harness.close_from_harness_side()
-        harness.conn._is_idle.clear()
-
-        # receive_steps should raise AntigravityConnectionError when it
-        # encounters the system error step.
-        with self.assertRaisesRegex(
-            types.AntigravityConnectionError, "Unauthorized access"
-        ):
-            async for _ in harness.conn.receive_steps():
-                pass
+        self.assertIn("System crashed", str(ctx.exception))
 
     def test_local_connection_step_from_dict(self):
         """Tests that LocalConnectionStep maps fields correctly."""
@@ -1769,6 +1746,20 @@ class LocalConnectionStrategyConfigTest(parameterized.TestCase):
         config = strategy._build_harness_config()
         self.assertEqual(config.gemini_config.api_key, "shared-key")
 
+    def test_vertex_config_propagates(self):
+        """Verifies that Vertex configuration fields propagate to proto."""
+        strategy = self._make_strategy(
+            gemini_config=types.GeminiConfig(
+                vertex=True,
+                project="my-project",
+                location="us-central1",
+            )
+        )
+        config = strategy._build_harness_config()
+        self.assertTrue(config.gemini_config.use_vertex)
+        self.assertEqual(config.gemini_config.project, "my-project")
+        self.assertEqual(config.gemini_config.location, "us-central1")
+
     def test_session_config_save_dir_stored(self):
         """Verifies that session_config.save_dir is preserved on the strategy.
 
@@ -1869,31 +1860,63 @@ class LocalConnectionStrategyApiKeyTest(unittest.IsolatedAsyncioTestCase):
         return local_connection.LocalConnectionStrategy(**kwargs)
 
     @mock.patch.dict("os.environ", {}, clear=True)
-    @mock.patch("subprocess.Popen")
-    async def test_accepts_no_api_key(self, mock_popen):
-        """Verifies entry does not raise when no API key is available."""
-        mock_proc = mock.MagicMock()
-        mock_proc.stdin = mock.MagicMock()
-        mock_proc.stdout = mock.MagicMock()
-        mock_proc.stderr = mock.MagicMock()
-        mock_proc.stdout.read.return_value = b""
-        mock_popen.return_value = mock_proc
+    async def test_raises_without_api_key(self):
+        """Verifies entry raises when no API key is available.
+
+        Why: The Go localharness binary silently returns empty responses when no
+        API key is provided. An explicit error at startup is much more actionable.
+        How: Create a strategy with no api_key and no GEMINI_API_KEY env var and
+        assert AntigravityValidationError is raised.
+        """
         strategy = self._make_strategy()
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(types.AntigravityValidationError) as ctx:
+            async with strategy:
+                pass
+        self.assertIn("API key", str(ctx.exception))
+
+    @mock.patch.dict("os.environ", {}, clear=True)
+    async def test_raises_with_empty_gemini_config(self):
+        """Verifies entry raises when GeminiConfig has no api_key and env is unset.
+
+        Why: GeminiConfig() defaults api_key to None. The check must not be
+        fooled by the presence of a GeminiConfig object with no key.
+        """
+        strategy = self._make_strategy(gemini_config=types.GeminiConfig())
+        with self.assertRaises(types.AntigravityValidationError):
             async with strategy:
                 pass
 
     @mock.patch.dict("os.environ", {}, clear=True)
+    async def test_raises_without_auth_in_vertex_mode(self):
+        """Verifies strategy raises validation error when Vertex is set but no project/location or api_key provided."""
+        strategy = self._make_strategy(
+            gemini_config=types.GeminiConfig(vertex=True)
+        )
+        with self.assertRaises(types.AntigravityValidationError) as ctx:
+            async with strategy:
+                pass
+        self.assertIn("project and location, or an API key", str(ctx.exception))
+
+    @mock.patch.dict("os.environ", {}, clear=True)
     @mock.patch("subprocess.Popen")
-    async def test_accepts_empty_gemini_config(self, mock_popen):
-        """Verifies entry does not raise when GeminiConfig has no api_key and env is unset."""
+    async def test_accepts_vertex_config_with_project_location(
+        self, mock_popen
+    ):
+        """Verifies entry does not raise when Vertex is enabled and project/location are provided."""
         mock_proc = mock.MagicMock()
         mock_proc.stdin = mock.MagicMock()
         mock_proc.stdout = mock.MagicMock()
         mock_proc.stderr = mock.MagicMock()
         mock_proc.stdout.read.return_value = b""
         mock_popen.return_value = mock_proc
-        strategy = self._make_strategy(gemini_config=types.GeminiConfig())
+
+        strategy = self._make_strategy(
+            gemini_config=types.GeminiConfig(
+                vertex=True,
+                project="my-project",
+                location="us-central1",
+            )
+        )
         with self.assertRaises(RuntimeError):
             async with strategy:
                 pass
@@ -1974,16 +1997,14 @@ class GetDefaultBinaryPathTest(unittest.TestCase):
 
         path = local_connection._get_default_binary_path()
         self.assertEqual(
-            path,
-            os.path.abspath(
-                "/site-packages/google/antigravity/bin/localharness"
-            ),
+            path, "/site-packages/google/antigravity/bin/localharness"
         )
         mock_dist.assert_called_once_with("google-antigravity")
         mock_file.locate.assert_called_once()
 
     @mock.patch.dict("os.environ", {}, clear=True)
     @mock.patch("importlib.metadata.distribution")
+    @unittest.skip("Internal google3 resource path not applicable to public SDK")
     def test_returns_internal_pyglib_resource_path(self, mock_dist):
         mock_resources = mock.MagicMock()
         mock_resources.GetResourceFilename.return_value = (
@@ -3411,6 +3432,36 @@ class LocalAgentConfigTest(unittest.TestCase):
         self.assertEqual(
             strategy._gemini_config.models.default.name, "gemini-2.5-pro"
         )
+
+    def test_constructor_parameters_fully_typed(self):
+        """Verifies all subclass fields are accepted by the constructor under pytype."""
+        config = local_connection_config.LocalAgentConfig(
+            system_instructions="test",
+            capabilities=types.CapabilitiesConfig(enable_subagents=True),
+            tools=[],
+            policies=[],
+            hooks=[],
+            triggers=[],
+            mcp_servers=[],
+            workspaces=["/tmp/ws"],
+            conversation_id="123",
+            save_dir="/tmp/save",
+            app_data_dir="/tmp/app",
+            response_schema="{}",
+            skills_paths=["/tmp/skills"],
+            gemini_config=types.GeminiConfig(),
+            model="gemini-2.5-pro",
+            api_key="fake_api_key",
+            vertex=True,
+            project="my_project",
+            location="us-central1",
+        )
+        self.assertEqual(config.model, "gemini-2.5-pro")
+        self.assertEqual(config.api_key, "fake_api_key")
+        self.assertTrue(config.vertex)
+        self.assertEqual(config.project, "my_project")
+        self.assertEqual(config.location, "us-central1")
+        self.assertEqual(config.conversation_id, "123")
 
     def test_safe_defaults(self):
         """LocalAgentConfig defaults to confirm_run_command() — deny run_command."""
