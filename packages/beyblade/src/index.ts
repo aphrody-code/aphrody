@@ -29,10 +29,12 @@ export { BeybladeCombo } from "./combo";
 
 export {
   simulateBattle,
+  simulateMatch,
   type FinishType,
   type BattleRoundLog,
   type BattleResult,
   type BattleOptions,
+  type MatchResult,
 } from "./battle";
 
 export {
