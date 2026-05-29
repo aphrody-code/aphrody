@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/design",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Automated design engine for Material Design 3 and Google Design",
   "repository": {
