@@ -25,6 +25,7 @@ export const TweetSchema: z.ZodType<any> = z.lazy(() =>
     lang: z.string().optional(),
     is_note_tweet: z.boolean().default(false),
     quoted_tweet: z.nullable(z.lazy(() => TweetSchema)).optional(),
+    media: z.array(z.any()).optional(),
   })
 );
 

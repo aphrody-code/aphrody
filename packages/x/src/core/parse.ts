@@ -113,6 +113,14 @@ export function parseTweetResult(result: any, quoteDepth = DEFAULT_QUOTE_DEPTH):
     quoted_tweet = parseTweetResult(tweet.quoted_status_result.result, quoteDepth - 1);
   }
 
+  const mediaEntities = legacy.extended_entities?.media || legacy.entities?.media || [];
+  const media = mediaEntities.map((m: any) => ({
+    id: m.id_str,
+    type: m.type,
+    url: m.media_url_https || m.media_url,
+    expanded_url: m.expanded_url,
+  }));
+
   const obj = {
     id,
     text,
@@ -129,6 +137,7 @@ export function parseTweetResult(result: any, quoteDepth = DEFAULT_QUOTE_DEPTH):
     lang: legacy.lang || undefined,
     is_note_tweet,
     quoted_tweet,
+    media,
   };
 
   try {
