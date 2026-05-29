@@ -8,7 +8,9 @@
   "workspaces": {
     "packages": [
       "apps/*",
-      "packages/native"
+      "packages/native",
+      "packages/x",
+      "packages/beyblade"
     ],
     "catalog": {
       "typescript": "^6.0.3",
