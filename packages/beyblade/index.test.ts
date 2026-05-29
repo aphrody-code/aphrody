@@ -6,6 +6,7 @@ import {
   findBit,
   BeybladeCombo,
   simulateBattle,
+  simulateMatch,
   StrategyAdvisor,
 } from "./src/index";
 
@@ -65,5 +66,22 @@ describe("Beyblade X Module Tests", () => {
     expect(matchups.length).toBe(4);
     expect(matchups[0].winRate).toBeGreaterThanOrEqual(0);
     expect(matchups[0].winRate).toBeLessThanOrEqual(100);
+  });
+
+  test("WBO Match Simulator simulates full matches to target points", () => {
+    const comboA = new BeybladeCombo("phoenix_wing", "9_60", "flat");
+    const comboB = new BeybladeCombo("wizard_arrow", "5_80", "ball");
+
+    // 1on1 match format to 4 points
+    const match1on1 = simulateMatch([comboA], [comboB], "1on1", 4, { randomFactor: false });
+    expect(match1on1.winner).toBeDefined();
+    expect(match1on1.scoreA + match1on1.scoreB).toBeGreaterThanOrEqual(4);
+    expect(match1on1.rounds.length).toBeGreaterThanOrEqual(2);
+
+    // 3on3 match format to 4 points
+    const comboC = new BeybladeCombo("wizard_arrow", "9_60", "ball");
+    const match3on3 = simulateMatch([comboA, comboC], [comboB, comboC], "3on3", 4, { randomFactor: false });
+    expect(match3on3.winner).toBeDefined();
+    expect(match3on3.rounds.length).toBeGreaterThanOrEqual(1);
   });
 });
