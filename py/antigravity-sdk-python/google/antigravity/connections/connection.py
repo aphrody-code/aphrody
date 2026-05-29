@@ -64,7 +64,6 @@ class AgentConfig(abc.ABC, pydantic.BaseModel):
     skills_paths: list[str] = pydantic.Field(default_factory=list)
 
     @pydantic.field_validator("response_schema")
-    @classmethod
     def _validate_schema(cls, v):  # pylint: disable=no-self-argument
         if v is None:
             return None

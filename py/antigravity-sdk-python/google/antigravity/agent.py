@@ -131,7 +131,11 @@ class Agent:
                 )
 
             if active_policies:
-                self._hook_runner.register_hook(policy.enforce(active_policies))
+                self._hook_runner.register_hook(
+                    policy.enforce(
+                        active_policies, mcp_servers=self._config.mcp_servers
+                    )
+                )
 
             all_tools = list(self._config.tools)
             # Connect MCP servers

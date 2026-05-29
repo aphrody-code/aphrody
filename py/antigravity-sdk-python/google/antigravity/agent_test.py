@@ -271,7 +271,12 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         config = local_connection.LocalAgentConfig(
             system_instructions="test",
             mcp_servers=[
-                {"type": "stdio", "command": "node", "args": ["index.js"]}
+                {
+                    "type": "stdio",
+                    "name": "test_server",
+                    "command": "node",
+                    "args": ["index.js"],
+                }
             ],
             policies=[],
             workspaces=[],
@@ -295,7 +300,12 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         config = local_connection.LocalAgentConfig(
             system_instructions="test",
             mcp_servers=[
-                {"type": "stdio", "command": "node", "args": ["index.js"]}
+                {
+                    "type": "stdio",
+                    "name": "test_server",
+                    "command": "node",
+                    "args": ["index.js"],
+                }
             ],
             policies=[policy.deny("*")],
         )
@@ -322,7 +332,12 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         config = local_connection.LocalAgentConfig(
             system_instructions="test",
             mcp_servers=[
-                {"type": "stdio", "command": "node", "args": ["index.js"]}
+                {
+                    "type": "stdio",
+                    "name": "test_server",
+                    "command": "node",
+                    "args": ["index.js"],
+                }
             ],
             hooks=[MyPreToolCallDecideHook()],
         )
@@ -749,9 +764,15 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         mock_bridge_instance.tools = [mock_tool]
 
         mcp_servers = [
-            types.McpStdioServer(command="python3", args=["server.py"]),
-            types.McpSseServer(url="http://localhost:8000/sse"),
-            types.McpStreamableHttpServer(url="http://localhost:8000/http"),
+            types.McpStdioServer(
+                name="stdio_server", command="python3", args=["server.py"]
+            ),
+            types.McpSseServer(
+                name="sse_server", url="http://localhost:8000/sse"
+            ),
+            types.McpStreamableHttpServer(
+                name="http_server", url="http://localhost:8000/http"
+            ),
         ]
 
         config = local_connection.LocalAgentConfig(
@@ -759,7 +780,7 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
             mcp_servers=mcp_servers,
             policies=[policy.deny("*")],
         )
-        async with agent.Agent(config):
+        async with agent.Agent(config) as ag:
             mock_mcp_bridge.assert_called_once_with()
             self.assertEqual(mock_bridge_instance.connect.call_count, 3)
             mock_bridge_instance.connect.assert_has_calls(
@@ -835,7 +856,7 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         mock_exit_stack.__aexit__.assert_called_once_with(ValueError, exc, None)
 
 
-class AgentConfigTest(unittest.IsolatedAsyncioTestCase):
+class AgentConfigTest(unittest.TestCase):
     """Tests for AgentConfig sugar, conflict guards, and defensive copy."""
 
     def test_sugar_model_flows_to_gemini_config(self):

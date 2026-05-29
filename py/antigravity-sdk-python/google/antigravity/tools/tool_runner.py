@@ -110,7 +110,6 @@ class ToolWithSchema:
         self.__doc__ = fn.__doc__
 
     def __call__(self, **kwargs: Any) -> Any:
-        """Invokes the wrapped tool function."""
         return self.fn(**kwargs)
 
 

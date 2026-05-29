@@ -87,49 +87,40 @@ class HookRunner:
     def on_session_start_hooks(
         self,
     ) -> tuple[hooks_base.OnSessionStartHook, ...]:
-        """Returns the session start hooks."""
         return tuple(self._on_session_start_hooks)
 
     @property
     def on_session_end_hooks(self) -> tuple[hooks_base.OnSessionEndHook, ...]:
-        """Returns the session end hooks."""
         return tuple(self._on_session_end_hooks)
 
     @property
     def pre_turn_hooks(self) -> tuple[hooks_base.PreTurnHook, ...]:
-        """Returns the pre-turn hooks."""
         return tuple(self._pre_turn_hooks)
 
     @property
     def post_turn_hooks(self) -> tuple[hooks_base.PostTurnHook, ...]:
-        """Returns the post-turn hooks."""
         return tuple(self._post_turn_hooks)
 
     @property
     def pre_tool_call_decide_hooks(
         self,
     ) -> tuple[hooks_base.PreToolCallDecideHook, ...]:
-        """Returns the pre-tool-call decide hooks."""
         return tuple(self._pre_tool_call_decide_hooks)
 
     @property
     def post_tool_call_hooks(self) -> tuple[hooks_base.PostToolCallHook, ...]:
-        """Returns the post-tool-call hooks."""
         return tuple(self._post_tool_call_hooks)
 
     @property
     def on_tool_error_hooks(self) -> tuple[hooks_base.OnToolErrorHook, ...]:
-        """Returns the on-tool-error hooks."""
         return tuple(self._on_tool_error_hooks)
 
     @property
     def on_interaction_hooks(self) -> tuple[hooks_base.OnInteractionHook, ...]:
-        """Returns the on-interaction hooks."""
         return tuple(self._on_interaction_hooks)
 
     @property
     def on_compaction_hooks(self) -> tuple[hooks_base.OnCompactionHook, ...]:
-        """Returns the on-compaction hooks."""
         return tuple(self._on_compaction_hooks)
 
     def register_hook(self, hook: Any):

@@ -69,21 +69,46 @@ async with Agent(config=config) as agent:
 ### System Instructions and Personas
 
 You can configure system instructions directly in the `LocalAgentConfig`:
-`python config = LocalAgentConfig( system_instructions="You are an expert
-software architect.", )` For a more detailed guide and complex persona examples,
-see [persona_config.md](../../examples/getting_started/persona_config.md).
+
+```python
+config = LocalAgentConfig(
+    system_instructions="You are an expert software architect.",
+)
+```
+
+For a more detailed guide and complex persona examples, see
+[persona_config.md](../../examples/getting_started/persona_config.md).
 
 ### Custom Tools
 
-You can add custom tools to your agent: ```python from google.antigravity import
-Agent, LocalAgentConfig
+You can add custom tools to your agent:
 
-config = LocalAgentConfig( tools=[my_custom_tool_function], ) ``` For a full
-guide on creating and using custom tools, see
+```python
+from google.antigravity import Agent, LocalAgentConfig
+
+config = LocalAgentConfig(
+    tools=[my_custom_tool_function],
+)
+```
+
+For a full guide on creating and using custom tools, see
 [custom_tool.md](../../examples/getting_started/custom_tool.md).
 
 ### MCP Integration
 
-To configure Model Context Protocol (MCP) servers: `python config =
-LocalAgentConfig( mcp_servers={"my_mcp_server": "http://localhost:8080"}, )` For
-more details, see [mcp_integration.md](mcp_integration.md).
+To configure Model Context Protocol (MCP) servers:
+
+```python
+from google.antigravity import Agent, LocalAgentConfig, types
+
+config = LocalAgentConfig(
+    mcp_servers=[
+        types.McpStreamableHttpServer(
+            name="my_mcp_server",
+            url="http://localhost:8080",
+        )
+    ],
+)
+```
+
+For more details, see [mcp_integration.md](mcp_integration.md).

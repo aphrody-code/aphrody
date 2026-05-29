@@ -33,6 +33,7 @@ Includes:
 from __future__ import annotations
 
 import asyncio
+import sys
 import threading
 from typing import TYPE_CHECKING
 
@@ -77,6 +78,52 @@ async def async_input(prompt: str = "") -> str:
     return await future
 
 
+class Spinner:
+    """A lightweight terminal spinner for async processing feedback."""
+
+    def __init__(self, message: str = "Thinking..."):
+        self._message = message
+        self._running = False
+        self._task = None
+        self._frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        # TTY Check: Spinner escape sequences only write to standard out if it's a
+        # real terminal. This prevents log file corruption during redirection.
+        # Note: Ancient cmd environments that lack ANSI support will output escape
+        # codes literally; users are expected to use modern terminal systems.
+        self._enabled = sys.stdout.isatty()
+
+    def update(self, message: str) -> None:
+        """Updates the spinner display message."""
+        self._message = message
+
+    async def _spin(self) -> None:
+        idx = 0
+        while self._running:
+            sys.stdout.write(f"\r\033[K{self._frames[idx]} {self._message}")
+            sys.stdout.flush()
+            idx = (idx + 1) % len(self._frames)
+            await asyncio.sleep(0.08)
+
+    async def __aenter__(self) -> Spinner:
+        if self._enabled:
+            self._running = True
+            self._task = asyncio.create_task(self._spin())
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        if not self._enabled:
+            return
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
+
+
 class ToolConfirmationHook(hooks.PreToolCallDecideHook):
     """Hook that prompts the user for confirmation before executing a tool."""
 
@@ -93,6 +140,7 @@ class ToolConfirmationHook(hooks.PreToolCallDecideHook):
           A HookResult indicating whether to allow or deny execution.
         """
         print(f"\nTool execution requested: {data.name}")
+
         if data.args:
             print(f"Arguments: {data.args}")
 
@@ -286,9 +334,29 @@ async def run_interactive_loop(agent: agent_module.Agent) -> None:
 
             await agent.conversation.send(user_input)
 
-            async for step in agent.conversation.receive_steps():
-                if step.is_complete_response:
-                    print(f"Agent: {step.content}")
+            async with Spinner() as spinner:
+                async for step in agent.conversation.receive_steps():
+                    if step.type == types.StepType.TOOL_CALL:
+                        tool_name = (
+                            step.tool_calls[0].name
+                            if step.tool_calls
+                            else "tool"
+                        )
+                        spinner.update(f"Running tool '{tool_name}'...")
+                    elif step.type == types.StepType.COMPACTION:
+                        spinner.update("Compacting context...")
+                    elif (
+                        step.source == types.StepSource.MODEL
+                        and step.thinking_delta
+                    ):
+                        spinner.update("Reasoning...")
+
+                    if step.is_complete_response:
+                        break
+                else:
+                    continue
+
+            print(f"Agent: {step.content}")
 
         except (KeyboardInterrupt, EOFError):
             print("\nGoodbye!")

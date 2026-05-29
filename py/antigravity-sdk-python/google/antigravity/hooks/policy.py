@@ -76,6 +76,7 @@ import pathlib
 import sys
 import typing
 from collections.abc import Awaitable, Callable, Sequence
+from typing import Any, Union, overload
 
 import pydantic
 from google.antigravity import types
@@ -129,68 +130,235 @@ class Policy:
 # ---------------------------------------------------------------------------
 
 
+def _mcp_policies(
+    decision: Decision,
+    mcp_config: types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    when: Predicate | None = None,
+    name: str = "",
+    handler: AskUserHandler | None = None,
+) -> list[Policy]:
+    """Generates MCP-specific policies.
+
+    Commonly used by allow(), deny(), and ask_user() builders. Translates the
+    config and tools into the structured 'server/tool' or 'server/*' target
+    formats expected by the runtime hook.
+
+    Args:
+      decision: The Decision outcome when the policy matches.
+      mcp_config: The BaseMcpServerConfig of the target MCP server.
+      mcp_tools: Optional sequence of tool names to allow/deny/ask for. If None,
+        applies to all tools on this server.
+      when: Optional argument predicate.
+      name: Optional human-readable label.
+      handler: Optional AskUserHandler for ASK_USER policies.
+
+    Returns:
+      A list of Policy objects.
+    """
+    server = mcp_config.name
+
+    if isinstance(mcp_tools, str):
+        raise ValueError(
+            f"mcp_tools must be a sequence of strings (e.g., ['{mcp_tools}']), "
+            "not a single string."
+        )
+
+    if mcp_tools is None:
+        # Server-wide wildcard policy (covers all tools of this MCP server).
+        # Lowercase prefix matching is purely for debug-logging consistency.
+        policy_name = name or f"{decision.value.lower()}_{server}_all"
+        return [
+            Policy(
+                tool=f"{server}/*",
+                decision=decision,
+                when=when,
+                name=policy_name,
+                ask_user=handler,
+            )
+        ]
+
+    policies = []
+    for t in mcp_tools:
+        policy_name = (
+            f"{name}_{t}" if name else f"{decision.value.lower()}_{server}_{t}"
+        )
+        policies.append(
+            Policy(
+                tool=f"{server}/{t}",
+                decision=decision,
+                when=when,
+                name=policy_name,
+                ask_user=handler,
+            )
+        )
+    return policies
+
+
+@overload
 def allow(
     tool: str,
     *,
     when: Predicate | None = None,
     name: str = "",
-) -> Policy:
-    """Creates an APPROVE policy for `tool`.
+) -> Policy: ...
+
+
+@overload
+def allow(
+    mcp_config: types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    when: Predicate | None = None,
+    name: str = "",
+) -> list[Policy]: ...
+
+
+def allow(
+    tool_or_mcp: str | types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    when: Predicate | None = None,
+    name: str = "",
+) -> Any:
+    """Creates an APPROVE policy.
 
     Args:
-      tool: Tool name or "*" for all tools.
+      tool_or_mcp: Tool name, "*" for all tools, or BaseMcpServerConfig.
+      mcp_tools: Optional list of tool names if BaseMcpServerConfig is provided.
       when: Optional argument predicate.
       name: Human-readable label.
 
     Returns:
-      A Policy with decision=APPROVE.
+      A Policy or a list of Policies.
     """
-    return Policy(tool=tool, decision=Decision.APPROVE, when=when, name=name)
+    if isinstance(tool_or_mcp, str):
+        if mcp_tools is not None:
+            raise ValueError(
+                "mcp_tools cannot be specified when tool is a string."
+            )
+        return Policy(
+            tool=tool_or_mcp, decision=Decision.APPROVE, when=when, name=name
+        )  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
+
+    return _mcp_policies(
+        Decision.APPROVE, tool_or_mcp, mcp_tools, when=when, name=name
+    )  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
 
 
+@overload
 def deny(
     tool: str,
     *,
     when: Predicate | None = None,
     name: str = "",
-) -> Policy:
-    """Creates a DENY policy for `tool`.
+) -> Policy: ...
+
+
+@overload
+def deny(
+    mcp_config: types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    when: Predicate | None = None,
+    name: str = "",
+) -> list[Policy]: ...
+
+
+def deny(
+    tool_or_mcp: str | types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    when: Predicate | None = None,
+    name: str = "",
+) -> Any:
+    """Creates a DENY policy.
 
     Args:
-      tool: Tool name or "*" for all tools.
+      tool_or_mcp: Tool name, "*" for all tools, or BaseMcpServerConfig.
+      mcp_tools: Optional list of tool names if BaseMcpServerConfig is provided.
       when: Optional argument predicate.
       name: Human-readable label.
 
     Returns:
-      A Policy with decision=DENY.
+      A Policy or a list of Policies.
     """
-    return Policy(tool=tool, decision=Decision.DENY, when=when, name=name)
+    if isinstance(tool_or_mcp, str):
+        if mcp_tools is not None:
+            raise ValueError(
+                "mcp_tools cannot be specified when tool is a string."
+            )
+        return Policy(
+            tool=tool_or_mcp, decision=Decision.DENY, when=when, name=name
+        )  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
+
+    return _mcp_policies(
+        Decision.DENY, tool_or_mcp, mcp_tools, when=when, name=name
+    )  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
 
 
+@overload
 def ask_user(
     tool: str,
     *,
     handler: AskUserHandler,
     when: Predicate | None = None,
     name: str = "",
-) -> Policy:
-    """Creates an ASK_USER policy for `tool`.
+) -> Policy: ...
+
+
+@overload
+def ask_user(
+    mcp_config: types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    handler: AskUserHandler,
+    when: Predicate | None = None,
+    name: str = "",
+) -> list[Policy]: ...
+
+
+def ask_user(
+    tool_or_mcp: str | types.BaseMcpServerConfig,
+    mcp_tools: Sequence[str] | None = None,
+    *,
+    handler: AskUserHandler,
+    when: Predicate | None = None,
+    name: str = "",
+) -> Any:
+    """Creates an ASK_USER policy.
 
     Args:
-      tool: Tool name or "*".
+      tool_or_mcp: Tool name, "*" for all tools, or BaseMcpServerConfig.
+      mcp_tools: Optional list of tool names if BaseMcpServerConfig is provided.
       handler: Callable invoked to obtain user approval.
       when: Optional argument predicate.
       name: Human-readable label.
 
     Returns:
-      A Policy with decision=ASK_USER.
+      A Policy or a list of Policies.
     """
-    return Policy(
-        tool=tool,
-        decision=Decision.ASK_USER,
+    if isinstance(tool_or_mcp, str):
+        if mcp_tools is not None:
+            raise ValueError(
+                "mcp_tools cannot be specified when tool is a string."
+            )
+        return Policy(  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
+            tool=tool_or_mcp,
+            decision=Decision.ASK_USER,
+            when=when,
+            ask_user=handler,
+            name=name,
+        )
+
+    return _mcp_policies(  # pytype: disable=bad-return-type  # False positive: pytype fails to narrow overloaded types in implementation body.
+        Decision.ASK_USER,
+        tool_or_mcp,
+        mcp_tools,
         when=when,
-        ask_user=handler,
         name=name,
+        handler=handler,
     )
 
 
@@ -273,7 +441,7 @@ def confirm_run_command(
     ]
 
 
-PathOrStr = str | os.PathLike[str]
+PathOrStr = Union[str, os.PathLike[str]]
 
 
 def _secure_normalize_path(path: PathOrStr) -> pathlib.Path:
@@ -380,10 +548,16 @@ def workspace_only(workspaces: Sequence[PathOrStr]) -> list[Policy]:
 _LEVEL_SPECIFIC_DENY = 0
 _LEVEL_SPECIFIC_ASK = 1
 _LEVEL_SPECIFIC_ALLOW = 2
-_LEVEL_WILDCARD_DENY = 3
-_LEVEL_WILDCARD_ASK = 4
-_LEVEL_WILDCARD_ALLOW = 5
-_NUM_LEVELS = 6
+
+_LEVEL_PREFIX_DENY = 3
+_LEVEL_PREFIX_ASK = 4
+_LEVEL_PREFIX_ALLOW = 5
+
+_LEVEL_GLOBAL_DENY = 6
+_LEVEL_GLOBAL_ASK = 7
+_LEVEL_GLOBAL_ALLOW = 8
+
+_NUM_LEVELS = 9
 
 _DECISION_TO_SPECIFIC_LEVEL = {
     Decision.DENY: _LEVEL_SPECIFIC_DENY,
@@ -391,17 +565,34 @@ _DECISION_TO_SPECIFIC_LEVEL = {
     Decision.APPROVE: _LEVEL_SPECIFIC_ALLOW,
 }
 
-_DECISION_TO_WILDCARD_LEVEL = {
-    Decision.DENY: _LEVEL_WILDCARD_DENY,
-    Decision.ASK_USER: _LEVEL_WILDCARD_ASK,
-    Decision.APPROVE: _LEVEL_WILDCARD_ALLOW,
+_DECISION_TO_PREFIX_LEVEL = {
+    Decision.DENY: _LEVEL_PREFIX_DENY,
+    Decision.ASK_USER: _LEVEL_PREFIX_ASK,
+    Decision.APPROVE: _LEVEL_PREFIX_ALLOW,
 }
+
+_DECISION_TO_GLOBAL_LEVEL = {
+    Decision.DENY: _LEVEL_GLOBAL_DENY,
+    Decision.ASK_USER: _LEVEL_GLOBAL_ASK,
+    Decision.APPROVE: _LEVEL_GLOBAL_ALLOW,
+}
+
+
+def _is_global_wildcard(tool: str) -> bool:
+    return tool == _WILDCARD
+
+
+def _is_prefix_wildcard(tool: str) -> bool:
+    # Prefix wildcards (e.g. "server/*") are strictly supported for MCP tools.
+    return tool.endswith("/*")
 
 
 def _bucket_index(p: Policy) -> int:
     """Returns the priority bucket for a policy."""
-    if p.tool == _WILDCARD:
-        return _DECISION_TO_WILDCARD_LEVEL[p.decision]
+    if _is_global_wildcard(p.tool):
+        return _DECISION_TO_GLOBAL_LEVEL[p.decision]
+    if _is_prefix_wildcard(p.tool):
+        return _DECISION_TO_PREFIX_LEVEL[p.decision]
     return _DECISION_TO_SPECIFIC_LEVEL[p.decision]
 
 
@@ -410,10 +601,20 @@ def _bucket_index(p: Policy) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _matches_tool(policy: Policy, tool_name: str) -> bool:
-    """Returns True if the policy's tool selector matches the given tool name."""
-    # TODO: b/501347931 - extend to prefix/regex matching.
-    return policy.tool in (_WILDCARD, tool_name)
+def _matches_target(policy_tool: str, call_target: str, is_mcp: bool) -> bool:
+    """Matches policy tool definition against parsed call target."""
+    if policy_tool == _WILDCARD:
+        return True
+
+    if is_mcp:
+        # policy_tool can be "server/*" or "server/tool"
+        if _is_prefix_wildcard(policy_tool):
+            policy_server = policy_tool[:-2]
+            call_server, _ = call_target.split("/", 1)
+            return policy_server == call_server
+        return policy_tool == call_target
+
+    return policy_tool == call_target
 
 
 async def _evaluate_predicate(
@@ -485,8 +686,26 @@ class _PolicyDecideHook(hooks.PreToolCallDecideHook):
     on the first matching policy.
     """
 
-    def __init__(self, buckets: Sequence[Sequence[Policy]]):
+    def __init__(
+        self,
+        buckets: Sequence[Sequence[Policy]],
+        *,
+        server_names: Sequence[str] | None = None,
+    ):
         self._buckets = buckets
+        # Sort descending by length to guarantee longest-match parsing (security)
+        self._server_names = sorted(server_names or [], key=len, reverse=True)
+
+    def _parse_mcp_tool(self, tool_name: str) -> tuple[str, str] | None:
+        """Securely parses 'mcp_server_tool' into ('server', 'tool') using known servers."""
+        if not tool_name.startswith("mcp_"):
+            return None
+
+        rest = tool_name[4:]
+        for server in self._server_names:
+            if rest.startswith(f"{server}_"):
+                return server, rest[len(server) + 1 :]
+        return None
 
     async def _evaluate_policy(
         self, p: Policy, tool_call: types.ToolCall
@@ -501,7 +720,16 @@ class _PolicyDecideHook(hooks.PreToolCallDecideHook):
           A HookResult if the policy matches and a decision is made, or None
           if the policy does not match. Propagates exceptions during evaluation.
         """
-        if not _matches_tool(p, tool_call.name):
+        mcp_info = self._parse_mcp_tool(tool_call.name)
+        if mcp_info:
+            server, tool = mcp_info
+            call_target = f"{server}/{tool}"
+            is_mcp = True
+        else:
+            call_target = tool_call.name
+            is_mcp = False
+
+        if not _matches_target(p.tool, call_target, is_mcp):
             return None
 
         try:
@@ -588,29 +816,85 @@ class _PolicyDecideHook(hooks.PreToolCallDecideHook):
 
 
 # ---------------------------------------------------------------------------
+# Private helpers for hook construction
+# ---------------------------------------------------------------------------
+
+
+def _flatten_policies(
+    policies: Sequence[Policy | Sequence[Policy]],
+) -> list[Policy]:
+    """Flattens nested sequences of policies into a flat list.
+
+    This allows combining single Policy objects and lists of Policies (e.g.
+    returned by overloaded builders) seamlessly in config declarations.
+
+    Args:
+      policies: A sequence of Policy objects or nested sequences of Policies.
+
+    Returns:
+      A flat list of Policy objects.
+    """
+    flat = []
+    for p in policies:
+        if isinstance(p, Policy):
+            flat.append(p)
+        elif isinstance(p, Sequence) and not isinstance(p, (str, bytes)):
+            # Safely verify that all sub-elements are indeed Policy instances
+            for sub_p in p:
+                if not isinstance(sub_p, Policy):
+                    raise ValueError(f"Expected Policy, got {type(sub_p)}")
+            flat.extend(p)
+        else:
+            raise ValueError(
+                f"Expected Policy or Sequence of Policies, got {type(p)}"
+            )
+    return flat
+
+
+# ---------------------------------------------------------------------------
 # Public factory
 # ---------------------------------------------------------------------------
 
 
-def enforce(policies: Sequence[Policy]) -> hooks.PreToolCallDecideHook:
+def enforce(
+    policies: Sequence[Policy | Sequence[Policy]],
+    *,
+    mcp_servers: Sequence[types.BaseMcpServerConfig] | None = None,
+) -> hooks.PreToolCallDecideHook:
     """Creates a PreToolCallDecideHook that enforces the given policies.
 
     Validates policies at construction time:
     - Every ASK_USER policy must have a handler.
+    - MCP policies must have mcp_servers provided.
 
     Policies are bucketed by priority so that evaluation can short-circuit.
 
     Args:
-      policies: The policies to enforce.
+      policies: The policies to enforce (can be nested).
+      mcp_servers: Optional registered MCP server configurations.
 
     Returns:
       A PreToolCallDecideHook ready for registration with HookRunner.
 
     Raises:
-      ValueError: If any ASK_USER policy is missing a handler.
+      ValueError: If any ASK_USER policy is missing a handler, or if MCP
+        policies are used without mcp_servers.
     """
+    flat_policies = _flatten_policies(policies)
+
+    # Validate MCP policies against mcp_servers (Fail-Closed Security Guard)
+    has_mcp_policy = any(
+        ("/" in p.tool and p.tool != _WILDCARD) for p in flat_policies
+    )
+    if has_mcp_policy and not mcp_servers:
+        raise ValueError(
+            "MCP policies (containing '/') were detected, but 'mcp_servers' was not"
+            " provided to enforce(). You must pass the registered MCP servers to"
+            " enable secure policy matching and prevent silent bypasses."
+        )
+
     # Startup validation.
-    for p in policies:
+    for p in flat_policies:
         if p.decision == Decision.ASK_USER and p.ask_user is None:
             raise ValueError(
                 f"ASK_USER policy '{p.name or p.tool}' is missing an ask_user"
@@ -619,7 +903,8 @@ def enforce(policies: Sequence[Policy]) -> hooks.PreToolCallDecideHook:
 
     # Build priority buckets, preserving registration order within each.
     buckets: list[list[Policy]] = [[] for _ in range(_NUM_LEVELS)]
-    for p in policies:
+    for p in flat_policies:
         buckets[_bucket_index(p)].append(p)
 
-    return _PolicyDecideHook(buckets)
+    server_names = [s.name for s in mcp_servers] if mcp_servers else []
+    return _PolicyDecideHook(buckets, server_names=server_names)
