@@ -169,6 +169,7 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 
 ## 7. Pièges connus (mémoire institutionnelle)
 
+- **aphrody doctor nécessite ai.json** : Bien que le transport file-based soit historiquement obsolète au profit de gRPC, la commande `doctor` exige la présence de `ai.json` et `.well-known/ai.json` à la racine du dépôt pour réussir. Sans eux, elle retourne un verdict `UNHEALTHY` (exit code 1).
 - **aws-lc-sys** : MSVC require NASM prebuilt + Ninja via `.cargo/config.toml`. Linux require `libssl-dev`.
 - **rustls 0.23 CryptoProvider** : appeler `rustls::crypto::ring::default_provider().install_default()` avant premier `reqwest::Client`.
 - **cargo-zigbuild + `--icf=all`** : incompatible, retiré de `.cargo/config.toml`.
