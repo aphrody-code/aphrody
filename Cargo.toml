@@ -5,7 +5,6 @@
 [workspace]
 resolver = "3"
 members = [
-    "packages/bun-rs",
     "crates/cli",
     # aphrody-ffi — the full CLI as a native C-ABI cdylib for Bun (bun:ffi) and
     # any C host. Wraps the `aphrody` library's run_from_args; host-only.

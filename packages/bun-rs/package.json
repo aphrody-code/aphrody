@@ -1,7 +1,0 @@
-{
-  "name": "@aphrody-code/bun-rs",
-  "version": "1.0.0-canary",
-  "private": true,
-  "description": "NPM wrapper package containing the bun-rs Rust crate dependencies.",
-  "license": "Apache-2.0"
-}
