@@ -53,6 +53,7 @@ const TARGETS: Target[] = [
   {dir: 'apps/m3-react', publishName: '@aphrody-code/m3-react'},
   {dir: 'packages/skills', publishName: '@aphrody-code/skills'},
   {dir: 'apps/design', publishName: '@aphrody-code/design'},
+  {dir: 'packages/x', publishName: '@aphrody-code/x'},
 ];
 
 const args = new Set(Bun.argv.slice(2));
