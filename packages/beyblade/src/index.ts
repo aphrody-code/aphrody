@@ -43,3 +43,12 @@ export {
   type MatchupWinRate,
   type OptimizationSuggestion,
 } from "./advisor";
+
+export {
+  simulateWboMatch,
+  simulateSet,
+  type BattleType,
+  type MatchFormat,
+  type SetResult,
+  type WboMatchResult,
+} from "./match";
