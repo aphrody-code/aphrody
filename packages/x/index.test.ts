@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { expect, test, describe } from "bun:test";
-import { XSession } from "./src/session";
-import { XClient } from "./src/client";
-import { getOperation, allOperations } from "./src/catalog";
-import { featuresFor } from "./src/features";
-import { parsePostCount } from "./src/news";
-import { Store, edge } from "./src/store";
-import { parseArchiveArray, archiveTweetToTweet } from "./src/archive";
+import { XSession } from "./src/core/session";
+import { XClient } from "./src/core/client";
+import { getOperation, allOperations } from "./src/config/catalog";
+import { featuresFor } from "./src/core/features";
+import { parsePostCount } from "./src/services/news";
+import { Store, edge } from "./src/db/store";
+import { parseArchiveArray, archiveTweetToTweet } from "./src/db/archive";
 
 describe("X Client Unit Tests", () => {
   test("catalog resolves operations", () => {
@@ -180,7 +180,7 @@ describe("X Client Unit Tests", () => {
     await Bun.write(mockDataPath, JSON.stringify(mockData));
 
     // Test Ingest
-    const { ingestBeybladeData } = await import("./src/ingest");
+    const { ingestBeybladeData } = await import("./src/db/ingest");
     const stats = await ingestBeybladeData(mockDataPath, store);
 
     expect(stats.tweetsIngested).toBeGreaterThanOrEqual(2);
@@ -192,9 +192,9 @@ describe("X Client Unit Tests", () => {
     expect(dbStats.users).toBeGreaterThanOrEqual(2);
 
     // Test Crawler Initialization and Visited Sets logic
-    const { Crawler } = await import("./src/crawler");
-    const { XSession } = await import("./src/session");
-    const { XClient } = await import("./src/client");
+    const { Crawler } = await import("./src/services/crawler");
+    const { XSession } = await import("./src/core/session");
+    const { XClient } = await import("./src/core/client");
 
     const session = new XSession({ auth_token: "token", ct0: "csrf" });
     const client = new XClient(session);

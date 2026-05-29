@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { existsSync } from "node:fs";
-import { walkTimelineTweets, walkTimelineUsers, parseUserResult } from "./parse";
+import { walkTimelineTweets, walkTimelineUsers, parseUserResult } from "../core/parse";
 import type { Store } from "./store";
-import type { Tweet, User } from "./schemas";
+import type { Tweet, User } from "../core/schemas";
 
 export interface IngestStats {
   tweetsIngested: number;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { XClient } from "./client";
+import type { XClient } from "../core/client";
 
 const TAB_FOR_YOU = "VGltZWxpbmU6DAC2CwABAAAAB2Zvcl95b3UAAA==";
 const TAB_TRENDING = "VGltZWxpbmU6DAC2CwABAAAACHRyZW5kaW5nAAA=";
