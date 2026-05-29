@@ -42,7 +42,7 @@ export class BeybladeXRag {
       return Buffer.from(floatArray.buffer);
     }
 
-    const modelName = "text-embedding-004";
+    const modelName = "gemini-embedding-001";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:embedContent?key=${this.apiKey}`;
     const response = await fetch(url, {
       method: "POST",
@@ -51,7 +51,8 @@ export class BeybladeXRag {
         model: `models/${modelName}`,
         content: {
           parts: [{ text }]
-        }
+        },
+        outputDimensionality: 768
       })
     });
 

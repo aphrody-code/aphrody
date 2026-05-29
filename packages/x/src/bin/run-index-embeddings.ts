@@ -2,7 +2,7 @@
 import { Store } from "../db/store";
 import { redis } from "bun";
 
-const model = "text-embedding-004";
+const model = "gemini-embedding-001";
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 // Create the embeddings table if not exists
@@ -39,7 +39,8 @@ async function getGeminiEmbedding(text: string): Promise<number[]> {
       model: `models/${model}`,
       content: {
         parts: [{ text }]
-      }
+      },
+      outputDimensionality: 768
     })
   });
 
