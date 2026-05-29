@@ -616,7 +616,7 @@ func runCountTokens(ctx context.Context, req Request) (Response, error) {
 
 func runEmbedContent(ctx context.Context, req Request) (Response, error) {
 	if req.Model == "" {
-		req.Model = "text-embedding-004"
+		req.Model = "gemini-embedding-001"
 	}
 	if req.Prompt == "" {
 		return Response{}, fmt.Errorf("prompt is required for embed_content command")
