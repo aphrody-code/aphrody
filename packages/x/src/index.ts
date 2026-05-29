@@ -33,3 +33,5 @@ export { startSyncCron, type SyncOptions } from "./services/cron";
 export { AuthorSchema, TweetSchema, UserSchema, ListInfoSchema } from "./core/schemas";
 export { ingestBeybladeData, type IngestStats } from "./db/ingest";
 export { Crawler, type CrawlerOptions } from "./services/crawler";
+export { BeybladeXRag, type RagResult, type RagOptions } from "./services/rag";
+
