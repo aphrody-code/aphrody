@@ -598,7 +598,7 @@ export class XClient {
       withSafetyModeUserFields: true,
     };
 
-    const json = await this.graphql("UserByScreenName", variables);
+    const json = await this.graphqlWaiting("UserByScreenName", variables);
     const result = json?.data?.user?.result;
     if (!result) {
       throw new XError("UserByScreenName response missing data.user.result", -1);
@@ -667,12 +667,12 @@ export class XClient {
   }
 
   public async timelineTweets(op: string, variables: any, quoteDepth?: number): Promise<TweetPage> {
-    const json = await this.graphql(op, variables);
+    const json = await this.graphqlWaiting(op, variables);
     return walkTimelineTweets(json, quoteDepth);
   }
 
   public async timelineUsers(op: string, variables: any): Promise<UserPage> {
-    const json = await this.graphql(op, variables);
+    const json = await this.graphqlWaiting(op, variables);
     return walkTimelineUsers(json);
   }
 
@@ -709,7 +709,7 @@ export class XClient {
     if (cursor) {
       variables.cursor = cursor;
     }
-    return await this.graphql("TweetDetail", variables);
+    return await this.graphqlWaiting("TweetDetail", variables);
   }
 
   public async search(
