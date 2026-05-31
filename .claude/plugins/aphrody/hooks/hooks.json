@@ -1,6 +1,6 @@
 {
   "$schema": "https://code.claude.com/schema/hooks.json",
-  "description": "aphrody plugin hooks. SessionStart: injects a session-level reminder steering Claude towards the native MCP docs tools. NOTE (2026-05-21): the previous `cargo xtask install-mcp` auto-build/redeploy hooks were removed with the aphrody-xtask crate. Rebuild aphrody-mcp manually after touching crates/google_mcp/src/*.rs: `cargo build --release -p aphrody-mcp` then copy target/release/aphrody-mcp to ~/.local/bin/.",
+  "description": "aphrody plugin hooks. SessionStart: injects a session-level reminder steering Claude towards the native MCP docs tools. AfterAgent: runs the autonomous loop hook to force the agent to continue until DONE_SENTINEL is returned.",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,17 @@
             "type": "command",
             "command": "echo 'aphrody-mcp ready: 18 native tools available. For ANY library / framework / SDK / API / cloud-service question, call `mcp__aphrody__docs_auto_search` FIRST (fans out Context7 + Microsoft Learn + Google in parallel). Drill down with microsoft_docs_fetch / context7_query_docs / universal_web_fetch on a specific URL.'",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aphrody agy-loop hook",
+            "timeout": 30
           }
         ]
       }
