@@ -50,7 +50,7 @@ L'architecture de base est en place. Mode "scaffolding" **interdit**.
 > systems, FFI). Les trois autres toolchains sont des citoyens de première
 > classe pour les surfaces où ils dominent (UI web, ML/data, bridges natifs).
 > Rust toolchain pinned `nightly-2026-05-17` via `rust-toolchain.toml` ;
-> Bun/Go/Python pinnés via `mise.toml`. Re-pin requires PR.
+> Bun/Python pinnés via `mise.toml`. Re-pin requires PR. (Go retiré 2026-05-31.)
 
 **Réunification 2026-05-27 : retour au monorepo unique (`C:\src\aphrody`).**
 L'extraction du 2026-05-23 vers des dépôts frères est **annulée** : les trois
@@ -63,15 +63,19 @@ GitHub) :
 | **Rust** (primaire) | racine `crates/*` | `Cargo.toml` | `rust-toolchain.toml` |
 | **Bun** (TS/JS) | `ts/` (`ts/apps/*`) | `ts/package.json` + `ts/bunfig.toml` + `ts/.oxlintrc.json` | `ts/mise.toml` |
 | **Python** | `py/` | `py/pyproject.toml` (uv) | `py/.python-version` |
-| **Go** | `go/` (`go/gogcli`, `go/antigravity-langserver-re`) | `go/go.work` | `go/mise.toml` |
+
+> **Suppression Go (2026-05-31)** : la surface Go (`go/` — `gogcli` +
+> `antigravity-langserver-re`) a été **entièrement supprimée** du dépôt. aphrody
+> est désormais **Rust + Bun + Python**. Le tokenizer Go n'était pas câblé (aucun
+> binaire construit) : `aphrody-context` utilise son fallback heuristique et peut
+> consommer un binaire externe optionnel via `APHRODY_TOKENIZER_GO_BIN`.
 
 Chaque sous-dossier garde son `CLAUDE.md`, son `.gitignore` (imbriqué — git le
 respecte, donc `.venv`/`node_modules`/`target`/caches restent ignorés) et ses
-runners natifs (`uv`/`ruff`/`pytest` dans `py/`, `bun`/`oxlint` dans `ts/`,
-`go vet`/`go test` dans `go/`). Le `justfile` racine pilote **le workspace
-Rust** ; pour go/python/ts, lancer les runners dans le sous-dossier
-correspondant. Les remotes `aphrody-{py,go,ts}` sur GitHub sont désormais des
-archives gelées.
+runners natifs (`uv`/`ruff`/`pytest` dans `py/`, `bun`/`oxlint` dans `ts/`).
+Le `justfile` racine pilote **le workspace Rust** ; pour python/ts, lancer les
+runners dans le sous-dossier correspondant. Les remotes `aphrody-{py,ts}` sur
+GitHub sont désormais des archives gelées.
 
 > **Rapatriement 2026-05-24** : l'**app desktop grand public** (`apps/desktop`,
 > Tauri 2 + Angular 21.2 + Angular Material 21.2 — l'agent autonome grand public
@@ -87,10 +91,9 @@ archives gelées.
 - **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
 - **Bun** (`aphrody-ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Web Components 3** (fork `packages/material-web`). Les forks `packages/*` gardent leur PM natif (npm/pnpm) et leur propre `.git`, hors workspace bun.
 - **Python** (`aphrody-py`) : géré par **uv**, lint/format **ruff**, tests **pytest**.
-- **Go** (`aphrody-go`) : modules agrégés par **go.work** ; `go vet`/`go test`.
 - **C/C++** : toujours banni de la distribution, sauf wrappers FFI (`cxx::bridge`).
 - **FFI** : `mimalloc` global côté Rust, zero-copy via pointeurs bruts encapsulés.
-- **Shell** : wrappers de bootstrap one-shot tolérés ; logique réelle dans une des 4 toolchains.
+- **Shell** : wrappers de bootstrap one-shot tolérés ; logique réelle dans une des 3 toolchains.
 - **Vercel Rust stack** (`turbopack-*`, `swc-*`, `next-*`, `lightning-css`, `oxc`) déclaré dans `Cargo.toml` racine. Pas de re-vendoring.
 - **Supply-chain** : chaque toolchain passe son gate (`cargo deny`/`vet`, `bun`/`npm audit`, `uv`/`pip-audit`, `govulncheck`) — cf. §5.
 
