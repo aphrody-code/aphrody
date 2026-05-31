@@ -77,4 +77,3 @@ Apache-2.0. Copyright AGNTCY Contributors; aphrody-code packaging.
 - `a2a-client` — async client with JSON-RPC / REST / gRPC transports.
 - `a2a-server` — `axum`-based server framework and task store.
 - `a2a-grpc` — gRPC binding layer connecting client and server over tonic.
-- `a2a-lf` — same crate, alternate doc landing page for the published name.
