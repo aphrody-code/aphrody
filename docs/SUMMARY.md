@@ -179,6 +179,8 @@
   - [Voicebox-Architecture](discord/voicebox-architecture.md)
   - [Web-Network-Recon](discord/web-network-recon.md)
 - [Gcloud](gcloud/README.md)
+  - [COST-OPTIMIZATION](gcloud/COST_OPTIMIZATION.md)
+  - [WIF-GITHUB-ACTIONS](gcloud/WIF_GITHUB_ACTIONS.md)
 - [Google](google/README.md)
   - [All-Repos](google/all-repos.md)
   - [Catalog]()
