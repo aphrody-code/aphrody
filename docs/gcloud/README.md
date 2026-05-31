@@ -5,6 +5,10 @@ Configuration GCP complète du projet **aphrody** : identités, credentials,
 APIs activées, automatisation, sécurité et usage. Tout est **non-interactif**
 et reproductible (CLAUDE.md §0.1).
 
+### Documentation Complète de l'Écosystème GCP :
+* **[Configuration CI/CD & Workload Identity Federation](WIF_GITHUB_ACTIONS.md)** — Guide de déploiement et authentification GitHub Actions sans clé statique.
+* **[Optimisation des Coûts & Quotas Always Free](COST_OPTIMIZATION.md)** — Runbook détaillé pour exploiter le catalogue GCP à $0.00/mois.
+
 > **Provisionné le 2026-05-23.** Source de vérité opérationnelle : les scripts
 > [`scripts/gcp-sa-setup.{ps1,sh}`](../../scripts) et
 > [`scripts/gcp-enable-all.sh`](../../scripts/gcp-enable-all.sh). Cette doc
