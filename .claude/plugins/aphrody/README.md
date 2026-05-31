@@ -58,7 +58,7 @@ is needed.
 | `/docs <library> [query]` | Look up library documentation via Context7 & Microsoft Learn | `aphrody-mcp` |
 | `/status` | Read-only project diagnostic: binary, plugin, branch, PLAN ⏳, A2A peer health. | `aphrody --version`, `aphrody doctor --json`, `git` |
 
-## Agents (21)
+## Agents (18)
 
 ### Unified entrypoint
 - **`aphrody-cli`** — wraps the aphrody sub-commands. Default agent
@@ -68,11 +68,11 @@ is needed.
 | Domain | Agents |
 |---|---|
 | Rust | `rust-architect`, `rust-engineer`, `cargo-auditor` |
-| C++/FFI | `cpp-engineer`, `ffi-architect` |
-| Zig | `zig-engineer` |
+| FFI | `ffi-architect` |
 | Cross-platform | `cross-platform-validator` |
-| Material Design 3 | `design-google-curator` |
-| Infra | `deployment-engineer`, `devops-engineer`, `sre-engineer`, `incident-responder`, `postgres-pro` |
+| Material Design 3 | `design-google-curator`, `google-design-researcher` |
+| Docs / agent home | `docs-researcher`, `agent-home-builder` |
+| Infra | `deployment-engineer`, `devops-engineer` |
 | Quality | `code-review`, `security-engineer`, `performance-engineer` |
 | Workflow | `build`, `explore`, `yolo-prod-ready` |
 
