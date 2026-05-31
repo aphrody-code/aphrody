@@ -172,10 +172,13 @@ de 40 outils.
   `aphrody-agent-runtime` (factory : assemble `ModelClient` + `ToolRegistry` +
   rollout → session) et `aphrody-supervisor` (N agents nommés, fan-in d'events
   taggés, lifecycle) + steering live (`Op::Steer`/`SteerQueue`, surface
-  `Supervisor::steer`). `aphrody-guard` command-safety **câblée** dans le
-  shell-exec tool (`aphrody-agent-tools` : backstop opt-in `APHRODY_GUARD` qui
-  refuse les commandes prouvées destructives avant spawn). Restent : escalade
-  `Prompt`→approval-gate + sandbox, A2A, agy-loop.
+  `Supervisor::steer`). `aphrody-guard` command-safety **câblée à deux
+  niveaux** : le shell-exec tool refuse les commandes destructives avant spawn
+  (backstop opt-in `APHRODY_GUARD`), et le moteur consulte un hook
+  `ToolExecutor::safety` par appel pour refuser toute classification `Refuse`
+  avant dispatch (tous tools, tous modes — defense-in-depth). Restent : escalade
+  `Prompt`→approval-gate (auto-approve `Safe` / prompt `Escalate` en mode Gated),
+  sandbox, A2A, agy-loop.
 - **Phase 3b — SURFACES** : `aphrody-tui` (Ratatui 0.30, GC-8) **livré** ;
   restent la réorganisation CLI agent-centrique (`aphrody agent`, §4) et les
   surfaces MCP/A2A unifiées sur le moteur.
