@@ -49590,6 +49590,327 @@ Namespace imports are often called 'module imports'[↩](#fnref1)
 named imports are sometimes called 'destructuring imports' because they use similar syntax to destructuring assignments.[↩](#fnref2)
 
 
+## File: docs/vps/APIS.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# REST & GraphQL APIs du VPS
+
+Ce document détaille les interfaces de programmation (APIs) exposées, configurées ou consommées sur le VPS, y compris la matrice des ports, les schémas d'authentification et le routage frontal Nginx.
+
+---
+
+## 1. Matrice des Ports & Services API
+
+Voici l'inventaire des ports d'écoute configurés sur le VPS pour l'ensemble des APIs :
+
+| Port | Protocole | Service interne | Type d'API / Rôle | Accès public / Proxy |
+|---|---|---|---|---|
+| `3000` | HTTP / WSS | `bxc.service` | REST & GraphQL Bxc (Elysia + Yoga) | Loopback local (`127.0.0.1`) |
+| `3001` | HTTP | `rpb-bot.service` | API du Bot Discord (Bun.serve) | Proxy via `api.rpbey.fr` |
+| `3002` | HTTP | `rpbey-web.service` | Standalone Next.js 16 Dashboard | Proxy via `rpbey.fr` |
+| `3003` | HTTP | `azalee-web.service` | Standalone Next.js 16 Azalée | Proxy via `azalee.rosegriffon.fr` |
+| `5050` | HTTP / WSS | `rpbey-gacha.service` | Express REST & Colyseus Bun WS | Proxy via `api.rpbey.fr/gacha/` |
+| `7077` | HTTP | `rpbey-embed.service` | Inférence vectorielle E5 (Bun) | Loopback local (`127.0.0.1`) |
+| `8080` | HTTP | `rpbey-llm.service` | API OpenAI-compat llama.cpp | Loopback local (`127.0.0.1`) |
+| `8788` | HTTP / JSON-RPC | `aphrody` A2A | Listener de coordination de l'agent | Loopback local (`127.0.0.1`) |
+
+---
+
+## 2. Bxc Browser Automation API (Port 3000)
+
+Le moteur d'automatisation de navigation `bxc` tourne sous **Elysia** avec un point d'intégration GraphQL via **GraphQL Yoga** (cf. [`bxc/src/server/index.ts`](file:///home/ubuntu/bxc/src/server/index.ts)).
+
+### A. Routes REST
+* **`GET /health`** : Vérification d'état (renvoie `{ok: true, service: "bxc-api"}`).
+* **`POST /api/scrape`** : Lance une tâche de scraping structurée pour une URL donnée.
+* **`GET /api/scrape/recent`** : Historique des derniers scrapings effectués (lu depuis la table SQLite `scrapes`).
+* **Scrapers dédiés FIFA FUT** :
+  * `GET /api/fut/price` : Prix d'enchères d'un joueur en temps réel.
+  * `GET /api/fut/player` : Informations de fiches joueurs.
+  * `GET /api/fut/summary` : Statistiques de la base locale de prix FIFA (total joueurs, moyennes, répartitions par rareté/genre).
+* **Scrapers dédiés Anime (VoirAnime)** :
+  * `GET /api/voiranime/search` : Recherche de séries.
+  * `GET /api/voiranime/info` : Fiche détaillée d'une série.
+  * `GET /api/voiranime/resolve` : Résolution des liens de lecture vidéo (m3u8/mp4).
+
+### B. Route GraphQL (`POST /graphql`)
+Expose une interface typée pour l'intégration agentique de haut niveau. Les résolveurs principaux sont :
+* **`ScrapeResolver`** : Requêtes et mutations pour le crawl, le rendu de snapshot et l'extraction de métadonnées de page.
+* **`FutResolver`** : Requêtes d'indexation et de recherche sur le marché FIFA Ultimate Team.
+
+---
+
+## 3. RPBEY Gacha Game Server API (Port 5050)
+
+Le serveur de jeu gacha en temps réel (Colyseus + Express) expose les endpoints de jeu à l'adresse publique `api.rpbey.fr/gacha/` (cf. [`rpbey/apps/gacha-server/src/rest.ts`](file:///home/ubuntu/rpbey/apps/gacha-server/src/rest.ts)).
+
+* **Temps réel (WebSockets)** : Route `/gacha` connectant l'état répliqué de la `GachaRoom`.
+* **Économie & Inventaire (REST)** :
+  * `GET /health` : État et version du service.
+  * `POST /api/gacha/gift` : Envoi de cartes Beyblade à un ami.
+  * `POST /api/gacha/wishlist/toggle` : Ajout/retrait d'une carte de la liste d'envies.
+  * `GET /api/gacha/wishlist` : Récupère la wishlist de l'utilisateur.
+  * `GET /api/gacha/history` : Historique des tirages récents.
+  * `GET /api/gacha/rates` : Taux de drop actuels (commune, rare, super rare, etc.).
+  * `GET /api/gacha/cards/search` : Recherche textuelle dans le catalogue de cartes.
+  * `GET /api/gacha/banners` : Bannières de tirage actives.
+  * `GET /api/gacha/badges` / `POST /api/gacha/badges/claim` : Succès et récompenses.
+  * `GET /api/gacha/fusion/preview` / `POST /api/gacha/fusion` : Aperçu et fusion de doublons de cartes.
+  * `GET /api/gacha/cards/:id` : Détails d'une carte Beyblade spécifique.
+  * `GET /api/cards/:id/image.png` : Rendu de l'image de la carte (redirection 302 vers l'OG image dynamique du site principal).
+* **Administration** :
+  * `POST /api/admin/currency/grant` : Ajout manuel de devises virtuelles par un administrateur.
+
+---
+
+## 4. Mécanismes d'Authentification & Sécurité
+
+* **Authentification Utilisateur (Better-Auth)** :
+  * Intégré au Dashboard Next.js (`rpbey-web`, port `3002`).
+  * Gère l'authentification tierce OAuth (Discord, Twitch, Google).
+  * Les sessions actives génèrent un token persistant stocké dans la table `sessions` de PostgreSQL.
+* **Authentification de Session de Jeu (Bearer Token)** :
+  * Le serveur Gacha (`gacha-server`) sécurise ses routes REST et sa connexion WebSocket en extrayant le header `Authorization: Bearer <token>`.
+  * Le token est vérifié directement contre la table partagée `sessions` dans la base `rpb_neon` (vérification de la validité temporelle et du statut banni de l'utilisateur).
+* **Jetons & Clés Inter-Services** :
+  * **`BOT_API_KEY`** : Clé partagée spécifiée dans les variables d'environnement permettant les appels sécurisés directs entre le bot Discord (`rpb-bot`, port `3001`) et le tableau de bord web.
+  * **`RANKING_SYNC_TOKEN`** : Jeton autorisant le bot à pousser les résultats de tournois communautaires et à mettre à jour les ELOs sur le dashboard (`POST /api/admin/ranking/sync`).
+
+
+## File: docs/vps/DATABASES.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Bases de Données & Stockage du VPS
+
+Le VPS héberge une combinaison hybride de bases de données relationnelles, d'instances clé-valeur en mémoire et de bases de données intégrées SQLite, optimisant ainsi la persistance, le temps de réponse et la flexibilité pour chaque application.
+
+---
+
+## 1. PostgreSQL (SGBDR Principal)
+
+Le système utilise PostgreSQL 18 géré par le service `postgresql@18-main.service`. La connexion se fait localement via une socket Unix `/var/run/postgresql` (port `5432`) avec authentification `peer` pour l'utilisateur local `ubuntu`.
+
+### A. Base de données `rpb_neon` (RPBEY)
+Cette base stocke toute la logique métier des tournois Beyblade, de l'économie virtuelle et du jeu de cartes gacha. Les schémas sont administrés par **Drizzle ORM** (cf. [`rpbey/packages/db/src/schema.ts`](file:///home/ubuntu/rpbey/packages/db/src/schema.ts)).
+
+Les tables majeures incluent :
+* **Utilisateurs & Auth** : `users` (profils, permissions), `sessions` (tokens de session better-auth émis par le site et consommés par le bot et le gacha), `accounts`, `two_factors`, `verifications`.
+* **TCG Gacha Beyblade** :
+  * `gacha_cards` : Référentiel des cartes à collectionner.
+  * `card_inventory` : Cartes détenues par chaque utilisateur.
+  * `card_wishlists` : Cartes suivies par les utilisateurs.
+  * `decks` & `deck_items` : Decks composés pour les duels.
+  * `gacha_drops` : Historique des tirages quotidiens.
+* **Tournois & Classements** :
+  * `tournaments` : Configurations des événements communautaires.
+  * `tournament_participants` : Inscriptions et états des joueurs.
+  * `tournament_matches` : Rounds, scores et duels enregistrés.
+  * `satr_rankings` / `stardust_rankings` : Données de scores ELO et classements de saisons.
+  * `team_members` / `team_invites` : Guildes de bladers.
+
+### B. Base de données `rose_griffon` (Azalée)
+* Utilisée par l'environnement local d'Azalée (`rg`).
+* L'application de production du bot (`rg-bot-prod`) utilise quant à elle une base de données PostgreSQL gérée à distance sur **Supabase Cloud** :
+  `DATABASE_URL=postgresql://postgres:***@db.isbkaeltubqittywibeh.supabase.co:5432/postgres`
+
+---
+
+## 2. Redis (Cache & Stockage Vectoriel)
+
+L'instance Redis locale tourne sous `redis-server.service` sur le port par défaut `6379` sans mot de passe requis pour le localhost.
+
+### A. Indexation Vectorielle (Base de données 0)
+Utilisé par le package `@rpbey/db` pour la recherche sémantique hybride sur les produits ou les wikis :
+* **Clé de l'index vectoriel** : `rpbey:search:vec`
+* **Structure** : Stocke des vecteurs de dimension 384 encodés en Float32 (FP32).
+* **Commandes** : Requêtes de recherche par similarité cosinus via la commande native `VSIM` (fournie par RedisSearch / extension vectorielle) :
+  `VSIM rpbey:search:vec FP32 <query_vector> WITHSCORES COUNT <limit>`
+
+### B. Cache de Session et Files (Base de données 1)
+Utilisé spécifiquement par `rg-bot-prod` pour la file d'attente hors-ligne, le verrouillage distribué et la persistance temporaire des états Discord :
+* **Connexion** : `redis://127.0.0.1:6379/1`
+
+---
+
+## 3. SQLite (Bases de Données Embarquées)
+
+Pour les charges de travail d'inférence, d'indexation de crawling et de persistance des logs de scraping, le système s'appuie sur des instances `bun:sqlite` locales.
+
+### A. `x-store.sqlite` (Crawling & RAG X.com)
+* **Chemin** : `/home/ubuntu/.aphrody/x-store.sqlite` (taille ~69 Mo)
+* **Configuration** : Mode **WAL** (Write-Ahead Logging) activé pour des lectures concurrentes rapides sans bloquer les processus d'écriture, et `PRAGMA synchronous = NORMAL`.
+* **Schéma** :
+  * `tweets` : ID, username, text, created_at, counts (likes, retweets, replies), conversation_id, JSON brut.
+  * `users` : Métadonnées complètes des comptes X.com indexés.
+  * `edges` : Relations orientées entre les comptes de crawling et les tweets (`authored`, `liked`, `bookmarked`, `timeline`, `mention`).
+  * `follows` : Liens bidirectionnels de suivi (followers/following).
+  * `tweets_fts` : Table virtuelle **FTS5** optimisant la recherche textuelle lexicale.
+  * `tweet_embeddings` : Table associant `tweet_id` et `embedding` (type **BLOB** stockant les vecteurs de dimension 768 issus de `gemini-embedding-001`).
+
+### B. `bxc.sqlite` & `bxc-memory.sqlite` (Moteur de Scraping)
+* **Chemin** : `/home/ubuntu/bxc/data/bxc.sqlite` et `/home/ubuntu/bxc-memory.sqlite`
+* **Configuration** : Mode WAL, busy timeout de 5s, cache mémoire de 8 Mo.
+* **Schéma** :
+  * `scrapes` : `id` (INTEGER PK AUTOINCREMENT), `url` (TEXT), `profile` (TEXT), `status` (INTEGER), `content` (TEXT), `metadata` (JSON), `timestamp` (DATETIME).
+  * `cookie_jars` : `id` (TEXT PK), `data` (JSON contenant les cookies du navigateur), `updated_at` (DATETIME).
+  * **Index** : `idx_scrapes_url` sur `scrapes(url)` et `idx_scrapes_timestamp` sur `scrapes(timestamp)`.
+
+
+## File: docs/vps/RAG.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Moteurs RAG & Inférence IA du VPS
+
+Le VPS déploie deux architectures distinctes de RAG (Retrieval-Augmented Generation) optimisant soit l'exécution locale pour respecter la souveraineté des données, soit l'intégration Cloud pour des performances étendues.
+
+---
+
+## 1. RAG Souverain (Écosystème RPBEY)
+
+Ce pipeline est conçu pour fonctionner de manière autonome sur le VPS sans dépendre d'API payantes tierces, en combinant une recherche vectorielle hybride locale et un LLM auto-hébergé.
+
+### A. Pipeline d'Embeddings (Dense)
+* **Modèle** : `Xenova/multilingual-e5-small` (384 dimensions) chargé en mémoire CPU via ONNX Runtime et Transformers.js.
+* **Sidecar** : `rpbey-embed.service` écoutant sur `http://127.0.0.1:7077`. Ce service isole les bibliothèques d'inférence natives de Next.js pour éviter des échecs de compilation de bundle.
+* **Convention de formatage** : Ajout du préfixe `query: ` pour les requêtes utilisateurs et `passage: ` pour les documents indexés.
+* **Persistance** : Les embeddings générés en masse par lot via `scripts/build-search-vectors.ts` sont stockés dans le set Redis `rpbey:search:vec` sous forme de BLOB Float32.
+
+### B. Algorithme de Recherche Hybride
+À la réception d'une question sur `POST /api/chat` :
+1. **Dense Search** : La requête est vectorisée en 384 dimensions par le sidecar. Un appel Redis `VSIM` récupère les identifiants des $N$ documents les plus proches sémantiquement.
+2. **Lexical Search** : Une recherche par mot-clé (BM25F) est lancée parallèlement.
+3. **Fusion (RRF)** : Les résultats du sémantique et du lexical sont fusionnés en calculant un score de réciprocité de rang (RRF - Reciprocal Rank Fusion) avec $k = 60$.
+4. **Fallback** : Si Redis ou le sidecar d'embeddings ne répond pas, le système dégrade proprement en mode BM25F lexical pur pour éviter toute coupure de service.
+
+### C. Inférence & Génération (LLM)
+* **Moteur** : `llama.cpp` (exécuté par `rpbey-llm.service` sur le port `8080`).
+* **Modèle** : `Llama-3.2-3B Q4` (fichier de poids local quantifié au format GGUF).
+* **Protocole** : API compatible OpenAI (`/v1/chat/completions`).
+* **Rendu** : Streaming en flux SSE (Server-Sent Events) pour masquer le temps de réponse CPU (~6 s de pré-remplissage à 11 tokens/seconde). L'historique des conversations est renvoyé par le client pour garder le service stateless.
+* **Repli** : Un kill switch `RPBEY_CHAT_LLM=0` bascule automatiquement vers une réponse extractive déterministe si le démon LLM local s'arrête.
+
+---
+
+## 2. RAG Agentique Hybride (Écosystème Bxc / Autopilot)
+
+Ce système alimente le crawling ciblé, l'analyse automatique de dépôt et la synthèse des connaissances des sous-agents agentiques.
+
+### A. Génération d'Embeddings
+* **Modèle** : Gemini API `gemini-embedding-001` (768 dimensions).
+* **Fallback** : Si aucune clé API n'est disponible (mode hors-ligne), le système génère des vecteurs normalisés de bruit blanc pour les tests, évitant ainsi d'interrompre l'exécution.
+
+### B. Algorithme de Recherche & Similarité Cosinus
+Le moteur s'appuie sur une structure de base de données SQLite (`x-store.sqlite`) combinant :
+* **Sémantique** : Recherche vectorielle Redis `VSIM` sur l'index `tweet_embeddings` (stockant l'ID et l'embedding normalisé).
+* **Lexical** : Correspondance FTS5 MATCH sur la table virtuelle SQLite `tweets_fts`.
+* **Formule de Score Hybride** :
+  $$\text{Score} = (\text{Similarité Cosinus} \times 0.6) + (\text{Ratio Mots Clés} \times 0.4)$$
+* **Boost de Phrases Exactes** :
+  * Match exact dans le titre : $+0.25$ de boost de score.
+  * Match exact dans le texte : $+0.12$ de boost de score.
+* **Pondération Linguistique** (Ajuste le score selon la langue pour favoriser les résultats locaux) :
+  * Français (`fr`) : $\times 1.35$
+  * Anglais (`en`) : $\times 1.10$
+  * Japonais (`ja`) : $\times 0.95$
+  * Autres langues : $\times 0.40$
+
+### C. Expansion Graphique de Contexte
+Après avoir récupéré les tweets les plus pertinents :
+1. Recherche des identifiants de fils de discussion (`conversation_id`).
+2. Extraction de jusqu'à 10 tweets reliés de manière séquentielle pour reconstituer le fil conducteur de la discussion (le contexte temporel).
+3. Formatage structuré intégrant l'auteur `@username`, son nom d'affichage, son nombre de likes et le texte.
+
+### D. Synthèse LLM Cloud
+* **Modèle** : `gemini-2.5-flash` via le SDK Google Generative AI (authentifié par compte de service ou clé d'API).
+* **Prompt** : Synthèse analytique en français avec citations automatiques (ex: `[@username]`).
+
+
+## File: docs/vps/README.md
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Architecture et Topologie du VPS
+
+Ce document présente l'architecture globale et l'orchestration des services hébergés sur le serveur VPS principal de production (Ubuntu 26.04). Le VPS fait tourner trois écosystèmes majeurs interconnectés (`aphrody`, `rpbey`, et `rg` / Azalée), supportés par des infrastructures locales d'inférence IA, de base de données relationnelle PostgreSQL, de cache Redis et de stockage SQLite.
+
+## Table des Matières
+
+1. [Infrastructures & Services Système](#infrastructures--services-système)
+2. [Écosystème RPBEY (République Populaire du Beyblade)](#écosystème-rpbey-république-populaire-du-beyblade)
+3. [Écosystème Azalée (`rg`)](#écosystème-azalée-rg)
+4. [Écosystème Bxc / Autopilot (`aphrody`)](#écosystème-bxc--autopilot-aphrody)
+5. [Réseau & Reverse-Proxies Nginx](#réseau--reverse-proxies-nginx)
+
+---
+
+## Infrastructures & Services Système
+
+Le serveur s'appuie sur plusieurs services système managés via `systemd` :
+
+* **Base de données relationnelle** :
+  * `postgresql@18-main.service` : Serveur PostgreSQL 18 local écoutant sur le port `5432` et via socket Unix (`/var/run/postgresql`). Utilisé pour le stockage principal et l'authentification partagée.
+* **Cache & Base de données clé-valeur** :
+  * `redis-server.service` : Instance Redis locale (port `6379`). Utilisée pour le cache rapide, les files d'attente hors-ligne et le stockage vectoriel léger (VSIM).
+* **Serveurs d'Inférence IA Locaux (Sidecars)** :
+  * `rpbey-embed.service` : Moteur d'embeddings local (`Xenova/multilingual-e5-small`, 384 dimensions) propulsé par Transformers.js/ONNX et Bun. Écoute sur `127.0.0.1:7077`.
+  * `rpbey-llm.service` : Serveur d'inférence LLM local (`llama-server` avec le modèle `Llama-3.2-3B Q4` quantifié). Écoute sur `127.0.0.1:8080` avec une API compatible OpenAI.
+
+---
+
+## Écosystème RPBEY (République Populaire du Beyblade)
+
+L'écosystème RPBEY est géré au sein du dépôt monorepo `/home/ubuntu/rpbey` et est déployé à travers plusieurs services Bun autonomes :
+
+* **`rpbey-web.service`** : Dashboard web principal construit avec **Next.js 16** (App Router, Turbopack, standalone). Écoute sur le port loopback `3002` et utilise `better-auth` pour la gestion des sessions utilisateur.
+* **`rpb-bot.service`** : Bot Discord algorithmique basé sur `discordx` (écrit en TypeScript). Écoute sur le port `3001` pour son API HTTP locale.
+* **`rpbey-gacha.service`** : Serveur de jeu gacha en temps réel utilisant **Colyseus 0.17** monté sur un runtime Bun (BunWebSockets). Il écoute sur le port `5050` et est backé par la base de données PostgreSQL partagée.
+* **`cdn-assets-refresh.service`** : Service périodique rafraîchissant les assets statiques et pré-compressant les ressources pour le bot et le gacha.
+
+---
+
+## Écosystème Azalée (`rg`)
+
+Géré dans `/home/ubuntu/rg`, c'est la plateforme d'organisation communautaire :
+
+* **`azalee-web.service`** : Dashboard web Next.js 16 similaire au setup de RPBEY, configuré pour tourner sur le port `3003`.
+* **`rg-bot.service`** : Bot Discord communautaire s'exécutant depuis `/home/ubuntu/rg-bot-prod` et utilisant Drizzle ORM avec une instance de base de données PostgreSQL distante (Supabase Cloud) et une DB Redis locale (`redis://127.0.0.1:6379/1`).
+* **`rg-cron.service`** : Service d'exécution des tâches d'arrière-plan et d'agrégation statistique pour Azalée.
+
+---
+
+## Écosystème Bxc / Autopilot (`aphrody`)
+
+Le binaire principal `aphrody` et son moteur de scraping/navigation `bxc` orchestrent les processus autonomes du VPS :
+
+* **`bxc.service`** : Serveur d'automatisation de navigateur Zero-Spawn (Bun + V8 bindings + Lightpanda fusion). Il écoute sur le port `3000` (Elysia + Yoga) pour exécuter des tâches de reconnaissance web, de RAG et de scraping.
+* **Autopilot & RAG** : Des scripts programmés en tâche de fond (`run-targeted-crawler.ts`, `run-index-embeddings.ts`) maintiennent des stores de vecteurs locaux via SQLite et Redis pour alimenter la recherche sémantique des agents.
+
+---
+
+## Réseau & Reverse-Proxies Nginx
+
+Nginx (écoutant sur les ports `80` et `443` avec SSL Certbot) sert de reverse-proxy frontal pour acheminer les requêtes publiques vers les ports loopback des applications :
+
+| Domaine public | Protocole | Service interne / Cible | Port VPS |
+|---|---|---|---|
+| `rpbey.fr` / `www.rpbey.fr` | HTTPS | `rpbey-web` (Next.js) | `3002` |
+| `api.rpbey.fr/gacha/` | WSS / HTTPS | `rpbey-gacha` (Colyseus) | `5050` |
+| `azalee.rosegriffon.fr` | HTTPS | `azalee-web` (Next.js) | `3003` |
+| `api.rpbey.fr` | HTTPS | `rpb-bot` (Express/Bun API) | `3001` |
+| `127.0.0.1` | Local loopback | `bxc-api` (Elysia REST/GraphQL) | `3000` |
+| `127.0.0.1` | Local loopback | `embed-sidecar` (E5 Embedding API) | `7077` |
+| `127.0.0.1` | Local loopback | `llama-server` (Llama.cpp OpenAI API) | `8080` |
+
+---
+
+## Documents Détaillés
+
+Pour obtenir plus d'informations spécifiques sur les différentes couches, consultez les fiches techniques suivantes :
+
+* 📁 **[Databases & Stockage](file:///home/ubuntu/aphrody/docs/vps/DATABASES.md)** : Fichiers SQLite, caches Redis, schémas PostgreSQL et Drizzle ORM.
+* 📁 **[Moteurs de RAG & Inférence](file:///home/ubuntu/aphrody/docs/vps/RAG.md)** : Recherche hybride, vectorisation E5 / Gemini et modèles de synthèse LLM locaux.
+* 📁 **[API REST & GraphQL](file:///home/ubuntu/aphrody/docs/vps/APIS.md)** : Endpoints, serveurs d'API (Elysia, Yoga, Colyseus), routage Nginx et politiques d'authentification.
+
+
 ## File: docs/vps_tuning.md
 
 <!-- SPDX-License-Identifier: Apache-2.0 -->
