@@ -119,7 +119,6 @@ This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line descrip
 - [`research/obscura-integration-spec.md`](research/obscura-integration-spec.md) — Bridge spec mapping the CLI to the Obscura scraper
 - [`research/openclaw-vs-aphrody.md`](research/openclaw-vs-aphrody.md) — Structural differences between openclaw and the aphrody CLI
 - [`research/re-tooling-landscape.md`](research/re-tooling-landscape.md) — Survey of binary reverse-engineering frameworks
-- [`research/tanstack-for-aphrody.md`](research/tanstack-for-aphrody.md) — TanStack Query/Router usage inside Angular/TS desktop frontend
 - [`research/vscode-fork-re-intel.md`](research/vscode-fork-re-intel.md) — Introspection of VS Code workspace extensions
 - [`research/webgpu-performance.md`](research/webgpu-performance.md) — WebGPU canvas rendering benchmarking in headless CI runs
 - [`research/adobe-connector/README.md`](research/adobe-connector/README.md) — Adobe Photoshop and Creative Cloud batch integration survey
@@ -147,9 +146,6 @@ Dated, point-in-time records (2026-05-17 → 2026-05-19). They describe work as 
 - [`rust/android-rust-practices.md`](rust/android-rust-practices.md) — Best practices for Rust on Android
 - [`rust/chromium-rust-practices.md`](rust/chromium-rust-practices.md) — Rust programming practices inside Chromium codebase
 - [`rust/google-rust-crates.md`](rust/google-rust-crates.md) — Audit of Google-authored Rust libraries
-
-### Tanstack (`docs/tanstack/`)
-- [`tanstack/README.md`](tanstack/README.md) — TanStack design and integration notes
 
 ### Tauri (`docs/tauri/`)
 - [`tauri/README.md`](tauri/README.md) — Tauri integration overview
