@@ -125,7 +125,7 @@ cargo audit-machete        # unused deps detector
 
 ## 4. Architecture
 
-Dépôt **Rust uniquement** (cf. §2). Workspace 57 membres, 71 crates sur disque, 14 exclues. Les surfaces Go / Python / TS-JS (dont les forks UI `packages/*` et `apps/m3-react`) ont été extraites le 2026-05-23 vers les dépôts frères `C:\src\aphrody-{go,py,ts}`.
+Dépôt **monorepo polyglotte** (cf. §2) : Rust primaire (`crates/*`, le gros du workspace) + surfaces in-tree Bun/TS (`apps/*`, `packages/{native,x,beyblade}`) et Python (`py/`). L'extraction du 2026-05-23 vers des dépôts frères a été **réunifiée le 2026-05-27** ; la surface Go a été **supprimée le 2026-05-31**.
 Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ### Cœur du workspace
