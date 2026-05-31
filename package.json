@@ -8,7 +8,6 @@
   "workspaces": {
     "packages": [
       "apps/*",
-      "packages/native",
       "packages/x",
       "packages/beyblade"
     ],
