@@ -6,7 +6,8 @@
 //! [`Op`]s over a channel and receives [`Event`]s on another. A
 //! [`Op::UserInput`] starts a turn; [`Op::ExecApproval`] / [`Op::PatchApproval`]
 //! answer a pending approval; [`Op::Interrupt`] trips the running turn's
-//! interrupt flag; [`Op::Shutdown`] drains and stops the actor.
+//! interrupt flag; [`Op::Steer`] queues mid-turn guidance the loop folds in
+//! before its next model call; [`Op::Shutdown`] drains and stops the actor.
 
 use std::sync::Arc;
 
@@ -21,7 +22,7 @@ use crate::approval::ApprovalGate;
 use crate::config::AutonomyMode;
 use crate::session::Session;
 use crate::sink::EventSink;
-use crate::turn::{InterruptFlag, run_turn_with_interrupt};
+use crate::turn::{InterruptFlag, SteerQueue, run_turn_with_controls};
 
 /// Handle to a spawned session actor.
 ///
@@ -85,8 +86,9 @@ pub fn spawn_session(
             match submission.op {
                 Op::UserInput { items } => {
                     let interrupt = InterruptFlag::new();
-                    // Forward any interrupt/approval ops that arrive *during*
-                    // the turn into the running loop.
+                    let steer = SteerQueue::new();
+                    // Forward any interrupt/steer/approval ops that arrive
+                    // *during* the turn into the running loop.
                     let approvals = if gated { Some(&mut gate) } else { None };
                     let control = drive_turn(
                         &mut session,
@@ -99,6 +101,7 @@ pub fn spawn_session(
                         &mut sub_rx,
                         &approval_tx,
                         &interrupt,
+                        &steer,
                     )
                     .await;
                     if let Err(err) = control.result {
@@ -120,6 +123,11 @@ pub fn spawn_session(
                 Op::Interrupt => {
                     // No turn is currently running (we are between turns); a
                     // standalone interrupt is a no-op other than acknowledging.
+                }
+                Op::Steer { .. } => {
+                    // No turn is running, so there is nothing to steer; the
+                    // guidance is dropped. A client should start a turn with
+                    // Op::UserInput instead.
                 }
                 Op::Compact => {
                     // Compaction is delegated to a future context-management
@@ -164,11 +172,13 @@ async fn drive_turn(
     sub_rx: &mut mpsc::UnboundedReceiver<Submission>,
     approval_tx: &mpsc::UnboundedSender<Op>,
     interrupt: &InterruptFlag,
+    steer: &SteerQueue,
 ) -> TurnControl {
     // Run the turn as a child future and, in parallel, pump incoming control
-    // submissions (Interrupt -> trip the flag; approvals -> forward to gate).
-    let turn = run_turn_with_interrupt(
-        session, client, tools, rollout, items, events, approvals, interrupt,
+    // submissions (Interrupt -> trip the flag; Steer -> queue guidance;
+    // approvals -> forward to gate).
+    let turn = run_turn_with_controls(
+        session, client, tools, rollout, items, events, approvals, interrupt, steer,
     );
     tokio::pin!(turn);
 
@@ -187,6 +197,9 @@ async fn drive_turn(
                 match maybe_sub {
                     Some(sub) => match sub.op {
                         Op::Interrupt => interrupt.trip(),
+                        // Live steering: queue the guidance for the turn loop to
+                        // fold in before its next model call.
+                        Op::Steer { items } => steer.push(items),
                         op @ (Op::ExecApproval { .. } | Op::PatchApproval { .. }) => {
                             let _ = approval_tx.send(op);
                         }

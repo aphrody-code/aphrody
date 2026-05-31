@@ -108,7 +108,7 @@ C'est ce qui fait d'aphrody « Antigravity en Rust » plutôt qu'un simple agent
 |---|---|---|
 | Lancer/superviser/tuer des agents | `aphrody-supervisor` (fan-in + lifecycle) sur `aphrody-engine::spawn_session` | En cours (Phase 3a) |
 | Approbations exec/patch | protocole `ExecApprovalRequest` + `ApprovalGate` (mode `Gated`) | **Livré** (engine) |
-| Steering en cours de turn | `Op::Interrupt` + `InterruptFlag` coopératif | **Livré** (interrupt) ; steer_input à porter |
+| Steering en cours de turn | `Op::Steer` + `SteerQueue` coopératif (`run_turn_with_controls`) ; surface `Supervisor::steer`/`steer_text` | **Livré** |
 | Garde-fous (sandbox, command-safety) | `aphrody-guard` (opt-in) | **Livré** |
 | Hooks de cycle de vie | `aphrody-skills/hooks` | Présent |
 | Coordination multi-agents | `a2a-*`, `.coord` | Présent |
@@ -171,8 +171,8 @@ de 40 outils.
 - **Phase 2/3a — CONTROL PLANE + câblage** : **en cours** —
   `aphrody-agent-runtime` (factory : assemble `ModelClient` + `ToolRegistry` +
   rollout → session) et `aphrody-supervisor` (N agents nommés, fan-in d'events
-  taggés, lifecycle). Restent : intégration `aphrody-guard` + A2A + agy-loop,
-  steer_input.
+  taggés, lifecycle) + steering live (`Op::Steer`/`SteerQueue`, surface
+  `Supervisor::steer`). Restent : intégration `aphrody-guard` + A2A + agy-loop.
 - **Phase 3b — SURFACES** : `aphrody-tui` (Ratatui 0.30, GC-8) **livré** ;
   restent la réorganisation CLI agent-centrique (`aphrody agent`, §4) et les
   surfaces MCP/A2A unifiées sur le moteur.

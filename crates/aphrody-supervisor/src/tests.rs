@@ -187,6 +187,7 @@ async fn routing_to_unknown_agent_errors() {
     for err in [
         sup.send_user_text("ghost", "hi").unwrap_err(),
         sup.interrupt("ghost").unwrap_err(),
+        sup.steer_text("ghost", "be concise").unwrap_err(),
     ] {
         match err {
             SupervisorError::UnknownAgent(id) => assert_eq!(id, AgentId::from("ghost")),
@@ -204,6 +205,28 @@ async fn routing_to_unknown_agent_errors() {
         SupervisorError::UnknownAgent(id) => assert_eq!(id, AgentId::from("ghost")),
         other => panic!("expected UnknownAgent from join, got {other:?}"),
     }
+}
+
+#[tokio::test]
+async fn steer_routes_to_live_agent() {
+    let mut sup = Supervisor::new();
+    sup.spawn_agent("worker", session(), text_turn("ok"), empty_tools(), None)
+        .expect("spawn");
+
+    // Routing a steer to a live agent succeeds via both the ergonomic text
+    // wrapper and the explicit-items form. (The engine's mid-turn folding is
+    // covered deterministically by the aphrody-engine tests; here we only assert
+    // the control-plane routing.)
+    sup.steer_text("worker", "be concise").expect("steer_text routes");
+    sup.steer(
+        "worker",
+        vec![aphrody_agent_proto::InputItem::Text {
+            text: "and fast".to_string(),
+        }],
+    )
+    .expect("steer routes");
+
+    sup.shutdown_all();
 }
 
 #[tokio::test]

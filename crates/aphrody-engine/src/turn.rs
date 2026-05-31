@@ -2,6 +2,7 @@
 //! The turn loop: the heart of the engine.
 
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aphrody_agent_proto::{Event, EventMsg, InputItem, ReviewDecision};
@@ -42,6 +43,54 @@ impl InterruptFlag {
     #[must_use]
     pub fn is_tripped(&self) -> bool {
         self.0.load(Ordering::SeqCst)
+    }
+}
+
+/// A cooperative queue of *steering* input shared with the engine.
+///
+/// A client or supervisor pushes [`InputItem`]s with [`SteerQueue::push`] while
+/// a turn is running. The engine drains the queue at the start of every loop
+/// iteration — before the next model call — and folds the items into the
+/// conversation as an extra user message, emitting
+/// [`SteerApplied`](EventMsg::SteerApplied). This lets a caller course-correct
+/// an in-flight turn without interrupting and restarting it. Cloning shares the
+/// same underlying queue.
+///
+/// The queue is pure (no syscalls) and compiles to wasm; a poisoned lock is
+/// recovered rather than propagated, because a panic in another holder must not
+/// drop already-queued steering.
+#[derive(Debug, Clone, Default)]
+pub struct SteerQueue(Arc<Mutex<Vec<InputItem>>>);
+
+impl SteerQueue {
+    /// Create a fresh, empty steer queue.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Append steering `items` for the running turn to pick up. Empty pushes are
+    /// dropped.
+    pub fn push(&self, items: Vec<InputItem>) {
+        if items.is_empty() {
+            return;
+        }
+        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        guard.extend(items);
+    }
+
+    /// Take all currently queued steering items, leaving the queue empty.
+    #[must_use]
+    pub fn drain(&self) -> Vec<InputItem> {
+        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        std::mem::take(&mut *guard)
+    }
+
+    /// Whether the queue currently holds no items.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        let guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        guard.is_empty()
     }
 }
 
@@ -162,6 +211,10 @@ pub async fn run_turn(
 
 /// Like [`run_turn`] but with an explicit [`InterruptFlag`] the caller can trip
 /// from another task to cancel the turn cooperatively.
+///
+/// This is the no-steering shorthand for [`run_turn_with_controls`]: it runs the
+/// turn with a fresh, never-fed [`SteerQueue`], so no mid-turn guidance can be
+/// injected.
 #[allow(clippy::too_many_arguments)]
 pub async fn run_turn_with_interrupt(
     session: &mut Session,
@@ -172,6 +225,48 @@ pub async fn run_turn_with_interrupt(
     events: &EventSink,
     mut approvals: Option<&mut ApprovalGate>,
     interrupt: &InterruptFlag,
+) -> Result<TurnOutcome, EngineError> {
+    let steer = SteerQueue::new();
+    run_turn_with_controls(
+        session,
+        client,
+        tools,
+        rollout,
+        input,
+        events,
+        approvals.take(),
+        interrupt,
+        &steer,
+    )
+    .await
+}
+
+/// The full turn loop with both cooperative controls: an [`InterruptFlag`] to
+/// cancel and a [`SteerQueue`] to inject mid-turn guidance.
+///
+/// At the top of each iteration (after the interrupt and iteration-cap checks,
+/// before the next model call) the loop drains `steer`; any queued items are
+/// appended to the conversation as an extra user message and surfaced as an
+/// [`EventMsg::SteerApplied`]. Everything else matches
+/// [`run_turn`]'s contract.
+///
+/// # Errors
+///
+/// Same as [`run_turn`]: [`EngineError::Model`] on a model-stream error,
+/// [`EngineError::Aborted`] if an approval aborts the turn, or
+/// [`EngineError::ApprovalChannelClosed`] if a gated turn's approval channel
+/// closes before a decision arrives.
+#[allow(clippy::too_many_arguments)]
+pub async fn run_turn_with_controls(
+    session: &mut Session,
+    client: &dyn ModelClient,
+    tools: &ToolRegistry,
+    rollout: Option<&RolloutRecorder>,
+    input: Vec<InputItem>,
+    events: &EventSink,
+    mut approvals: Option<&mut ApprovalGate>,
+    interrupt: &InterruptFlag,
+    steer: &SteerQueue,
 ) -> Result<TurnOutcome, EngineError> {
     let autonomy = session.config().autonomy;
     let system = session.config().system_prompt.clone();
@@ -216,6 +311,25 @@ pub async fn run_turn_with_interrupt(
                 },
             );
             return Ok(outcome);
+        }
+
+        // 3·. Fold in any steering guidance queued since the previous model
+        // call, as an extra user message, so the upcoming call course-corrects.
+        let steered = steer.drain();
+        if !steered.is_empty() {
+            let parts = input_to_parts(steered);
+            if !parts.is_empty() {
+                let text = parts
+                    .iter()
+                    .filter_map(|part| match part {
+                        Part::Text(t) => Some(t.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                session.push_user(parts);
+                emit(events, rollout, EventMsg::SteerApplied { text });
+            }
         }
 
         // 3a. Build the turn snapshot.

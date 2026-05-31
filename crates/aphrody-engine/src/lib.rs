@@ -61,7 +61,10 @@ pub use config::{AutonomyMode, DEFAULT_MAX_TOOL_ITERATIONS, EngineConfig};
 pub use error::EngineError;
 pub use session::Session;
 pub use sink::EventSink;
-pub use turn::{InterruptFlag, TurnOutcome, run_turn, run_turn_with_interrupt};
+pub use turn::{
+    InterruptFlag, SteerQueue, TurnOutcome, run_turn, run_turn_with_controls,
+    run_turn_with_interrupt,
+};
 
 #[cfg(test)]
 mod lib_tests;

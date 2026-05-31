@@ -125,6 +125,17 @@ pub enum Op {
     },
     /// Interrupt the current turn as soon as possible.
     Interrupt,
+    /// Inject steering guidance into the *currently running* turn without
+    /// interrupting and restarting it. The `items` are appended to the
+    /// conversation as an extra user message before the engine's next model
+    /// call, so the agent course-corrects mid-flight. Submitted while no turn
+    /// is running it is a no-op (there is nothing to steer) — start a turn with
+    /// [`Op::UserInput`] instead.
+    Steer {
+        /// The ordered guidance parts (text and/or images), same shape as
+        /// [`Op::UserInput`].
+        items: Vec<InputItem>,
+    },
     /// Ask the agent to compact / summarize its context.
     Compact,
     /// Ask the agent to shut down the session cleanly.
@@ -200,6 +211,15 @@ pub enum EventMsg {
     /// The full, finalized agent message for the turn.
     AgentMessage {
         /// The complete message text.
+        text: String,
+    },
+    /// Steering guidance was folded into the running turn (in response to an
+    /// [`Op::Steer`]). Carries the concatenated text that was appended to the
+    /// conversation, so clients and the rollout observe the mid-turn
+    /// course-correction and a replay stays faithful.
+    SteerApplied {
+        /// The injected guidance text (image parts render as `[image: …]`
+        /// references).
         text: String,
     },
     /// A streamed fragment of the agent's reasoning.
@@ -375,6 +395,17 @@ mod tests {
             decision: ReviewDecision::ApprovedForSession,
         });
         roundtrip_op(Op::Interrupt);
+        roundtrip_op(Op::Steer {
+            items: vec![
+                InputItem::Text {
+                    text: "be concise".into(),
+                },
+                InputItem::Image {
+                    path: None,
+                    url: Some("https://example.com/ref.png".into()),
+                },
+            ],
+        });
         roundtrip_op(Op::Compact);
         roundtrip_op(Op::Shutdown);
     }
@@ -402,6 +433,9 @@ mod tests {
         });
         roundtrip_msg(EventMsg::AgentMessage {
             text: "full message".into(),
+        });
+        roundtrip_msg(EventMsg::SteerApplied {
+            text: "focus on tests first".into(),
         });
         roundtrip_msg(EventMsg::AgentReasoningDelta {
             delta: "thinking".into(),
