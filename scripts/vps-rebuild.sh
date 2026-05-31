@@ -25,11 +25,11 @@ git pull origin main --rebase || echo "Warning: git pull failed, using current l
 echo "==> 2. Rebuilding Rust CLI binary natively with target-cpu=native and advanced features"
 export RUSTC_WRAPPER=""
 export RUSTFLAGS="-C target-cpu=native"
-cargo build --profile dist -p aphrody --target x86_64-unknown-linux-gnu --features "yara forensics index images"
+cargo build --profile release-fast -p aphrody --target x86_64-unknown-linux-gnu --features "yara forensics index images"
 
 echo "==> 3. Installing Rust binaries to local path"
 mkdir -p "$HOME/.local/bin"
-cp target/x86_64-unknown-linux-gnu/dist/aphrody "$HOME/.local/bin/"
+cp target/x86_64-unknown-linux-gnu/release-fast/aphrody "$HOME/.local/bin/"
 
 echo "==> 4. Setting up Python virtual environment and dependencies"
 cd "$REPO_ROOT/py"
