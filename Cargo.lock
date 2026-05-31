@@ -465,6 +465,7 @@ name = "aphrody-agent-tools"
 version = "1.0.0-canary"
 dependencies = [
  "aphrody-agent-proto",
+ "aphrody-guard",
  "aphrody-patch",
  "aphrody-toolcall",
  "async-trait",
