@@ -2049,13 +2049,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bun-rs"
-version = "1.0.0-canary"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "bytemuck"
 version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5626,7 +5619,6 @@ dependencies = [
 name = "google_mcp"
 version = "1.0.0-canary"
 dependencies = [
- "antigravity-sdk",
  "anyhow",
  "aphrody-capture",
  "aphrody-firefly",
