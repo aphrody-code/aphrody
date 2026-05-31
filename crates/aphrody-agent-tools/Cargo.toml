@@ -18,6 +18,7 @@ workspace = true
 aphrody-toolcall    = { path = "../aphrody-toolcall" }
 aphrody-agent-proto = { path = "../aphrody-agent-proto" }
 aphrody-patch       = { path = "../aphrody-patch" }
+aphrody-guard       = { path = "../aphrody-guard" }
 serde               = { workspace = true }
 serde_json          = { workspace = true }
 thiserror           = { workspace = true }

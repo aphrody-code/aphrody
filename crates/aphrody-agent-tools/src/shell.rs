@@ -220,6 +220,18 @@ impl ToolExecutor for ShellExecTool {
             return Ok(ToolOutput::error("shell: `command` must be a non-empty argv vector"));
         };
 
+        // Command-safety backstop. Opt-in via APHRODY_GUARD (a no-op by default,
+        // per the autonomy contract); when enabled, a provably-destructive
+        // command is refused here and never spawned.
+        if let Some(refusal) = forbidden_refusal(&args.command, aphrody_guard::guardrails_enabled())
+        {
+            tracing::warn!(
+                command = ?args.command,
+                "shell: refused known-destructive command (APHRODY_GUARD)"
+            );
+            return Ok(refusal);
+        }
+
         let timeout = args
             .timeout_ms
             .map_or(self.config.default_timeout, Duration::from_millis);
@@ -374,6 +386,34 @@ fn push_chunk(
         buffer.push_str(&text[..end]);
         *truncated = true;
     }
+}
+
+/// Decide whether `command` must be refused *before* spawning, per the
+/// command-safety guardrail.
+///
+/// When `guard_enabled` is `true` (i.e. `APHRODY_GUARD` is opted in) and
+/// `aphrody-guard` proves the command **known-destructive**
+/// ([`Decision::Forbidden`](aphrody_guard::Decision::Forbidden) — `rm -rf /`,
+/// `git push --force`, `dd`, a fork bomb, …), this returns a refusal
+/// [`ToolOutput`] and the caller must not spawn it: such a command is never
+/// auto-run. `Allow` and `Prompt` commands return `None` and still run, so
+/// autonomy is preserved — only the destructive backstop is hard. With the
+/// guard off (the default) this is always `None`.
+///
+/// Kept as a pure, env-free function (the env is read once by the caller) so it
+/// is deterministically testable without mutating process-global state.
+fn forbidden_refusal(command: &[String], guard_enabled: bool) -> Option<ToolOutput> {
+    if !guard_enabled {
+        return None;
+    }
+    if aphrody_guard::classify_command(command) != aphrody_guard::Decision::Forbidden {
+        return None;
+    }
+    let program = command.first().map_or("<empty>", String::as_str);
+    Some(ToolOutput::error(format!(
+        "shell: refused to run `{program}` — aphrody-guard command-safety classified it as \
+         known-destructive and APHRODY_GUARD is enabled, so it is never auto-run."
+    )))
 }
 
 #[cfg(test)]

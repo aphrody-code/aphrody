@@ -19,9 +19,15 @@
 //! # Safety posture
 //!
 //! Per the aphrody autonomy contract, both tools are **permissive by default**:
-//! no command allow/deny-listing, no path jailing. Guardrails, when wanted, are
-//! opt-in via the builder configuration (timeout / output cap) — the tools never
-//! refuse work on their own and do not depend on `aphrody-guard`.
+//! no path jailing, and no command refusal unless explicitly opted in. The
+//! [`ShellExecTool`] consults [`aphrody_guard`] command-safety as an **opt-in**
+//! backstop: only when `APHRODY_GUARD` is enabled does it refuse a
+//! provably-destructive command ([`Decision::Forbidden`](aphrody_guard::Decision::Forbidden)
+//! — `rm -rf /`, `git push --force`, a fork bomb, …) before spawning. With the
+//! guard off (the default), behaviour is unchanged: every command runs, so a
+//! fully-autonomous agent is never impeded. `Allow`/`Prompt` commands always run;
+//! only the known-destructive class is hard-blocked. Resource guardrails
+//! (timeout / output cap) remain configurable via the builder.
 
 mod apply_patch;
 mod shell;

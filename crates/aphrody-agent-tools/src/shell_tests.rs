@@ -20,6 +20,39 @@ fn shell_argv(script: &str) -> Vec<String> {
     vec!["sh".to_string(), "-c".to_string(), script.to_string()]
 }
 
+#[test]
+fn guard_off_never_refuses_even_destructive() {
+    // Default posture: with the guard disabled, nothing is refused — not even a
+    // known-destructive command (it would run, exactly as before this backstop).
+    assert!(forbidden_refusal(&["rm".into(), "-rf".into(), "/".into()], false).is_none());
+}
+
+#[test]
+fn guard_on_refuses_destructive_without_spawning() {
+    // With the guard on, a provably-destructive command is refused here, so it
+    // is never handed to Command::spawn. (Safe to test: no process is launched.)
+    let refusal = forbidden_refusal(&["rm".into(), "-rf".into(), "/".into()], true)
+        .expect("destructive command must be refused when the guard is on");
+    assert!(refusal.is_error, "refusal must be a tool error");
+    assert!(
+        refusal.content.contains("known-destructive"),
+        "refusal explains why: {}",
+        refusal.content
+    );
+    assert!(refusal.content.contains("rm"), "refusal names the program: {}", refusal.content);
+}
+
+#[test]
+fn guard_on_allows_non_destructive_and_unknown() {
+    // A read-only command is not refused with the guard on...
+    assert!(forbidden_refusal(&["echo".into(), "hi".into()], true).is_none());
+    // ...and neither is an unknown (Prompt) command: only the destructive class
+    // is hard-blocked, so autonomy is preserved.
+    assert!(
+        forbidden_refusal(&["some-unknown-aphrody-tool".into(), "--flag".into()], true).is_none()
+    );
+}
+
 #[tokio::test]
 async fn definition_advertises_shell() {
     let tool = ShellExecTool::new();
