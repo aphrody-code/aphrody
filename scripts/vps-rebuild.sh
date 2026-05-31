@@ -36,7 +36,7 @@ cd "$REPO_ROOT/py"
 uv sync --all-extras
 # Build python package wheel
 uv build --package aphrody --wheel
-WHEEL_PATH=$(find dist/ -name "aphrody-*.whl" | head -n 1)
+WHEEL_PATH="$REPO_ROOT/py/$(find dist/ -name "aphrody-*.whl" | head -n 1)"
 
 echo "==> 5. Setting up TS/JS workspaces with Bun"
 cd "$REPO_ROOT"
@@ -62,6 +62,6 @@ if [[ "$MODE" == "react" ]]; then
 fi
 
 echo "==> 6. Deploying systemd services with dynamic memory configurations"
-sudo "$REPO_ROOT/py/aphrody/deploy/deploy-vps.sh" --mode "$MODE" --wheel "$WHEEL_PATH" --site "$SITE_DIR" --host 0.0.0.0 --port 8080
+sudo "$REPO_ROOT/py/aphrody/deploy/deploy-vps.sh" --mode "$MODE" --wheel "$WHEEL_PATH" --site "$SITE_DIR" --host 0.0.0.0 --port 8082
 
 echo "==> Redeployment completed successfully!"

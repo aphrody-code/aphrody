@@ -75,9 +75,12 @@ fi
 
 case "$MODE" in
   react)
-    echo "==> React static/SPA mode (root=$SITE host=$HOST port=$PORT)"
+    # Copy site files to /opt/aphrody/site to bypass systemd ProtectHome=true restrictions
+    rm -rf "$APP/site"
+    mkdir -p "$APP/site"
+    cp -r "$SITE"/* "$APP/site/"
     cat > "$ETC/serve.env" <<EOF
-APHRODY_SITE_ROOT=$SITE
+APHRODY_SITE_ROOT=$APP/site
 APHRODY_HOST=$HOST
 APHRODY_PORT=$PORT
 EOF
