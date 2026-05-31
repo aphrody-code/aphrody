@@ -113,6 +113,11 @@ pub async fn serve(addr: SocketAddr, cfg: PtyConfig) -> Result<()> {
     let listener = TcpListener::bind(addr).await.with_context(|| format!("bind {addr}"))?;
     info!("aphrody-terminal-backend listening on {addr}");
 
+    // Send READY=1 to systemd (Type=notify)
+    let _ = sd_notify("READY=1\nSTATUS=Ready to accept WebSocket terminal connections\n");
+    // Start watchdog petting loop if watchdog health check is configured
+    let _watchdog = start_watchdog_loop();
+
     loop {
         let (stream, peer) = listener.accept().await.context("accept")?;
         info!("new connection from {peer}");
@@ -264,4 +269,123 @@ async fn handle_conn(stream: TcpStream, cfg: PtyConfig) -> Result<()> {
     let _ = forward_task.await;
 
     Ok(())
+}
+
+// ── systemd Notifications ───────────────────────────────────────────────────
+
+/// Notify systemd of state changes (Type=notify). No-op on non-Unix platforms.
+pub fn sd_notify(message: &str) -> std::io::Result<bool> {
+    #[cfg(target_family = "unix")]
+    {
+        use std::env;
+        use std::ffi::OsString;
+        use std::os::unix::ffi::OsStringExt;
+        use std::os::unix::net::UnixDatagram;
+
+        let socket_path = match env::var_os("NOTIFY_SOCKET") {
+            Some(path) => path,
+            None => return Ok(false),
+        };
+
+        let mut bytes = socket_path.into_vec();
+        if !bytes.is_empty() && bytes[0] == b'@' {
+            bytes[0] = b'\0';
+        }
+        let path = OsString::from_vec(bytes);
+
+        let socket = UnixDatagram::unbound()?;
+        socket.connect(path)?;
+        socket.send(message.as_bytes())?;
+        Ok(true)
+    }
+    #[cfg(not(target_family = "unix"))]
+    {
+        let _ = message;
+        Ok(false)
+    }
+}
+
+/// Spawns a background watchdog petting task if configured by systemd (WatchdogSec=...).
+pub fn start_watchdog_loop() -> Option<tokio::task::JoinHandle<()>> {
+    #[cfg(target_family = "unix")]
+    {
+        use std::env;
+        use tracing::{error, trace};
+
+        let watchdog_usec = match env::var("WATCHDOG_USEC") {
+            Ok(val) => match val.parse::<u64>() {
+                Ok(usec) => usec,
+                Err(_) => return None,
+            },
+            Err(_) => return None,
+        };
+
+        if watchdog_usec == 0 {
+            return None;
+        }
+
+        // Pet the watchdog at half the timeout interval
+        let interval = std::time::Duration::from_micros(watchdog_usec / 2);
+        info!("systemd watchdog enabled, petting every {}ms", interval.as_millis());
+
+        Some(tokio::spawn(async move {
+            let mut ticker = tokio::time::interval(interval);
+            // First tick fires immediately, skip it
+            ticker.tick().await;
+
+            loop {
+                ticker.tick().await;
+                trace!("petting systemd watchdog");
+                if let Err(e) = sd_notify("WATCHDOG=1\n") {
+                    error!("failed to pet systemd watchdog: {e}");
+                }
+            }
+        }))
+    }
+    #[cfg(not(target_family = "unix"))]
+    {
+        None
+    }
+}
+
+#[cfg(test)]
+#[allow(unsafe_code)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sd_notify_noop_when_no_env() {
+        unsafe {
+            std::env::remove_var("NOTIFY_SOCKET");
+        }
+        let res = sd_notify("READY=1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), false);
+    }
+
+    #[cfg(target_family = "unix")]
+    #[test]
+    fn test_sd_notify_sends_datagram() {
+        use std::os::unix::net::UnixDatagram;
+
+        // Create a temporary socket to receive the notification
+        let temp_dir = tempfile::tempdir().unwrap();
+        let socket_path = temp_dir.path().join("notify.sock");
+        let receiver = UnixDatagram::bind(&socket_path).unwrap();
+
+        unsafe {
+            std::env::set_var("NOTIFY_SOCKET", &socket_path);
+        }
+        let res = sd_notify("READY=1\n");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), true);
+
+        let mut buf = [0u8; 100];
+        let (len, _) = receiver.recv_from(&mut buf).unwrap();
+        assert_eq!(&buf[..len], b"READY=1\n");
+
+        unsafe {
+            std::env::remove_var("NOTIFY_SOCKET");
+        }
+    }
 }
