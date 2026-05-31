@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use aphrody_agent_proto::{Event, EventMsg, InputItem, ReviewDecision};
 use aphrody_model_client::{ChatTurn, ModelClient, ModelStreamEvent, Part, ToolDecl};
 use aphrody_rollout::RolloutRecorder;
-use aphrody_toolcall::{ToolOutput, ToolRegistry};
+use aphrody_toolcall::{ToolOutput, ToolRegistry, ToolSafety};
 use futures::StreamExt;
 use serde_json::{Value, json};
 
@@ -447,6 +447,24 @@ pub async fn run_turn_with_controls(
                 },
             );
 
+            let executor = tools.get(&call.name);
+
+            // Command-safety: refuse a known-destructive call before approval or
+            // execution, in any autonomy mode (defense-in-depth over the tool's
+            // own checks). The default ToolSafety::Safe leaves every existing
+            // tool's behaviour unchanged.
+            if executor
+                .as_ref()
+                .is_some_and(|exec| exec.safety(&call.arguments) == ToolSafety::Refuse)
+            {
+                let output = ToolOutput::error(format!(
+                    "tool call `{}` refused: command-safety classified it as known-destructive",
+                    call.name
+                ));
+                finish_tool(session, events, rollout, &call, &output);
+                continue;
+            }
+
             // Gated approval, if configured.
             if autonomy == AutonomyMode::Gated {
                 match approve(&call, events, rollout, approvals.as_deref_mut()).await? {
@@ -474,7 +492,7 @@ pub async fn run_turn_with_controls(
             }
 
             // Execute the tool.
-            let output = match tools.get(&call.name) {
+            let output = match executor {
                 None => ToolOutput::error(format!("unknown tool `{}`", call.name)),
                 Some(executor) => match executor.handle(call.arguments.clone()).await {
                     Ok(output) => output,

@@ -827,3 +827,99 @@ async fn steer_mid_turn_injects_between_iterations() {
         "steer must follow the tool response: steer={steer_idx:?} tool={tool_idx:?}"
     );
 }
+
+#[tokio::test]
+async fn refuse_safety_denies_tool_without_running_it() {
+    use aphrody_toolcall::ToolSafety;
+
+    // A tool that classifies every call as known-destructive. The engine must
+    // refuse it before dispatch, so `handle` never runs.
+    struct RefuseTool {
+        definition: ToolDefinition,
+        invocations: Arc<AtomicUsize>,
+    }
+    #[async_trait]
+    impl ToolExecutor for RefuseTool {
+        fn definition(&self) -> &ToolDefinition {
+            &self.definition
+        }
+        async fn handle(&self, _arguments: Value) -> Result<ToolOutput, ToolError> {
+            self.invocations.fetch_add(1, Ordering::SeqCst);
+            Ok(ToolOutput::ok("ran"))
+        }
+        fn safety(&self, _arguments: &Value) -> ToolSafety {
+            ToolSafety::Refuse
+        }
+    }
+
+    let invocations = Arc::new(AtomicUsize::new(0));
+    let tool = Arc::new(RefuseTool {
+        definition: ToolDefinition::new(
+            "danger",
+            "a destructive tool",
+            JsonSchema::object(Default::default(), None, None),
+        ),
+        invocations: invocations.clone(),
+    });
+    let mut tools = ToolRegistry::new();
+    tools
+        .register(tool as Arc<dyn ToolExecutor>)
+        .expect("register danger tool");
+
+    let client = MockModelClient::scripted(vec![
+        // Turn 0: model asks for the destructive tool.
+        vec![
+            ModelStreamEvent::ToolCall {
+                id: "r-1".to_string(),
+                name: "danger".to_string(),
+                arguments: json!({}),
+            },
+            ModelStreamEvent::Completed {
+                usage: None,
+                finish_reason: None,
+            },
+        ],
+        // Turn 1: after the refusal is re-injected, model answers in text.
+        vec![
+            ModelStreamEvent::TextDelta("after refusal".to_string()),
+            ModelStreamEvent::Completed {
+                usage: None,
+                finish_reason: Some("STOP".to_string()),
+            },
+        ],
+    ]);
+    let mut session = Session::new(EngineConfig::new("mock-model"));
+    let (sink, mut rx) = EventSink::unbounded();
+
+    let outcome = run_turn(&mut session, &client, &tools, None, user_text("go"), &sink, None)
+        .await
+        .expect("turn");
+
+    assert_eq!(
+        invocations.load(Ordering::SeqCst),
+        0,
+        "a refused tool must never execute"
+    );
+    assert_eq!(outcome.last_agent_message.as_deref(), Some("after refusal"));
+
+    // The refused call still surfaces a ToolCallEnd(ok=false) and an error
+    // FunctionResponse fed back to the model.
+    let msgs = drain(&mut rx);
+    assert!(
+        msgs.iter()
+            .any(|m| matches!(m, EventMsg::ToolCallEnd { ok: false, .. })),
+        "refused call must end as a failure"
+    );
+    let response = match &session.history()[2].parts[0] {
+        Part::FunctionResponse { response, .. } => response.clone(),
+        other => panic!("expected FunctionResponse, got {other:?}"),
+    };
+    assert_eq!(response["is_error"], json!(true));
+    assert!(
+        response["output"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("refused"),
+        "response explains the refusal: {response}"
+    );
+}

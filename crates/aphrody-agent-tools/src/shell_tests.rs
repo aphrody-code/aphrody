@@ -53,6 +53,27 @@ fn guard_on_allows_non_destructive_and_unknown() {
     );
 }
 
+#[test]
+fn classify_safety_maps_guard_decisions() {
+    // Guard off (default) ⇒ everything is Safe, so autonomy is unimpeded — even
+    // a destructive command (it is the engine's/operator's choice to enable the
+    // guard).
+    assert_eq!(
+        classify_safety(&["rm".into(), "-rf".into(), "/".into()], false),
+        ToolSafety::Safe
+    );
+    // Guard on ⇒ known-destructive maps to Refuse...
+    assert_eq!(
+        classify_safety(&["rm".into(), "-rf".into(), "/".into()], true),
+        ToolSafety::Refuse
+    );
+    // ...and an unknown command maps to Escalate (conservative: not provably safe).
+    assert_eq!(
+        classify_safety(&["definitely-not-a-real-command-xyz".into()], true),
+        ToolSafety::Escalate
+    );
+}
+
 #[tokio::test]
 async fn definition_advertises_shell() {
     let tool = ShellExecTool::new();

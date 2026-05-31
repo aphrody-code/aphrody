@@ -575,6 +575,26 @@ impl ToolOutput {
     }
 }
 
+/// A tool's pre-execution safety verdict for one specific call.
+///
+/// The engine consults [`ToolExecutor::safety`] *before* dispatch to decide
+/// whether a call may auto-run, should be escalated for approval, or must be
+/// refused outright. The enum is deliberately decoupled from `aphrody-guard`
+/// (the generic tool contract carries no dependency on the guardrail crate); a
+/// tool that wraps a classifier maps its own verdict onto these variants.
+///
+/// Ordered least-to-most restrictive so a composite check can take the max:
+/// `Safe < Escalate < Refuse`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ToolSafety {
+    /// Provably safe to auto-run.
+    Safe,
+    /// Unknown — should be escalated for approval before running.
+    Escalate,
+    /// Known-destructive — must never auto-run.
+    Refuse,
+}
+
 /// The async runtime contract a concrete tool implements.
 ///
 /// Implementations tie the model-visible [`ToolDefinition`] to executable
@@ -587,6 +607,17 @@ pub trait ToolExecutor: Send + Sync {
 
     /// Execute the tool against decoded JSON `arguments`.
     async fn handle(&self, arguments: JsonValue) -> Result<ToolOutput, ToolError>;
+
+    /// Pre-execution safety classification for a specific call's `arguments`.
+    ///
+    /// The engine consults this before dispatch to refuse known-destructive
+    /// calls (and, in a gated flow, to escalate unknown ones). The default is
+    /// [`ToolSafety::Safe`]: a tool with no inherent destructive surface
+    /// (search, docs, read-only queries) need not override it. A tool that runs
+    /// arbitrary commands (the shell tool) overrides this to classify per call.
+    fn safety(&self, _arguments: &JsonValue) -> ToolSafety {
+        ToolSafety::Safe
+    }
 }
 
 // ---------------------------------------------------------------------------

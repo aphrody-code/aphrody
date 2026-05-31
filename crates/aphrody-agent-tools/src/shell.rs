@@ -13,6 +13,7 @@ use aphrody_toolcall::ToolDefinition;
 use aphrody_toolcall::ToolError;
 use aphrody_toolcall::ToolExecutor;
 use aphrody_toolcall::ToolOutput;
+use aphrody_toolcall::ToolSafety;
 use serde::Deserialize;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
@@ -279,6 +280,19 @@ impl ToolExecutor for ShellExecTool {
             }
         }
     }
+
+    fn safety(&self, arguments: &serde_json::Value) -> ToolSafety {
+        // Pull the argv out of the raw arguments; if it is missing or malformed,
+        // defer to `handle` (which returns the proper InvalidArguments error) and
+        // classify as Safe so the engine does not refuse on a parse glitch.
+        let Some(command) = arguments
+            .get("command")
+            .and_then(|value| serde_json::from_value::<Vec<String>>(value.clone()).ok())
+        else {
+            return ToolSafety::Safe;
+        };
+        classify_safety(&command, aphrody_guard::guardrails_enabled())
+    }
 }
 
 /// Spawn `command`, pump its combined output, and enforce `timeout`.
@@ -403,10 +417,7 @@ fn push_chunk(
 /// Kept as a pure, env-free function (the env is read once by the caller) so it
 /// is deterministically testable without mutating process-global state.
 fn forbidden_refusal(command: &[String], guard_enabled: bool) -> Option<ToolOutput> {
-    if !guard_enabled {
-        return None;
-    }
-    if aphrody_guard::classify_command(command) != aphrody_guard::Decision::Forbidden {
+    if classify_safety(command, guard_enabled) != ToolSafety::Refuse {
         return None;
     }
     let program = command.first().map_or("<empty>", String::as_str);
@@ -414,6 +425,26 @@ fn forbidden_refusal(command: &[String], guard_enabled: bool) -> Option<ToolOutp
         "shell: refused to run `{program}` — aphrody-guard command-safety classified it as \
          known-destructive and APHRODY_GUARD is enabled, so it is never auto-run."
     )))
+}
+
+/// Map a command to its [`ToolSafety`] verdict under the command-safety policy.
+///
+/// With `guard_enabled` false (the default, `APHRODY_GUARD` unset) every command
+/// is [`ToolSafety::Safe`], so an autonomous agent runs unimpeded. When enabled,
+/// the `aphrody-guard` classifier applies: provably read-only ⇒ `Safe`, unknown
+/// ⇒ `Escalate`, known-destructive ⇒ `Refuse`. Pure and env-free for testing;
+/// the env is read once by the caller via `aphrody_guard::guardrails_enabled`.
+fn classify_safety(command: &[String], guard_enabled: bool) -> ToolSafety {
+    let decision = if guard_enabled {
+        aphrody_guard::classify_command(command)
+    } else {
+        aphrody_guard::Decision::Allow
+    };
+    match decision {
+        aphrody_guard::Decision::Allow => ToolSafety::Safe,
+        aphrody_guard::Decision::Prompt => ToolSafety::Escalate,
+        aphrody_guard::Decision::Forbidden => ToolSafety::Refuse,
+    }
 }
 
 #[cfg(test)]
