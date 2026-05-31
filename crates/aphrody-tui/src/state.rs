@@ -188,6 +188,11 @@ impl AppState {
                 self.agent_buffer.clear();
                 self.transcript.push(TranscriptCell::AgentMessage(text));
             }
+            EventMsg::SteerApplied { text } => {
+                // Mid-turn guidance was folded into the conversation; show it in
+                // the transcript as the user message it effectively is.
+                self.transcript.push(TranscriptCell::UserMessage(text));
+            }
             EventMsg::AgentReasoningDelta { delta } => {
                 self.reasoning_buffer.push_str(&delta);
             }

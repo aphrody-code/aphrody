@@ -21,7 +21,10 @@ use async_trait::async_trait;
 use serde_json::{Value, json};
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::{ApprovalGate, AutonomyMode, EngineConfig, EventSink, Session, run_turn};
+use crate::{
+    ApprovalGate, AutonomyMode, EngineConfig, EventSink, InterruptFlag, Session, SteerQueue,
+    run_turn, run_turn_with_controls,
+};
 
 /// A model client that replays pre-scripted turns, one per `stream` call.
 ///
@@ -146,6 +149,7 @@ fn kind(msg: &EventMsg) -> &'static str {
         EventMsg::TurnStarted => "TurnStarted",
         EventMsg::AgentMessageDelta { .. } => "AgentMessageDelta",
         EventMsg::AgentMessage { .. } => "AgentMessage",
+        EventMsg::SteerApplied { .. } => "SteerApplied",
         EventMsg::AgentReasoningDelta { .. } => "AgentReasoningDelta",
         EventMsg::ExecCommandBegin { .. } => "ExecCommandBegin",
         EventMsg::ExecCommandOutputDelta { .. } => "ExecCommandOutputDelta",
@@ -669,4 +673,157 @@ async fn actor_drives_user_input_to_completion() {
     assert_eq!(k.first(), Some(&"TurnStarted"));
     assert!(k.contains(&"AgentMessage"));
     assert!(k.contains(&"TurnComplete"));
+}
+
+#[tokio::test]
+async fn steer_seeded_before_turn_injects_user_message() {
+    // Guidance queued before the turn runs is folded in before the first model
+    // call, as a second user message, and surfaced as SteerApplied.
+    let client = MockModelClient::scripted(vec![vec![
+        ModelStreamEvent::TextDelta("ok".to_string()),
+        ModelStreamEvent::Completed {
+            usage: None,
+            finish_reason: Some("STOP".to_string()),
+        },
+    ]]);
+    let tools = ToolRegistry::new();
+    let mut session = Session::new(EngineConfig::new("mock-model"));
+    let (sink, mut rx) = EventSink::unbounded();
+    let interrupt = InterruptFlag::new();
+    let steer = SteerQueue::new();
+    steer.push(user_text("focus on tests first"));
+    assert!(!steer.is_empty());
+
+    let outcome = run_turn_with_controls(
+        &mut session,
+        &client,
+        &tools,
+        None,
+        user_text("do the work"),
+        &sink,
+        None,
+        &interrupt,
+        &steer,
+    )
+    .await
+    .expect("turn");
+
+    assert_eq!(outcome.last_agent_message.as_deref(), Some("ok"));
+    // The queue is emptied once drained.
+    assert!(steer.is_empty());
+
+    // History: original user input, the injected steer (also user), model text.
+    let history = session.history();
+    assert_eq!(history.len(), 3);
+    assert_eq!(history[0].role, Role::User);
+    assert_eq!(history[1].role, Role::User);
+    assert!(matches!(
+        history[1].parts.first(),
+        Some(Part::Text(t)) if t == "focus on tests first"
+    ));
+    assert_eq!(history[2].role, Role::Model);
+
+    // SteerApplied is emitted, and before the agent's message (it is folded in
+    // ahead of the model call).
+    let k = kinds(&drain(&mut rx));
+    let steer_pos = k.iter().position(|x| *x == "SteerApplied");
+    let msg_pos = k.iter().position(|x| *x == "AgentMessage");
+    assert!(steer_pos.is_some(), "SteerApplied must be emitted: {k:?}");
+    assert!(steer_pos < msg_pos, "steer must precede the message: {k:?}");
+}
+
+#[tokio::test]
+async fn steer_mid_turn_injects_between_iterations() {
+    // The first model call asks for a tool and, as a deterministic side effect,
+    // queues steering. The engine must fold that guidance into the conversation
+    // before the second model call, without interrupting the turn.
+    struct SteeringClient {
+        steer: SteerQueue,
+        calls: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl ModelClient for SteeringClient {
+        async fn stream(&self, _turn: ChatTurn) -> Result<ModelStream, ModelError> {
+            let n = self.calls.fetch_add(1, Ordering::SeqCst);
+            let events = if n == 0 {
+                // A supervisor steers while the first model call is in flight.
+                self.steer.push(vec![InputItem::Text {
+                    text: "be concise".to_string(),
+                }]);
+                vec![
+                    ModelStreamEvent::ToolCall {
+                        id: "c1".to_string(),
+                        name: "echo".to_string(),
+                        arguments: json!({}),
+                    },
+                    ModelStreamEvent::Completed {
+                        usage: None,
+                        finish_reason: None,
+                    },
+                ]
+            } else {
+                vec![
+                    ModelStreamEvent::TextDelta("done".to_string()),
+                    ModelStreamEvent::Completed {
+                        usage: None,
+                        finish_reason: Some("STOP".to_string()),
+                    },
+                ]
+            };
+            Ok(Box::pin(futures::stream::iter(events.into_iter().map(Ok))))
+        }
+
+        fn model_id(&self) -> &str {
+            "steering-mock"
+        }
+    }
+
+    let (tools, tool) = registry_with("echo");
+    let steer = SteerQueue::new();
+    let client = SteeringClient {
+        steer: steer.clone(),
+        calls: AtomicUsize::new(0),
+    };
+    let mut session = Session::new(EngineConfig::new("steering-mock"));
+    let (sink, mut rx) = EventSink::unbounded();
+    let interrupt = InterruptFlag::new();
+
+    let outcome = run_turn_with_controls(
+        &mut session,
+        &client,
+        &tools,
+        None,
+        user_text("go"),
+        &sink,
+        None,
+        &interrupt,
+        &steer,
+    )
+    .await
+    .expect("turn");
+
+    assert_eq!(outcome.last_agent_message.as_deref(), Some("done"));
+    assert_eq!(outcome.tool_iterations, 2, "two model calls (re-injection)");
+    assert_eq!(tool.invocations.load(Ordering::SeqCst), 1);
+
+    // The steer queued during iteration 1 is applied before iteration 2.
+    let k = kinds(&drain(&mut rx));
+    assert!(k.contains(&"SteerApplied"), "SteerApplied must be emitted: {k:?}");
+
+    // The injected guidance lands in history as a user message, after the tool
+    // response that closed iteration 1.
+    let history = session.history();
+    let steer_idx = history.iter().position(|m| {
+        m.role == Role::User
+            && matches!(m.parts.first(), Some(Part::Text(t)) if t == "be concise")
+    });
+    let tool_idx = history.iter().position(|m| {
+        matches!(m.parts.first(), Some(Part::FunctionResponse { name, .. }) if name == "echo")
+    });
+    assert!(steer_idx.is_some(), "steer must be injected: {history:?}");
+    assert!(
+        steer_idx > tool_idx,
+        "steer must follow the tool response: steer={steer_idx:?} tool={tool_idx:?}"
+    );
 }

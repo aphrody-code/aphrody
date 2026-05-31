@@ -250,6 +250,38 @@ impl Supervisor {
         self.submit(id, Op::Interrupt)
     }
 
+    /// Inject steering guidance into one agent's running turn.
+    ///
+    /// Sends [`Op::Steer`](aphrody_agent_proto::Op::Steer) with `items`; the
+    /// engine folds them into the conversation before its next model call so the
+    /// agent course-corrects mid-turn without restarting. If no turn is running
+    /// the op is a no-op on the engine side (the agent stays tracked).
+    ///
+    /// # Errors
+    /// Same conditions as [`submit`](Self::submit).
+    pub fn steer(
+        &self,
+        id: impl Into<AgentId>,
+        items: Vec<InputItem>,
+    ) -> Result<(), SupervisorError> {
+        self.submit(id, Op::Steer { items })
+    }
+
+    /// Inject plain-text steering guidance into one agent's running turn.
+    ///
+    /// Ergonomic wrapper over [`steer`](Self::steer) with a single
+    /// [`InputItem::Text`](aphrody_agent_proto::InputItem::Text).
+    ///
+    /// # Errors
+    /// Same conditions as [`submit`](Self::submit).
+    pub fn steer_text(
+        &self,
+        id: impl Into<AgentId>,
+        text: impl Into<String>,
+    ) -> Result<(), SupervisorError> {
+        self.steer(id, vec![InputItem::Text { text: text.into() }])
+    }
+
     /// Shut one agent down and stop tracking it.
     ///
     /// Sends [`Op::Shutdown`](aphrody_agent_proto::Op::Shutdown) so the session
