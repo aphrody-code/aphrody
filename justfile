@@ -2,9 +2,8 @@
 # ============================================================================
 #  justfile — task runner for the unified aphrody polyglot monorepo.
 #
-#  This justfile unifies the tasks for all 4 toolchains inside the monorepo:
+#  This justfile unifies the tasks for all 3 toolchains inside the monorepo:
 #    * Rust   (crates/*)
-#    * Go     (go/gogcli, go/antigravity-langserver-re)
 #    * Python (py/)
 #    * Bun/TS (apps/*)
 #
@@ -22,23 +21,23 @@ default:
 # Aggregate recipes — Unified Polyglot Monorepo
 # ---------------------------------------------------------------------------
 
-# Build all compilable workspaces (Rust, Go).
-build: build-rust build-go
+# Build all compilable workspaces (Rust).
+build: build-rust
 
-# Test all workspaces (Rust, Go, Python, TS/JS).
-test: test-rust test-go test-py test-ts
+# Test all workspaces (Rust, Python, TS/JS).
+test: test-rust test-py test-ts
 
-# Lint all workspaces (Clippy, Go Vet, Ruff, Oxlint).
-lint: lint-rust lint-go lint-py lint-ts
+# Lint all workspaces (Clippy, Ruff, Oxlint).
+lint: lint-rust lint-py lint-ts
 
-# Format all workspaces in place (rustfmt, go fmt, ruff format, oxfmt).
-fmt: fmt-rust fmt-go fmt-py fmt-ts
+# Format all workspaces in place (rustfmt, ruff format, oxfmt).
+fmt: fmt-rust fmt-py fmt-ts
 
 # CI gate: run all lints and tests.
 ci: lint test check-targets audit
 
 # Install/sync dependencies for all workspaces.
-install: install-rust install-go install-py install-ts
+install: install-rust install-py install-ts
 
 # ---------------------------------------------------------------------------
 # Rust Crate Workspace (crates/*)
@@ -69,25 +68,6 @@ check-targets:
 audit:
     cargo deny check
     cargo machete
-
-# ---------------------------------------------------------------------------
-# Go Workspace (go/)
-# ---------------------------------------------------------------------------
-
-build-go:
-    go build -C go ./antigravity-langserver-re/... ./gogcli/...
-
-test-go:
-    go test -C go ./antigravity-langserver-re/... ./gogcli/...
-
-lint-go:
-    go vet -C go ./antigravity-langserver-re/... ./gogcli/...
-
-fmt-go:
-    go fmt -C go ./antigravity-langserver-re/... ./gogcli/...
-
-install-go:
-    go mod download -C go
 
 # ---------------------------------------------------------------------------
 # Python Workspace (py/)

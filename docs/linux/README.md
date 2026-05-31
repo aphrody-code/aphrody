@@ -44,7 +44,6 @@ Aphrody is a polyglot monorepo using four pinned runtime environments:
 | **Rust** | Root (`crates/*`) | `rust-toolchain.toml` | Nightly pinned via toolchain file |
 | **Bun** (TS/JS) | Root / `apps/*` | `mise.toml` | Bun runtime & package manager |
 | **Python** | `py/` | `py/pyproject.toml` | Python managed via `uv` |
-| **Go** | `go/` | `go/go.work` | Go compiler toolchain |
 
 ---
 

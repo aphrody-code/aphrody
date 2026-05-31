@@ -1,5 +1,0 @@
-# mise.toml — toolchain pinning for the aphrody-go repository
-# (https://mise.jdx.dev)
-
-[tools]
-go = "1.26.3"
