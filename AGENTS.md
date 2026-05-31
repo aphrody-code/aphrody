@@ -109,6 +109,7 @@ See `docs/TROUBLESHOOTING.md` for the full list. High-priority items:
 - `rustls 0.23` panics with "No provider set" unless
   `rustls::crypto::ring::default_provider().install_default()` is called
   before the first `reqwest::Client::new()`.
+- **Extraction `x-client` / `@aphrody-code/x`** : the Bun module `packages/x` has been extracted to a standalone repository `/home/ubuntu/x-client` (package `@aphrody-code/x`, registry `npm.pkg.github.com`). Downstream client projects (`rg`/`rpbey`) must import the package or point to `/home/ubuntu/x-client/ts/` instead of monorepo paths.
 
 ## 9. Skills and agents to leverage
 
