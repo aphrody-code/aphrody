@@ -238,6 +238,7 @@
   - [Obscura-Integration-Spec](research/obscura-integration-spec.md)
   - [Openclaw-Vs-Aphrody](research/openclaw-vs-aphrody.md)
   - [Re-Tooling-Landscape](research/re-tooling-landscape.md)
+  - [Systemd-Integration](research/systemd_integration.md)
   - [Vscode-Fork-Re-Intel](research/vscode-fork-re-intel.md)
   - [Webgpu-Performance](research/webgpu-performance.md)
   - [Adobe-Connector](research/adobe-connector/README.md)
