@@ -38,10 +38,6 @@ forensics = ["dep:rusqlite", "dep:sha2", "dep:hex"]
 # wasm). Build with: cargo build -p aphrody --features index
 index = ["dep:aphrody-fsindex"]
 
-# Gemini (Nano Banana) image generation to disk (`aphrody image generate`),
-# backed by aphrody-images (gemini-web SDK + concurrent download). Host-only.
-#   cargo build -p aphrody --features images
-images = ["dep:aphrody-images"]
 
 # Adobe Firefly Services image generation to disk (`aphrody firefly generate`),
 # backed by aphrody-firefly (IMS OAuth S2S + v3 async generate). Host-only.
@@ -120,8 +116,6 @@ rusqlite                  = { workspace = true, optional = true }
 # `aphrody index build/search` — persistent local-filesystem FTS5 index
 # (`--features index`). Bundled libsqlite3 via the workspace rusqlite.
 aphrody-fsindex           = { path = "../aphrody-fsindex", optional = true }
-# `aphrody image generate` — Nano Banana image gen to disk (`--features images`).
-aphrody-images            = { path = "../aphrody-images", optional = true }
 # `aphrody firefly generate` — Adobe Firefly image gen (`--features firefly`).
 aphrody-firefly           = { path = "../aphrody-firefly", optional = true }
 # `aphrody forensics map` — SHA-256 of small files + hex encoding for the

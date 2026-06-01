@@ -41,7 +41,7 @@
 //!
 //! // Counters & histograms are free to register on the fly.
 //! let requests = telemetry.counter("http.requests");
-//! let latency  = telemetry.histogram("http.latency_ms", vec![1.0, 10.0, 100.0, 1_000.0]);
+//! let latency  = telemetry.histogram("http.latency_ms", vec![1.0, 10.0, 100.0, 1_000.0])?;
 //!
 //! // Hierarchical spans, RAII-finalized on drop.
 //! let parent = telemetry.start_span("handle_request", SpanKind::Server, None);

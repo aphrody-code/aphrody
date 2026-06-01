@@ -457,11 +457,10 @@ pub(crate) async fn run(
     voice: bool,
     trigger: String,
     model: Option<String>,
-    web: bool,
     stub: bool,
     simulate: Option<String>,
 ) -> miette::Result<()> {
-    use aphrody_chat::backend::{GeminiWebBackend, ModelBackend, StubBackend};
+    use aphrody_chat::backend::{ModelBackend, StubBackend};
     use aphrody_chat::{ChatConfig, ChatLoop};
 
     use crate::agy_backend::AgyBackend;
@@ -480,13 +479,6 @@ pub(crate) async fn run(
         Box::new(StubBackend::with_reply(
             "(stub backend reply — `aphrody hermes --stub`, no live LLM call)",
         ))
-    } else if web {
-        match GeminiWebBackend::connect_for(Some(model_str.as_str())).await {
-            Ok(b) => Box::new(b),
-            Err(e) => {
-                return Err(miette::miette!("gemini web backend unavailable: {e}"));
-            },
-        }
     } else {
         match AgyBackend::connect(Some(model_str.as_str())) {
             Ok(b) => Box::new(b),

@@ -88,221 +88,7 @@ impl TerminalCommand for MirrorCommand {
     }
 }
 
-pub(crate) struct ChromiumSyncCommand;
 
-#[cfg(target_os = "windows")]
-#[async_trait]
-impl TerminalCommand for ChromiumSyncCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!("🔍 Détection des profils Chromium ({})...", platform::os_short_name());
-
-        let user_data = platform::chrome_user_data()
-            .ok_or_else(|| miette::miette!("Chrome user-data path not known on this platform"))?;
-
-        let mut parser = ChromiumParser::new(user_data);
-        let profiles = parser.get_profiles();
-        println!("✅ Profils trouvés : {:?}", profiles);
-
-        parser.load_master_key().map_err(|e| miette::miette!(e.to_string()))?;
-        println!("🔑 Master Key déchiffrée avec succès.");
-
-        Ok(())
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-#[async_trait]
-impl TerminalCommand for ChromiumSyncCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        Err(miette::miette!(
-            "`chromium sync` is a Windows-only command (DPAPI-backed master-key path). Run on \
-             Windows or use the OAuth2 flow via `aphrody auth`."
-        ))
-    }
-}
-
-// ---------------------------------------------------------------------------
-// `aphrody chromium export-session` — unified Google session JSON
-// ---------------------------------------------------------------------------
-
-#[allow(dead_code)]
-pub(crate) struct ChromiumExportSessionCommand {
-    pub profile: String,
-    pub out: Option<PathBuf>,
-    pub domain: String,
-}
-
-#[cfg(target_os = "windows")]
-#[derive(serde::Serialize)]
-struct GoogleSessionExport {
-    schema: &'static str,
-    generated_at: String,
-    profile: String,
-    domain_filter: String,
-    #[cfg(target_os = "windows")]
-    cookies: Vec<backend::chromium::Cookie>,
-    gemini_oauth: Option<serde_json::Value>,
-    stats: ExportStats,
-}
-
-#[cfg(target_os = "windows")]
-#[derive(serde::Serialize)]
-struct ExportStats {
-    total_cookies: usize,
-    httponly_count: usize,
-    secure_count: usize,
-    session_count: usize,
-    has_gemini_oauth: bool,
-}
-
-/// Read `~/.gemini/oauth_creds.json` and return the parsed JSON, if present.
-/// Errors are swallowed — the export is still useful with cookies alone, and
-/// the gemini token may simply not exist yet.
-fn read_gemini_oauth() -> Option<serde_json::Value> {
-    let home = platform::home_dir().ok()?;
-    let path = home.join(".gemini").join("oauth_creds.json");
-    let content = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(&content).ok()
-}
-
-/// Read the Antigravity CLI (`agy`) Google OAuth token directly from the
-/// Windows Credential Manager.
-///
-/// gemini-cli was absorbed into the Antigravity CLI; the installer
-/// (`antigravity.google/cli/install.ps1`) drops `agy.exe` under
-/// `%LOCALAPPDATA%\agy\bin`, and the IDE-side auth stores the Google OAuth
-/// token as a **generic credential** named `gemini:antigravity` whose blob is
-/// plaintext JSON: `{"token":{"access_token":"ya29…","refresh_token":…}}`.
-/// Reading it here lets `aphrody auth` extract the session straight from `agy`
-/// with no subprocess and no dependency on the (now-missing) gemini-cli bundle.
-#[cfg(target_os = "windows")]
-fn read_antigravity_oauth() -> Option<serde_json::Value> {
-    use windows_sys::Win32::Security::Credentials::{
-        CRED_TYPE_GENERIC, CredFree, CredReadW, CREDENTIALW,
-    };
-
-    let target: Vec<u16> =
-        "gemini:antigravity".encode_utf16().chain(std::iter::once(0)).collect();
-    // SAFETY: `target` is a NUL-terminated UTF-16 string. On success CredReadW
-    // hands back one heap-allocated CREDENTIALW that we read once and free with
-    // CredFree; the blob slice lives only for the duration of the read.
-    unsafe {
-        let mut pcred: *mut CREDENTIALW = std::ptr::null_mut();
-        if CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut pcred) == 0 || pcred.is_null() {
-            return None;
-        }
-        let cred = &*pcred;
-        let parsed = if cred.CredentialBlob.is_null() || cred.CredentialBlobSize == 0 {
-            None
-        } else {
-            let blob =
-                std::slice::from_raw_parts(cred.CredentialBlob, cred.CredentialBlobSize as usize);
-            serde_json::from_slice::<serde_json::Value>(blob).ok()
-        };
-        CredFree(pcred.cast());
-        parsed
-    }
-}
-
-#[cfg(target_os = "windows")]
-#[async_trait]
-impl TerminalCommand for ChromiumExportSessionCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!(
-            "📦 Export Google session — profil = '{}', filtre domaine = '%{}%'",
-            self.profile, self.domain
-        );
-
-        let user_data = platform::chrome_user_data()
-            .ok_or_else(|| miette::miette!("Chrome user-data path not known on this platform"))?;
-
-        let mut parser = ChromiumParser::new(user_data);
-        let profiles = parser.get_profiles();
-        if !profiles.iter().any(|p| p == &self.profile) {
-            return Err(miette::miette!(
-                "Profil '{}' introuvable. Profils disponibles: {:?}",
-                self.profile,
-                profiles
-            ));
-        }
-        parser.load_master_key().map_err(|e| miette::miette!(e.to_string()))?;
-        println!("🔑 Master Key déchiffrée.");
-
-        let cookies = parser
-            .get_cookies_full(&self.profile, &self.domain)
-            .map_err(|e| miette::miette!("get_cookies_full: {e:#}"))?;
-        println!("🍪 Cookies extraits : {} entrées", cookies.len());
-
-        let gemini_oauth = read_gemini_oauth();
-        match &gemini_oauth {
-            Some(_) => println!("🔓 Token Gemini CLI fusionné depuis ~/.gemini/oauth_creds.json"),
-            None => println!(
-                "⚠️  ~/.gemini/oauth_creds.json absent ou illisible — section gemini_oauth = null"
-            ),
-        }
-
-        let stats = ExportStats {
-            total_cookies: cookies.len(),
-            httponly_count: cookies.iter().filter(|c| c.is_httponly).count(),
-            secure_count: cookies.iter().filter(|c| c.is_secure).count(),
-            session_count: cookies.iter().filter(|c| c.is_session).count(),
-            has_gemini_oauth: gemini_oauth.is_some(),
-        };
-
-        let export = GoogleSessionExport {
-            schema: "aphrody.google-session/v1",
-            generated_at: chrono::Utc::now().to_rfc3339(),
-            profile: self.profile.clone(),
-            domain_filter: self.domain.clone(),
-            cookies,
-            gemini_oauth,
-            stats,
-        };
-
-        let out_path = match self.out.clone() {
-            Some(p) => p,
-            None => {
-                let home = platform::home_dir()
-                    .map_err(|_| miette::miette!("home dir unknown"))?;
-                let dir = home.join(".aphrody");
-                std::fs::create_dir_all(&dir)
-                    .map_err(|e| miette::miette!("mkdir {}: {e}", dir.display()))?;
-                dir.join("google-session.json")
-            },
-        };
-
-        let json = serde_json::to_string_pretty(&export)
-            .map_err(|e| miette::miette!("serialize: {e}"))?;
-        std::fs::write(&out_path, &json)
-            .map_err(|e| miette::miette!("write {}: {e}", out_path.display()))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&out_path, std::fs::Permissions::from_mode(0o600));
-        }
-
-        println!("✅ Session écrite : {} ({} octets)", out_path.display(), json.len());
-        println!("   • cookies         : {}", export.stats.total_cookies);
-        println!("   • httpOnly        : {}", export.stats.httponly_count);
-        println!("   • secure          : {}", export.stats.secure_count);
-        println!("   • session-only    : {}", export.stats.session_count);
-        println!(
-            "   • gemini_oauth    : {}",
-            if export.stats.has_gemini_oauth { "yes" } else { "no" }
-        );
-        Ok(())
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-#[async_trait]
-impl TerminalCommand for ChromiumExportSessionCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        Err(miette::miette!(
-            "`chromium export-session` is Windows-only (DPAPI master-key path)."
-        ))
-    }
-}
 
 pub(crate) struct AuthCommand {
     pub force: bool,
@@ -393,6 +179,42 @@ impl TerminalCommand for AuthCommand {
     }
 }
 
+fn read_gemini_oauth() -> Option<serde_json::Value> {
+    let home = platform::home_dir().ok()?;
+    let path = home.join(".gemini").join("oauth_creds.json");
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+#[cfg(target_os = "windows")]
+fn read_antigravity_oauth() -> Option<serde_json::Value> {
+    use windows_sys::Win32::Security::Credentials::{
+        CRED_TYPE_GENERIC, CredFree, CredReadW, CREDENTIALW,
+    };
+
+    let target: Vec<u16> =
+        "gemini:antigravity".encode_utf16().chain(std::iter::once(0)).collect();
+    // SAFETY: `target` is a NUL-terminated UTF-16 string. On success CredReadW
+    // hands back one heap-allocated CREDENTIALW that we read once and free with
+    // CredFree; the blob slice lives only for the duration of the read.
+    unsafe {
+        let mut pcred: *mut CREDENTIALW = std::ptr::null_mut();
+        if CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut pcred) == 0 || pcred.is_null() {
+            return None;
+        }
+        let cred = &*pcred;
+        let parsed = if cred.CredentialBlob.is_null() || cred.CredentialBlobSize == 0 {
+            None
+        } else {
+            let blob =
+                std::slice::from_raw_parts(cred.CredentialBlob, cred.CredentialBlobSize as usize);
+            serde_json::from_slice::<serde_json::Value>(blob).ok()
+        };
+        CredFree(pcred.cast());
+        parsed
+    }
+}
+
 impl AuthCommand {
     /// Persists a God Mode token to the per-user CLI credential store.
     /// File is created with `0600` on Unix; on Windows it inherits the user
@@ -417,40 +239,6 @@ impl AuthCommand {
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600))
                 .map_err(|e| miette::miette!("chmod 0600 sur {} : {e}", file.display()))?;
         }
-        Ok(())
-    }
-}
-
-pub(crate) struct DnsCommand {
-    pub domain: String,
-}
-
-#[async_trait]
-impl TerminalCommand for DnsCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!("[====== WINCLEAN FORENSIC - MAXIMUM DNS RECON ======]");
-        println!("[~] Cible: {}", self.domain);
-        println!("[~] 1/3 - Lancement de l'OSINT Passif (Agrégation multi-sources)...");
-
-        let recon = backend::dns::DnsRecon::new();
-        match recon.run_osint(&self.domain).await {
-            Ok(results) => {
-                println!(
-                    "[+] Découverte OSINT terminée: {} sous-domaines uniques trouvés !",
-                    results.len()
-                );
-                for sub in results.iter().take(10) {
-                    println!("  - {}", sub);
-                }
-                if results.len() > 10 {
-                    println!("  ... et {} autres", results.len() - 10);
-                }
-            },
-            Err(e) => {
-                println!("[-] Erreur lors de la résolution OSINT: {}", e);
-            },
-        }
-
         Ok(())
     }
 }
@@ -1767,9 +1555,6 @@ pub(crate) struct ChatCommand {
     pub model: Option<String>,
     pub system: Option<String>,
     pub stub: bool,
-    /// Use the keyless Gemini web app transport instead of the default `agy`
-    /// (Antigravity) credential-store token path.
-    pub web: bool,
     /// Local files to attach to the chat (images, PDFs, documents).
     pub attach: Vec<std::path::PathBuf>,
 }
@@ -1777,7 +1562,7 @@ pub(crate) struct ChatCommand {
 #[async_trait]
 impl TerminalCommand for ChatCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        use aphrody_chat::backend::{GeminiWebBackend, ModelBackend, StubBackend};
+        use aphrody_chat::backend::{ModelBackend, StubBackend};
         use aphrody_chat::{ChatConfig, ChatLoop};
 
         use crate::agy_backend::AgyBackend;
@@ -1864,48 +1649,15 @@ impl TerminalCommand for ChatCommand {
         // Backend selection order — aphrody uses the `agy` (Antigravity) CLI's
         // OAuth token by default; the legacy `gemini` CLI is never bootstrapped:
         //   1. `--stub`                   → deterministic StubBackend.
-        //   2. `--web` / `-w`             → keyless Gemini web app transport
-        //      (signed-in Google cookie jar). Opt-in alternative to agy.
-        //   3. default → AgyBackend       → agy OAuth token read at runtime from
+        //   2. default → AgyBackend       → agy OAuth token read at runtime from
         //      the platform credential store (`gemini:antigravity`), driving
         //      Gemini `generateContent`. No external binary, no PATH probe.
-        //   4. StubBackend                → last resort when the chosen live
+        //   3. StubBackend                → last resort when the chosen live
         //      backend cannot authenticate (with a diagnostic).
         let backend: Box<dyn ModelBackend> = if self.stub {
             Box::new(StubBackend::with_reply(
                 "(stub backend reply — `aphrody chat --stub` mode, no live LLM call)",
             ))
-        } else if self.web {
-            match GeminiWebBackend::connect_for(Some(config.model.as_str())).await {
-                Ok(web) => Box::new(web),
-                Err(web_err) => {
-                    // The web transport serves real Gemini 3.5 Flash but needs the
-                    // signed-in Google cookie jar (~/.aphrody/google-cookies.json).
-                    // When it is absent, do NOT drop to a useless stub: fall back
-                    // to the agy token backend so the turn still gets a real reply.
-                    // The agy/Cloud Code path does not serve `gemini-3.5-flash`
-                    // (404), so let it pick its default served model (`None` ->
-                    // gemini-2.5-flash) rather than forwarding `config.model`.
-                    eprintln!(
-                        "[chat] keyless Gemini web transport unavailable ({web_err}). For real \
-                         Gemini 3.5 Flash, export your signed-in Google cookies (Cookie-Editor \
-                         JSON) to ~/.aphrody/google-cookies.json. Falling back to the agy token \
-                         backend for this turn."
-                    );
-                    match AgyBackend::connect(None) {
-                        Ok(agy) => Box::new(agy),
-                        Err(agy_err) => {
-                            eprintln!(
-                                "[chat] agy token also unavailable ({agy_err}). Falling back to \
-                                 the stub backend."
-                            );
-                            Box::new(StubBackend::with_reply(
-                                "(stub backend reply — neither web cookies nor agy token available)",
-                            ))
-                        },
-                    }
-                },
-            }
         } else {
             match AgyBackend::connect(Some(config.model.as_str())) {
                 Ok(agy) => Box::new(agy),

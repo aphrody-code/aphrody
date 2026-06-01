@@ -238,6 +238,8 @@ mod tests {
 
     use super::*;
 
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     // Safety: env mutations in tests are safe within a single-threaded test
     // binary.  Tokio's `#[tokio::test]` by default uses a single-threaded
     // scheduler, so there is no race between env reads and writes across tests
@@ -252,6 +254,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[test]
     fn resolve_bin_honours_env_var() {
+        let _guard = ENV_LOCK.lock().unwrap();
         // Create a temporary file that "acts" as the obscura binary.
         let tmp = NamedTempFile::new().expect("tempfile");
         let path_str = tmp.path().to_str().expect("utf8 path").to_owned();
@@ -274,6 +277,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[test]
     fn resolve_bin_nonexistent_env_var_returns_not_found() {
+        let _guard = ENV_LOCK.lock().unwrap();
         // A path that definitely does not exist.
         let nonexistent = "/tmp/__aphrody_obscura_definitely_does_not_exist_xyzzy/obscura";
 
@@ -307,6 +311,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[test]
     fn resolve_bin_returns_not_found_when_absent() {
+        let _guard = ENV_LOCK.lock().unwrap();
         // Ensure the env override is unset.
         unsafe { std::env::remove_var(ENV_OBSCURA_BIN) };
 
@@ -344,6 +349,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[test]
     fn resolve_bin_finds_binary_on_custom_path() {
+        let _guard = ENV_LOCK.lock().unwrap();
         let tmp_dir = tempfile::tempdir().expect("tempdir");
 
         // Write a zero-byte file named "obscura" — existence check is enough.
@@ -383,6 +389,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[tokio::test]
     async fn fetch_returns_binary_not_found() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe { std::env::remove_var(ENV_OBSCURA_BIN) };
 
         let tmp_dir = tempfile::tempdir().expect("tempdir");
@@ -410,6 +417,7 @@ mod tests {
     // ------------------------------------------------------------------
     #[tokio::test]
     async fn scrape_returns_binary_not_found() {
+        let _guard = ENV_LOCK.lock().unwrap();
         unsafe { std::env::remove_var(ENV_OBSCURA_BIN) };
 
         let tmp_dir = tempfile::tempdir().expect("tempdir");

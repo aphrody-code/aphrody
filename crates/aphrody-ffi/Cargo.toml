@@ -30,7 +30,6 @@ default = []
 magika    = ["aphrody/magika"]
 forensics = ["aphrody/forensics"]
 index     = ["aphrody/index"]
-images    = ["aphrody/images"]
 firefly   = ["aphrody/firefly"]
 yara      = ["aphrody/yara"]
 

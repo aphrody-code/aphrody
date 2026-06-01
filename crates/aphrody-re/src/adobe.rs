@@ -352,15 +352,14 @@ pub fn map_adobe_app(root: &Path, opts: MapOptions) -> io::Result<AdobeAppMap> {
 /// 9. `.dll` → `CoreDll` (if at root level) or `Other` (if inside a subdir)
 /// 10. Config/data extensions (`.xml`, `.json`, `.atn`, `.abr`, …) → `Config`
 /// 11. Everything else → `Other`
-///
 /// ```
 /// use std::path::Path;
 /// use aphrody_re::adobe::{classify, AdobeFileKind};
 ///
-/// let p = Path::new(r"C:\PS\CloudAILib.dll");
+/// let p = Path::new("/PS/CloudAILib.dll");
 /// assert_eq!(classify(p, "CloudAILib.dll"), AdobeFileKind::AiRuntime);
 ///
-/// let p2 = Path::new(r"C:\PS\Required\Plug-ins\File Formats\Cineon.8bi");
+/// let p2 = Path::new("/PS/Required/Plug-ins/File Formats/Cineon.8bi");
 /// assert_eq!(classify(p2, "Required/Plug-ins/File Formats/Cineon.8bi"), AdobeFileKind::Plugin);
 /// ```
 #[must_use]

@@ -24,7 +24,6 @@
 #[cfg(not(target_arch = "wasm32"))] mod context;
 #[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
-#[cfg(all(not(target_arch = "wasm32"), feature = "images"))] mod image_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))] mod firefly_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
@@ -46,7 +45,7 @@ use clap::{Parser, Subcommand};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
     commands::{
-        ChromiumSyncCommand, DoctorCommand, MirrorCommand, SubprocessExit,
+        DoctorCommand, MirrorCommand, SubprocessExit,
         VersionCommand,
     },
     context::{GoogleContext, TerminalCommand},
@@ -127,11 +126,7 @@ enum Commands {
         #[arg(short, long, default_value = "start")]
         action: String,
     },
-    /// Résolution DNS OSINT (reconnaissance agressive)
-    Dns {
-        #[arg(required = true)]
-        domain: String,
-    },
+
     /// Affiche la version et l'état du système
     Version {
         /// Emit version as a single JSON object instead of human-readable text
@@ -144,11 +139,7 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
-    /// Forensics Chromium
-    Chromium {
-        #[command(subcommand)]
-        action: ChromiumActions,
-    },
+
     /// Client natif A2A
     A2a {
         #[arg(required = true)]
@@ -251,17 +242,6 @@ enum Commands {
         #[command(subcommand)]
         action: index_cmd::IndexAction,
     },
-    /// Gemini (Nano Banana) image generation to disk.
-    ///
-    /// Built only with `--features images`. Generates from a prompt via the
-    /// signed-in Google cookie jar (no API key) and saves to disk.
-    ///
-    /// Example: aphrody image generate "a banana mascot chef" --out ./out
-    #[cfg(all(not(target_arch = "wasm32"), feature = "images"))]
-    Image {
-        #[command(subcommand)]
-        action: image_cmd::ImageAction,
-    },
     /// Adobe Firefly Services image generation to disk.
     ///
     /// Built only with `--features firefly`. OAuth server-to-server (IMS):
@@ -310,10 +290,6 @@ enum Commands {
         /// Useful for CI / smoke runs that must not require any LLM backend.
         #[arg(long)]
         stub: bool,
-        /// Use the keyless Gemini **web app** transport (signed-in Google
-        /// cookie jar) instead of the default `agy` (Antigravity) token path.
-        #[arg(long, short = 'w')]
-        web: bool,
         /// Attach one or more local files (images, PDFs, documents, etc.) to the chat.
         #[arg(long, short, value_name = "PATH")]
         attach: Vec<std::path::PathBuf>,
@@ -339,12 +315,9 @@ enum Commands {
         /// Vide = répondre à tout.
         #[arg(long, default_value = "")]
         trigger: String,
-        /// Id de modèle (défaut : flash tier via agy ; `flash` = Gemini 3.5 Flash en `--web`).
+        /// Id de modèle (défaut : flash tier via agy).
         #[arg(long, short)]
         model: Option<String>,
-        /// Transport keyless Gemini 3.5 Flash web app (cookie jar) au lieu du token agy.
-        #[arg(long, short = 'w')]
-        web: bool,
         /// Backend stub déterministe (aucun LLM live) — pour CI / smoke headless.
         #[arg(long)]
         stub: bool,
@@ -669,28 +642,7 @@ enum CrosActions {
     Build,
 }
 
-#[derive(Subcommand)]
-enum ChromiumActions {
-    /// Synchronise les profils Chromium
-    Sync,
-    /// Extrait + déchiffre les cookies Google d'un profil Chrome et fusionne
-    /// avec le token OAuth Gemini CLI dans une session unifiée
-    /// (`~/.aphrody/google-session.json`). Cf. CLAUDE.md §0.4.
-    ExportSession {
-        /// Nom du profil Chrome (sous-dossier de `User Data`).
-        #[arg(long, default_value = "Profile 5")]
-        profile: String,
-        /// Output JSON path. Defaults to `~/.aphrody/google-session.json`.
-        #[arg(long)]
-        out: Option<std::path::PathBuf>,
-        /// Domain substring filter for `host_key LIKE %X%`.
-        /// Defaults to `"google"` (covers .google.com, accounts.google.com,
-        /// gemini.google.com, youtube.com via google-search). Pass `""` to
-        /// dump every cookie of the profile.
-        #[arg(long, default_value = "google")]
-        domain: String,
-    },
-}
+
 
 /// Trailing arguments forwarded verbatim to the `aphrody-gui` binary by
 /// `aphrody gui [-- <args…>]`.
@@ -1087,18 +1039,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Mirror { action }) => {
             MirrorCommand { action }.execute(ctx).await?;
         },
-        Some(Commands::Dns { domain }) => {
-            commands::DnsCommand { domain }.execute(ctx).await?;
-        },
-        Some(Commands::Chromium { action }) => match action {
-            ChromiumActions::Sync => {
-                ChromiumSyncCommand.execute(ctx).await?;
-            },
-            ChromiumActions::ExportSession { profile, out, domain } => {
-                commands::ChromiumExportSessionCommand { profile, out, domain }
-                    .execute(ctx).await?;
-            },
-        },
+
         Some(Commands::A2a { prompt }) => {
             commands::A2aCommand { prompt }.execute(ctx).await?;
         },
@@ -1339,10 +1280,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Index { action }) => {
             index_cmd::run(action).await?;
         },
-        #[cfg(feature = "images")]
-        Some(Commands::Image { action }) => {
-            image_cmd::run(action).await?;
-        },
+
         #[cfg(feature = "firefly")]
         Some(Commands::Firefly { action }) => {
             firefly_cmd::run(action).await?;
@@ -1351,19 +1289,19 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Forensics { action }) => {
             forensics_cmd::run(action).await?;
         },
-        Some(Commands::Chat { prompt, model, system, stub, web, attach }) => {
-            commands::ChatCommand { prompt, model, system, stub, web, attach }.execute(ctx).await?;
+        Some(Commands::Chat { prompt, model, system, stub, attach }) => {
+            commands::ChatCommand { prompt, model, system, stub, attach }.execute(ctx).await?;
         },
         Some(Commands::Notify { channel, message, room }) => {
             commands::NotifyCommand { channel, message, room }.execute(ctx).await?;
         },
         #[cfg(not(target_arch = "wasm32"))]
-        Some(Commands::Hermes { channel, voice, trigger, model, web, stub, simulate }) => {
+        Some(Commands::Hermes { channel, voice, trigger, model, stub, simulate }) => {
             let ch = match channel {
                 HermesChannelArg::Discord => agent_cmd::HermesChannel::Discord,
                 HermesChannelArg::X => agent_cmd::HermesChannel::X,
             };
-            agent_cmd::run(ch, voice, trigger, model, web, stub, simulate).await?;
+            agent_cmd::run(ch, voice, trigger, model, stub, simulate).await?;
         },
         #[cfg(not(target_arch = "wasm32"))]
         Some(Commands::Agent { prompt, tui, stub, model, system, gated, cwd, verbose }) => {
@@ -1674,8 +1612,7 @@ pub fn run_wasm() {
             let name = match other {
                 Commands::Auth { .. } => "auth",
                 Commands::Mirror { .. } => "mirror",
-                Commands::Dns { .. } => "dns",
-                Commands::Chromium { .. } => "chromium",
+
                 Commands::A2a { .. } => "a2a",
                 Commands::Cros { .. } => "cros",
                 Commands::Search { .. } => "search",
