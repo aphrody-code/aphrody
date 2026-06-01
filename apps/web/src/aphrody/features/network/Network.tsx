@@ -1,20 +1,12 @@
-// Network view host — typed DNS recon + web search panels via M3 tabs, plus a raw CLI output view.
+// Network view host — web search panel, plus a raw CLI output view.
 
 import { useState } from "react";
-import { MdIcon, MdPrimaryTab, MdTabs } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody-code/m3-react";
 import { PageHead } from "../../ui.tsx";
 import { ToolRunner, type ToolAction } from "../../ToolRunner.tsx";
-import { DnsReconPanel } from "./DnsReconPanel.tsx";
 import { WebSearchPanel } from "./WebSearchPanel.tsx";
 
 const RAW_ACTIONS: ToolAction[] = [
-  {
-    label: "Reconnaissance DNS",
-    icon: "dns",
-    args: ["dns"],
-    prompt: { placeholder: "Domaine (ex. example.com)" },
-    hint: "Résolution DNS OSINT agressive d'un domaine.",
-  },
   {
     label: "Recherche web native",
     icon: "search",
@@ -25,33 +17,17 @@ const RAW_ACTIONS: ToolAction[] = [
 ];
 
 export function Network() {
-  const [tab, setTab] = useState(0);
   const [rawOpen, setRawOpen] = useState(false);
 
   return (
     <div className="aph-net">
       <PageHead
         title="Réseau"
-        subtitle="Reconnaissance DNS OSINT et recherche web native (aphrody dns / search)."
+        subtitle="Recherche web native (aphrody search)."
       />
 
-      <MdTabs
-        className="aph-net-tabs"
-        activeTabIndex={tab}
-        onChange={(e) => setTab((e.target as unknown as { activeTabIndex: number }).activeTabIndex)}
-      >
-        <MdPrimaryTab>
-          <MdIcon slot="icon">dns</MdIcon>
-          Reconnaissance DNS
-        </MdPrimaryTab>
-        <MdPrimaryTab>
-          <MdIcon slot="icon">search</MdIcon>
-          Recherche web
-        </MdPrimaryTab>
-      </MdTabs>
-
       <section className="aph-net-block">
-        {tab === 0 ? <DnsReconPanel /> : <WebSearchPanel />}
+        <WebSearchPanel />
       </section>
 
       <section className="aph-net-raw">
@@ -69,8 +45,8 @@ export function Network() {
         {rawOpen && (
           <ToolRunner
             title="Réseau — sortie brute"
-            subtitle="Sortie texte non formatée des commandes dns / search."
-            icon="dns"
+            subtitle="Sortie texte non formatée de la commande search."
+            icon="search"
             actions={RAW_ACTIONS}
           />
         )}

@@ -30,9 +30,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Browser-cookie extraction is LGPL-3.0; kept as an isolated optional extra
-# so the core package stays Apache-2.0-clean (dynamic import = separate work).
-cookies = ["browser-cookie3>=0.20"]
 # `aphrody voice`: local Whisper STT + Kokoro TTS + the Antigravity agent brain
 # (google-antigravity[voice] pulls faster-whisper, kokoro-onnx, numpy,
 # websockets). The agent's localharness binary itself ships with the

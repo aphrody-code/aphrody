@@ -188,32 +188,7 @@ To shortcut the usual "where is X?" search, the following were **removed**:
   `mrx-{core,detect,audit,watch,cli}` → `mrx`;
   plus the orphan crates `aphrody-shell` and `aphrody-sandbox`.
 
-## 9. Desktop GUI surface (in-repo)
 
-The graphical desktop application — the mainstream consumer agent — now lives
-entirely in THIS repo under `apps/desktop` (rapatriée from `aphrody-ts` on
-2026-05-24):
-
-- **Frontend** — `apps/desktop/src/` — Angular 21.2 + Angular Material 21.2,
-  pixel-faithful Gemini-style UI, fonts vendored offline (zero CDN). The one
-  polyglot (TypeScript) exception in this otherwise Rust-only repo.
-- **Rust shell** — `apps/desktop/src-tauri/` — Tauri 2, self-rooted
-  (`[workspace]` + own `Cargo.lock`), EXCLUDED from the core workspace. Its
-  `#[tauri::command]`s call `aphrody::run_captured` (CLI in-process, Rust to
-  Rust, no FFI hop) and `aphrody-voice` directly for native TTS/STT, so every
-  GUI action is the same code path the terminal runs.
-- **Legacy** — `crates/aphrody-app` is the earlier minimal Tauri shell (also
-  excluded); `apps/desktop` supersedes it as the canonical app.
-
-Positioning: a general-public autonomous AI assistant powered by Gemini, NOT a
-reverse-engineering tool. Surfaces: Assistant chat (`aphrody chat`),
-Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (all 37 CLI
-commands), multi-tab Settings (Compte, Apparence, Conversation backend
-agy/web/stub, Memoire, Ame/soul, Identite, Canaux, Actions, Agents, A propos),
-native voice-to-voice (aphrody-voice + Web Speech fallback), attachments.
-
-Build: `cd apps/desktop && bun install && bun run build`, then `cargo`/`tauri`
-in `apps/desktop/src-tauri`.
 
 ## 10. Related
 

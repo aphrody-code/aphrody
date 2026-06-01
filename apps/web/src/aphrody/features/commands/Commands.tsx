@@ -97,14 +97,6 @@ const COMMAND_GROUPS: CliGroup[] = [
         argsHint: '"requête de recherche"',
       },
       {
-        name: "dns",
-        icon: "dns",
-        desc: "Résolution DNS et OSINT réseau",
-        gate: null,
-        deepLink: "network",
-        argsHint: "example.com",
-      },
-      {
         name: "gemini",
         icon: "auto_awesome",
         desc: "Binaire natif Gemini CLI (forward)",
@@ -138,13 +130,6 @@ const COMMAND_GROUPS: CliGroup[] = [
         desc: "Extraction forensique reproductible",
         gate: "forensics",
         deepLink: "forensics",
-        argsHint: "--help",
-      },
-      {
-        name: "chromium",
-        icon: "cookie",
-        desc: "Forensics Chromium (cookies, profils ABE)",
-        gate: null,
         argsHint: "--help",
       },
       {

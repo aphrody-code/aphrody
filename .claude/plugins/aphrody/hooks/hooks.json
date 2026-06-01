@@ -10,17 +10,6 @@
           }
         ]
       }
-    ],
-    "AfterAgent": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "aphrody agy-loop hook",
-            "timeout": 30
-          }
-        ]
-      }
     ]
   }
 }

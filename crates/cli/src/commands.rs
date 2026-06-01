@@ -2,10 +2,7 @@
 use std::{net::SocketAddr, path::PathBuf};
 
 use async_trait::async_trait;
-// `backend::chromium` is `#[cfg(target_os = "windows")]` because the master-key
-// decryption path uses DPAPI / Win32 ACLs. On other OSes the Chromium-based
-// commands fall back to a "Windows-only" notice.
-#[cfg(target_os = "windows")] use backend::chromium::ChromiumParser;
+
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -99,51 +96,7 @@ impl TerminalCommand for AuthCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         println!("🔐 Tentative d'authentification Google...");
 
-        // Logique God Mode : Extraction via Chromium SxS (Canary) — Windows only
-        // because the master-key path relies on DPAPI. Non-Windows hosts skip
-        // straight to the OAuth2 PKCE delegation below.
-        #[cfg(target_os = "windows")]
-        if !self.force {
-            println!("🛡️ Mode God Mode activé. Recherche de credentials locaux...");
 
-            let canary_data = platform::chrome_canary_user_data()
-                .ok_or_else(|| miette::miette!("Chrome Canary path not known on this platform"))?;
-
-            if canary_data.exists() {
-                println!("✅ Chrome Canary détecté : {}", canary_data.display());
-                let mut parser = ChromiumParser::new(canary_data);
-                if parser.load_master_key().is_ok() {
-                    println!("🔑 Master Key récupérée. Injection des tokens en cours...");
-
-                    let profiles = parser.get_profiles();
-                    for profile in profiles {
-                        if let Ok(cookies) = parser.get_cookies(&profile, "google.com") {
-                            let sid = cookies.iter().find(|(n, _)| n == "__Secure-1PSID");
-                            if let Some((_, val)) = sid {
-                                println!(
-                                    "✨ Token __Secure-1PSID trouvé dans le profil '{}'.",
-                                    profile
-                                );
-                                Self::persist_god_mode_token(&profile, val)?;
-                                println!("🔓 Authentification God Mode réussie pour {} !", profile);
-                                return Ok(());
-                            }
-                        }
-                    }
-                    println!("⚠️ Aucun token valide trouvé dans les profils Chrome Canary.");
-                }
-            } else {
-                println!("⚠️ Chrome Canary non trouvé. Passage au mode OAuth2 standard.");
-            }
-        }
-
-        #[cfg(not(target_os = "windows"))]
-        if !self.force {
-            println!(
-                "ℹ️ God Mode (Chromium Canary master-key extraction) sauté — Windows-only. \
-                 Passage direct à OAuth2."
-            );
-        }
 
         // gemini-cli is deprecated — it was absorbed into the Antigravity CLI
         // (`agy`, installed at %LOCALAPPDATA%\agy\bin per the official

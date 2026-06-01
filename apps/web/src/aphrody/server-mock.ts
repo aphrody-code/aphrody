@@ -112,12 +112,6 @@ export function runMock(args: string[]): ExecResult {
       );
     }
 
-    case "dns": {
-      const host = flag(args, "--host") || args[args.length - 1] || "example.com";
-      return ok(
-        `dns recon · ${host}\n  A     93.184.216.34\n  AAAA  2606:2800:220:1:248:1893:25c8:1946\n  MX    10 mail.${host}\n  NS    a.iana-servers.net\n  TXT   "v=spf1 -all"\n  CAA   0 issue "letsencrypt.org"`,
-      );
-    }
 
     case "search": {
       const q = flag(args, "--query") || args.slice(1).join(" ");

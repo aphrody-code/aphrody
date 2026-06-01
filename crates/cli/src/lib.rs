@@ -30,7 +30,6 @@
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod design_cmd;
-#[cfg(not(target_arch = "wasm32"))] mod gui_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod ide_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod re_auto;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
@@ -159,16 +158,6 @@ enum Commands {
     Gemini {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
-    },
-    /// Lance l'app desktop native aphrody (Tauri + Angular). Résolution :
-    /// $APHRODY_GUI_BIN > voisin de l'exécutable (aphrody-gui) > build in-tree > PATH.
-    #[cfg(not(target_arch = "wasm32"))]
-    Gui {
-        /// Résout et affiche le chemin du binaire GUI sans le lancer.
-        #[arg(long)]
-        print_path: bool,
-        #[command(subcommand)]
-        forward: Option<GuiForward>,
     },
     /// Forward vers le binaire natif Antigravity CLI (`agy`).
     ///
@@ -643,27 +632,6 @@ enum CrosActions {
 }
 
 
-
-/// Trailing arguments forwarded verbatim to the `aphrody-gui` binary by
-/// `aphrody gui [-- <args…>]`.
-///
-/// Modelled as an `external_subcommand` rather than a positional `Vec<String>`
-/// on the `Gui` variant on purpose: clap_complete 4.6.x overflows the stack
-/// while generating shell completions for a subcommand that mixes a positional
-/// argument with a named option (here `--print-path`). An external-subcommand
-/// catch-all is stored differently in clap's model and is exempt from that
-/// generator recursion, so completions for `aphrody gui` (and the whole tree)
-/// stay buildable while still forwarding arbitrary args — including
-/// leading-hyphen ones — to the GUI process.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Subcommand, Debug, Clone)]
-pub(crate) enum GuiForward {
-    /// Every token after `aphrody gui [--print-path] --` is captured here and
-    /// forwarded as-is to the GUI binary.
-    #[command(external_subcommand)]
-    Args(Vec<String>),
-}
-
 /// Actions for the `scan` kernel subcommand (repo analytics).
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum ScanAction {
@@ -1051,10 +1019,6 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Gemini { args }) => {
             commands::GeminiCommand { args }.execute(ctx).await?;
-        },
-        Some(Commands::Gui { print_path, forward }) => {
-            let GuiForward::Args(args) = forward.unwrap_or(GuiForward::Args(Vec::new()));
-            gui_cmd::GuiCommand { print_path, args }.execute()?;
         },
         Some(Commands::AgyLoop { action }) => {
             agy_loop::run(action)?;

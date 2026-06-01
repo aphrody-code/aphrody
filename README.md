@@ -140,7 +140,7 @@ cargo check -p aphrody      --target wasm32-wasip1           # ✅ (stub binaire
 
 Le binaire `cli` se compile sur `wasm32-*` mais en *stub minimal* : il
 n'expose que `--version` et `--help` ; les commandes OS-bound (`auth`,
-`chromium`, `dns`, …) renvoient un message « pas disponible sur wasm »
+`forensics`, `firefly`, …) renvoient un message « pas disponible sur wasm »
 et redirigent vers le binaire natif. Cf. `crates/cli/src/main.rs`
 pour les `cfg(not(target_arch = "wasm32"))` qui isolent `mimalloc`,
 `tokio` *full*, `reqwest`, `rustls`, `backend` et `a2a-client`.
@@ -159,9 +159,7 @@ Usage: aphrody.wasm [COMMAND]
 Commands:
   auth        Authentification Google (God Mode / OAuth2)
   mirror      Gère le mirroring des assets MD3
-  dns         Résolution DNS OSINT (reconnaissance agressive)
   version     Affiche la version et l'état du système
-  chromium    Forensics Chromium
   a2a         Client natif A2A
   ...
 ```
@@ -260,7 +258,7 @@ packages/
   bun-rs/         @aphrody-code/bun-rs          # FFI native Rust (Sass, HCT) chargée via bun:ffi (exclue du workspace Cargo)
 apps/
   web/            # client GRAND PUBLIC : chat/RAG sur LLM custom (shenron, rpbey, …), React + m3-react + TanStack, Bun-natif
-  desktop/        # dashboard ADMIN PRIVÉ : Tauri 2 + Angular 21 (re, forensics, dns, doctor, mcp, …)
+  desktop/        # dashboard ADMIN PRIVÉ : Tauri 2 + Angular 21 (re, forensics, doctor, mcp, …)
 examples/
   showcase/       # galerie m3-react + Material You, 100 % Bun (Bun.serve + bun build)
 ```
