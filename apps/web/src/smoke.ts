@@ -64,7 +64,7 @@ try {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: "llama3.2:latest",
+      model: "shenron",
       messages: [{ role: "user", content: "hi" }],
       stream: true,
     }),

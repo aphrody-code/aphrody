@@ -274,6 +274,11 @@ exclude = [
     # aphrody-x-client : self-rooted workspace (intégrera root workspace
     # plus tard quand agent-twitter-client 0.1.x stabilisé).
     "crates/aphrody-x-client",
+    # packages/bun-rs — @aphrody-code/bun-rs native FFI lib (Sass/HCT for Bun via
+    # bun:ffi), merged from the material-web monorepo 2026-06-01. Self-contained
+    # [package] with its own target; built via `cargo build -p bun-rs` from its own
+    # dir. EXCLUDED so the core workspace lock never absorbs it.
+    "packages/bun-rs",
     # n2b-* + bxc-engine : supprimés du dépôt le 2026-05-21 (crates retirées pour
     # de bon, cf. memory project-workspace-lean-build). `aphrody n2b` / la logique
     # bxc de aphrody-xtask restent des façades qui spawnent un binaire externe

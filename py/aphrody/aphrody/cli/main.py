@@ -220,22 +220,6 @@ class Aphrody:
     # ``recomplete`` is an alias for ``autocomplete`` (the auto loop).
     recomplete = autocomplete
 
-    def web(self) -> Any:
-        """Ask the Gemini *web app* (gemini.google.com) via session cookies.
-
-        The keyless cookie path: the same Boq backend the browser talks to,
-        with no API key and no OAuth token — only the stored Google cookies.
-        """
-        from aphrody.cli.web import WebCommands
-
-        return WebCommands()
-
-    def cookies(self) -> Any:
-        """Manage the Google cookie jar: ``status`` / ``load`` / ``extract``."""
-        from aphrody.cli.cookies import CookieCommands
-
-        return CookieCommands()
-
     def image(self) -> Any:
         """Nano Banana Pro image suite.
 
@@ -256,16 +240,6 @@ class Aphrody:
         from aphrody.cli.blender import BlenderCommands
 
         return BlenderCommands()
-
-    def google(self) -> Any:
-        """Keyless and anonymous Google API suite.
-
-        Subcommands: ``dns`` / ``books`` / ``book`` / ``translate`` /
-        ``suggest`` / ``calendar`` / ``sheet`` / ``doc`` / ``download``.
-        """
-        from aphrody.cli.google import GoogleCommands
-
-        return GoogleCommands()
 
     def drive(self) -> Any:
         """Authenticated Google Drive workspace.

@@ -77,6 +77,36 @@ export function runMock(args: string[]): ExecResult {
         return ok(
           ".text    0x1040  0x2a1  R-X\n.rodata  0x2000  0x0f4  R--\n.data    0x3000  0x010  RW-\n.bss     0x3010  0x008  RW-",
         );
+      // `re triage` ALWAYS emits the TriageReport JSON (pretty with `--pretty`).
+      if (sub === "triage")
+        return ok(
+          JSON.stringify(
+            {
+              format: "elf64",
+              size: 142_312,
+              sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+              arch: "x86_64",
+              entry_point: 0x1060,
+              sections: [
+                { name: ".text", vaddr: 0x1040, size: 0x2a10, entropy: 6.1 },
+                { name: ".rodata", vaddr: 0x4000, size: 0x0f40, entropy: 4.7 },
+                { name: ".data", vaddr: 0x6000, size: 0x0100, entropy: 3.2 },
+                { name: ".packed", vaddr: 0x7000, size: 0x9000, entropy: 7.6 },
+                { name: ".bss", vaddr: 0x10000, size: 0x0080, entropy: null },
+              ],
+              imports: ["puts", "printf", "malloc", "free", "__libc_start_main"],
+              exports: ["main", "_start"],
+              strings_sample: [
+                "/lib64/ld-linux-x86-64.so.2",
+                "libc.so.6",
+                "GLIBC_2.34",
+                "usage: %s <file>",
+              ],
+            },
+            null,
+            2,
+          ),
+        );
       return ok(
         "triage: ELF 64-bit LSB pie executable, x86-64\n  entry      0x1060\n  arch       x86_64\n  endianness little\n  stripped   no\n  imports    14 (libc)\n  protections NX, PIE, RELRO(full)\n  suspicious none",
       );
@@ -116,7 +146,52 @@ export function runMock(args: string[]): ExecResult {
       if (sub === "whoami") return ok(JSON.stringify(ACCOUNT));
       return ok("antigravity: ok");
 
-    case "forensics":
+    case "forensics": {
+      if (sub === "map") {
+        const out = flag(args, "--out") || "var/data/forensics";
+        return ok(
+          JSON.stringify({
+            wrote: `${out}/map.json`,
+            file_count: 1284,
+            hashed_count: 1197,
+            secret_meta_only_count: 87,
+          }),
+        );
+      }
+      if (sub === "sqlite") {
+        const db = flag(args, "--db") || "History";
+        return ok(
+          JSON.stringify({
+            db,
+            object_count: 5,
+            tables: [
+              {
+                type: "table",
+                name: "urls",
+                sql: "CREATE TABLE urls (id INTEGER PRIMARY KEY, url LONGVARCHAR, title LONGVARCHAR, visit_count INTEGER DEFAULT 0)",
+              },
+              {
+                type: "table",
+                name: "visits",
+                sql: "CREATE TABLE visits (id INTEGER PRIMARY KEY, url INTEGER NOT NULL, visit_time INTEGER NOT NULL)",
+              },
+              {
+                type: "index",
+                name: "urls_url_index",
+                sql: "CREATE INDEX urls_url_index ON urls (url)",
+              },
+              { type: "index", name: "sqlite_autoindex_urls_1", sql: null },
+              {
+                type: "view",
+                name: "recent_urls",
+                sql: "CREATE VIEW recent_urls AS SELECT url, title FROM urls ORDER BY visit_count DESC",
+              },
+            ],
+          }),
+        );
+      }
+      return ok("forensics: 3 chromium profiles, 1 240 history rows, 84 cookies (mock)");
+    }
     case "chromium":
       return ok("forensics: 3 chromium profiles, 1 240 history rows, 84 cookies (mock)");
 

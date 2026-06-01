@@ -22,9 +22,7 @@ from aphrody.background_review import BackgroundReview, spawn_background_review
 from aphrody.client import AphrodyClient
 from aphrody.command_guard import CommandGuard, SecurityError
 from aphrody.evaluation import LocalEvaluator
-from aphrody.gemini_web import GeminiWebClient
 from aphrody.google_drive import AuthenticatedDriveClient
-from aphrody.google_keyless import AsyncKeylessGoogleClient, KeylessGoogleClient
 from aphrody.session_db import SessionDB
 from aphrody.soul_creator import SoulCreator
 from aphrody.timeout_monitor import (
@@ -36,7 +34,6 @@ from aphrody.vertex import GeminiVertex
 
 __all__ = [
     "AphrodyClient",
-    "AsyncKeylessGoogleClient",
     "AuthenticatedDriveClient",
     "BackgroundReview",
     "CodeCompleter",
@@ -44,8 +41,6 @@ __all__ = [
     "Completion",
     "CompletionRequest",
     "GeminiVertex",
-    "GeminiWebClient",
-    "KeylessGoogleClient",
     "LocalEvaluator",
     "OAuthToken",
     "RunawayDetector",

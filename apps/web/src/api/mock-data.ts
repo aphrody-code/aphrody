@@ -25,40 +25,43 @@ export const SESSION_USER: SessionUser = {
   token: "mock-token",
 };
 
+// Public consumer surface: custom in-house RAG + LLMs (shenron, rpbey, …),
+// not third-party hosted models. The admin/ops tooling lives in the private app.
 export const MODELS: Model[] = [
   {
-    id: "llama3.2:latest",
-    name: "Llama 3.2",
-    description: "Meta's compact general-purpose model.",
+    id: "shenron",
+    name: "Shenron",
+    description: "Custom Dragon Ball RAG assistant (in-house LLM + knowledge base).",
     owned_by: "ollama",
     capabilities: { vision: true, web_search: true },
   },
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    description: "OpenAI omni model.",
-    owned_by: "openai",
-    capabilities: { vision: true, web_search: true, image_generation: true },
+    id: "rpbey",
+    name: "RPBey",
+    description: "Custom in-house assistant tuned on the rpbey corpus.",
+    owned_by: "ollama",
+    capabilities: { web_search: true },
   },
   {
-    id: "qwen2.5-coder:7b",
-    name: "Qwen2.5 Coder",
-    description: "Code-tuned 7B.",
+    id: "aphrody-rag",
+    name: "aphrody RAG",
+    description: "Retrieval-augmented generation over your linked knowledge collections.",
     owned_by: "ollama",
-    capabilities: { code_interpreter: true },
+    capabilities: { web_search: true, code_interpreter: true },
   },
   {
-    id: "mistral-nemo:latest",
-    name: "Mistral Nemo",
-    description: "12B multilingual.",
+    id: "aphrody-vision",
+    name: "aphrody Vision",
+    description: "Multimodal in-house model (image + text).",
     owned_by: "ollama",
+    capabilities: { vision: true, image_generation: true },
   },
 ];
 
 export const CONFIG: BackendConfig = {
-  name: "Open WebUI · M3",
+  name: "aphrody",
   version: "0.1.0",
-  default_models: ["llama3.2:latest"],
+  default_models: ["shenron"],
   default_prompt_suggestions: [
     {
       title: ["Explain a concept", "like I'm five"],
@@ -108,8 +111,8 @@ function seedChat(id: string, title: string, turns: [string, string][], ageMin: 
       id: aid,
       role: "assistant",
       content: a,
-      model: "llama3.2:latest",
-      modelName: "Llama 3.2",
+      model: "shenron",
+      modelName: "Shenron",
       parentId: uid,
       childrenIds: [],
       usage: { prompt_tokens: 24, completion_tokens: 80, total_tokens: 104 },
@@ -121,7 +124,7 @@ function seedChat(id: string, title: string, turns: [string, string][], ageMin: 
   return {
     id,
     title,
-    models: ["llama3.2:latest"],
+    models: ["shenron"],
     history: { messages, currentId },
     created_at: now() - ageMin * 60_000,
     updated_at: now() - ageMin * 60_000,
