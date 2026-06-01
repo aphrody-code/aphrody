@@ -21,11 +21,13 @@ from unittest.mock import MagicMock
 try:
     import sounddevice  # noqa: F401
 except Exception:
+
     class MockSoundDevice(MagicMock):
         """Mock class for sounddevice in headless environments."""
+
         PortAudioError = Exception
         InputStream = MagicMock
         OutputStream = MagicMock
         query_devices = MagicMock(return_value=[])
 
-    sys.modules['sounddevice'] = MockSoundDevice()
+    sys.modules["sounddevice"] = MockSoundDevice()

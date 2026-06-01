@@ -14,6 +14,11 @@ import networkx as nx
 
 from aphrody.rag.graph_extractor import GraphExtractor
 from aphrody.rag.layout_chunker import LayoutChunker, LayoutElement
+from aphrody.rag.math import (
+    cosine_similarity,
+    reciprocal_rank_fusion,
+    top_k_cosine_similarity,
+)
 from aphrody.rag.raptor import (
     RecursiveAbstractiveProcessing4TreeOrganizedRetrieval,
 )
@@ -26,6 +31,9 @@ __all__ = [
     "LayoutElement",
     "RAGPipeline",
     "RecursiveAbstractiveProcessing4TreeOrganizedRetrieval",
+    "cosine_similarity",
+    "reciprocal_rank_fusion",
+    "top_k_cosine_similarity",
 ]
 
 

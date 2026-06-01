@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "aphrody-rust"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "aphrody_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py311"] }
+# Depend on the shared base crate in the monorepo workspace
+base = { path = "../../crates/base" }
