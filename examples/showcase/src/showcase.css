@@ -1,0 +1,586 @@
+/* 3D Material Design 3 Showcase Stylesheet */
+
+:root {
+  /* Gemini "sparkle" gradient — the one and only brand colour kept verbatim
+     from the Google AI Mode grammar (see docs/design/google/ANALYSE.md). Every
+     other colour in the demo flows from the M3 --md-sys-color-* roles. */
+  --gemini-sparkle: linear-gradient(105deg, #4285f4 0%, #9b72cb 52%, #d96570 100%);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Outfit', sans-serif;
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+}
+
+.shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fullscreen Canvas Background */
+.canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Translucent Glassmorphic Topbar */
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  background: color-mix(in oklch, var(--md-sys-color-surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid color-mix(in oklch, var(--md-sys-color-outline-variant) 20%, transparent);
+  box-shadow: 
+    0 1px 2px rgba(0,0,0,0.02),
+    0 8px 24px -6px color-mix(in oklch, var(--md-sys-color-primary) 5%, transparent);
+}
+
+.topbar__brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.topbar__brand b {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.topbar__brand span {
+  font-size: 0.72rem;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.85;
+}
+
+.topbar__spacer {
+  flex: 1;
+}
+
+/* Live M3 window size class badge — demonstrates the adaptive layer. */
+.size-class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 999px;
+  font: 500 13px/1 system-ui, sans-serif;
+  text-transform: capitalize;
+  color: var(--md-sys-color-on-secondary-container);
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-secondary-container) 85%,
+    transparent
+  );
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+.size-class-badge md-icon {
+  --md-icon-size: 18px;
+}
+
+/* Translucent Glassmorphic Sidebar Controls */
+.sidebar {
+  position: absolute;
+  right: 20px;
+  top: 84px;
+  bottom: 20px;
+  width: 350px;
+  z-index: 10;
+  background: color-mix(in oklch, var(--md-sys-color-surface-container) 65%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 28px;
+  border: 1px solid color-mix(in oklch, var(--md-sys-color-outline-variant) 25%, transparent);
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--md-sys-color-primary) 30%, transparent) transparent;
+}
+
+.sidebar h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -0.02em;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  display: flex;
+  justify-content: space-between;
+}
+
+.control-label span.value {
+  color: var(--md-sys-color-primary);
+  font-weight: 700;
+}
+
+.stats-card {
+  background: color-mix(in oklch, var(--md-sys-color-primary-container) 15%, transparent);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-around;
+  border: 1px solid color-mix(in oklch, var(--md-sys-color-primary) 10%, transparent);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-item b {
+  font-size: 1.4rem;
+  color: var(--md-sys-color-primary);
+  font-weight: 800;
+}
+
+.stat-item span {
+  font-size: 0.72rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.swatch {
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch[aria-pressed="true"] {
+  transform: scale(1.15);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 10px color-mix(in oklch, var(--md-sys-color-primary) 50%, transparent);
+}
+
+/* Floating overlay buttons at bottom left */
+.bottom-left-panel {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Dialog customizations */
+md-dialog {
+  --md-dialog-container-max-width: 1200px;
+  --md-dialog-container-width: 90vw;
+  --md-dialog-container-height: 85vh;
+}
+
+.dialog-scrollable-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 8px 16px 32px 16px;
+}
+
+/* 2D Gallery grid and specimens inside dialog */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section__head {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -0.01em;
+}
+
+.section__sub {
+  margin: 0 0 8px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.specimen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.specimen__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.8;
+}
+
+.specimen__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.specimen__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Premium WebGL fallback CSS-only background */
+.canvas-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 30%, color-mix(in oklch, var(--md-sys-color-primary) 12%, transparent) 0%, transparent 60%),
+              radial-gradient(circle at 80% 70%, color-mix(in oklch, var(--md-sys-color-tertiary) 12%, transparent) 0%, transparent 60%),
+              radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--md-sys-color-secondary) 8%, transparent) 0%, transparent 50%),
+              var(--md-sys-color-background);
+  animation: floatBackground 12s infinite alternate ease-in-out;
+  background-size: 200% 200%;
+  z-index: 1;
+}
+
+@keyframes floatBackground {
+  0% {
+    background-position: 0% 10%;
+  }
+  50% {
+    background-position: 100% 90%;
+  }
+  100% {
+    background-position: 10% 100%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Gemini AI Mode demo — Google Search grammar on M3 components/tokens.
+   Only --gemini-sparkle is a hardcoded colour; everything else is a role.
+   --------------------------------------------------------------------------- */
+
+.specimen--full {
+  grid-column: 1 / -1;
+}
+
+.gemini {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.gemini__rail {
+  flex: 0 0 auto;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+}
+
+.gemini__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 4px 0;
+}
+
+.gemini__greeting {
+  margin: 4px 0 4px;
+  text-align: center;
+  font-size: clamp(1.4rem, 1rem + 2vw, 2.4rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--md-sys-color-on-surface);
+}
+
+.gemini__pillwrap {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+}
+
+/* The rounded search pill — surface-container-high with a full-radius shape. */
+.gemini__pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.gemini__pill:focus-within {
+  border-color: var(--md-sys-color-outline);
+}
+
+.gemini__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Strip the outlined field's own chrome so it reads as the pill's interior. */
+  --md-outlined-text-field-outline-width: 0px;
+  --md-outlined-text-field-focus-outline-width: 0px;
+  --md-outlined-text-field-container-shape: 999px;
+  --md-outlined-text-field-top-space: 8px;
+  --md-outlined-text-field-bottom-space: 8px;
+  --md-outlined-text-field-container-color: transparent;
+  background: transparent;
+}
+
+/* The AI Mode chip carries the sparkle gradient as its halo/border accent. */
+.gemini__chip {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.gemini__chip::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--gemini-sparkle);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Sparkle icon — tinted by the Gemini gradient via background-clip. */
+.gemini__sparkle {
+  background: var(--gemini-sparkle);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Autocomplete dropdown attached under the pill. */
+.gemini__dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+  padding: 8px 0 0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.gemini__dropfoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 16px 12px;
+  font-size: 0.78rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__dropfoot a {
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+}
+
+.gemini__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Compact SERP: results column + knowledge panel. */
+.gemini__serp {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .gemini__serp {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gemini__results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gemini__result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gemini__ressite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gemini__favicon {
+  --md-avatar-size: 28px;
+  flex: 0 0 auto;
+}
+
+.gemini__sitemeta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gemini__sitename {
+  font-size: 0.85rem;
+  color: var(--md-sys-color-on-surface);
+}
+
+.gemini__siteurl {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__title {
+  font-size: 1.15rem;
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.gemini__title:hover {
+  text-decoration: underline;
+}
+
+.gemini__snippet {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__knowledge {
+  padding: 18px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gemini__kpicon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__kptitle {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.gemini__kpdesc {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__kpfacts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.gemini__kpfacts dt {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.gemini__kpfacts dd {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+}
+
+.gemini__kprelated {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+}

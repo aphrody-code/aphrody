@@ -1,0 +1,89 @@
+name: Release M3 Packages
+
+# Publishes every @aphrody-code/* Material Design 3 package to GitHub Packages
+# when an `m3-v*` tag is pushed (decoupled from the core `release.yml`, which
+# fires on `v*`). Bun-only. Workspace `workspace:*` deps are replaced with the
+# resolved version by `bun publish` automatically. Merged from the standalone
+# material-web monorepo 2026-06-01.
+on:
+  push:
+    tags: ["m3-v*"]
+  workflow_dispatch: {}
+
+env:
+  BUN_VERSION: "1.3.14"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: build + publish to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # GH_TOKEN feeds the repo .npmrc (`_authToken=${GH_TOKEN}`) so any private
+      # GitHub Packages dep (e.g. @aphrody-code/bxc in the showcase) resolves at
+      # install time. GitHub Packages requires a token even for reads.
+      - run: bun install --frozen-lockfile
+        env:
+          GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      # build:sass falls back to sass-embedded when the bun-rs FFI lib is absent,
+      # so CI needs no Rust toolchain. Build only the publishable packages
+      # (turbo pulls in their workspace deps automatically); examples/* excluded.
+      - run: bunx turbo run build --filter='./packages/*'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      # GitHub Packages auth for the @aphrody-code scope. Use the account PAT
+      # (GH_PACKAGES_TOKEN, write:packages), NOT the repo GITHUB_TOKEN: packages
+      # already published under this user are not linked to this repo, so the
+      # repo token gets 403 on a new version.
+      - name: Configure GitHub Packages auth
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PACKAGES_TOKEN }}" >> .npmrc
+
+      # Publish in dependency order so consumers can always resolve. `bun publish`
+      # reads publishConfig.registry from each package.json and inlines workspace:*.
+      - name: Publish to GitHub Packages
+        run: |
+          set -euo pipefail
+          for pkg in \
+            packages/m3-tokens \
+            packages/material-web \
+            packages/react \
+            packages/m3-motion \
+            packages/m3-theme \
+            packages/m3-design \
+            packages/eslint-plugin-m3 \
+            packages/doc-ai; do
+            echo "::group::publish $pkg"
+            ( cd "$pkg" && bun publish --access public ) || echo "skip $pkg (version may already exist)"
+            echo "::endgroup::"
+          done
+
+      # Optional mirror to npmjs.org for tokenless public install. Runs only when
+      # an NPM_TOKEN secret is set AND the @aphrody-code scope is owned on npmjs.
+      - name: Publish to npmjs.org (optional mirror)
+        if: ${{ env.NPM_TOKEN != '' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
+          for pkg in \
+            packages/m3-tokens \
+            packages/material-web \
+            packages/react \
+            packages/m3-motion \
+            packages/m3-theme \
+            packages/m3-design \
+            packages/eslint-plugin-m3 \
+            packages/doc-ai; do
+            echo "::group::npmjs $pkg"
+            ( cd "$pkg" && bun publish --access public --registry https://registry.npmjs.org ) || echo "skip $pkg"
+            echo "::endgroup::"
+          done

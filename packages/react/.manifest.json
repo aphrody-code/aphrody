@@ -1,0 +1,979 @@
+{
+  "resolved": [
+    {
+      "tag": "md-accordion",
+      "name": "MdAccordion",
+      "file": "expansion/accordion.js",
+      "className": "MdAccordion",
+      "events": {}
+    },
+    {
+      "tag": "md-assist-chip",
+      "name": "MdAssistChip",
+      "file": "chips/assist-chip.js",
+      "className": "MdAssistChip",
+      "events": {}
+    },
+    {
+      "tag": "md-autocomplete",
+      "name": "MdAutocomplete",
+      "file": "autocomplete/autocomplete.js",
+      "className": "MdAutocomplete",
+      "events": {
+        "onInput": "input",
+        "onSelect": "autocomplete:select"
+      }
+    },
+    {
+      "tag": "md-badge",
+      "name": "MdBadge",
+      "file": "badge/badge.js",
+      "className": "MdBadge",
+      "events": {}
+    },
+    {
+      "tag": "md-bottom-app-bar",
+      "name": "MdBottomAppBar",
+      "file": "appbar/bottom-app-bar.js",
+      "className": "MdBottomAppBar",
+      "events": {}
+    },
+    {
+      "tag": "md-bottom-sheet",
+      "name": "MdBottomSheet",
+      "file": "sheet/bottom-sheet.js",
+      "className": "MdBottomSheet",
+      "events": {
+        "onOpening": "bottom-sheet:opening",
+        "onOpened": "bottom-sheet:opened",
+        "onClosing": "bottom-sheet:closing",
+        "onClosed": "bottom-sheet:closed"
+      }
+    },
+    {
+      "tag": "md-branded-fab",
+      "name": "MdBrandedFab",
+      "file": "fab/branded-fab.js",
+      "className": "MdBrandedFab",
+      "events": {}
+    },
+    {
+      "tag": "md-button",
+      "name": "MdButton",
+      "file": "labs/gb/components/button/md-button.js",
+      "className": "Button",
+      "events": {}
+    },
+    {
+      "tag": "md-button-group",
+      "name": "MdButtonGroup",
+      "file": "buttongroup/button-group.js",
+      "className": "MdButtonGroup",
+      "events": {
+        "onChange": "button-group:change"
+      }
+    },
+    {
+      "tag": "md-card",
+      "name": "MdCard",
+      "file": "card/card.js",
+      "className": "MdCard",
+      "events": {}
+    },
+    {
+      "tag": "md-carousel",
+      "name": "MdCarousel",
+      "file": "carousel/carousel.js",
+      "className": "MdCarousel",
+      "events": {
+        "onChange": "carousel-change"
+      }
+    },
+    {
+      "tag": "md-carousel-item",
+      "name": "MdCarouselItem",
+      "file": "carousel/carousel-item.js",
+      "className": "MdCarouselItem",
+      "events": {}
+    },
+    {
+      "tag": "md-checkbox",
+      "name": "MdCheckbox",
+      "file": "checkbox/checkbox.js",
+      "className": "MdCheckbox",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-chip-set",
+      "name": "MdChipSet",
+      "file": "chips/chip-set.js",
+      "className": "MdChipSet",
+      "events": {}
+    },
+    {
+      "tag": "md-circular-progress",
+      "name": "MdCircularProgress",
+      "file": "progress/circular-progress.js",
+      "className": "MdCircularProgress",
+      "events": {}
+    },
+    {
+      "tag": "md-date-picker",
+      "name": "MdDatePicker",
+      "file": "datepicker/date-picker.js",
+      "className": "MdDatePicker",
+      "events": {
+        "onChange": "date-picker:change"
+      }
+    },
+    {
+      "tag": "md-dialog",
+      "name": "MdDialog",
+      "file": "dialog/dialog.js",
+      "className": "MdDialog",
+      "events": {
+        "onOpen": "open",
+        "onOpened": "opened",
+        "onClose": "close",
+        "onClosed": "closed",
+        "onCancel": "cancel"
+      }
+    },
+    {
+      "tag": "md-divider",
+      "name": "MdDivider",
+      "file": "divider/divider.js",
+      "className": "MdDivider",
+      "events": {}
+    },
+    {
+      "tag": "md-elevated-button",
+      "name": "MdElevatedButton",
+      "file": "button/elevated-button.js",
+      "className": "MdElevatedButton",
+      "events": {}
+    },
+    {
+      "tag": "md-elevated-card",
+      "name": "MdElevatedCard",
+      "file": "labs/card/elevated-card.js",
+      "className": "MdElevatedCard",
+      "events": {}
+    },
+    {
+      "tag": "md-elevation",
+      "name": "MdElevation",
+      "file": "elevation/elevation.js",
+      "className": "MdElevation",
+      "events": {}
+    },
+    {
+      "tag": "md-expansion-panel",
+      "name": "MdExpansionPanel",
+      "file": "expansion/expansion-panel.js",
+      "className": "MdExpansionPanel",
+      "events": {
+        "onToggle": "expansion:toggle"
+      }
+    },
+    {
+      "tag": "md-fab",
+      "name": "MdFab",
+      "file": "fab/fab.js",
+      "className": "MdFab",
+      "events": {}
+    },
+    {
+      "tag": "md-fab-menu",
+      "name": "MdFabMenu",
+      "file": "fabmenu/fab-menu.js",
+      "className": "MdFabMenu",
+      "events": {
+        "onOpen": "fab-menu:open",
+        "onClose": "fab-menu:close"
+      }
+    },
+    {
+      "tag": "md-fab-menu-item",
+      "name": "MdFabMenuItem",
+      "file": "fabmenu/fab-menu-item.js",
+      "className": "MdFabMenuItem",
+      "events": {
+        "onClick": "fab-menu-item:click"
+      }
+    },
+    {
+      "tag": "md-filled-button",
+      "name": "MdFilledButton",
+      "file": "button/filled-button.js",
+      "className": "MdFilledButton",
+      "events": {}
+    },
+    {
+      "tag": "md-filled-card",
+      "name": "MdFilledCard",
+      "file": "labs/card/filled-card.js",
+      "className": "MdFilledCard",
+      "events": {}
+    },
+    {
+      "tag": "md-filled-field",
+      "name": "MdFilledField",
+      "file": "field/filled-field.js",
+      "className": "MdFilledField",
+      "events": {}
+    },
+    {
+      "tag": "md-filled-icon-button",
+      "name": "MdFilledIconButton",
+      "file": "iconbutton/filled-icon-button.js",
+      "className": "MdFilledIconButton",
+      "events": {}
+    },
+    {
+      "tag": "md-filled-select",
+      "name": "MdFilledSelect",
+      "file": "select/filled-select.js",
+      "className": "MdFilledSelect",
+      "events": {
+        "onChange": "change",
+        "onInput": "input",
+        "onOpening": "opening",
+        "onOpened": "opened",
+        "onClosing": "closing",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-filled-text-field",
+      "name": "MdFilledTextField",
+      "file": "textfield/filled-text-field.js",
+      "className": "MdFilledTextField",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-filled-tonal-button",
+      "name": "MdFilledTonalButton",
+      "file": "button/filled-tonal-button.js",
+      "className": "MdFilledTonalButton",
+      "events": {}
+    },
+    {
+      "tag": "md-filled-tonal-icon-button",
+      "name": "MdFilledTonalIconButton",
+      "file": "iconbutton/filled-tonal-icon-button.js",
+      "className": "MdFilledTonalIconButton",
+      "events": {}
+    },
+    {
+      "tag": "md-filter-chip",
+      "name": "MdFilterChip",
+      "file": "chips/filter-chip.js",
+      "className": "MdFilterChip",
+      "events": {}
+    },
+    {
+      "tag": "md-focus-ring",
+      "name": "MdFocusRing",
+      "file": "focus/md-focus-ring.js",
+      "className": "MdFocusRing",
+      "events": {}
+    },
+    {
+      "tag": "md-grid-list",
+      "name": "MdGridList",
+      "file": "gridlist/grid-list.js",
+      "className": "MdGridList",
+      "events": {}
+    },
+    {
+      "tag": "md-grid-tile",
+      "name": "MdGridTile",
+      "file": "gridlist/grid-tile.js",
+      "className": "MdGridTile",
+      "events": {}
+    },
+    {
+      "tag": "md-icon",
+      "name": "MdIcon",
+      "file": "icon/icon.js",
+      "className": "MdIcon",
+      "events": {}
+    },
+    {
+      "tag": "md-icon-button",
+      "name": "MdIconButton",
+      "file": "iconbutton/icon-button.js",
+      "className": "MdIconButton",
+      "events": {}
+    },
+    {
+      "tag": "md-input-chip",
+      "name": "MdInputChip",
+      "file": "chips/input-chip.js",
+      "className": "MdInputChip",
+      "events": {
+        "onRemove": "remove",
+        "onUpdateFocus": "update-focus"
+      }
+    },
+    {
+      "tag": "md-item",
+      "name": "MdItem",
+      "file": "labs/item/item.js",
+      "className": "MdItem",
+      "events": {}
+    },
+    {
+      "tag": "md-linear-progress",
+      "name": "MdLinearProgress",
+      "file": "progress/linear-progress.js",
+      "className": "MdLinearProgress",
+      "events": {}
+    },
+    {
+      "tag": "md-list",
+      "name": "MdList",
+      "file": "list/list.js",
+      "className": "MdList",
+      "events": {}
+    },
+    {
+      "tag": "md-list-detail",
+      "name": "MdListDetail",
+      "file": "layout/md-list-detail.js",
+      "className": "MdListDetail",
+      "events": {}
+    },
+    {
+      "tag": "md-list-item",
+      "name": "MdListItem",
+      "file": "list/list-item.js",
+      "className": "MdListItem",
+      "events": {}
+    },
+    {
+      "tag": "md-loading-indicator",
+      "name": "MdLoadingIndicator",
+      "file": "loadingindicator/loading-indicator.js",
+      "className": "MdLoadingIndicator",
+      "events": {}
+    },
+    {
+      "tag": "md-menu",
+      "name": "MdMenu",
+      "file": "menu/menu.js",
+      "className": "MdMenu",
+      "events": {
+        "onOpening": "opening",
+        "onOpened": "opened",
+        "onClosing": "closing",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-menu-group",
+      "name": "MdMenuGroup",
+      "file": "labs/gb/components/menu/md-menu-group.js",
+      "className": "MenuGroup",
+      "events": {}
+    },
+    {
+      "tag": "md-menu-item",
+      "name": "MdMenuItem",
+      "file": "menu/menu-item.js",
+      "className": "MdMenuItem",
+      "events": {
+        "onCloseMenu": "close-menu"
+      }
+    },
+    {
+      "tag": "md-navigation-bar",
+      "name": "MdNavigationBar",
+      "file": "labs/navigationbar/navigation-bar.js",
+      "className": "MdNavigationBar",
+      "events": {
+        "onActivated": "navigation-bar-activated"
+      }
+    },
+    {
+      "tag": "md-navigation-drawer",
+      "name": "MdNavigationDrawer",
+      "file": "labs/navigationdrawer/navigation-drawer.js",
+      "className": "MdNavigationDrawer",
+      "events": {
+        "onNavigationDrawerChanged": "navigation-drawer-changed"
+      }
+    },
+    {
+      "tag": "md-navigation-drawer-modal",
+      "name": "MdNavigationDrawerModal",
+      "file": "labs/navigationdrawer/navigation-drawer-modal.js",
+      "className": "MdNavigationDrawerModal",
+      "events": {
+        "onNavigationDrawerChanged": "navigation-drawer-changed"
+      }
+    },
+    {
+      "tag": "md-navigation-rail",
+      "name": "MdNavigationRail",
+      "file": "navigationrail/navigation-rail.js",
+      "className": "MdNavigationRail",
+      "events": {
+        "onChange": "navigation-rail:change",
+        "onItemActivate": "navigation-rail-item:activate"
+      }
+    },
+    {
+      "tag": "md-navigation-rail-item",
+      "name": "MdNavigationRailItem",
+      "file": "navigationrail/navigation-rail-item.js",
+      "className": "MdNavigationRailItem",
+      "events": {}
+    },
+    {
+      "tag": "md-navigation-tab",
+      "name": "MdNavigationTab",
+      "file": "labs/navigationtab/navigation-tab.js",
+      "className": "MdNavigationTab",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-button",
+      "name": "MdOutlinedButton",
+      "file": "button/outlined-button.js",
+      "className": "MdOutlinedButton",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-card",
+      "name": "MdOutlinedCard",
+      "file": "labs/card/outlined-card.js",
+      "className": "MdOutlinedCard",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-field",
+      "name": "MdOutlinedField",
+      "file": "field/outlined-field.js",
+      "className": "MdOutlinedField",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-icon-button",
+      "name": "MdOutlinedIconButton",
+      "file": "iconbutton/outlined-icon-button.js",
+      "className": "MdOutlinedIconButton",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-segmented-button",
+      "name": "MdOutlinedSegmentedButton",
+      "file": "labs/segmentedbutton/outlined-segmented-button.js",
+      "className": "MdOutlinedSegmentedButton",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-segmented-button-set",
+      "name": "MdOutlinedSegmentedButtonSet",
+      "file": "labs/segmentedbuttonset/outlined-segmented-button-set.js",
+      "className": "MdOutlinedSegmentedButtonSet",
+      "events": {}
+    },
+    {
+      "tag": "md-outlined-select",
+      "name": "MdOutlinedSelect",
+      "file": "select/outlined-select.js",
+      "className": "MdOutlinedSelect",
+      "events": {
+        "onChange": "change",
+        "onInput": "input",
+        "onOpening": "opening",
+        "onOpened": "opened",
+        "onClosing": "closing",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-outlined-text-field",
+      "name": "MdOutlinedTextField",
+      "file": "textfield/outlined-text-field.js",
+      "className": "MdOutlinedTextField",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-paginator",
+      "name": "MdPaginator",
+      "file": "paginator/paginator.js",
+      "className": "MdPaginator",
+      "events": {
+        "onPage": "paginator:page"
+      }
+    },
+    {
+      "tag": "md-pane",
+      "name": "MdPane",
+      "file": "layout/md-pane.js",
+      "className": "MdPane",
+      "events": {}
+    },
+    {
+      "tag": "md-primary-tab",
+      "name": "MdPrimaryTab",
+      "file": "tabs/primary-tab.js",
+      "className": "MdPrimaryTab",
+      "events": {}
+    },
+    {
+      "tag": "md-radio",
+      "name": "MdRadio",
+      "file": "radio/radio.js",
+      "className": "MdRadio",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-ripple",
+      "name": "MdRipple",
+      "file": "ripple/ripple.js",
+      "className": "MdRipple",
+      "events": {}
+    },
+    {
+      "tag": "md-scaffold",
+      "name": "MdScaffold",
+      "file": "layout/md-scaffold.js",
+      "className": "MdScaffold",
+      "events": {}
+    },
+    {
+      "tag": "md-search-bar",
+      "name": "MdSearchBar",
+      "file": "search/search-bar.js",
+      "className": "MdSearchBar",
+      "events": {
+        "onInput": "input",
+        "onSearch": "search",
+        "onSearchOpen": "search:open",
+        "onSearchClose": "search:close"
+      }
+    },
+    {
+      "tag": "md-secondary-tab",
+      "name": "MdSecondaryTab",
+      "file": "tabs/secondary-tab.js",
+      "className": "MdSecondaryTab",
+      "events": {}
+    },
+    {
+      "tag": "md-select-option",
+      "name": "MdSelectOption",
+      "file": "select/select-option.js",
+      "className": "MdSelectOption",
+      "events": {}
+    },
+    {
+      "tag": "md-side-sheet",
+      "name": "MdSideSheet",
+      "file": "sheet/side-sheet.js",
+      "className": "MdSideSheet",
+      "events": {
+        "onOpening": "side-sheet:opening",
+        "onOpened": "side-sheet:opened",
+        "onClosing": "side-sheet:closing",
+        "onClosed": "side-sheet:closed"
+      }
+    },
+    {
+      "tag": "md-slider",
+      "name": "MdSlider",
+      "file": "slider/slider.js",
+      "className": "MdSlider",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-snackbar",
+      "name": "MdSnackbar",
+      "file": "snackbar/snackbar.js",
+      "className": "MdSnackbar",
+      "events": {
+        "onOpening": "opening",
+        "onOpened": "opened",
+        "onClosing": "closing",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-split-button",
+      "name": "MdSplitButton",
+      "file": "labs/gb/components/splitbutton/md-split-button.js",
+      "className": "SplitButton",
+      "events": {}
+    },
+    {
+      "tag": "md-step",
+      "name": "MdStep",
+      "file": "stepper/step.js",
+      "className": "MdStep",
+      "events": {}
+    },
+    {
+      "tag": "md-stepper",
+      "name": "MdStepper",
+      "file": "stepper/stepper.js",
+      "className": "MdStepper",
+      "events": {
+        "onChange": "stepper:change"
+      }
+    },
+    {
+      "tag": "md-sub-menu",
+      "name": "MdSubMenu",
+      "file": "menu/sub-menu.js",
+      "className": "MdSubMenu",
+      "events": {
+        "onOpening": "opening",
+        "onOpened": "opened",
+        "onClosing": "closing",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-suggestion-chip",
+      "name": "MdSuggestionChip",
+      "file": "chips/suggestion-chip.js",
+      "className": "MdSuggestionChip",
+      "events": {}
+    },
+    {
+      "tag": "md-supporting-pane",
+      "name": "MdSupportingPane",
+      "file": "layout/md-supporting-pane.js",
+      "className": "MdSupportingPane",
+      "events": {}
+    },
+    {
+      "tag": "md-switch",
+      "name": "MdSwitch",
+      "file": "switch/switch.js",
+      "className": "MdSwitch",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-table",
+      "name": "MdTable",
+      "file": "table/table.js",
+      "className": "MdTable",
+      "events": {
+        "onSort": "table:sort",
+        "onSelectionChange": "table:selection-change"
+      }
+    },
+    {
+      "tag": "md-tabs",
+      "name": "MdTabs",
+      "file": "tabs/tabs.js",
+      "className": "MdTabs",
+      "events": {
+        "onChange": "change"
+      }
+    },
+    {
+      "tag": "md-text-button",
+      "name": "MdTextButton",
+      "file": "button/text-button.js",
+      "className": "MdTextButton",
+      "events": {}
+    },
+    {
+      "tag": "md-time-picker",
+      "name": "MdTimePicker",
+      "file": "timepicker/time-picker.js",
+      "className": "MdTimePicker",
+      "events": {
+        "onChange": "time-picker:change"
+      }
+    },
+    {
+      "tag": "md-toolbar",
+      "name": "MdToolbar",
+      "file": "toolbar/md-toolbar.js",
+      "className": "MdToolbar",
+      "events": {}
+    },
+    {
+      "tag": "md-tooltip",
+      "name": "MdTooltip",
+      "file": "tooltip/tooltip.js",
+      "className": "MdTooltip",
+      "events": {
+        "onShow": "tooltip-show",
+        "onHide": "tooltip-hide"
+      }
+    },
+    {
+      "tag": "md-top-app-bar",
+      "name": "MdTopAppBar",
+      "file": "appbar/top-app-bar.js",
+      "className": "MdTopAppBar",
+      "events": {}
+    },
+    {
+      "tag": "md-tree",
+      "name": "MdTree",
+      "file": "tree/tree.js",
+      "className": "MdTree",
+      "events": {
+        "onSelect": "tree:select"
+      }
+    },
+    {
+      "tag": "md-tree-item",
+      "name": "MdTreeItem",
+      "file": "tree/tree-item.js",
+      "className": "MdTreeItem",
+      "events": {
+        "onToggle": "tree-item:toggle",
+        "onActivate": "tree-item:activate"
+      }
+    },
+    {
+      "tag": "md-virtual-scroller",
+      "name": "MdVirtualScroller",
+      "file": "virtualscroll/virtual-scroller.js",
+      "className": "MdVirtualScroller",
+      "events": {
+        "onRange": "virtual-scroll:range"
+      }
+    },
+    {
+      "tag": "md-webgpu-canvas",
+      "name": "MdWebgpuCanvas",
+      "file": "effects/webgpu-canvas.js",
+      "className": "MdWebgpuCanvas",
+      "events": {}
+    },
+    {
+      "tag": "md-avatar",
+      "name": "MdAvatar",
+      "file": "avatar/avatar.js",
+      "className": "MdAvatar",
+      "events": {
+        "onError": "error"
+      }
+    },
+    {
+      "tag": "md-avatar-group",
+      "name": "MdAvatarGroup",
+      "file": "avatar/avatar-group.js",
+      "className": "MdAvatarGroup",
+      "events": {}
+    },
+    {
+      "tag": "md-alert",
+      "name": "MdAlert",
+      "file": "alert/alert.js",
+      "className": "MdAlert",
+      "events": {
+        "onClose": "close"
+      }
+    },
+    {
+      "tag": "md-skeleton",
+      "name": "MdSkeleton",
+      "file": "skeleton/skeleton.js",
+      "className": "MdSkeleton",
+      "events": {}
+    },
+    {
+      "tag": "md-breadcrumbs",
+      "name": "MdBreadcrumbs",
+      "file": "breadcrumbs/breadcrumbs.js",
+      "className": "MdBreadcrumbs",
+      "events": {}
+    },
+    {
+      "tag": "md-link",
+      "name": "MdLink",
+      "file": "link/link.js",
+      "className": "MdLink",
+      "events": {}
+    },
+    {
+      "tag": "md-surface",
+      "name": "MdSurface",
+      "file": "surface/surface.js",
+      "className": "MdSurface",
+      "events": {}
+    },
+    {
+      "tag": "md-backdrop",
+      "name": "MdBackdrop",
+      "file": "backdrop/backdrop.js",
+      "className": "MdBackdrop",
+      "events": {}
+    },
+    {
+      "tag": "md-popover",
+      "name": "MdPopover",
+      "file": "popover/popover.js",
+      "className": "MdPopover",
+      "events": {
+        "onOpened": "opened",
+        "onClosed": "closed"
+      }
+    },
+    {
+      "tag": "md-rating",
+      "name": "MdRating",
+      "file": "rating/rating.js",
+      "className": "MdRating",
+      "events": {
+        "onChange": "change",
+        "onInput": "input"
+      }
+    },
+    {
+      "tag": "md-line-chart",
+      "name": "MdLineChart",
+      "file": "charts/line-chart.js",
+      "className": "MdLineChart",
+      "events": {}
+    },
+    {
+      "tag": "md-bar-chart",
+      "name": "MdBarChart",
+      "file": "charts/bar-chart.js",
+      "className": "MdBarChart",
+      "events": {}
+    },
+    {
+      "tag": "md-pie-chart",
+      "name": "MdPieChart",
+      "file": "charts/pie-chart.js",
+      "className": "MdPieChart",
+      "events": {}
+    },
+    {
+      "tag": "md-area-chart",
+      "name": "MdAreaChart",
+      "file": "charts/area-chart.js",
+      "className": "MdAreaChart",
+      "events": {}
+    },
+    {
+      "tag": "md-sparkline",
+      "name": "MdSparkline",
+      "file": "charts/sparkline.js",
+      "className": "MdSparkline",
+      "events": {}
+    },
+    {
+      "tag": "md-gauge",
+      "name": "MdGauge",
+      "file": "charts/gauge.js",
+      "className": "MdGauge",
+      "events": {}
+    },
+    {
+      "tag": "md-date-range-picker",
+      "name": "MdDateRangePicker",
+      "file": "datepicker/date-range-picker.js",
+      "className": "MdDateRangePicker",
+      "events": {
+        "onInput": "input",
+        "onChange": "change",
+        "onDateRangeChange": "date-range-picker:change"
+      }
+    },
+    {
+      "tag": "md-mobile-stepper",
+      "name": "MdMobileStepper",
+      "file": "mobilestepper/mobile-stepper.js",
+      "className": "MdMobileStepper",
+      "events": {}
+    },
+    {
+      "tag": "md-scatter-chart",
+      "name": "MdScatterChart",
+      "file": "charts/scatter-chart.js",
+      "className": "MdScatterChart",
+      "events": {}
+    },
+    {
+      "tag": "md-radar-chart",
+      "name": "MdRadarChart",
+      "file": "charts/radar-chart.js",
+      "className": "MdRadarChart",
+      "events": {}
+    },
+    {
+      "tag": "md-date-time-picker",
+      "name": "MdDateTimePicker",
+      "file": "datepicker/date-time-picker.js",
+      "className": "MdDateTimePicker",
+      "events": {
+        "onInput": "input",
+        "onChange": "change",
+        "onDateTimeChange": "date-time-picker:change"
+      }
+    },
+    {
+      "tag": "md-scheduler",
+      "name": "MdScheduler",
+      "file": "scheduler/scheduler.js",
+      "className": "MdScheduler",
+      "events": {
+        "onNavigate": "scheduler:navigate",
+        "onSelect": "scheduler:select",
+        "onEventClick": "scheduler:event-click"
+      }
+    },
+    {
+      "tag": "md-type",
+      "name": "MdType",
+      "file": "typography/md-type.js",
+      "className": "MdType",
+      "events": {}
+    },
+    {
+      "tag": "md-3d-canvas",
+      "name": "Md3dCanvas",
+      "file": "canvas3d/canvas-3d.js",
+      "className": "M3Canvas3D",
+      "events": {}
+    },
+    {
+      "tag": "md-3d-globe",
+      "name": "Md3dGlobe",
+      "file": "globe3d/globe-3d.js",
+      "className": "M3Globe3D",
+      "events": {}
+    },
+    {
+      "tag": "md-3d-card",
+      "name": "Md3dCard",
+      "file": "card3d/card-3d.js",
+      "className": "M3Card3D",
+      "events": {}
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>m3 bxc smoke</title>
+    <style>
+      :root {
+        --md-sys-color-primary: #1976d2;
+        --md-sys-color-on-primary: #fff;
+        --md-sys-color-primary-container: #d4e3ff;
+        --md-sys-color-on-primary-container: #001c3a;
+        --md-sys-color-surface: #fdfcff;
+        --md-sys-color-on-surface: #1a1c1e;
+        --md-sys-color-surface-variant: #dfe2eb;
+        --md-sys-color-on-surface-variant: #43474e;
+        --md-sys-color-outline: #73777f;
+        --md-sys-color-outline-variant: #c3c6cf;
+        --md-sys-color-error: #ba1a1a;
+        --md-sys-color-secondary: #535f70;
+        --md-sys-color-tertiary: #6b5778;
+        --md-sys-color-scrim: #000;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <md-avatar alt="AB"></md-avatar>
+    <md-alert severity="success">Saved</md-alert>
+    <md-skeleton variant="text"></md-skeleton>
+    <md-breadcrumbs></md-breadcrumbs>
+    <md-link href="#x">link</md-link>
+    <md-surface level="2">surface</md-surface>
+    <md-backdrop></md-backdrop>
+    <md-popover>pop</md-popover>
+    <md-rating value="3"></md-rating>
+    <md-line-chart></md-line-chart>
+    <md-bar-chart></md-bar-chart>
+    <md-pie-chart></md-pie-chart>
+    <md-area-chart></md-area-chart>
+    <md-sparkline></md-sparkline>
+    <md-gauge value="50"></md-gauge>
+    <md-date-range-picker></md-date-range-picker>
+
+    <pre id="bxc-result">PENDING</pre>
+
+    <script>
+      // Test-only shim: Lightpanda lacks ElementInternals/attachInternals (real
+      // Chromium has it). material-web/Lit form-associated components need it.
+      if (typeof HTMLElement.prototype.attachInternals !== "function") {
+        window.ElementInternals = window.ElementInternals || function () {};
+        HTMLElement.prototype.attachInternals = function () {
+          return {
+            setFormValue() {},
+            setValidity() {},
+            checkValidity() {
+              return true;
+            },
+            reportValidity() {
+              return true;
+            },
+            states: new Set(),
+            form: null,
+            labels: [],
+            willValidate: true,
+            validity: {},
+            validationMessage: "",
+            shadowRoot: null,
+            role: null,
+            ariaLabel: null,
+          };
+        };
+      }
+    </script>
+    <script type="module">
+      const TAGS = [
+        "md-avatar",
+        "md-avatar-group",
+        "md-alert",
+        "md-skeleton",
+        "md-breadcrumbs",
+        "md-link",
+        "md-surface",
+        "md-backdrop",
+        "md-popover",
+        "md-rating",
+        "md-line-chart",
+        "md-bar-chart",
+        "md-pie-chart",
+        "md-area-chart",
+        "md-sparkline",
+        "md-gauge",
+        "md-date-range-picker",
+      ];
+      const errors = [];
+      window.addEventListener("error", (e) => errors.push(String(e.message || e)));
+      window.addEventListener("unhandledrejection", (e) => errors.push("REJ:" + String(e.reason)));
+
+      const out = document.getElementById("bxc-result");
+      const write = (s) => {
+        out.textContent = s;
+        out.setAttribute("data-done", "1");
+      };
+
+      try {
+        await import("../dist-aphrody/aphrody-components.smoke.js");
+      } catch (e) {
+        write("IMPORT_FAIL: " + (e && e.message ? e.message : e));
+        throw e;
+      }
+
+      let defined = 0,
+        shadow = 0;
+      const fails = [];
+      for (const t of TAGS) {
+        try {
+          await Promise.race([
+            customElements.whenDefined(t),
+            new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 3000)),
+          ]);
+          defined++;
+          let el = document.querySelector(t);
+          if (!el) {
+            el = document.createElement(t);
+            document.body.appendChild(el);
+          }
+          if (el.updateComplete) {
+            try {
+              await el.updateComplete;
+            } catch {}
+          }
+          if (el.shadowRoot && el.shadowRoot.childNodes.length > 0) shadow++;
+          else fails.push(t + ":noshadow");
+        } catch {
+          fails.push(t + ":undefined");
+        }
+      }
+      write(
+        `DEFINED:${defined}/${TAGS.length} SHADOW:${shadow}/${TAGS.length} ERRORS:${errors.length}` +
+          (fails.length ? " FAILS=" + fails.join(",") : "") +
+          (errors.length ? " ERR=" + errors.slice(0, 3).join(" | ") : ""),
+      );
+    </script>
+  </body>
+</html>

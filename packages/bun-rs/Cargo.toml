@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  Bun-RS — High-Performance native FFI plugin for Bun (bun:ffi)
+# ============================================================================
+
+[package]
+name = "bun-rs"
+version = "1.0.0-canary"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "High-performance native Rust plugin for Bun applications using bun:ffi."
+
+[lib]
+name = "bun_rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+memchr = "2"
+m3-tokens = { path = "../../../aphrody/crates/m3-tokens" }
+grass = "0.13"
+wasm-bindgen = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+ts-rs = { version = "10.0", features = ["serde-compat"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+

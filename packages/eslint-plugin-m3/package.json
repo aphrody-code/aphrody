@@ -1,0 +1,53 @@
+{
+  "name": "@aphrody-code/eslint-plugin-m3",
+  "version": "3.2.0",
+  "description": "Lint rules for sites consuming material-web (@aphrody-code/m3-react + Material Symbols) — runs under oxlint (jsPlugins) and ESLint.",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "lint",
+    "m3",
+    "material-design",
+    "material-web",
+    "oxlint"
+  ],
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/eslint-plugin-m3#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/eslint-plugin-m3"
+  },
+  "files": [
+    "index.js",
+    "rules/",
+    "data/",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "test": "bun test/run.ts",
+    "sync-symbols": "bun scripts/sync-symbol-names.ts"
+  },
+  "peerDependencies": {
+    "oxlint": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "oxlint": {
+      "optional": true
+    }
+  }
+}

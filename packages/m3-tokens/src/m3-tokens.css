@@ -1,0 +1,183 @@
+/**
+ * @aphrody-code/m3-tokens — m3-tokens.css
+ *
+ * Déclare au RUNTIME, sur :root, les familles de tokens M3 que la lib
+ * @material/web (v2.4.1, M3 v0.192) NE PROJETTE PAS en custom properties.
+ *
+ * Contexte (cf. migration/09-coverage-tailwind.md) : seules color et
+ * typescale (size/line-height/weight) sont émises comme `var(--md-sys-*)`
+ * au runtime par le SCSS de la lib. shape-corner, typescale-tracking,
+ * motion (durations + easings), elevation et state sont résolus au
+ * compile-time Sass dans les composants → AUCUNE `--md-sys-*` var
+ * correspondante n'existe dans le DOM.
+ *
+ * En important ce fichier, un consommateur Tailwind v4 obtient ces familles
+ * comme vraies vars runtime sur :root et PEUT donc les mapper en `@theme`
+ * (radius, ease, letter-spacing…). Valeurs tirées telles quelles de
+ * material-web/tokens/versions/v0_192/_md-sys-*.scss (non inventées).
+ *
+ * Override : redéfinir n'importe laquelle de ces vars sur un sous-arbre
+ * fonctionne (cascade CSS standard) ; les composants md-* lisant des
+ * tokens composant (--md-comp-*) ne sont PAS affectés par ce fichier.
+ */
+
+:root {
+  /* ============================================================
+   * SHAPE — corners (échelle M3 10 niveaux, incl. M3 Expressive)
+   * Source : versions/v0_192/_md-sys-shape.scss + M3 Expressive (2025)
+   * La lib n'émet AUCUN --md-sys-shape-corner-* au runtime.
+   * Les 3 niveaux *-increased / extra-extra-large sont les ajouts
+   * M3 Expressive (large-increased 20, extra-large-increased 32,
+   * extra-extra-large 48), cf. docs/design/m3-styles.md.
+   * ============================================================ */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-extra-large-increased: 32px;
+  --md-sys-shape-corner-extra-extra-large: 48px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* ============================================================
+   * TYPESCALE — tracking / letter-spacing (15 rôles)
+   * Source : versions/v0_192/_md-sys-typescale.scss
+   * Les *-tracking sont dans $unsupported-tokens → JAMAIS émis par la
+   * lib (size/line-height/weight le sont, eux). On les déclare ici pour
+   * compléter le mapping --text-X--letter-spacing / --tracking-X.
+   * ============================================================ */
+  --md-sys-typescale-display-large-tracking: -0.015625rem;
+  --md-sys-typescale-display-medium-tracking: 0rem;
+  --md-sys-typescale-display-small-tracking: 0rem;
+  --md-sys-typescale-headline-large-tracking: 0rem;
+  --md-sys-typescale-headline-medium-tracking: 0rem;
+  --md-sys-typescale-headline-small-tracking: 0rem;
+  --md-sys-typescale-title-large-tracking: 0rem;
+  --md-sys-typescale-title-medium-tracking: 0.009375rem;
+  --md-sys-typescale-title-small-tracking: 0.00625rem;
+  --md-sys-typescale-body-large-tracking: 0.03125rem;
+  --md-sys-typescale-body-medium-tracking: 0.015625rem;
+  --md-sys-typescale-body-small-tracking: 0.025rem;
+  --md-sys-typescale-label-large-tracking: 0.00625rem;
+  --md-sys-typescale-label-medium-tracking: 0.03125rem;
+  --md-sys-typescale-label-small-tracking: 0.03125rem;
+
+  /* ============================================================
+   * MOTION — durations (16) + easings (10)
+   * Source : versions/v0_192/_md-sys-motion.scss
+   * Famille passthrough côté lib → AUCUN --md-sys-motion-* runtime.
+   * ============================================================ */
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+  --md-sys-motion-duration-long3: 550ms;
+  --md-sys-motion-duration-long4: 600ms;
+  --md-sys-motion-duration-extra-long1: 700ms;
+  --md-sys-motion-duration-extra-long2: 800ms;
+  --md-sys-motion-duration-extra-long3: 900ms;
+  --md-sys-motion-duration-extra-long4: 1000ms;
+
+  --md-sys-motion-easing-linear: cubic-bezier(0, 0, 1, 1);
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-legacy: cubic-bezier(0.4, 0, 0.2, 1);
+  --md-sys-motion-easing-legacy-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --md-sys-motion-easing-legacy-decelerate: cubic-bezier(0, 0, 0.2, 1);
+
+  /* ============================================================
+   * ELEVATION — level0..5 comme box-shadow prêtes à l'emploi (6)
+   * Source : niveaux 0..5 (versions/v0_192/_md-sys-elevation.scss) +
+   * courbe d'ombre du composant <md-elevation>
+   * (elevation/internal/elevation-styles.cssresult.ts) : double ombre
+   * (key-light .3 + ambient .15) évaluée pour chaque niveau.
+   * La lib n'émet AUCUN --md-sys-elevation-* runtime ; ces ombres sont
+   * une RECONSTITUTION fidèle de la sortie du composant. Pour une
+   * fidélité 100 % dynamique (transition, color), préférer <md-elevation>.
+   * --md-sys-color-shadow par défaut = #000 (cf. composant).
+   * ============================================================ */
+  --md-sys-elevation-shadow-color: var(--md-sys-color-shadow, #000);
+
+  --md-sys-elevation-level0: none;
+  --md-sys-elevation-level1:
+    0px 1px 2px 0px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.3),
+    0px 1px 3px 1px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.15);
+  --md-sys-elevation-level2:
+    0px 1px 2px 0px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.3),
+    0px 2px 6px 2px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.15);
+  --md-sys-elevation-level3:
+    0px 1px 3px 0px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.3),
+    0px 4px 8px 3px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.15);
+  --md-sys-elevation-level4:
+    0px 2px 3px 0px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.3),
+    0px 6px 10px 4px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.15);
+  --md-sys-elevation-level5:
+    0px 4px 4px 0px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.3),
+    0px 8px 12px 6px rgb(from var(--md-sys-elevation-shadow-color) r g b / 0.15);
+
+  /* ============================================================
+   * STATE — opacités de state layer (4)
+   * Source : versions/v0_192/_md-sys-state.scss
+   * AUCUN --md-sys-state-* runtime ; la state layer vit dans le shadow
+   * DOM des md-* (intouchable par Tailwind). Exposées ici uniquement
+   * pour le styling de surfaces MAISON (light DOM) — ex. hover sur une
+   * carte <div>. N'affecte PAS l'intérieur des md-*.
+   * ============================================================ */
+  --md-sys-state-hover-state-layer-opacity: 0.08;
+  --md-sys-state-focus-state-layer-opacity: 0.12;
+  --md-sys-state-pressed-state-layer-opacity: 0.12;
+  --md-sys-state-dragged-state-layer-opacity: 0.16;
+}
+
+/* ================================================================
+ * EXEMPLE — bloc @theme inline Tailwind v4 consommant ces vars.
+ * À COPIER dans votre app.css APRÈS `@import "tailwindcss"` ET après
+ * l'import de ce fichier. (Commenté : ce fichier est du CSS pur, pas
+ * traité par le moteur Tailwind ; il sert de référence à recopier.)
+ *
+ * @theme inline {
+ *   --- shape → rounded-* ---
+ *   --radius-none:        var(--md-sys-shape-corner-none);
+ *   --radius-extra-small: var(--md-sys-shape-corner-extra-small);
+ *   --radius-small:       var(--md-sys-shape-corner-small);
+ *   --radius-medium:      var(--md-sys-shape-corner-medium);
+ *   --radius-large:       var(--md-sys-shape-corner-large);
+ *   --radius-extra-large: var(--md-sys-shape-corner-extra-large);
+ *   --radius-full:        var(--md-sys-shape-corner-full);
+ *
+ *   --- typescale tracking → text-X (letter-spacing lié) / tracking-X ---
+ *   --text-body-large--letter-spacing:   var(--md-sys-typescale-body-large-tracking);
+ *   --text-title-medium--letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+ *   --tracking-body-large:   var(--md-sys-typescale-body-large-tracking);
+ *   --tracking-label-large:  var(--md-sys-typescale-label-large-tracking);
+ *
+ *   --- motion easings → ease-* ---
+ *   --ease-standard:              var(--md-sys-motion-easing-standard);
+ *   --ease-emphasized:            var(--md-sys-motion-easing-emphasized);
+ *   --ease-emphasized-decelerate: var(--md-sys-motion-easing-emphasized-decelerate);
+ *   --ease-emphasized-accelerate: var(--md-sys-motion-easing-emphasized-accelerate);
+ *
+ *   --- elevation → shadow-* (reconstitution, pas de transition dynamique) ---
+ *   --shadow-md3-1: var(--md-sys-elevation-level1);
+ *   --shadow-md3-2: var(--md-sys-elevation-level2);
+ *   --shadow-md3-3: var(--md-sys-elevation-level3);
+ *   --shadow-md3-4: var(--md-sys-elevation-level4);
+ *   --shadow-md3-5: var(--md-sys-elevation-level5);
+ * }
+ *
+ * Note durations : Tailwind v4 n'a PAS de namespace --duration-* thématique
+ * (pilotage via --tw-duration). Utiliser l'arbitraire en consommant ces vars :
+ *   class="duration-[var(--md-sys-motion-duration-medium2)]"
+ * ================================================================ */
