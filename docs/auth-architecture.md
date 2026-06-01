@@ -14,7 +14,7 @@ To achieve this, Aphrody supports two primary identity modes:
 1. **User Accounts (Default & Local Development)**: Reads Google OAuth 2.0 tokens managed by the **Antigravity desktop client** (or CLI).
 2. **Service Accounts (Local Automation & Server Deployments)**: Configured automatically via the `aphrody setup` workflow using `gcloud` to download a key and set up local environments.
 
-Additionally, for public operations (e.g., Google Books, Public DNS, Translate), Aphrody uses a **keyless, credential-free client wrapper** (`KeylessGoogleClient`), while the Gemini *web* surface uses session cookies managed in a private cookie jar.
+Additionally, all legacy client-side web automation, Google keyless operations (e.g., Google Books, Public DNS, Translate), and Chrome cookie extraction tools have been migrated to the `bxc` repository as of 2026-06-01. The Python client inside `aphrody` delegates these tasks to `bxc` via a subprocess client helper (`BxcGeminiWebClient`) for review and backend tools.
 
 ---
 

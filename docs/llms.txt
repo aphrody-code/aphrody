@@ -4276,6 +4276,11 @@ An implementation claiming "compatible with aphrody a2a v1" MUST satisfy:
 
 Aphrody provides a high-performance, modular RAG pipeline that integrates layout-based document chunking, RAPTOR hierarchical indexing, and GraphRAG entity-relationship extraction.
 
+> **Related:** for the RAG/AI stack of the **rpbey** project (a downstream consumer this
+> daemon will serve), see [`rpbey-rag/`](./rpbey-rag/README.md) — it documents rpbey's local
+> llama.cpp chat, BM25F+dense hybrid search, and the Gemini X.com metagame RAG, plus the exact
+> `RPBEY_LLM_URL` (OpenAI-compatible) seam to wire rpbey onto the aphrody backend.
+
 ---
 
 ## Architecture & Workflow
@@ -15882,7 +15887,7 @@ To achieve this, Aphrody supports two primary identity modes:
 1. **User Accounts (Default & Local Development)**: Reads Google OAuth 2.0 tokens managed by the **Antigravity desktop client** (or CLI).
 2. **Service Accounts (Local Automation & Server Deployments)**: Configured automatically via the `aphrody setup` workflow using `gcloud` to download a key and set up local environments.
 
-Additionally, for public operations (e.g., Google Books, Public DNS, Translate), Aphrody uses a **keyless, credential-free client wrapper** (`KeylessGoogleClient`), while the Gemini *web* surface uses session cookies managed in a private cookie jar.
+Additionally, all legacy client-side web automation, Google keyless operations (e.g., Google Books, Public DNS, Translate), and Chrome cookie extraction tools have been migrated to the `bxc` repository as of 2026-06-01. The Python client inside `aphrody` delegates these tasks to `bxc` via a subprocess client helper (`BxcGeminiWebClient`) for review and backend tools.
 
 ---
 
@@ -43899,6 +43904,1112 @@ small per-frame uniform (one `write_buffer`), and instance any repeated geometry
 - WebGPU render bundles best practice — <https://toji.dev/webgpu-best-practices/render-bundles.html>
 - `wgpu` crate docs — <https://docs.rs/wgpu/latest/wgpu/>
 - D3D12 pipeline-state / command-list / async-compute concepts (transferable) — Microsoft Learn.
+
+
+## File: docs/rpbey-rag/README.md
+
+# rpbey — environnement RAG / IA (référence pour aphrody)
+
+> **But de ce dossier.** Documenter EXHAUSTIVEMENT comment le projet **rpbey**
+> (communauté Beyblade « République Populaire du Beyblade », repo
+> `/home/ubuntu/rpbey`) fait du RAG et de l'IA **aujourd'hui**, à destination du
+> projet **aphrody** (le backend IA souverain du VPS qui, à terme, servira rpbey).
+> Un dev aphrody doit pouvoir lire ces docs et comprendre 100 % du pipeline + savoir
+> exactement **quel seam brancher** sur le daemon aphrody (réponse courte :
+> `RPBEY_LLM_URL`, un endpoint OpenAI-compatible — cf. [`llm.md`](./llm.md)).
+>
+> Ces docs sont **descriptives** (état au 2026-06-01). Elles ne modifient rien dans
+> rpbey. Voir aussi la doc RAG native d'aphrody : [`../RAG.md`](../RAG.md) (pipeline
+> RAPTOR/GraphRAG d'aphrody, indépendant de ce qui est décrit ici).
+
+---
+
+## Vue d'ensemble : rpbey a TROIS systèmes IA/RAG distincts
+
+rpbey n'a pas « un » RAG, mais trois sous-systèmes qui se recoupent partiellement.
+Ne pas les confondre — ils ont des **modèles, des stores et des buts différents**.
+
+| # | Système | Modèle(s) | Store / index | But | Doc |
+|---|---------|-----------|---------------|-----|-----|
+| **1** | **Chat IA « Rpbey »** (`/api/chat`) | LLM **local** llama.cpp (Llama-3.2-3B Q4) + sidecar embeddings e5-small 384d | corpus unifié Redis + vector set Redis `rpbey:search:vec` | répondre en français aux questions Beyblade des utilisateurs du site, en streaming, avec mémoire conversationnelle | [`chat.md`](./chat.md), [`llm.md`](./llm.md) |
+| **2** | **Moteur de recherche** (`/api/v1/search`, page `/recherche`) | sidecar embeddings e5-small 384d (dense) + BM25F pur (lexical) | corpus unifié `rpbey:search:corpus:v1` + vector set `rpbey:search:vec` | recherche hybride sur ~15 200 entités Beyblade (catalogue, wiki, méta, combos, tournois, discussions) | [`search.md`](./search.md) |
+| **3** | **Crawl + RAG X.com** (métagame Twitter) | **Gemini** (`gemini-embedding-001` 768d + `gemini-2.5-flash`) | SQLite `~/.aphrody/x-store.sqlite` (FTS5 + BLOB) + vector set Redis `tweet_embeddings` | analyser le métagame Beyblade X depuis les discussions x.com (RAG hybride VSIM+FTS5) | [`crawling-x.md`](./crawling-x.md) |
+
+Et **un** crawler de connaissance qui alimente surtout (1) et (2) :
+
+| Crawler | Source | Sortie | Consommé par | Doc |
+|---------|--------|--------|--------------|-----|
+| **crawl-fandom** | `beyblade.fandom.com` (MediaWiki API) | `apps/web/data/beyblade-knowledge.json` (~8 500 entités) | corpus de recherche (système 1 & 2) | [`knowledge.md`](./knowledge.md) |
+
+L'**infra** (services systemd, ports, stores, fichiers hors-repo, clés) est consolidée
+dans [`infra.md`](./infra.md).
+
+---
+
+## Schéma de flux (qui parle à quoi)
+
+```
+                         ┌──────────────────────────────────────────────┐
+   Utilisateur web ─────▶│  apps/web (Next.js 16, :3002, rpbey-web)     │
+   (rpbey.fr)            │                                              │
+                         │  /api/chat  ──▶ services/chat.ts (prepareTurn)│
+                         │     │            ├─ retrieve() hybride        │
+                         │     │            │   ├─ BM25F (lib/search-rank)│
+                         │     │            │   └─ dense (services/embeddings)
+                         │     │            └─ buildMessages (mémoire)    │
+                         │     └──▶ services/llm.ts ──HTTP─┐             │
+                         │                                 │             │
+                         │  /api/v1/search ─▶ rankSearch ⊕ fuseHybrid    │
+                         └─────────┬───────────────┬───────┼─────────────┘
+                                   │               │       │
+                  ┌────────────────▼──┐  ┌─────────▼──┐  ┌─▼──────────────────────┐
+                  │ Redis :6379       │  │ embed       │  │ rpbey-llm.service :8080│
+                  │ rpbey:search:vec  │  │ sidecar     │  │ llama.cpp (OpenAI API) │
+                  │ rpbey:search:corpus│ │ :7077       │  │ Llama-3.2-3B Q4        │
+                  │ tweet_embeddings  │  │ e5-small    │  │  ◀── SEAM aphrody       │
+                  └───────────────────┘  └─────────────┘  └────────────────────────┘
+                                   ▲
+                                   │ (alimenté hors-ligne par scripts)
+   ┌───────────────────────────────┴───────────────────────────────────┐
+   │ crawl-fandom.ts → beyblade-knowledge.json                          │
+   │ build-search-vectors.ts → VADD rpbey:search:vec                    │
+   │ scrape-*.ts (X, Reddit, WBO, shops) → apps/web/data/*.json         │
+   └────────────────────────────────────────────────────────────────────┘
+
+   X.com RAG (séparé, repo x-client, store ~/.aphrody) :
+   run-targeted-crawler.ts → x-store.sqlite + Redis tweet_embeddings → run-rag.ts (Gemini)
+```
+
+---
+
+## Le seam à connaître pour aphrody (TL;DR)
+
+Le chat rpbey appelle son LLM via **un seul point de configuration** :
+
+- **Variable** : `RPBEY_LLM_URL` (défaut `http://127.0.0.1:8080/v1/chat/completions`).
+- **Contrat** : **OpenAI Chat Completions** (`POST` JSON `{model, messages, stream, temperature, max_tokens, top_p, repeat_penalty}` ; réponse standard ou SSE `data: {...}` / `data: [DONE]`).
+- **Pour rebrancher rpbey sur aphrody** : il suffit que le daemon aphrody expose un
+  endpoint OpenAI-compatible et de pointer `RPBEY_LLM_URL` dessus. Aucun autre changement
+  côté rpbey. Le code (`apps/web/src/server/services/llm.ts`) est déjà écrit pour ça —
+  cf. [`llm.md`](./llm.md) § « Cible long terme : daemon aphrody ».
+
+La couche **dense d'embeddings** (sidecar e5-small 384d) est un second seam plus discret :
+elle parle à `EMBED_URL` (défaut `http://127.0.0.1:7077/embed`). aphrody pourrait aussi
+fournir cet endpoint — voir [`search.md`](./search.md) § sidecar.
+
+---
+
+## Index des fichiers
+
+| Fichier | Contenu |
+|---------|---------|
+| [`chat.md`](./chat.md) | Pipeline `/api/chat` : `prepareTurn`, retrieval hybride, intents NLP, mémoire conversationnelle, streaming SSE, repli extractif |
+| [`llm.md`](./llm.md) | LLM local llama.cpp : `rpbey-llm.service`, modèle, client OpenAI-compat (`generate`/`generateStream`), kill switch, cible aphrody |
+| [`search.md`](./search.md) | Moteur de recherche BM25F : `lib/search-rank.ts`, corpus `global-search.ts`, `/api/v1/search`, page `/recherche`, sidecar e5, synonymes, fuzzy |
+| [`crawling-x.md`](./crawling-x.md) | Crawl + RAG X.com/Twitter : session, indexation Redis/SQLite, RAG Gemini sur le métagame |
+| [`knowledge.md`](./knowledge.md) | Crawler de connaissance Beyblade : `crawl-fandom.ts`, `beyblade-knowledge.json`, intégration au corpus |
+| [`infra.md`](./infra.md) | Services systemd, timers, ports, fichiers hors-repo, stores (Redis, SQLite x-store, modèles llama) |
+
+## Sources canoniques côté rpbey
+
+- `/home/ubuntu/rpbey/CLAUDE.md` — sections « Chat IA Rpbey » et « Crawling & RAG X.com ».
+- `/home/ubuntu/rpbey/docs/crawling-rag-x.md` — guide complet X.com (source de [`crawling-x.md`](./crawling-x.md)).
+- `/home/ubuntu/rpbey/apps/web/AGENTS.md` — guide de l'appli web.
+
+
+## File: docs/rpbey-rag/chat.md
+
+# Chat IA « Rpbey » — pipeline `/api/chat`
+
+Le chat IA du site rpbey.fr. Un utilisateur pose une question Beyblade en français
+(« C'est quoi le meilleur combo méta ? », « Qui est Ryuga ? »), et reçoit une réponse
+**streamée**, en français, **groundée** sur un corpus de connaissance Beyblade, avec
+**mémoire conversationnelle** (multi-tour). C'est un RAG : *retrieve* hybride →
+*generate* par un LLM **local**.
+
+> **Important** : le chat n'est PLUS « zéro LLM », contrairement à ce qu'affirment
+> encore un commentaire d'en-tête de `RpbeyChat.tsx` et le titre de `chat-nlp.ts`
+> (« ZÉRO LLM »). Ces commentaires sont **stale** : depuis le commit `19745c2`
+> (2026-05-29), `prepareTurn` produit des `messages` qui sont envoyés à un vrai LLM
+> local (llama.cpp). Le « zéro LLM » ne s'applique plus qu'à la couche NLP de routage
+> (`detectIntent`) et au repli extractif déterministe.
+
+## Fichiers
+
+| Rôle | Chemin absolu |
+|------|---------------|
+| Route HTTP (SSE) | `/home/ubuntu/rpbey/apps/web/src/app/api/chat/route.ts` |
+| Cerveau RAG (retrieval + messages) | `/home/ubuntu/rpbey/apps/web/src/server/services/chat.ts` |
+| Client LLM (OpenAI-compat) | `/home/ubuntu/rpbey/apps/web/src/server/services/llm.ts` (→ [`llm.md`](./llm.md)) |
+| NLP de routage (intents, sans LLM) | `/home/ubuntu/rpbey/apps/web/src/lib/chat-nlp.ts` |
+| Ranker hybride partagé | `/home/ubuntu/rpbey/apps/web/src/lib/search-rank.ts` (→ [`search.md`](./search.md)) |
+| Couche dense (embeddings) | `/home/ubuntu/rpbey/apps/web/src/server/services/embeddings.ts` |
+| Corpus unifié | `/home/ubuntu/rpbey/apps/web/src/server/services/search-corpus.ts` + `global-search.ts` |
+| Composant UI client | `/home/ubuntu/rpbey/apps/web/src/components/chat/RpbeyChat.tsx` |
+
+Le chat tape **directement les services in-process** (pas d'aller-retour HTTP vers
+`/api/v1/search`). C'est l'équivalent web du bot Discord (`apps/bot/src/lib/rpbey/answer.ts`).
+
+---
+
+## 1. Route `POST /api/chat` — contrat SSE
+
+`route.ts` : `runtime = "nodejs"`, `dynamic = "force-dynamic"`.
+
+**Body de la requête** :
+```jsonc
+{ "message": "string (2..400 chars)", "history": [{ "role": "user|assistant", "content": "..." }] }
+```
+- `message` : trimé ; rejet (`type:"error"`) si < 2 chars ; tronqué à 400 chars.
+- `history` : **mémoire conversationnelle**, fournie par le client (le backend est
+  **stateless**). `sanitizeHistory` garde les 16 derniers tours, rôles `user`/`assistant`
+  seulement, contenu capé à 1200 chars.
+
+**Réponse** : flux `text/event-stream` (`Cache-Control: no-cache, no-transform`).
+Chaque événement est une ligne `data: {json}\n\n` :
+
+| `type` | Cardinalité | Charge utile |
+|--------|-------------|--------------|
+| `meta` | 1× (en tête) | `{ intent, found, sources[], followups[] }` |
+| `delta` | N× | `{ text }` — le texte de la réponse qui s'écrit token par token |
+| `done` | 1× (fin) | `{}` |
+| `error` | (cas d'erreur) | `{ message }` |
+
+Logique du `start(controller)` :
+1. `prepareTurn(message, history)` → `PreparedTurn` (retrieval + brouillon + messages).
+2. Envoie l'événement `meta`.
+3. **Branches** :
+   - `p.fixed != null` (greeting/thanks/stats/rien-trouvé) → un seul `delta` déterministe, pas de LLM.
+   - `p.messages` présent → on **stream** `generateStream(p.messages)` ; chaque chunk = un `delta`. Si le générateur ne yield rien (LLM indisponible/vide), repli sur `p.draft` (brouillon extractif) en un seul `delta` → **jamais d'écran vide**.
+   - sinon → `delta` = `p.draft`.
+4. `done`.
+
+---
+
+## 2. `prepareTurn` — le cœur du RAG (retrieval + construction des messages)
+
+`services/chat.ts`, fonction exportée `prepareTurn(message, history): Promise<PreparedTurn>`.
+Fait le retrieval et construit les messages, **sans** appeler le LLM (partagé entre
+streaming et non-stream).
+
+```ts
+interface PreparedTurn {
+  found: boolean;
+  intent: Intent;
+  sources: ChatSource[];
+  followups: string[];
+  fixed?: string;     // réponse déterministe immédiate (pas de LLM)
+  draft?: string;     // brouillon extractif (repli si LLM lâche)
+  messages?: ChatTurn[]; // à streamer vers le LLM
+}
+```
+
+### a. Classification d'intention (NLP sans LLM) — `lib/chat-nlp.ts`
+
+`detectIntent(question): Intent` applique une liste ordonnée de regex FR/EN (premier match
+gagne). Intents : `greeting`, `thanks`, `combo`, `best`, `meta`, `buy`, `tournament`,
+`rules`, `stats`, `compare`, `character`, `define` (repli). Chaque intent biaise une
+**catégorie de retrieval** via `INTENT_CATEGORY` (ex. `combo→combo`, `buy→product`,
+`character→anime`, `rules→lexicon`, `define→null` = global).
+
+`searchTerms(question)` nettoie l'échafaudage interrogatif (« c'est quoi », « qui est »,
+« explique-moi »…) pour ne garder que l'entité cherchée. La compréhension fine (synonymes,
+fautes) est déléguée au ranker BM25F (cf. [`search.md`](./search.md)).
+
+### b. Réponses déterministes (`fixed`, pas de LLM)
+
+- `greeting` / `thanks` → message fixe (templates `GREETINGS`).
+- `stats` → `answerStats` : **compte réel** par catégorie du corpus (zéro invention).
+- `compare` → `answerCompare` : isole deux entités via `COMPARE_SPLIT` (« X vs Y »,
+  « X contre Y »…), les récupère, les oppose côte à côte, calcule un verdict si un score
+  méta numérique est extractible. Produit un `draft` + `messages` (donc reformulable par le LLM).
+- `found:false` (rien trouvé) → message fixe + suggestions cliquables (entités proches).
+
+### c. Retrieval hybride — `retrieve(terms, category, limit)`
+
+C'est le **R de RAG**. Fusionne lexical et dense :
+```ts
+const index = await getSearchCorpus();              // corpus unifié (Redis-cached)
+const lex   = rankSearch(index, terms, {});         // BM25F (lib/search-rank.ts)
+const vec   = await searchVectorIds(terms, 120);    // voisins denses (VSIM Redis)
+const fused = fuseHybrid(index, lex, vec, { category, limit }); // RRF
+```
+- **Lexical** : BM25F par champ + synonymes FR/EN/JP + fuzzy Damerau-Levenshtein (→ [`search.md`](./search.md)).
+- **Dense** : `searchVectorIds` embed la requête via le **sidecar e5-small 384d**
+  (`services/embeddings.ts`, `EMBED_URL`), puis `VSIM` sur le vector set Redis
+  `rpbey:search:vec`. Best-effort : sidecar/Redis absent → `[]`, et `fuseHybrid`
+  préserve alors l'ordre BM25F (dégradation gracieuse).
+- **Fusion** : Reciprocal Rank Fusion (RRF, `k=60`, `lexWeight=1.0`, `vecWeight=0.9`).
+
+**Termes conscients du contexte** (`contextualTerms`) : sur une relance courte/anaphorique
+(« et sa toupie ? »), le dernier tour utilisateur est réinjecté dans les termes pour que le
+retrieval retrouve la bonne entité (la mémoire vit au niveau du modèle, mais le retrieval
+doit suivre).
+
+**Filtrage** : la catégorie `discussion` (X/Reddit, ensemble `CHATTER`) est utile au
+*recall* mais **écartée des réponses** (faits non vérifiés). Le salon Discord « Beyblade X »
+est déjà hors corpus en amont (cf. `global-search.ts`).
+
+### d. Construction des messages (mémoire + grounding) — `buildMessages`
+
+Produit le tableau `ChatTurn[]` envoyé au LLM :
+```
+[ system,  ...history (8 derniers tours, capés 1200 chars),  user(question + CONTEXTE RAG) ]
+```
+- **System prompt** (`LLM_SYSTEM`) : « Tu es Rpbey… réponds TOUJOURS en français…
+  N'utilise QUE les faits du CONTEXTE… le contexte est souvent en anglais (wiki Fandom) :
+  traduis-le… N'invente JAMAIS… pas d'URL (sources affichées séparément). »
+- **Indice par intention** (`LLM_INTENT_HINT`) : cadre la *forme* (liste pour combos,
+  classement pour meta, bio pour character…) ; le *fond* reste le contexte.
+- **Bloc de faits** (`factsBlock`) : les 6 meilleurs items du retrieval, formatés
+  `- Titre (badge · subtitle) : details` — c'est le contexte injecté UNIQUEMENT sur le
+  tour courant (frais à chaque question). L'historique ne porte que le texte des échanges.
+- **Garde-fous coût CPU** : `MAX_HISTORY_TURNS = 8`, `MAX_TURN_CHARS = 1200` (le LLM tourne
+  sur CPU, le prompt doit rester borné).
+
+### e. Brouillon extractif déterministe (`draft`, repli)
+
+Pour chaque intent RAG, un brouillon Markdown est construit **sans LLM** (listes à puces des
+items, avec emoji de catégorie). Il sert de repli si le LLM est inactif/indisponible ; sinon
+il est reformulé en français naturel par le LLM. **Garantit qu'une réponse existe toujours.**
+
+---
+
+## 3. Génération — `generateStream` / `generate`
+
+Le *G de RAG*. Délégué à `services/llm.ts` (LLM local llama.cpp, OpenAI-compatible).
+Détails complets → [`llm.md`](./llm.md). En résumé :
+- `generateStream(messages)` : async generator qui yield chaque fragment SSE (utilisé par la route).
+- `generate(messages)` : version non-stream (utilisée par `answerQuestion`, repli/clients sans SSE).
+- Les deux renvoient `null`/rien (jamais une exception) si le LLM est désactivé
+  (`RPBEY_CHAT_LLM=0`), absent, lent (timeout 60 s) ou vide → l'appelant retombe sur `draft`.
+
+`answerQuestion(message, history)` (non-streaming) : `prepareTurn` → si `fixed` l'utilise,
+sinon si `messages` + `isLlmEnabled()` appelle `generate`, sinon `draft`.
+
+---
+
+## 4. Côté client — `RpbeyChat.tsx`
+
+Composant React (`"use client"`), style « Gemini app » (sparkle 4-couleurs, bulles, prompt-bar).
+- **Mémoire** : tient `messages` en state ; à chaque `send`, transmet les 12 derniers tours
+  (hors erreurs) comme `history` dans le body. Le backend reste stateless.
+- **Streaming** : lit le `ReadableStream`, parse les frames SSE (`\n\n`), patche la bulle
+  assistant en cours (`type:"delta"` → concatène `text` ; `type:"meta"` → pose `sources`/`followups`).
+- **Anti-écran-vide** : flux clos sans texte → message de repli ; erreur réseau → message d'erreur.
+- Lancement auto si `initialQuery` (depuis la barre de recherche en mode IA).
+
+> Note stale : l'en-tête du composant dit « ZÉRO LLM » — obsolète (voir avertissement en haut).
+
+---
+
+## Pour aphrody
+
+- Le **seul** point à brancher est `RPBEY_LLM_URL` (cf. [`llm.md`](./llm.md)). Tout le retrieval,
+  la mémoire, le grounding et le repli restent identiques quel que soit le backend LLM.
+- Le contrat de réponse SSE (`meta`/`delta`/`done`) est interne à rpbey ; aphrody n'a pas à
+  le connaître — il ne fournit que l'endpoint OpenAI Chat Completions (stream).
+- Le grounding est **strict** (system prompt anti-hallucination + repli extractif) : un
+  daemon aphrody plus capable améliorerait surtout la fluidité du français et la synthèse,
+  pas le rappel factuel (qui vient du retrieval).
+
+
+## File: docs/rpbey-rag/crawling-x.md
+
+# Crawl + RAG X.com (Twitter) — métagame Beyblade X
+
+Système de crawling autonome + RAG **Gemini** pour extraire, stocker et exploiter les
+discussions stratégiques Beyblade X depuis x.com (« Quel est le meilleur combo pour Wizard
+Rod ? » → réponse ancrée sur de vrais tweets). **Indépendant** du chat web et du moteur de
+recherche rpbey : modèle (Gemini, pas llama.cpp/e5), store (SQLite `~/.aphrody`, pas le corpus
+web), et vector set (`tweet_embeddings` 768d, pas `rpbey:search:vec` 384d) différents.
+
+> **Où vit le code** : le repo rpbey ne contient **que la doc** (`/home/ubuntu/rpbey/docs/crawling-rag-x.md`,
+> source de cette page). Le code opérationnel vit dans le dépôt autonome **x-client**
+> (`/home/ubuntu/x-client/ts/`, package `@aphrody-code/x`). Cet écosystème est **déjà
+> co-localisé avec aphrody** (store, session et clé Gemini sous `~/.aphrody` et `aphrody/.env`),
+> donc cette doc décrit autant l'état rpbey qu'un sous-système aphrody.
+
+## Emplacements (tout hors-repo rpbey)
+
+| Élément | Chemin |
+|---------|--------|
+| Package crawl/RAG Bun | `/home/ubuntu/x-client/ts/` (`@aphrody-code/x`) ; bins dans `src/bin/` |
+| Store SQLite (partagé) | `/home/ubuntu/.aphrody/x-store.sqlite` (~70 Mo) — tables `tweets`, `users`, `edges`, `follows`, FTS5 `tweets_fts`, `tweet_embeddings` (BLOB) |
+| Session (cookies, secret) | `/home/ubuntu/.aphrody/x-session.json` *(secret — ne pas lire)* |
+| Clé Gemini | `GEMINI_API_KEY` (fallback `GOOGLE_API_KEY`) dans `/home/ubuntu/aphrody/.env` *(secret — ne pas lire)* |
+| Vector set Redis | `tweet_embeddings` (768d FP32) |
+| Client natif Rust | `aphrody/crates/aphrody-x-client` (bin `aphrody-x`, 158 ops GraphQL) |
+| Docs canoniques Rust | `aphrody/docs/x/{README,architecture,commands,store}.md` |
+
+Sourcer l'env avant tout bin (les bins lisent `process.env`) :
+```bash
+cd /home/ubuntu/x-client/ts
+set -a; . /home/ubuntu/aphrody/.env; set +a   # charge GEMINI_API_KEY (secret, ne jamais l'afficher)
+```
+
+---
+
+## 1. Session de crawling — `XSession` / `XClient`
+
+- Code : `packages/x/src/core/session.ts` et `client.ts` (dans x-client).
+- **Auth** : cookies de session injectés (`auth_token`, `ct0`, `__cf_bm`…), requêtes HTTP
+  directes vers l'API interne X (GraphQL + endpoints recherche/timeline) avec en-têtes
+  d'impersonation (UA réalistes). L'IP datacenter du VPS fonctionne en GraphQL **authentifié**.
+
+### Crawler ciblé — `run-targeted-crawler.ts`
+```bash
+bun run src/bin/run-targeted-crawler.ts        # ~3 min/run, ~160 comptes
+```
+1. Charge la session (`XSession.load()`), instancie `XClient`, `whoami`, connecte Redis.
+2. **Seeds codés en dur** : `followTargets = ["rpb_ey","SunAfterTheBey"]` (followings, 100 chacun) ;
+   `verifiedFollowersTargets = ["SunAfterTheBey","Beyblade_Espace","x_beyblade"]` (blue verified
+   followers, op GraphQL `BlueVerifiedFollowers`, 80 chacun) ; `directTweetTargets = ["x_beyblade"]`.
+3. File unique `queueUsernames` (~160 comptes/run).
+4. Par handle : résout l'ID, upsert le profil, ~15 derniers tweets (`userTweets`), upsert chaque
+   tweet dans SQLite **ET embedding immédiat inline** (Gemini) → SQLite (`tweet_embeddings` BLOB)
+   + Redis (`VADD tweet_embeddings FP32 …`).
+5. Délai de politesse 2 s/req (5 s sur échec). `database is locked` transitoires possibles (non fatals).
+
+---
+
+## 2. RAG (Retrieval-Augmented Generation)
+
+### Indexation des embeddings
+- **Modèle** : `gemini-embedding-001` (Gemini API), `outputDimensionality: 768` (FP32).
+- **Double stockage** : SQLite `tweet_embeddings(tweet_id, embedding BLOB, updated_at)` (vérité
+  persistante) **+** vector set Redis `tweet_embeddings` (`VADD … FP32 <blob> <tweet_id>`, index similarité).
+- Sans clé Gemini → **vecteur mock normalisé** (mode offline) — pas un embedding réel.
+- Script de complétion : `run-index-embeddings.ts` — **boucle continue** : resync SQLite→Redis au
+  démarrage, puis embedde par lots de 50 les tweets sans embedding (`LEFT JOIN … WHERE e.tweet_id IS NULL`),
+  500 ms entre appels, dort 30 s à vide. (Le crawler embeddant déjà inline, il trouve souvent 0 à faire.)
+
+### Moteur RAG — `BeybladeXRag` (`packages/x/src/services/rag.ts`, bin `run-rag.ts`)
+```bash
+bun run src/bin/run-rag.ts --query "Quel est le meilleur combo pour Wizard Rod ?"
+```
+`BeybladeXRag.query` :
+1. **Retrieval vectoriel** (d'abord) : embedde la question (Gemini 768d) → `VSIM tweet_embeddings
+   FP32 <vec> COUNT 15 WITHSCORES` → IDs réhydratés depuis SQLite (`tweets`).
+2. **Retrieval textuel FTS** (hybride) : extrait 3-5 mots-clés via `gemini-2.5-flash` (fallback
+   tokenisation locale) → `FTS5 MATCH` sur `tweets_fts` → ajouté aux candidats VSIM (dédup par id).
+   *Bug mineur connu : un mot-clé avec `#` déclenche `fts5: syntax error near "#"` — non fatal.*
+3. **Tri + expansion de thread** : candidats triés par `like_count`, top 15 ; pour chaque seed avec
+   `conversation_id`, jusqu'à 10 tweets du même fil ajoutés au contexte.
+4. **Génération** : prompt « professional Beyblade X analyst » + contexte (`[Source N] User/Likes/Content`)
+   → `gemini-2.5-flash`. Sans clé → réponse mock offline.
+5. Retourne `{ query, answer, sources[] }` (sources = `{id, author_username, text, like_count, conversation_id}`).
+
+---
+
+## 3. Runbook
+
+```bash
+cd /home/ubuntu/x-client/ts
+set -a; . /home/ubuntu/aphrody/.env; set +a
+
+# État du store
+sqlite3 /home/ubuntu/.aphrody/x-store.sqlite \
+  "SELECT 'tweets',count(*) FROM tweets UNION ALL SELECT 'embeddings',count(*) FROM tweet_embeddings;"
+redis-cli VCARD tweet_embeddings
+
+# Crawl frais (borner la durée)
+timeout 220 bun run src/bin/run-targeted-crawler.ts
+# Compléter les embeddings manquants (boucle)
+timeout 45 bun run src/bin/run-index-embeddings.ts
+# Interroger le métagame
+bun run src/bin/run-rag.ts --query "Quels sont les top tier blades actuels en Beyblade X ?"
+```
+
+> Invariant sain : `tweets == embeddings SQLite == Redis VCARD` (0 tweet sans vecteur). Si X
+> renvoie un challenge/403/0 nouveau tweet → la session a expiré (rafraîchir `x-session.json`),
+> ne pas conclure à un succès silencieux.
+
+> **État live au moment de la doc** : `redis-cli VCARD tweet_embeddings` = **0** (le vector set X
+> n'est pas chargé actuellement — un re-run du crawler/indexer le repeuple depuis SQLite, qui
+> contient ~7 500 tweets). C'est l'invariant à restaurer avant d'interroger le RAG X.
+
+---
+
+## 4. Écosystème X complet (au-delà du module Bun)
+
+Tout partage le **même store** `~/.aphrody/x-store.sqlite` + la même session + le même vector set Redis.
+
+| Couche | Emplacement | Rôle |
+|--------|-------------|------|
+| **Crawl/RAG Bun** | `x-client/ts/` (`@aphrody-code/x`) | crawl ciblé + embeddings Gemini 768d + RAG hybride VSIM+FTS5 (ce guide) |
+| **Client natif Rust** | `aphrody/crates/aphrody-x-client` (bin `aphrody-x`) | contrôle de compte headless, 158 ops GraphQL, 47 sous-commandes, store local-first, auto-refresh `queryId` |
+| **Canal messaging Rust** | `aphrody/crates/aphrody-messaging/src/channels/x.rs` | shell-out le binaire `aphrody-x` (post/timeline) |
+| **Classification Python** | `aphrody/scripts/classify_tweets.py` | analytique post-hoc (regex bilingues EN/JP, topics métagame) — **hors chemin RAG** |
+| **Cache** | Redis 8.x (vector set) + SQLite (FTS5 + BLOB) | retrieval cosinus + plein-texte |
+
+> Pour la spec détaillée des couches Rust, voir `aphrody/docs/x/`. Cette page reste centrée sur
+> le pipeline crawl→RAG Bun consommé côté analyse métagame rpbey.
+
+---
+
+## Lien avec rpbey (web)
+
+Le RAG X.com **n'est pas appelé en direct** par le site. Son influence sur rpbey passe par des
+**exports hors-ligne** dans le corpus de recherche :
+- `apps/web/scripts/export-x-discussions.ts` / `analyze-x-corpus.ts` → `apps/web/data/x-discussions.json`
+  (tweets nettoyés/classés) → indexé en catégorie `discussion` (cherchable, mais **écarté des
+  réponses du chat**, cf. [`search.md`](./search.md) et [`chat.md`](./chat.md)).
+- `apps/web/data/meta-enrichment.json` (signaux X+Reddit+web par blade) → fusionné dans la
+  tier-list méta du corpus (`global-search.ts` § 14).
+
+Donc : le **buzz** X informe le score méta et le recall ; le **contenu brut** des tweets reste un
+signal de discussion, jamais présenté comme un fait par le chat.
+
+## Pour aphrody
+
+- Cet écosystème est **déjà à moitié aphrody** (store/session/clé sous `~/.aphrody`, crate Rust
+  `aphrody-x-client`, classifier Python aphrody). Le seul morceau « rpbey » est l'export JSON vers
+  le corpus web.
+- Le RAG X utilise **Gemini** (embedding 768d + génération), pas le LLM local. Si aphrody veut
+  souverainiser ce RAG aussi, il faudrait : remplacer `gemini-embedding-001` par un embedder local
+  768d (ou ré-indexer à une autre dimension) et `gemini-2.5-flash` par le daemon aphrody. C'est un
+  chantier distinct du seam `RPBEY_LLM_URL` du chat web.
+
+
+## File: docs/rpbey-rag/infra.md
+
+# Infra RAG / IA rpbey — services, ports, stores, fichiers hors-repo
+
+Consolidation opérationnelle de tout ce que les systèmes RAG/IA de rpbey utilisent au runtime :
+services systemd, timers, ports, stores Redis/SQLite, modèles, et variables d'environnement.
+Tout est **loopback** (rien d'exposé publiquement côté IA) et **VPS-only** (`51.77.147.152`).
+
+---
+
+## 1. Services systemd
+
+| Service | État | Rôle | Bind / port | Lance |
+|---------|------|------|-------------|-------|
+| `rpbey-llm.service` | active | **LLM local** llama.cpp (chat IA) | `127.0.0.1:8080` | `llama.cpp/build/bin/llama-server -m Llama-3.2-3B-Instruct-Q4_K_M.gguf` |
+| `rpbey-embed.service` | active | **Sidecar embeddings** (couche dense recherche) e5-small 384d | `127.0.0.1:7077` | `bun apps/embed-sidecar/server.ts` |
+| `rpbey-web.service` | active | App Next.js 16 (`/api/chat`, `/api/v1/search`) | `127.0.0.1:3002` | `bun .next/standalone/apps/web/server.js` |
+| `rpbey-gacha.service` | active | Serveur gacha Colyseus (non-IA) | `127.0.0.1:5050` | — |
+| `rpb-bot.service` | active | Bot Discord (RAG algorithmique, **aucun LLM**) | `:3001` | — |
+| `llm-thp.service` | active (exited) | THP `always` pour l'inférence (oneshot) | — | `echo always > .../transparent_hugepage/enabled` |
+
+> `shenron-embed.service` / `shenron-neon-sync.timer` appartiennent à **un autre projet** (bot
+> Dragon Ball « Shenron »), pas à rpbey — ne pas les confondre.
+
+### Détails clés des unités IA
+
+**`rpbey-llm.service`** — flags llama-server : `-c 8192` (contexte), `-t 10` (threads CPU),
+`--parallel 1`, `-fa on` (flash attn), `--cache-reuse 256`, `--no-webui`. `MemoryMax=6G`,
+`Restart=always`, `Nice=5`. Détails complets → [`llm.md`](./llm.md).
+
+**`rpbey-embed.service`** — `Environment=EMBED_PORT=7077`,
+`EMBED_CACHE_DIR=/home/ubuntu/.cache/rpbey-embed-models`, `MemoryMax=1500M`,
+`After=… redis-server.service`. Détails → [`search.md`](./search.md).
+
+**`rpbey-web.service`** — `EnvironmentFile=-/home/ubuntu/rpbey/apps/web/.env` (optionnel ;
+le `-` = ne pas échouer s'il manque). Env inline : `PORT=3002`, `HOSTNAME=127.0.0.1`,
+`PGHOST=/var/run/postgresql`, `PGDATABASE=rpb_neon`, `PGUSER=ubuntu`. C'est **ici** qu'on
+surcharge `RPBEY_LLM_URL` / `EMBED_URL` / `REDIS_URL` / `RPBEY_CHAT_LLM` pour repointer ou
+désactiver (via le `.env`). Restart : `systemctl restart rpbey-web`.
+
+---
+
+## 2. Timers systemd (alimentation des données, non-IA)
+
+| Timer | Cadence | Service | Effet |
+|-------|---------|---------|-------|
+| `rpbey-staff-sync.timer` | quotidien 04:30 (+≤5 min) | `rpbey-staff-sync.service` | sync `staff_members` (avatars/pseudo/nom) Discord → `rpb_neon` |
+| `rpbey-profile-sync.timer` | quotidien 05:00 (+≤5 min) | `rpbey-profile-sync.service` | enrichissement profils Discord + recalcul classement global (`scripts/sync-profiles.sh`) |
+
+> Il n'existe **pas** de timer systemd pour le crawl X.com, le crawl Fandom, ni le rebuild des
+> vecteurs de recherche — ces opérations sont **manuelles / on-demand** (scripts, cf. docs
+> correspondantes). Les timers ci-dessus ne touchent pas le RAG.
+
+---
+
+## 3. Ports (tous loopback)
+
+| Port | Service | Protocole |
+|------|---------|-----------|
+| `8080` | `rpbey-llm` (llama.cpp) | HTTP OpenAI-compatible (`/v1/chat/completions`, `/v1/models`) |
+| `7077` | `rpbey-embed` (sidecar) | HTTP (`/health`, `/embed`) |
+| `3002` | `rpbey-web` | HTTP (Next.js ; `/api/chat`, `/api/v1/search`) |
+| `6379` | Redis | RESP (corpus, vector sets) |
+| `5050` | `rpbey-gacha` | WS (non-IA) |
+| `3001` | `rpb-bot` | HTTP (non-IA) |
+
+nginx : `rpbey.fr` → `127.0.0.1:3002`. Les services IA (8080/7077) ne sont **pas** proxiés.
+
+---
+
+## 4. Stores
+
+### Redis (`127.0.0.1:6379`)
+
+| Clé | Type | Dim | Système | Alimenté par |
+|-----|------|-----|---------|--------------|
+| `rpbey:search:corpus:v1` | string (JSON) | — | recherche + chat (corpus unifié) | `getSearchCorpus()` (TTL 1 h) |
+| `rpbey:search:vec` | vector set | **384** | recherche + chat (couche dense) | `scripts/build-search-vectors.ts` (sidecar e5) |
+| `tweet_embeddings` | vector set | **768** | RAG X.com (séparé) | `run-targeted-crawler.ts` / `run-index-embeddings.ts` (Gemini) |
+
+État vérifié (2026-06-01) : `VCARD rpbey:search:vec` = **15 232**, `VDIM` = **384** ;
+`VCARD tweet_embeddings` = **0** (vide actuellement — repeuplé par un re-run du crawler/indexer X
+depuis le SQLite, cf. [`crawling-x.md`](./crawling-x.md)).
+
+> ⚠️ Deux vector sets aux **dimensions différentes** cohabitent (384 e5 vs 768 Gemini). Ne pas
+> mélanger : commandes Redis identiques (`VADD`/`VSIM`/`VCARD`/`VDIM`), modèles et usages distincts.
+
+### SQLite
+
+| Fichier | Taille | Contenu | Système |
+|---------|--------|---------|---------|
+| `/home/ubuntu/.aphrody/x-store.sqlite` | ~70 Mo | `tweets`, `users`, `edges`, `follows`, FTS5 `tweets_fts`, `tweet_embeddings` (BLOB) | RAG X.com (partagé avec aphrody) |
+
+### Postgres (non-IA mais source du corpus)
+Socket `/var/run/postgresql`, base `rpb_neon`, user `ubuntu`, via `@rpbey/db` (Drizzle). Fournit
+pièces, tournois, rankings, anime, frames, staff au corpus de recherche (`global-search.ts`).
+
+### Fichiers de données hors-DB (corpus)
+`/home/ubuntu/rpbey/apps/web/data/*.json` — produits par les scrapers, lus par `global-search.ts` :
+`beyblade-knowledge.json` (~10 Mo, wiki), `wbo-combos.json` / `wbo-combos-enriched.json`,
+`bbx-weekly.json`, `meta-enrichment.json`, `x-discussions.json`, `reddit-discussions.json`,
+`beyblade-lexique.json`, `beyblade-sites.json`. (`discord-discussions.json` existe mais est
+**exclu** du corpus — vocabulaire d'alias seulement.)
+
+### Modèles (hors-repo, non versionnés)
+| Chemin | Taille | Usage |
+|--------|--------|-------|
+| `/home/ubuntu/llm/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf` | ~2.0 Go | **servi** par rpbey-llm (chat) |
+| `/home/ubuntu/llm/models/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf` | ~986 Mo | présent, non servi (modèle alternatif swappable) |
+| `/home/ubuntu/.cache/rpbey-embed-models/` | — | poids ONNX e5-small (sidecar, téléchargés une fois) |
+
+---
+
+## 5. Variables d'environnement (récap — noms seulement)
+
+> Aucune valeur de secret n'est listée. Les fichiers `.env` ne sont **pas** versionnés.
+
+### Chat / LLM (lues par `apps/web`, surchargeables via `apps/web/.env`)
+| Variable | Défaut | Doc |
+|----------|--------|-----|
+| `RPBEY_LLM_URL` | `http://127.0.0.1:8080/v1/chat/completions` | **seam aphrody** ([`llm.md`](./llm.md)) |
+| `RPBEY_LLM_MODEL` | `rpbey-local` | champ `model` |
+| `RPBEY_LLM_TIMEOUT_MS` | `60000` | timeout |
+| `RPBEY_CHAT_LLM` | (unset=actif) | kill switch (`=0` → repli extractif) |
+| `RPBEY_CHAT_MODEL` | (présent dans `.env`) | hérité ; le code lit `RPBEY_LLM_MODEL` |
+
+### Recherche / embeddings
+| Variable | Défaut | Service |
+|----------|--------|---------|
+| `EMBED_URL` | `http://127.0.0.1:7077` | client web → sidecar |
+| `EMBED_PORT` | `7077` | sidecar (bind) |
+| `EMBED_MODEL` | `Xenova/multilingual-e5-small` | sidecar |
+| `EMBED_CACHE_DIR` | `/home/ubuntu/.cache/rpbey-embed-models` | sidecar |
+| `EMBED_INDEX_URL` | `http://127.0.0.1:3002/api/v1/search` | `build-search-vectors` |
+| `REDIS_URL` | `redis://127.0.0.1:6379` | corpus + vector set |
+
+### RAG X.com (lues par x-client, dans `/home/ubuntu/aphrody/.env` — hors-repo, **secret**)
+| Variable | Rôle |
+|----------|------|
+| `GEMINI_API_KEY` (fallback `GOOGLE_API_KEY`) | embeddings 768d + génération `gemini-2.5-flash` |
+
+> Le fichier `/home/ubuntu/aphrody/.env` contient aussi `GOOGLE_APPLICATION_CREDENTIALS`,
+> `GOOGLE_CLOUD_PROJECT/LOCATION/REGION`, `ANTIGRAVITY_API_KEY`, `GCP_SERVICE_ACCOUNT`, etc.
+> (noms seulement — **ne jamais lire les valeurs**). Pour le RAG X, seule la clé Gemini compte.
+
+---
+
+## 6. Vérifs rapides (sans secret)
+
+```bash
+# Services IA
+systemctl status rpbey-llm rpbey-embed --no-pager
+curl -s http://127.0.0.1:8080/v1/models | head
+curl -s http://127.0.0.1:7077/health
+
+# Stores
+redis-cli VCARD rpbey:search:vec      # ~15232 attendu (recherche)
+redis-cli VDIM  rpbey:search:vec      # 384
+redis-cli VCARD tweet_embeddings      # RAG X (0 si non chargé)
+redis-cli TTL   rpbey:search:corpus:v1
+sqlite3 /home/ubuntu/.aphrody/x-store.sqlite "SELECT count(*) FROM tweets;"
+```
+
+## Pour aphrody
+
+- **Un seul service à remplacer** pour souverainiser le chat : `rpbey-llm.service` → pointer
+  `RPBEY_LLM_URL` (dans `apps/web/.env`) vers l'endpoint OpenAI-compat d'aphrody, `systemctl
+  restart rpbey-web`. Optionnel : remplacer `rpbey-embed.service` (sidecar e5) via `EMBED_URL`.
+- Le RAG X.com est déjà **co-localisé** avec aphrody (`~/.aphrody`, crate `aphrody-x-client`, clé
+  Gemini dans `aphrody/.env`) — c'est plus un sous-système aphrody qu'un service rpbey.
+- Rien d'autre n'a besoin d'aphrody : recherche BM25F, corpus, crawl Fandom et timers de sync sont
+  algorithmiques et autonomes.
+
+
+## File: docs/rpbey-rag/knowledge.md
+
+# Crawler de connaissance Beyblade — `crawl-fandom.ts`
+
+Le corpus de fond du RAG rpbey. Un crawler MediaWiki **exhaustif** du Beyblade Wiki (Fandom)
+qui accumule TOUTE la connaissance Beyblade, **toutes générations** (Original/Plastic, HMS,
+Metal Saga, Burst, Beyblade X) : toupies, pièces, personnages, anime (séries + épisodes), jeux
+vidéo, accessoires, lore. ~8 500 entités classées (image + résumé) → `beyblade-knowledge.json`,
+câblé dans la recherche et le chat.
+
+## Fichiers
+
+| Rôle | Chemin absolu |
+|------|---------------|
+| Crawler | `/home/ubuntu/rpbey/apps/web/scripts/crawl-fandom.ts` |
+| Sortie | `/home/ubuntu/rpbey/apps/web/data/beyblade-knowledge.json` (~10 Mo) |
+| Checkpoint résumable | `/home/ubuntu/rpbey/apps/web/data/.fandom-crawl-state.json` |
+| Schéma (Zod) | `WikiEntitySchema` / `WikiEntity` dans `@rpbey/api-contract` |
+| Intégration au corpus | `loadWikiKnowledge()` dans `apps/web/src/server/services/global-search.ts` |
+| Graphe d'entités (consommateur) | `apps/web/src/server/services/entity-graph.ts` |
+
+---
+
+## 1. Source & méthode
+
+- **Source** : `beyblade.fandom.com` (MediaWiki 1.43, ~8 500 articles). L'API `api.php` est
+  **joignable depuis le VPS** (contrairement aux pages HTML protégées Cloudflare) → on tape l'API
+  JSON directement (UA Chrome), la voie la plus robuste et complète pour un wiki.
+- **Endpoint** : `https://beyblade.fandom.com/api.php` (format JSON, `maxlag=5`).
+
+### Pipeline (« le meilleur crawler possible »)
+1. Énumère TOUTES les pages de l'espace principal (`list=allpages`, non-redirects).
+2. Récupère en **lot (50/req)** : catégories + image pleine résolution + wikitext.
+3. Parse l'infobox (1er template `{{… | k = v …}}`, accolades équilibrées).
+4. **Classe** chaque page : TYPE (`bey`/`character`/`part`/`anime`/`episode`/`game`/`accessory`/`lore`)
+   + génération + système + sens de rotation + type de combat + nom JP, depuis catégories + infobox.
+5. Dérive un **résumé texte clair** du wikitext (TextExtracts absent sur Fandom).
+
+### Robustesse
+- Requêtes **sérielles** + `maxlag`, retry/backoff exponentiel sur 429/5xx/maxlag/réseau (≤5 tentatives, ≤30 s).
+- **Checkpoint résumable** (`data/.fandom-crawl-state.json`) → reprise après interruption.
+- Écriture **NON-destructive** (jamais d'écrasement par du vide).
+- Validation **Zod** (`WikiEntitySchema`) avant écriture.
+- Politesse : `DELAY_MS = 150` entre requêtes, UA Chrome.
+
+### Invocation
+```bash
+cd /home/ubuntu/rpbey
+bun apps/web/scripts/crawl-fandom.ts            # crawl complet
+FANDOM_LIMIT=300 bun apps/web/scripts/crawl-fandom.ts   # échantillon (test)
+FANDOM_RESET=1   bun apps/web/scripts/crawl-fandom.ts   # ignore le checkpoint
+```
+Env : `FANDOM_LIMIT` (défaut Infinity), `FANDOM_RESET` (1 = ignore checkpoint).
+
+---
+
+## 2. Le schéma de sortie — `WikiEntity`
+
+`beyblade-knowledge.json` = `{ entities: WikiEntity[] }`. Chaque entité porte (champs observés) :
+`id`, `title`, `url`, `type` (`bey|character|part|anime|episode|game|accessory|lore`),
+`generation` (`ORIGINAL|HMS|METAL|BURST|X`), `system`, `beyType`, `jpName`, `summary`, `imageUrl`.
+
+---
+
+## 3. Intégration au corpus de recherche — `loadWikiKnowledge()`
+
+Dans `global-search.ts` (étapes 10/11). Mappe le type wiki vers les **catégories existantes** du
+contrat de recherche (pas de nouvelle catégorie → onglets inchangés) :
+
+| Type wiki | Catégorie de recherche | Badge |
+|-----------|------------------------|-------|
+| `bey` | `product` | `Bey · <génération>` |
+| `part` | `part` | `Pièce · <génération>` |
+| `character` | `anime` | `Personnage` |
+| `anime` | `anime` | `Anime` |
+| `episode` | `anime` | `Épisode` |
+| `game` | `product` | `Jeu vidéo` |
+| `accessory` | `product` | `Accessoire` |
+| (défaut/lore) | `lexicon` | `Lore` |
+
+- **Dédup** : beys & pièces fusionnés par **clé canonique** (`canonicalKey`) vs catalogue/DB
+  (mute les doublons « Dran Sword » ⇔ « dran-sword ») ; le reste dédupliqué par titre exact.
+- **Borne de payload** : le `summary` est tronqué à ~220 chars dans l'item de recherche (l'index
+  complet est fetché côté client par `/search`, ~8 400 entités → on borne). Le résumé intégral
+  reste dans `beyblade-knowledge.json` pour le graphe d'entités et les pages détail.
+
+Ce corpus wiki **subsume** les anciens streams `universe_beys`/`characters`. Il est en **anglais**
+(Fandom) — c'est pourquoi le system prompt du chat demande au LLM de **traduire + reformuler en
+français** sans rien inventer (cf. [`chat.md`](./chat.md)).
+
+---
+
+## 4. Place dans le corpus global
+
+`beyblade-knowledge.json` est **une** des ~15 sources assemblées par `buildGlobalSearchIndex()`
+(cf. [`search.md`](./search.md) § corpus). Il représente la majorité du volume (~8 500 entités sur
+~15 200 au total). Après un re-crawl, invalider le corpus consolidé :
+```bash
+bun apps/web/scripts/refresh-search-corpus.ts        # vide rpbey:search:corpus:v1
+bun apps/web/scripts/build-search-vectors.ts          # ré-embed le corpus → rpbey:search:vec
+```
+
+> Note CLAUDE.md/mémoire : ce crawler a fait passer le corpus de recherche de ~9 018 à ~17 082
+> entités lors de son intégration (le chiffre exact varie selon les sources actives au moment du build).
+
+---
+
+## Autres scrapers alimentant le corpus (pour contexte)
+
+`crawl-fandom` est le plus gros, mais d'autres scripts produisent des `apps/web/data/*.json`
+indexés (tous non-IA, scraping pur — voir `apps/web/scripts/`) :
+`scrape-wbo.ts`, `scrape-bbx-weekly.ts`, `scrape-beyblade-library.ts`, `scrape-bx-shops.ts`,
+`scrape-zenmarket.ts`, `scrape-amazon-fr.ts`, `scrape-reddit-discussions.ts`,
+`export-x-discussions.ts`, `scrape-fandom-frames.ts`, `enrich-combos.ts`, `enrich-meta.ts`.
+
+## Pour aphrody
+
+- Ce crawler est **purement algorithmique** (MediaWiki API + parse, zéro IA). aphrody n'a rien à
+  fournir ici. C'est le **fournisseur de faits** du RAG : la qualité des réponses du chat dépend
+  d'abord de la fraîcheur de `beyblade-knowledge.json`, pas du LLM.
+- Si aphrody industrialise le crawl/RAG, ce JSON est un bon corpus de référence (entités typées,
+  résumés, génération, images) à chunker/embedder dans le pipeline RAG natif d'aphrody ([`../RAG.md`](../RAG.md)).
+
+
+## File: docs/rpbey-rag/llm.md
+
+# LLM local rpbey — llama.cpp, OpenAI-compatible (le seam aphrody)
+
+Le chat IA « Rpbey » (cf. [`chat.md`](./chat.md)) synthétise ses réponses avec **un LLM
+auto-hébergé sur le VPS**, gratuit et privé : `llama.cpp` exposé en HTTP loopback,
+**API OpenAI-compatible**. C'est ici qu'aphrody se branchera : il suffit qu'aphrody expose
+un endpoint OpenAI Chat Completions et de repointer une variable d'environnement.
+
+> Historique : Vertex/Gemini ont été **retirés** (payants, abandonnés) au profit de ce LLM
+> local (commit `19745c2`). Le code parle OpenAI Chat Completions justement pour rester
+> agnostique du backend.
+
+## Fichiers & emplacements
+
+| Élément | Chemin absolu |
+|---------|---------------|
+| Client OpenAI-compat (web) | `/home/ubuntu/rpbey/apps/web/src/server/services/llm.ts` |
+| Service systemd | `/etc/systemd/system/rpbey-llm.service` |
+| Binaire llama.cpp | `/home/ubuntu/llm/llama.cpp/build/bin/llama-server` |
+| Modèle servi | `/home/ubuntu/llm/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf` (~2.0 Go) |
+| Modèle alternatif (présent, non servi) | `/home/ubuntu/llm/models/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf` (~986 Mo) |
+| THP (perf inférence) | `/etc/systemd/system/llm-thp.service` |
+
+> La note CLAUDE.md mentionne `/home/ubuntu/llm/llama-server` — c'est un **raccourci** ;
+> le binaire réel est sous `llama.cpp/build/bin/`. Les modèles sont **hors-repo**
+> (`/home/ubuntu/llm/models/`, non versionnés). Ne pas lire les poids `.gguf`.
+
+---
+
+## 1. Le client web — `services/llm.ts`
+
+`import "server-only"`. Client minimal OpenAI Chat Completions (juste un `fetch`, aucune
+dépendance SDK → rien n'entre dans le bundle Next).
+
+### Configuration (env vars)
+
+| Variable | Défaut | Rôle |
+|----------|--------|------|
+| `RPBEY_LLM_URL` | `http://127.0.0.1:8080/v1/chat/completions` | **LE SEAM** : endpoint OpenAI Chat Completions |
+| `RPBEY_LLM_MODEL` | `rpbey-local` | champ `model` de la requête (llama-server l'ignore, sert un seul modèle) |
+| `RPBEY_LLM_TIMEOUT_MS` | `60000` | timeout d'un appel (au-delà → abort → repli extractif) |
+| `RPBEY_CHAT_LLM` | (unset = actif) | **kill switch** : `RPBEY_CHAT_LLM=0` désactive le LLM (repli extractif déterministe) |
+
+> Note : `RPBEY_CHAT_MODEL` apparaît dans `apps/web/.env` mais le code lit `RPBEY_LLM_MODEL`
+> (champ `model`, sans effet sur llama-server mono-modèle). Le `model` réel = le `.gguf` chargé par le service.
+
+### Forme de la requête (`body()`)
+
+```jsonc
+{
+  "model": "<RPBEY_LLM_MODEL>",
+  "messages": [ { "role": "system|user|assistant", "content": "..." } ],
+  "stream": true | false,
+  "temperature": 0.35,        // opts.temperature
+  "max_tokens": 768,          // opts.maxTokens
+  "top_p": 0.9,               // bride l'invention des petits modèles
+  "repeat_penalty": 1.1       // pénalise la répétition
+}
+```
+
+### API exportée
+
+| Fonction | Signature | Comportement |
+|----------|-----------|--------------|
+| `isLlmEnabled()` | `(): boolean` | `true` sauf `RPBEY_CHAT_LLM === "0"` |
+| `generate(messages, opts?)` | `Promise<string \| null>` | réponse complète (non-stream). Renvoie **`null` (jamais throw)** si désactivé/indisponible/timeout/vide. Log `console.warn` sur erreur. |
+| `generateStream(messages, opts?)` | `AsyncGenerator<string>` | yield chaque fragment de texte du SSE OpenAI (`choices[].delta.content`) dès qu'il arrive. Indispensable sur CPU pour éviter de figer. Ne yield rien si LLM indisponible. |
+
+`ChatTurn = { role: "system"|"user"|"assistant", content: string }`.
+
+**Parsing SSE** (`generateStream`) : découpe le flux par lignes ; chaque event utile est
+`data: {json}` ; `data: [DONE]` termine ; un fragment JSON incomplet est ignoré. Exactement
+le format émis par `llama-server` (et par tout serveur OpenAI-compatible).
+
+**Robustesse** : `AbortController` + timer ; sur `AbortError` (timeout) silencieux, sur autre
+erreur `console.warn`. Jamais d'exception remontée à l'appelant → garantit le repli.
+
+---
+
+## 2. Le service — `rpbey-llm.service`
+
+```ini
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/llm
+ExecStart=/home/ubuntu/llm/llama.cpp/build/bin/llama-server \
+  -m /home/ubuntu/llm/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf \
+  --host 127.0.0.1 --port 8080 \
+  -c 8192 -t 10 --parallel 1 -fa on --no-webui \
+  --cache-reuse 256
+Restart=always
+RestartSec=3
+Nice=5
+MemoryMax=6G
+MemoryHigh=5G
+```
+
+| Paramètre | Valeur | Sens |
+|-----------|--------|------|
+| Bind | `127.0.0.1:8080` | **loopback uniquement** (pas exposé publiquement) |
+| Modèle | Llama-3.2-3B-Instruct **Q4_K_M** (GGUF) | quantisé 4-bit, ~2 Go sur disque |
+| `-c 8192` | contexte | 8192 tokens (cap le prompt + réponse) |
+| `-t 10` | threads | 10 threads CPU (**CPU-only**, pas de GPU sur le VPS) |
+| `--parallel 1` | concurrence | 1 requête à la fois |
+| `-fa on` | flash attention | activée |
+| `--cache-reuse 256` | cache prompt | réutilise le préfixe commun entre tours |
+| `--no-webui` | — | pas d'UI web, API seule |
+| `MemoryMax=6G` | cgroup | borne mémoire dure |
+
+- **Build** : `version: 1 (d749821)`, GNU 15.2.0, Linux x86_64.
+- **THP** : `llm-thp.service` (oneshot) met `transparent_hugepage=always` +
+  `defrag=defer+madvise` → meilleure perf d'inférence.
+
+### Caractéristiques de perf (CPU-only)
+
+- **~6 s avant le 1er token**, puis **~11 tok/s**. → le **streaming est obligatoire** côté
+  chat (sinon l'UI fige plusieurs secondes). C'est pourquoi `generateStream` existe et que la
+  route `/api/chat` stream en SSE.
+
+### Endpoints (OpenAI-compatible, loopback)
+
+llama-server expose l'API OpenAI standard ; rpbey n'utilise que :
+- `POST /v1/chat/completions` (stream et non-stream).
+
+Vérification rapide (ne renvoie pas de secret) :
+```bash
+curl -s http://127.0.0.1:8080/v1/models | head
+systemctl status rpbey-llm.service --no-pager
+```
+
+---
+
+## 3. Cible long terme : le daemon aphrody
+
+D'après le CLAUDE.md rpbey, ce seam OpenAI-compat pointera à terme vers le **daemon aphrody**
+(backend IA souverain du VPS : inférence candle + mémoire `aphrody-memory` + multi-persona
+`aphrody-agent-home`). La persona Beyblade = profil agent-home `rpbey`
+(`~/.aphrody/workspace-rpbey`). Plan référencé : `aphrody/docs/plans/aphrody-ai-backend.md`.
+
+### Ce qu'aphrody doit fournir pour remplacer llama.cpp sans toucher rpbey
+
+1. **Un endpoint OpenAI Chat Completions** (`POST .../v1/chat/completions`) qui accepte
+   `{model, messages, stream, temperature, max_tokens, top_p, repeat_penalty}` et répond :
+   - non-stream : `{ choices: [ { message: { content } } ] }`
+   - stream : SSE `data: { choices: [ { delta: { content } } ] }` … `data: [DONE]`.
+2. Respecter le **system prompt** rpbey (français, grounding strict, pas d'URL) — il est passé
+   tel quel dans `messages[0]`, donc rien à coder côté aphrody, juste à honorer.
+3. Idéalement, supporter le **multi-tour** (mémoire) — déjà fourni dans `messages` par rpbey
+   (système + historique + tour courant). aphrody peut superposer sa propre mémoire
+   (`aphrody-memory`) par-dessus, mais ce n'est pas requis pour la parité.
+
+### Bascule
+
+Changer une seule variable : `RPBEY_LLM_URL=http://<endpoint-aphrody>/v1/chat/completions`
+(via `apps/web/.env`, lu par `rpbey-web.service` en `EnvironmentFile`), puis
+`systemctl restart rpbey-web`. Le kill switch `RPBEY_CHAT_LLM=0` permet de désactiver
+proprement le LLM (repli extractif) pendant une migration.
+
+> Tant que l'endpoint aphrody répond plus lentement que ~quelques secondes au 1er token,
+> garder le streaming est essentiel (déjà le cas). Le timeout `RPBEY_LLM_TIMEOUT_MS=60000`
+> peut être ajusté selon la latence d'aphrody.
+
+
+## File: docs/rpbey-rag/search.md
+
+# Moteur de recherche rpbey — BM25F ⊕ dense (hybride RRF)
+
+Le moteur de recherche de rpbey.fr indexe **~15 200 entités Beyblade** (catalogue produits,
+pièces, combos, tournois, bladers, méta, anime, frames, lexique, discussions X/Reddit, pages,
+wiki toutes saisons) et les classe par un **BM25F** lexical fusionné en **RRF** avec une couche
+**dense** (embeddings e5-small 384d). C'est aussi le `retrieve()` du chat IA (cf. [`chat.md`](./chat.md)).
+
+## Fichiers
+
+| Rôle | Chemin absolu |
+|------|---------------|
+| Ranker BM25F + fusion (pur, client+serveur) | `/home/ubuntu/rpbey/apps/web/src/lib/search-rank.ts` |
+| Corpus unifié (assemblage ~15 sources) | `/home/ubuntu/rpbey/apps/web/src/server/services/global-search.ts` |
+| Cache du corpus (Redis + memo) | `/home/ubuntu/rpbey/apps/web/src/server/services/search-corpus.ts` |
+| Couche dense (embeddings/VSIM) | `/home/ubuntu/rpbey/apps/web/src/server/services/embeddings.ts` |
+| Route API | `/home/ubuntu/rpbey/apps/web/src/app/api/v1/search/route.ts` |
+| Sidecar d'embeddings (service Bun isolé) | `/home/ubuntu/rpbey/apps/embed-sidecar/server.ts` |
+| Indexation vectorielle (script) | `/home/ubuntu/rpbey/apps/web/scripts/build-search-vectors.ts` |
+| Invalidation du corpus (script) | `/home/ubuntu/rpbey/apps/web/scripts/refresh-search-corpus.ts` |
+| Lexique d'alias communautaires (généré) | `/home/ubuntu/rpbey/apps/web/src/lib/discord-lexicon.generated.ts` |
+| Page recherche (canonique) | `/home/ubuntu/rpbey/apps/web/src/app/(marketing)/search/page.tsx` |
+| Alias FR `/recherche` → `/search` | `/home/ubuntu/rpbey/apps/web/src/app/(marketing)/recherche/page.tsx` |
+| Éval qualité (script) | `/home/ubuntu/rpbey/apps/web/scripts/eval-search.ts` |
+
+---
+
+## 1. Le ranker BM25F — `lib/search-rank.ts`
+
+**Pur**, sans aucun import server-only → partagé client (suggestions/SSR) et serveur (retrieval).
+Opère sur `GlobalSearchItem[]` (du contrat `@rpbey/api-contract`).
+
+### Tokenisation & normalisation
+- `normalize(s)` : minuscules, NFD + suppression des diacritiques, espaces compactés.
+- `tokenize(s)` : split sur ponctuation, tokens ≥ 2 chars (ou bloc CJK/chiffre), hors stop-words FR/EN.
+
+### BM25F (Okapi BM25 par champ)
+- **Champs + boosts** : `title ×3`, `subtitle ×1.6`, `badge ×1.6`, `details ×1`.
+- Constantes : `K1 = 1.2`, `B = 0.75`. `idf = log(1 + (n - df + 0.5)/(df + 0.5))`.
+- Corpus **mémoïsé par référence de tableau** (`WeakMap`) → recalcul O(1) entre frappes
+  tant que l'index ne change pas (le corpus est une référence stable, cf. cache).
+
+### Expansion de requête (recall)
+1. **Synonymes/alias FR/EN/JP** (`SYNONYM_GROUPS`) : groupes curés Beyblade
+   (ex. `["wizard rod","wiz rod","ウィザードロッド","wizard arrow"]`, `["cobalt dragoon","cobalt drake","コバルトドレイク","drake","dragoon"]`,
+   bits/drivers `ball/needle/flat/taper/orb/rush/gear ball(gb)/high taper(ht)/low flat(lf)`,
+   généraux `stamina/attack/defense/combo/tournoi/classement/lanceur/deck/boutique/anime`).
+   Un hit sur n'importe quel membre étend la requête aux autres (poids `0.55`).
+2. **Alias communautaires** (`COMMUNITY_ALIASES`, depuis `discord-lexicon.generated.ts`) :
+   initialismes/contractions **minés hors-ligne** dans le salon Discord Beyblade X. ⚠️ Le
+   *contenu* Discord n'entre **jamais** dans le corpus ni les réponses — seul ce **vocabulaire
+   d'alias** informe l'expansion (query-time only).
+3. **Tolérance aux typos** : Damerau-Levenshtein bornée par longueur (`fuzzyBudget` : 0 si ≤3
+   chars, 1 si ≤6, 2 sinon). Token absent du vocabulaire → corrigé vers le terme connu le plus
+   proche (poids `0.45`).
+
+### Signaux de boost (après BM25F)
+- **Correspondance littérale** sur le titre : exact `+50`, préfixe `+18`, inclus `+8` (gère noms courts/SKU/requêtes 1 mot).
+- **Tier** (`tier S/A/B/C` dans badge/subtitle) : `S +3`, `A +2`, `B +1`, `C +0.25`.
+- **Prix** disponible : `+1`. **Popularité** (likes tweet, score Reddit, fréquence combo) : `+min(2, log10(1+pop))`.
+- **Boost de catégorie** (`CATEGORY_BOOST`) : `product 1.15`, `part 1.1`, `meta 1.08`, `combo 1.05`, … `discussion 0.78`, `page 0.75`.
+
+### Fonctions exportées
+`rankSearch(items, query, opts)`, `fuseHybrid(...)`, `scoreItem`, `facetCounts`, `suggest`,
+`normalize`, `tokenize`, `expandSynonyms`.
+
+---
+
+## 2. Recherche hybride — `fuseHybrid` (Reciprocal Rank Fusion)
+
+Fusionne le classement **lexical** BM25F (`lexRanked`) et le classement **dense** (`vecRanked`,
+voisins sémantiques VSIM) **sans réconcilier des échelles de score incompatibles** : chaque
+liste contribue `poids / (k + rang)`.
+
+- Paramètres : `rrfK = 60`, `lexWeight = 1.0`, `vecWeight = 0.9`.
+- Le **filtre de catégorie est appliqué AVANT le calcul des rangs RRF** sur les deux listes
+  (sinon les rangs globaux fausseraient la fusion within-category).
+- **Dégradation gracieuse** : `vecRanked` vide → la fusion préserve exactement l'ordre BM25F.
+  Donc sidecar/Redis absents = recherche lexicale pure, zéro panne.
+
+Bénéfice de l'hybride : un item présent dans les deux listes remonte ; un item *seulement dense*
+élargit le recall (paraphrase, cross-lingue FR↔EN↔JP) ; un item *seulement lexical* garde la
+précision sur les littéraux (codes, SKU).
+
+---
+
+## 3. Le corpus unifié — `global-search.ts` + `search-corpus.ts`
+
+### Assemblage — `buildGlobalSearchIndex()` (~15 sources)
+
+Produit `GlobalSearchItem[]` (`{ id, title, subtitle?, details?, badge?, category, url, thumbnail?, price?, popularity?, source }`).
+UI-agnostic. Sources, dans l'ordre :
+
+1. **Produits catalogue** (groupés, `bx-catalog`) — prix multi-boutiques.
+2. **Pièces** (DB Drizzle, tiers via `beyblade-entity`).
+3. **Tournois** (DB).
+4. **Bladers** (rankings SATR / Stardust / WB, dédup par nom).
+5. **Lexique** Beyblade X (`data/beyblade-lexique.json`).
+6. **Anime** (séries publiées, DB).
+7. **Sites** Beyblade du monde (`data/beyblade-sites.json`).
+8. **Pages** du site (navigation, `SITE_PAGES`).
+9. **Combos gagnants WBO** (`data/wbo-combos.json` + `data/wbo-combos-enriched.json` : tier, score méta, victoires, buzz).
+10/11. **Connaissance wiki** (`data/beyblade-knowledge.json`, ~8 500 entités toutes générations — cf. [`knowledge.md`](./knowledge.md)). Dédup canonique vs catalogue/DB.
+12. **Frames d'anime** (galerie, DB, jusqu'à 3000).
+12b. **Staff RPB** (DB, page « Notre équipe »).
+13. **Discussions** X.com (`data/x-discussions.json`) + Reddit (`data/reddit-discussions.json`) — catégorie `discussion`, cherchables plein-texte mais écartées des réponses du chat.
+14. **Métagame WBO** (`data/bbx-weekly.json` + `data/meta-enrichment.json` : score 0-100 par composant, fusion `max(scoreWBO, communityScore)`, synergies).
+
+> **Exclusion volontaire** : le salon Discord « Beyblade X » (`data/discord-discussions.json`)
+> n'est PAS dans le corpus — ni recherche ni chat. Il ne sert qu'à miner le **vocabulaire
+> d'alias** (`scripts/build-discord-lexicon.ts` → `discord-lexicon.generated.ts`), query-time only.
+
+### Cache — `getSearchCorpus()`
+
+Assembler ~15 sources à chaque requête (`force-dynamic`) est coûteux. Deux couches :
+1. **In-process memo** : même référence de tableau pendant **60 s** → réutilise le cache BM25F (`WeakMap`).
+2. **Redis** : corpus sérialisé dans la clé **`rpbey:search:corpus:v1`**, TTL **1 h**, partagé entre process.
+
+Best-effort total : Redis indisponible → fallback assemblage live. `Bun.RedisClient` résolu via
+`globalThis.Bun` au runtime (le builtin `bun` ne s'importe pas dans le bundle Next).
+`invalidateSearchCorpus()` / `scripts/refresh-search-corpus.ts` vident la clé après un refresh de data.
+
+---
+
+## 4. La couche dense — sidecar e5-small + `embeddings.ts`
+
+### Sidecar d'embeddings — `apps/embed-sidecar/server.ts`
+
+Service Bun **isolé** du bundle Next (le moteur ONNX ne doit jamais entrer dans webpack).
+- **Modèle** : `Xenova/multilingual-e5-small` (**384 dims**), multilingue FR/EN/JP, CPU-friendly,
+  via `@huggingface/transformers` (ONNX Runtime). Convention E5 : préfixe `query: ` / `passage: `.
+- **Bind** : `127.0.0.1:7077` (loopback), `EMBED_PORT` (défaut 7077).
+- **Cache poids** : `EMBED_CACHE_DIR` (défaut `/home/ubuntu/.cache/rpbey-embed-models`), téléchargé une fois.
+- **Endpoints** : `GET /health` → `{ ok, model, dim, ready }` ; `POST /embed {texts, kind}` → `{ dim, vectors: number[][] }` (`kind: "query"|"passage"`, mean-pooling + normalize L2, max 256 textes, 1200 chars/texte).
+- **Service systemd** : `rpbey-embed.service` (`MemoryMax=1500M`).
+
+### Pont sémantique — `services/embeddings.ts` (`import "server-only"`)
+- `embedQuery(text)` : fetch `EMBED_URL/embed` (défaut `http://127.0.0.1:7077`), timeout 1500 ms → `Float32Array` 384d ou `null`.
+- `searchVectorIds(query, count=120)` : embed la requête puis `VSIM rpbey:search:vec FP32 <blob> WITHSCORES COUNT n` → `{id, sim}[]`.
+- `vectorNeighborsById(id, count)` : voisins d'un item déjà indexé (`VSIM … ELE`), **sans** embedding de requête → utilisable au build SSG (sert « produits liés »).
+- **Best-effort** : sidecar/Redis absent → `[]`. `parseVsim` gère RESP2/3.
+
+### Index vectoriel — `scripts/build-search-vectors.ts`
+Récupère le corpus (`/api/v1/search` sans `q`, fallback clé Redis), embed chaque item via le
+sidecar (`kind:"passage"`, lots de 64, retry/backoff), `DEL` puis `VADD` dans le vector set
+Redis **`rpbey:search:vec`** (`FP32`, élément = `item.id`). État vérifié : `VCARD=15232`, `VDIM=384`.
+
+Env : `EMBED_URL`, `EMBED_INDEX_URL` (défaut `http://127.0.0.1:3002/api/v1/search`), `REDIS_URL`.
+À relancer après un rebuild du corpus pour réaligner les vecteurs sur les items.
+
+---
+
+## 5. La route API — `/api/v1/search`
+
+`GET`, `runtime="nodejs"`, `dynamic="force-dynamic"`. Contrat Zod (`SearchQuerySchema`/`SearchResponseSchema`).
+- Sans `q` → renvoie l'index complet (`{ count, data }`) — c'est la source du `build-search-vectors`.
+- Avec `q` → `facetCounts` + `rankSearch` (BM25F) + `searchVectorIds` (VSIM) + `fuseHybrid` (RRF),
+  filtré par `category`, `limit` (défaut 50). Réponse `{ count, data, query, facets }`.
+
+Page `/search` (`SearchClient`) consomme cet index ; `/recherche` est un **alias FR** qui
+redirige vers `/search` en préservant `?q=` et `?mode=ai` (mode IA = ouvre le chat avec la requête).
+
+---
+
+## Pour aphrody
+
+- La recherche est **fonctionnellement indépendante du LLM** : BM25F + dense, aucun appel au
+  chat. aphrody n'a rien à fournir pour la recherche **sauf** s'il veut remplacer le **sidecar
+  e5-small** (couche dense). Dans ce cas : exposer un endpoint `POST /embed` compatible
+  (`{texts, kind}` → `{dim, vectors}`), même dimension (384) ou ré-indexer (`build-search-vectors`)
+  si la dimension change, et pointer `EMBED_URL` dessus.
+- Le **vector set Redis** `rpbey:search:vec` (384d) est l'index de la recherche ; le vector set
+  `tweet_embeddings` (768d, Gemini) est celui du RAG X.com (cf. [`crawling-x.md`](./crawling-x.md)) —
+  **ne pas confondre** (dimensions et modèles différents, mêmes commandes Redis VADD/VSIM).
 
 
 ## File: docs/rust/android-rust-practices.md
