@@ -1,0 +1,33 @@
+/*
+ * App layout sheet. The M3 token runtime sheet (@aphrody-code/m3-tokens/m3-tokens.css,
+ * typescale / shape / elevation / motion) is imported from main.tsx so Bun bundles it.
+ * The ~47 --md-sys-color-* roles are injected at runtime by ThemeProvider via
+ * @aphrody-code/m3-tokens/dynamic-color (Material You from a seed). Before JS boots,
+ * the md-* components fall back to their baked-in M3 baseline colors.
+ */
+
+:root {
+  color-scheme: light dark;
+  --owui-sidebar-width: 300px;
+  --owui-composer-max: 820px;
+  --owui-radius: 16px;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--md-sys-color-surface, #fef7ff);
+  color: var(--md-sys-color-on-surface, #1d1b20);
+  font-family:
+    "Roboto", "Roboto Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
