@@ -20,7 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are now Bun + Turborepo workspace members under `packages/*`; root
   `package.json` gained the shared catalog + `patchedDependencies`; `bun-rs`
   is excluded from the Cargo workspace; GitHub Packages publishing kept via
-  `.github/workflows/release-m3-packages.yml` (tag `m3-v*`).
+  `.github/workflows/release-m3-packages.yml` (tag `m3-v*`). Also brought the
+  **`material-design` Claude Code plugin** (19 skills, 5 agents, color-guard
+  hook, bundled `mui-docs` MCP server) into `.claude/plugins/material-design/`
+  (registered in the local marketplace), plus its design corpus +
+  MUI→M3 migration kit under `packages/material-web/{docs,migration}/`.
 - **`apps/web`** — public consumer client (React + `@aphrody-code/m3-react`
   + TanStack Router/Query, Bun-native `Bun.serve` + `bun build`), powered by
   custom RAG/LLMs (shenron, rpbey). Includes a React port of the Angular

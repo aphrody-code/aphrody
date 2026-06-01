@@ -1,0 +1,30 @@
+{
+  "name": "material-design",
+  "version": "0.3.0",
+  "description": "Guides Claude toward Material Design 3 (Material You), Google-style, responsive and adaptive UI. Ships 15 skills (design guide, responsive/adaptive layout, M3 + Google docs lookup, component creation, spec checking, templating, correction, MUI->M3 migration, plus one skill per @aphrody-code package: dynamic-color/tokens, Tailwind+shadcn theme, motion, design compiler, lint, doc-ai), 5 sub-agents (component builder, spec checker, migrator, corrector, Google-only design researcher), a hardcoded-color guard hook, and a bundled mui-docs MCP server (bun-native port of @mui/mcp). Token-accurate (HCT color roles, type scale, elevation, shape, motion, state layers, window size classes) and aligned with the material-web monorepo (@material/web + @aphrody-code/m3-*).",
+  "author": {
+    "name": "aphrody-code",
+    "url": "https://github.com/aphrody-code/material-web"
+  },
+  "license": "Apache-2.0",
+  "mcpServers": "./.mcp.json",
+  "keywords": [
+    "material-design",
+    "material-design-3",
+    "material-you",
+    "m3",
+    "design-system",
+    "design-tokens",
+    "responsive",
+    "adaptive",
+    "google",
+    "lit",
+    "web-components",
+    "react",
+    "mui-migration",
+    "material-symbols",
+    "accessibility",
+    "claude-code",
+    "plugin"
+  ]
+}

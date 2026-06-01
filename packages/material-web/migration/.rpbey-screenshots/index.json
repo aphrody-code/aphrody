@@ -1,0 +1,142 @@
+[
+  {
+    "route": "/",
+    "status": 200,
+    "title": "RPB - République Populaire du Beyblade | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/home.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/home.png"
+  },
+  {
+    "route": "/anime",
+    "status": 200,
+    "title": "Anime Beyblade | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/anime.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/anime.png"
+  },
+  {
+    "route": "/builder",
+    "status": 200,
+    "title": "DECK BUILDER | Créez votre Deck Beyblade X | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/builder.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/builder.png"
+  },
+  {
+    "route": "/comparateur",
+    "status": 200,
+    "title": "Comparateur de prix Beyblade X — toupies, lanceurs, stades | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/comparateur.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/comparateur.png"
+  },
+  {
+    "route": "/meta",
+    "status": 200,
+    "title": "Meta Beyblade X | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/meta.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/meta.png"
+  },
+  {
+    "route": "/notre-equipe",
+    "status": 200,
+    "title": "Notre Équipe | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/notre-equipe.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/notre-equipe.png"
+  },
+  {
+    "route": "/privacy",
+    "status": 200,
+    "title": "Politique de Confidentialité | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/privacy.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/privacy.png"
+  },
+  {
+    "route": "/rankings",
+    "status": 200,
+    "title": "Classements BTS | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/rankings.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/rankings.png"
+  },
+  {
+    "route": "/reglement",
+    "status": 200,
+    "title": "Règlement de la RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/reglement.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/reglement.png"
+  },
+  {
+    "route": "/tournaments",
+    "status": 200,
+    "title": "Tournois | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/tournaments.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/tournaments.png"
+  },
+  {
+    "route": "/tournaments/satr",
+    "status": 200,
+    "title": "Classement SAtR | Sun After The Reign | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/tournaments_satr.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/tournaments_satr.png"
+  },
+  {
+    "route": "/tournaments/stardust",
+    "status": 200,
+    "title": "Stardust Séries | Classement RPB Nord | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/tournaments_stardust.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/tournaments_stardust.png"
+  },
+  {
+    "route": "/tournaments/wb",
+    "status": 200,
+    "title": "Ultim Bataille | Wild Breakers | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/tournaments_wb.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/tournaments_wb.png"
+  },
+  {
+    "route": "/tv",
+    "status": 200,
+    "title": "RPB TV | Clips & Rediffusions | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/tv.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/tv.png"
+  },
+  {
+    "route": "/parts",
+    "status": 200,
+    "title": "Pièces & Beyblades | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/parts.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/parts.png"
+  },
+  {
+    "route": "/sign-in",
+    "status": 500,
+    "title": "",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/sign-in.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/sign-in.png"
+  },
+  {
+    "route": "/sign-up",
+    "status": 200,
+    "title": "Connexion | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/sign-up.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/sign-up.png"
+  },
+  {
+    "route": "/admin-login",
+    "status": 200,
+    "title": "Connexion Admin | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/admin-login.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/admin-login.png"
+  },
+  {
+    "route": "/dashboard",
+    "status": 200,
+    "title": "Connexion | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/dashboard.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/dashboard.png"
+  },
+  {
+    "route": "/dashboard/gacha",
+    "status": 200,
+    "title": "Connexion | RPB | RPB",
+    "desktop": "/home/ubuntu/material-web/migration/.rpbey-screenshots/desktop/dashboard_gacha.png",
+    "mobile": "/home/ubuntu/material-web/migration/.rpbey-screenshots/mobile/dashboard_gacha.png"
+  }
+]

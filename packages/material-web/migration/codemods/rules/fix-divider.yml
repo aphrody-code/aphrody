@@ -1,0 +1,17 @@
+# rules/fix-divider.yml — TRANSFORM auto-fixable simple : Divider -> md-divider.
+#
+# Exemple de transformation SÛRE réalisable par ast-grep seul (00-CONVENTIONS.md
+# §3 : Divider -> md-divider, mapping 1:1 sans variante ni prop complexe).
+# Complète jscodeshift pour les cas triviaux / one-shot sans setup Node.
+#
+# Appliquer : bunx @ast-grep/cli scan --filter '^fix-divider$' --update-all
+# NB : ne gère PAS l'import (à faire via jscodeshift ou manuellement).
+id: fix-divider
+language: tsx
+severity: hint
+message: Divider -> md-divider (mapping 1:1, cf. §3).
+rule:
+  any:
+    - pattern: <Divider $$$PROPS />
+    - pattern: <Divider $$$PROPS></Divider>
+fix: <md-divider $$$PROPS></md-divider>

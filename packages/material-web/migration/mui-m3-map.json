@@ -1,0 +1,243 @@
+{
+  "$schema": "https://aphrody-code.github.io/material-web/schemas/mui-m3-map.json",
+  "meta": {
+    "description": "Mapping canonique MUI (@mui/material@9 + @mui/icons-material) -> material-web (@aphrody-code/m3-react + Material Symbols). Généré depuis migration/codemods/lib/.",
+    "targetPackage": "@aphrody-code/m3-react",
+    "muiPackages": ["@mui/material"],
+    "generatedBy": "migration/codemods/scripts/export-map-json.ts",
+    "docs": ["00-CONVENTIONS.md", "10-case-study-rpbey.md", "11-material-symbols.md"]
+  },
+  "variantComponents": {
+    "Button": {
+      "prop": "variant",
+      "byValue": {
+        "contained": "MdFilledButton",
+        "outlined": "MdOutlinedButton",
+        "text": "MdTextButton",
+        "elevated": "MdElevatedButton",
+        "tonal": "MdFilledTonalButton"
+      },
+      "default": "MdFilledButton"
+    },
+    "TextField": {
+      "prop": "variant",
+      "byValue": {
+        "filled": "MdFilledTextField",
+        "outlined": "MdOutlinedTextField",
+        "standard": "MdFilledTextField"
+      },
+      "default": "MdFilledTextField"
+    },
+    "Select": {
+      "prop": "variant",
+      "byValue": {
+        "filled": "MdFilledSelect",
+        "outlined": "MdOutlinedSelect",
+        "standard": "MdFilledSelect"
+      },
+      "default": "MdFilledSelect"
+    },
+    "NativeSelect": {
+      "prop": "variant",
+      "byValue": {
+        "filled": "MdFilledSelect",
+        "outlined": "MdOutlinedSelect",
+        "standard": "MdFilledSelect"
+      },
+      "default": "MdFilledSelect"
+    }
+  },
+  "simpleComponents": {
+    "Checkbox": "MdCheckbox",
+    "Radio": "MdRadio",
+    "Switch": "MdSwitch",
+    "Slider": "MdSlider",
+    "Divider": "MdDivider",
+    "Dialog": "MdDialog",
+    "Menu": "MdMenu",
+    "MenuList": "MdMenu",
+    "MenuItem": "MdMenuItem",
+    "List": "MdList",
+    "ListItem": "MdListItem",
+    "LinearProgress": "MdLinearProgress",
+    "CircularProgress": "MdCircularProgress",
+    "Tabs": "MdTabs",
+    "Tab": "MdPrimaryTab",
+    "Tooltip": "MdTooltip",
+    "Snackbar": "MdSnackbar",
+    "Badge": "MdBadge",
+    "Icon": "MdIcon",
+    "Fab": "MdFab",
+    "IconButton": "MdIconButton",
+    "Card": "MdCard",
+    "CardActions": "MdCard",
+    "Avatar": "MdAvatar",
+    "AvatarGroup": "MdAvatarGroup",
+    "Alert": "MdAlert",
+    "Breadcrumbs": "MdBreadcrumbs",
+    "Rating": "MdRating",
+    "Skeleton": "MdSkeleton",
+    "Backdrop": "MdBackdrop",
+    "Popover": "MdPopover",
+    "MobileStepper": "MdMobileStepper",
+    "Link": "MdLink",
+    "Paper": "MdSurface",
+    "Pagination": "MdPaginator",
+    "Autocomplete": "MdAutocomplete",
+    "Accordion": "MdAccordion",
+    "AppBar": "MdTopAppBar",
+    "Toolbar": "MdToolbar",
+    "BottomNavigation": "MdNavigationBar",
+    "ToggleButtonGroup": "MdOutlinedSegmentedButtonSet",
+    "ToggleButton": "MdOutlinedSegmentedButton",
+    "Drawer": "MdNavigationDrawer",
+    "Chip": "MdAssistChip"
+  },
+  "renameChildren": {
+    "MenuItem": "MdMenuItem",
+    "ListItem": "MdListItem",
+    "Tab": "MdPrimaryTab"
+  },
+  "slottedChildren": {
+    "DialogTitle": {
+      "parent": "MdDialog",
+      "slot": "headline",
+      "replaceWith": "div"
+    },
+    "DialogContent": {
+      "parent": "MdDialog",
+      "slot": "content",
+      "replaceWith": "div"
+    },
+    "DialogContentText": {
+      "parent": "MdDialog",
+      "slot": "content",
+      "replaceWith": "div"
+    },
+    "DialogActions": {
+      "parent": "MdDialog",
+      "slot": "actions",
+      "replaceWith": "div"
+    },
+    "CardContent": {
+      "parent": "MdCard",
+      "slot": "content",
+      "replaceWith": "div"
+    },
+    "CardHeader": {
+      "parent": "MdCard",
+      "slot": "headline",
+      "replaceWith": "div"
+    },
+    "CardMedia": {
+      "parent": "MdCard",
+      "slot": "media",
+      "replaceWith": "div"
+    },
+    "AlertTitle": {
+      "parent": "MdAlert",
+      "slot": "title",
+      "replaceWith": "div"
+    },
+    "AccordionSummary": {
+      "parent": "MdAccordion",
+      "slot": "summary",
+      "replaceWith": "div"
+    },
+    "AccordionDetails": {
+      "parent": "MdAccordion",
+      "slot": "content",
+      "replaceWith": "div"
+    },
+    "BottomNavigationAction": {
+      "parent": "MdNavigationBar",
+      "slot": "destination",
+      "replaceWith": "MdNavigationTab"
+    }
+  },
+  "layoutComponents": {
+    "Box": "div",
+    "Container": "div",
+    "Stack": "div",
+    "Grid": "div",
+    "Grid2": "div",
+    "Typography": "MdType"
+  },
+  "gapComponents": {
+    "Modal": "primitive (gap) -> md-dialog (modal) + md-backdrop pour le scrim",
+    "Popper": "primitive (gap) -> Popover API native + md-menu / md-popover",
+    "Collapse": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "Fade": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "Grow": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "Slide": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "Zoom": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "CssBaseline": "pas d-element md -> reset CSS + import des tokens M3",
+    "ScopedCssBaseline": "pas d-element md -> reset CSS scopé + tokens M3"
+  },
+  "propsDroppedWithTodo": ["color", "disableElevation", "disableRipple", "fullWidth", "size", "sx"],
+  "icons": {
+    "strategy": "PascalCase MUI -> snake_case Material Symbols (déterministe, ~96% validé). Suffixe Outlined/Rounded/Sharp -> style ; TwoTone -> Outlined. Validation contre material-symbols-names.json.",
+    "target": "md-icon (texte enfant = nom de glyphe Material Symbols)",
+    "styles": ["Outlined", "Rounded", "Sharp"],
+    "defaultStyle": "Outlined",
+    "axes": {
+      "FILL": {
+        "range": [0, 1],
+        "default": 0,
+        "token": "--md-icon-fill"
+      },
+      "wght": {
+        "range": [100, 700],
+        "default": 400,
+        "token": "--md-icon-wght"
+      },
+      "GRAD": {
+        "range": [-50, 200],
+        "default": 0,
+        "token": "--md-icon-grad"
+      },
+      "opsz": {
+        "range": [20, 48],
+        "default": 24,
+        "token": "--md-icon-opsz"
+      }
+    },
+    "validSymbolCount": 4253,
+    "brandsKeptAsSvg": {
+      "GitHub": "github",
+      "Instagram": "instagram",
+      "Twitter": "twitter",
+      "X": "x",
+      "YouTube": "youtube",
+      "Facebook": "facebook",
+      "LinkedIn": "linkedin",
+      "Reddit": "reddit",
+      "Pinterest": "pinterest",
+      "WhatsApp": "whatsapp",
+      "Telegram": "telegram",
+      "Google": "google",
+      "Apple": "apple",
+      "Microsoft": "microsoft"
+    },
+    "remap": {
+      "_comment": "Cas ou le snake_case naif ne correspond pas a un glyphe valide. Verifie au build par le codemod contre material-symbols-names.json.",
+      "Login": "login",
+      "Logout": "logout",
+      "ArrowForwardIos": "arrow_forward_ios",
+      "ArrowBackIos": "arrow_back_ios",
+      "MoreVert": "more_vert",
+      "MoreHoriz": "more_horiz"
+    }
+  },
+  "events": {
+    "onChange": "MUI onChange(e, value) -> events DOM natifs input/change ; lire e.target.value (le 2e paramètre disparaît).",
+    "namespaced": "Composants fork : events namespacés (table:sort, stepper:change, tree:select…).",
+    "renamedProps": {
+      "Switch.checked": "selected",
+      "Drawer.open": "opened",
+      "Tooltip.title": "text",
+      "Tabs.value": "active-tab-index",
+      "LinearProgress(0..100)": "value(0..1)"
+    }
+  }
+}

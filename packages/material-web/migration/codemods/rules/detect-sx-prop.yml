@@ -1,0 +1,14 @@
+# rules/detect-sx-prop.yml — RAPPORT : prop `sx` (sans équivalent md).
+#
+# La prop `sx` (Emotion) n'a pas d'équivalent (00-CONVENTIONS.md §4) : convertir
+# en classes Tailwind (host/layout) + tokens --md-sys-* (le shadow DOM n'est pas
+# atteignable par Tailwind, cf. §6). Détection seule, non auto-fixable.
+id: detect-sx-prop
+language: tsx
+severity: warning
+message: prop `sx` détectée — convertir en classes Tailwind + tokens --md-sys-* (cf. §4/§6).
+rule:
+  kind: jsx_attribute
+  has:
+    kind: property_identifier
+    regex: ^sx$

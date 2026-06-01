@@ -19,6 +19,29 @@
       "category": "productivity",
       "source": "./aphrody",
       "homepage": "https://github.com/aphrody-code/aphrody"
+    },
+    {
+      "name": "material-design",
+      "description": "Guides Claude toward Material Design 3, Google-style, responsive and adaptive UI: 19 skills (design guide, M3 + Google docs, component creation, spec checking, templating, correction, MUI->M3 migration, plus one per @aphrody-code package), 5 agents, a hardcoded-color guard hook, and a bundled mui-docs MCP server. Aligned with the in-repo material-web monorepo (@aphrody-code/m3-*). Merged 2026-06-01.",
+      "author": {
+        "name": "aphrody-code",
+        "email": "37252373+aphrody-code@users.noreply.github.com",
+        "url": "https://github.com/aphrody-code"
+      },
+      "category": "design",
+      "source": "./material-design",
+      "homepage": "https://github.com/aphrody-code/aphrody",
+      "keywords": [
+        "material-design",
+        "m3",
+        "design-system",
+        "responsive",
+        "adaptive",
+        "google",
+        "gemini",
+        "mui-migration",
+        "mcp"
+      ]
     }
   ]
 }
