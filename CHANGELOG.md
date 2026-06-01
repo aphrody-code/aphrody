@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Merged the standalone `material-web` Material Design 3 monorepo into
+  this repo (2026-06-01).** The 9 `@aphrody-code/*` packages
+  (`material-web`, `react`/m3-react, `m3-tokens`, `m3-motion`, `m3-theme`,
+  `m3-design`, `eslint-plugin-m3`, `doc-ai`, `bun-rs`) + `examples/showcase`
+  are now Bun + Turborepo workspace members under `packages/*`; root
+  `package.json` gained the shared catalog + `patchedDependencies`; `bun-rs`
+  is excluded from the Cargo workspace; GitHub Packages publishing kept via
+  `.github/workflows/release-m3-packages.yml` (tag `m3-v*`).
+- **`apps/web`** — public consumer client (React + `@aphrody-code/m3-react`
+  + TanStack Router/Query, Bun-native `Bun.serve` + `bun build`), powered by
+  custom RAG/LLMs (shenron, rpbey). Includes a React port of the Angular
+  admin (`apps/desktop`) under `/a` (assistant, dashboard, skills, mcp,
+  commands, reverse, forensics, network, diagnostic, settings, about).
 - `aphrody doctor` subcommand — environment health check with rustls
   `CryptoProvider` probe, `ai.json` schema parse, `.well-known` pointer
   check, HTTP listener ping on `:8788`, cargo-vet audit count, peer
