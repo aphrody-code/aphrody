@@ -110,6 +110,7 @@ See `docs/TROUBLESHOOTING.md` for the full list. High-priority items:
   `rustls::crypto::ring::default_provider().install_default()` is called
   before the first `reqwest::Client::new()`.
 - **Extraction `x-client` / `@aphrody-code/x`** : the Bun module `packages/x` has been extracted to a standalone repository `/home/ubuntu/x-client` (package `@aphrody-code/x`, registry `npm.pkg.github.com`). Downstream client projects (`rg`/`rpbey`) must import the package or point to `/home/ubuntu/x-client/ts/` instead of monorepo paths.
+- **Imports Python / conflit de namespace** : l'exécution de `pytest` depuis le dossier `py/` résout par défaut le dossier de configuration `py/aphrody` comme un namespace package vide (avec `__file__ = None`), ce qui provoque l'échec de l'import de `__version__`. Toujours exécuter ou préfixer les tests avec la variable d'environnement `PYTHONPATH=aphrody` pour forcer la résolution vers le package source `py/aphrody/aphrody/`.
 
 ## 9. Skills and agents to leverage
 
