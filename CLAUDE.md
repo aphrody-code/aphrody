@@ -77,17 +77,6 @@ Le `justfile` racine pilote **le workspace Rust** ; pour python/ts, lancer les
 runners dans le sous-dossier correspondant. Les remotes `aphrody-{py,ts}` sur
 GitHub sont désormais des archives gelées.
 
-> **Rapatriement 2026-05-24** : l'**app desktop grand public** (`apps/desktop`,
-> Tauri 2 + Angular 21.2 + Angular Material 21.2 — l'agent autonome grand public
-> propulsé par Gemini) a été **ramenée dans CE dépôt** depuis `aphrody-ts`. C'est
-> la **seule surface non-Rust** d'aphrody : frontend Angular (TS) sous
-> `apps/desktop/src/`, coquille Tauri sous `apps/desktop/src-tauri/` (self-rooted
-> `[workspace]` + `Cargo.lock` propre, **exclue** du workspace core comme
-> `crates/aphrody-app`, jamais touchée par `cargo ci-offline`). Ses commandes
-> appellent `aphrody::run_captured` + `aphrody-voice` in-process. Build :
-> `cd apps/desktop && bun install && bun run build` puis `cargo`/`tauri`. Les
-> surfaces Go/Python et le reste du TS/UI restent dans les dépôts frères.
-
 > **Fusion `material-web` → aphrody (2026-06-01)** : le monorepo Material Design 3
 > autonome a été **fusionné dans CE dépôt**. Les 9 bibliothèques `@aphrody-code/*`
 > (`packages/{material-web,react,m3-tokens,m3-motion,m3-theme,m3-design,eslint-plugin-m3,doc-ai,bun-rs}`)
@@ -97,9 +86,8 @@ GitHub sont désormais des archives gelées.
 > `patchedDependencies` (MCU 0.4.0, @webgpu/types) à la racine. `packages/bun-rs`
 > (FFI Rust) est **exclu du workspace Cargo** (self-rooted `[package]`). Publication
 > GitHub Packages : tag `m3-v*` → `.github/workflows/release-m3-packages.yml`
-> (`bun publish` inline les `workspace:*`). Deux apps consommatrices : `apps/web`
-> (client **grand public**, React + m3-react + TanStack, LLM custom shenron/rpbey) et
-> `apps/desktop` (dashboard **admin privé**, Angular). Le **cœur Rust reste 100 % Rust**.
+> (`bun publish` inline les `workspace:*`). Une app consommatrice : `apps/web`
+> (client **grand public**, React + m3-react + TanStack, LLM custom shenron/rpbey). Le **cœur Rust reste 100 % Rust**.
 
 - **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
 - **Bun** (`@aphrody/ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`, `packages/*` et `examples/*` (Turborepo). Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Design 3** : la lib Lit `@aphrody-code/material-web` + les wrappers React `@aphrody-code/m3-react` et leurs sœurs (`m3-tokens`, `m3-motion`, `m3-theme`, `m3-design`, `eslint-plugin-m3`, `doc-ai`, `bun-rs`). Depuis la fusion 2026-06-01 ces packages sont **membres du workspace bun** (plus de `.git`/npm/pnpm séparés) et publiés sur GitHub Packages sous `@aphrody-code/*` (cf. note §2).

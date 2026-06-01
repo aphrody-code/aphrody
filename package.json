@@ -2,7 +2,7 @@
   "name": "@aphrody/ts",
   "version": "1.0.0-canary",
   "private": true,
-  "description": "aphrody-ts — Bun + Turborepo workspace for aphrody's first-party TypeScript/JS. apps/* (web = public RAG/LLM client, admin = ported M3 admin, desktop = Angular admin) + the Material Design 3 UI libraries under packages/* (material-web Lit lib, m3-react wrappers, m3-tokens, m3-motion, m3-theme, m3-design, eslint-plugin-m3, doc-ai, bun-rs), published to GitHub Packages as @aphrody-code/*. Merged from the standalone material-web monorepo 2026-06-01.",
+  "description": "aphrody-ts — Bun + Turborepo workspace for aphrody's first-party TypeScript/JS. apps/* (web = public RAG/LLM client, admin = ported M3 admin) + the Material Design 3 UI libraries under packages/* (material-web Lit lib, m3-react wrappers, m3-tokens, m3-motion, m3-theme, m3-design, eslint-plugin-m3, doc-ai, bun-rs), published to GitHub Packages as @aphrody-code/*. Merged from the standalone material-web monorepo 2026-06-01.",
   "license": "Apache-2.0",
   "workspaces": {
     "packages": [

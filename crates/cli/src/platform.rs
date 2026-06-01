@@ -115,57 +115,6 @@ pub(crate) fn home_dir() -> Result<PathBuf> {
     Ok(PathBuf::from(var))
 }
 
-/// Google Chrome stable user-data directory, per OS.
-///
-/// Returns `None` on platforms / OSes where Chrome is not commonly installed
-/// at a well-known path (e.g. wasm, freebsd) — caller should treat as "no
-/// Chrome data available".
-#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-pub(crate) fn chrome_user_data() -> Option<PathBuf> {
-    #[cfg(windows)]
-    {
-        let base = local_app_data().ok()?;
-        return Some(base.join("Google").join("Chrome").join("User Data"));
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let base = local_app_data().ok()?;
-        return Some(base.join("Google").join("Chrome"));
-    }
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        // On Linux, Chrome stores config under ~/.config/google-chrome
-        return config_dir().ok().map(|c| c.join("google-chrome"));
-    }
-    #[cfg(not(any(windows, unix)))]
-    {
-        return None;
-    }
-}
-
-/// Google Chrome Canary (SxS) user-data directory, per OS.
-#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-pub(crate) fn chrome_canary_user_data() -> Option<PathBuf> {
-    #[cfg(windows)]
-    {
-        let base = local_app_data().ok()?;
-        return Some(base.join("Google").join("Chrome SxS").join("User Data"));
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let base = local_app_data().ok()?;
-        return Some(base.join("Google").join("Chrome Canary"));
-    }
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        return config_dir().ok().map(|c| c.join("google-chrome-unstable"));
-    }
-    #[cfg(not(any(windows, unix)))]
-    {
-        return None;
-    }
-}
-
 
 /// Ensure a directory exists (creating it recursively if needed).
 #[allow(dead_code)]
