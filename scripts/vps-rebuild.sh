@@ -25,16 +25,20 @@ git pull origin main --rebase || echo "Warning: git pull failed, using current l
 echo "==> 2. Rebuilding Rust CLI binary natively with target-cpu=native and advanced features"
 export RUSTC_WRAPPER=""
 export RUSTFLAGS="-C target-cpu=native"
-cargo build --profile release-fast -p aphrody --target x86_64-unknown-linux-gnu --features "yara forensics index images"
+cargo build --profile release-fast -p aphrody --target x86_64-unknown-linux-gnu --features "yara forensics index firefly"
+cargo build --profile release-fast -p google_mcp --target x86_64-unknown-linux-gnu
 
 echo "==> 3. Installing Rust binaries to local path"
 mkdir -p "$HOME/.local/bin"
-cp target/x86_64-unknown-linux-gnu/release-fast/aphrody "$HOME/.local/bin/"
+# install(1) gère le remplacement même si le binaire tourne (unlink+create).
+install -m 0755 target/x86_64-unknown-linux-gnu/release-fast/aphrody "$HOME/.local/bin/aphrody"
+install -m 0755 target/x86_64-unknown-linux-gnu/release-fast/aphrody-mcp "$HOME/.local/bin/aphrody-mcp"
 
 echo "==> 4. Setting up Python virtual environment and dependencies"
 cd "$REPO_ROOT/py"
 uv sync --all-extras
-# Build python package wheel
+# Build python package wheel (force native Linux target)
+export CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu
 uv build --package aphrody --wheel
 WHEEL_PATH="$REPO_ROOT/py/$(find dist/ -name "aphrody-*.whl" | head -n 1)"
 
@@ -43,21 +47,15 @@ cd "$REPO_ROOT"
 bun install
 
 MODE="${1:-react}"
-SITE_DIR="$REPO_ROOT/apps/desktop/src"
+SITE_DIR="$REPO_ROOT/apps/web/dist"
 
 if [[ "$MODE" == "react" ]]; then
-  echo "==> 5.5 Building Angular frontend for production serving"
-  if bun run --cwd "$REPO_ROOT/apps/desktop" build; then
-    # Try to resolve built files location (Angular standard output paths)
-    if [[ -d "$REPO_ROOT/apps/desktop/dist/desktop/browser" ]]; then
-      SITE_DIR="$REPO_ROOT/apps/desktop/dist/desktop/browser"
-      echo "==> Angular production bundle resolved at: $SITE_DIR"
-    elif [[ -d "$REPO_ROOT/apps/desktop/dist/desktop" ]]; then
-      SITE_DIR="$REPO_ROOT/apps/desktop/dist/desktop"
-      echo "==> Angular production bundle resolved at: $SITE_DIR"
-    fi
+  echo "==> 5.5 Building React frontend for production serving"
+  if bun run --cwd "$REPO_ROOT/apps/web" build; then
+    echo "==> React production bundle resolved at: $SITE_DIR"
   else
-    echo "WARNING: Angular build failed, falling back to serving raw src directory."
+    echo "WARNING: React build failed, falling back to serving raw src directory."
+    SITE_DIR="$REPO_ROOT/apps/web/src"
   fi
 fi
 
