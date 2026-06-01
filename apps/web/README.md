@@ -1,6 +1,6 @@
-# @aphrody-code/open-webui-m3
+# web (aphrody)
 
-A **full Material Design 3 React rebuild of [Open WebUI](https://github.com/open-webui/open-webui)** — the SvelteKit LLM chat app — rebuilt on a strict **Bun + TanStack** stack and rendered entirely with [`@aphrody-code/m3-react`](../../packages/react) (`<md-*>` web components wrapped for React).
+A **full Material Design 3 React rebuild of [Open WebUI](https://github.com/open-webui/open-webui)** — the SvelteKit LLM chat app — rebuilt on a strict **Bun + TanStack** stack and rendered entirely with [`@aphrody-code/m3-react`](https://github.com/aphrody-code/material-web) (`<md-*>` web components wrapped for React), consumed from GitHub Packages.
 
 > Stack rule for this example: **only Bun and TanStack**. No Next, no Vite, no Svelte, no markdown lib, no state lib. Bun is the runtime + bundler + dev server; TanStack Router + TanStack Query own routing and server state; everything visible is a Material 3 component.
 
@@ -40,7 +40,7 @@ src/
 
 ```bash
 bun install                 # from the repo root (links the workspace)
-cd examples/open-webui-m3
+cd apps/web
 
 bun run dev                 # Bun.serve with HMR  → http://localhost:3210
 bun run build               # bun build ./src/index.html → dist/ (production bundle)

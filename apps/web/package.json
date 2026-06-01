@@ -1,5 +1,5 @@
 {
-  "name": "open-webui-m3",
+  "name": "web",
   "version": "0.0.0",
   "private": true,
   "description": "Full Material Design 3 React rebuild of Open WebUI — 100% Bun-native (Bun.serve + bun build) on TanStack Router + TanStack Query, rendered with @aphrody-code/m3-react.",
