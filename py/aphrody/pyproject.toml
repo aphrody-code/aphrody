@@ -78,6 +78,13 @@ forensic = [
     "fastembed>=0.8",
     "numpy>=1.26",
 ]
+rag = [
+    "scikit-learn>=1.4",
+    "umap-learn>=0.5",
+    "networkx>=3.0",
+    "numpy>=1.26",
+    "tiktoken>=0.6",
+]
 dev = ["pytest>=8.0", "pytest-httpx>=0.35"]
 
 [project.scripts]

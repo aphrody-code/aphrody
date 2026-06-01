@@ -528,6 +528,16 @@ class Aphrody:
 
         return ResearchCommands()
 
+    def rag(self) -> Any:
+        """Ultimate RAG suite.
+
+        Subcommands: ``chunk`` / ``raptor`` / ``graph`` / ``process``.
+        """
+        from aphrody.cli.rag import RAGCommands
+
+        return RAGCommands()
+
+
 
 def main() -> None:
     """Entry point for the ``aphrody`` console script."""
