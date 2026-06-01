@@ -63,6 +63,8 @@ ignore = [
     { id = "RUSTSEC-2023-0071", reason = "rsa Marvin Attack timing side-channel; transitive via octocrab/jsonwebtoken, no RSA decrypt in aphrody hot path" },
     # serial crate — unmaintained, transitive via portable-pty -> aphrody-terminal-backend.
     { id = "RUSTSEC-2017-0008", reason = "serial unmaintained; transitive via portable-pty, no runtime exposure" },
+    # PyString::from_object vulnerability in pyo3; blocked upstream upgrade.
+    { id = "RUSTSEC-2025-0020", reason = "PyO3 upgrade blocked by downstream/upstream constraints; no untrusted inputs in PyString::from_object" },
 ]
 
 # ----------------------------------------------------------------------------

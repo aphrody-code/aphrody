@@ -2,32 +2,81 @@
   "name": "@aphrody/ts",
   "version": "1.0.0-canary",
   "private": true,
-  "type": "module",
+  "description": "aphrody-ts — Bun + Turborepo workspace for aphrody's first-party TypeScript/JS. apps/* (web = public RAG/LLM client, admin = ported M3 admin, desktop = Angular admin) + the Material Design 3 UI libraries under packages/* (material-web Lit lib, m3-react wrappers, m3-tokens, m3-motion, m3-theme, m3-design, eslint-plugin-m3, doc-ai, bun-rs), published to GitHub Packages as @aphrody-code/*. Merged from the standalone material-web monorepo 2026-06-01.",
   "license": "Apache-2.0",
-  "description": "aphrody-ts — Bun workspace for aphrody's first-party TypeScript/JS (apps/*). Extracted 2026-05-23 from the aphrody monorepo (C:\\src\\aphrody, Rust core). UI forks under packages/* (material-web, ui, tailwindcss, lit, gts, bxc, lightpanda) keep their own .git and native package managers (npm/pnpm) and are NOT bun workspace members.",
   "workspaces": {
     "packages": [
       "apps/*",
-      "packages/x"
+      "examples/*",
+      "packages/x",
+      "packages/bun-rs",
+      "packages/doc-ai",
+      "packages/eslint-plugin-m3",
+      "packages/m3-design",
+      "packages/m3-motion",
+      "packages/m3-theme",
+      "packages/m3-tokens",
+      "packages/material-web",
+      "packages/react"
     ],
     "catalog": {
       "typescript": "^6.0.3",
       "@types/bun": "^1.3.14",
       "oxlint": "^1.66.0",
-      "oxfmt": "^0.51.0"
+      "oxfmt": "^0.51.0",
+      "@types/node": "^25.9.1",
+      "tsup": "^8.5.1",
+      "react": "^19.2.6",
+      "react-dom": "^19.2.6",
+      "@types/react": "^19.2.15",
+      "@types/react-dom": "^19.2.3",
+      "@material/material-color-utilities": "^0.4.0",
+      "lit": "^3.3.3",
+      "@lit/react": "^1.0.8",
+      "@lit/context": "^1.1.6",
+      "tslib": "^2.8.1",
+      "bun-types": "^1.3.14",
+      "wireit": "^0.14.12",
+      "turbo": "^2.9.16",
+      "motion": "^12.40.0",
+      "three": "^0.184.0",
+      "@types/three": "^0.184.0",
+      "@happy-dom/global-registrator": "^20.9.0",
+      "element-internals-polyfill": "^3.0.2",
+      "sass-true": "^10.1.0",
+      "@typescript/native-preview": "^7.0.0-dev.20260527.2",
+      "@ai-sdk/google": "^3.0.80",
+      "ai": "^6.0.193"
     }
   },
+  "type": "module",
   "scripts": {
-    "test": "bun test",
+    "build": "turbo run build --filter=@aphrody-code/*",
+    "typecheck": "turbo run typecheck --filter=@aphrody-code/*",
+    "test": "turbo run test --filter=@aphrody-code/*",
+    "test:browser": "turbo run test:browser --filter=@aphrody-code/material-web",
+    "dev": "turbo run dev",
     "lint": "oxlint",
-    "fmt": "oxfmt apps/",
-    "fmt:check": "oxfmt --check apps/"
+    "fmt": "oxfmt apps/ packages/",
+    "fmt:check": "oxfmt --check apps/ packages/"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
     "@types/bun": "1.3.14",
+    "@typescript/native-preview": "catalog:",
     "oxfmt": "0.51.0",
     "oxlint": "1.66.0",
+    "turbo": "catalog:",
     "typescript": "6.0.3"
+  },
+  "engines": {
+    "bun": ">=1.3.0",
+    "node": ">=22.0.0"
+  },
+  "packageManager": "bun@1.3.14",
+  "patchedDependencies": {
+    "@material/material-color-utilities@0.4.0": "patches/@material%2Fmaterial-color-utilities@0.4.0.patch",
+    "@webgpu/types@0.1.70": "patches/@webgpu%2Ftypes@0.1.70.patch"
   },
   "trustedDependencies": [
     "@parcel/watcher",

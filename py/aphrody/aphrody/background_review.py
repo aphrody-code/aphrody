@@ -10,7 +10,30 @@ import time
 from pathlib import Path
 from typing import Any
 
-from aphrody.gemini_web import GeminiWebClient
+class BxcGeminiWebClient:
+    """Helper client that calls the migrated bxc CLI tool under the hood."""
+    def generate(self, prompt: str) -> str:
+        import subprocess
+        from pathlib import Path
+        import os
+        paths = [
+            "bxc",
+            str(Path(os.path.expanduser("~/.local/bin/bxc"))),
+            "/usr/local/bin/bxc",
+        ]
+        last_err = None
+        for p in paths:
+            try:
+                res = subprocess.run([p, "google", "chat", prompt], capture_output=True, text=True, check=True)
+                return res.stdout
+            except Exception as e:
+                last_err = e
+                continue
+        raise RuntimeError(f"Failed to run bxc CLI: {last_err}")
+
+    def close(self) -> None:
+        pass
+
 from aphrody.session_db import SessionDB
 
 logger = logging.getLogger(__name__)
@@ -100,11 +123,11 @@ Ensure that the output is ONLY valid JSON.
         local_client = False
         if client is None:
             try:
-                client = GeminiWebClient()
+                client = BxcGeminiWebClient()
                 local_client = True
             except Exception as e:
                 logger.error(
-                    "Failed to load GeminiWebClient for background review: %s",
+                    "Failed to load BxcGeminiWebClient for background review: %s",
                     e,
                 )
                 return {}
