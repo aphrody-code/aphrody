@@ -2,6 +2,11 @@
 
 Aphrody provides a high-performance, modular RAG pipeline that integrates layout-based document chunking, RAPTOR hierarchical indexing, and GraphRAG entity-relationship extraction.
 
+> **Related:** for the RAG/AI stack of the **rpbey** project (a downstream consumer this
+> daemon will serve), see [`rpbey-rag/`](./rpbey-rag/README.md) — it documents rpbey's local
+> llama.cpp chat, BM25F+dense hybrid search, and the Gemini X.com metagame RAG, plus the exact
+> `RPBEY_LLM_URL` (OpenAI-compatible) seam to wire rpbey onto the aphrody backend.
+
 ---
 
 ## Architecture & Workflow
