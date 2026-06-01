@@ -238,6 +238,9 @@ members = [
     # identity}.ts, pushed past it via mmap / arc-swap / Send+Sync by construction.
     "crates/aphrody-agent-home",
 
+    # Python/Rust PyO3 bindings for high-performance shared code in Python RAG
+    "py/aphrody",
+
     # Next.js / Turbopack integration (excluded)
 ]
 exclude = [

@@ -2004,7 +2004,9 @@ class GetDefaultBinaryPathTest(unittest.TestCase):
 
     @mock.patch.dict("os.environ", {}, clear=True)
     @mock.patch("importlib.metadata.distribution")
-    @unittest.skip("Internal google3 resource path not applicable to public SDK")
+    @unittest.skip(
+        "Internal google3 resource path not applicable to public SDK"
+    )
     def test_returns_internal_pyglib_resource_path(self, mock_dist):
         mock_resources = mock.MagicMock()
         mock_resources.GetResourceFilename.return_value = (

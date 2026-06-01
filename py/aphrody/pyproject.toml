@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "aphrody"
@@ -85,7 +85,7 @@ rag = [
     "numpy>=1.26",
     "tiktoken>=0.6",
 ]
-dev = ["pytest>=8.0", "pytest-httpx>=0.35"]
+dev = ["pytest>=8.0", "pytest-httpx>=0.35", "pytest-asyncio>=0.23"]
 
 [project.scripts]
 aphrody = "aphrody.cli:main"
@@ -93,12 +93,9 @@ aphrody = "aphrody.cli:main"
 [project.urls]
 Homepage = "https://github.com/aphrody-code/aphrody"
 
-[tool.setuptools.packages.find]
-include = ["aphrody*"]
-
-[tool.setuptools.package-data]
-"aphrody" = ["py.typed"]
-"aphrody.ui" = ["*.html", "*.js", "*.css"]
+[tool.maturin]
+python-source = "."
+module-name = "aphrody.aphrody_rust"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

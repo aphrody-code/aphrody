@@ -99,6 +99,7 @@ class GeminiVertex:
         else:
             import google.auth
             from google.auth.exceptions import DefaultCredentialsError
+
             try:
                 credentials, _ = google.auth.default()
                 if hasattr(credentials, "with_scopes"):

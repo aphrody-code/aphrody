@@ -538,7 +538,6 @@ class Aphrody:
         return RAGCommands()
 
 
-
 def main() -> None:
     """Entry point for the ``aphrody`` console script."""
     import fire
