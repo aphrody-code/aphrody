@@ -9,6 +9,7 @@ import { ensureMaterialSymbols } from "@aphrody-code/material-web/icon/material-
 import "@aphrody-code/m3-tokens/m3-tokens.css";
 import "./theme.css";
 import "./app.css";
+import "./aphrody/aphrody.css";
 import { router } from "./router.tsx";
 import { ThemeProvider } from "./theme/ThemeProvider.tsx";
 import { api, auth } from "./api/client.ts";
