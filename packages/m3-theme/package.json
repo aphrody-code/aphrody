@@ -1,0 +1,75 @@
+{
+  "name": "@aphrody-code/m3-theme",
+  "version": "3.2.0",
+  "description": "Canonical Material 3 fusion tokens (M3 + shadcn/ui + Tailwind v4), light + dark — one generated stylesheet mapping the shadcn and Tailwind colour aliases onto the M3 --md-sys-color-* roles emitted by @aphrody-code/material-web.",
+  "keywords": [
+    "design-tokens",
+    "material-3",
+    "md3",
+    "shadcn",
+    "tailwind"
+  ],
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-theme#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/m3-theme"
+  },
+  "files": [
+    "dist",
+    "tokens.css"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./tauri": {
+      "types": "./dist/tauri.d.ts",
+      "default": "./dist/tauri.js"
+    },
+    "./tokens.css": "./tokens.css"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "generate": "bun run generate.ts && oxfmt tokens.css",
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "lint": "oxlint",
+    "fmt": "oxfmt .",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fast": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@aphrody-code/m3-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@aphrody-code/bun-rs": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "bun-types": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}

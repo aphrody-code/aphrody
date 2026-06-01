@@ -1,0 +1,51 @@
+{
+  "name": "@aphrody-code/doc-ai",
+  "version": "3.2.0",
+  "description": "AI-first documentation and automatic translation system",
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/doc-ai#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/doc-ai"
+  },
+  "bin": {
+    "doc-ai": "./src/cli.ts"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:fast": "tsgo -p tsconfig.json --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "catalog:",
+    "ai": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "bun-types": "catalog:",
+    "typescript": "catalog:"
+  }
+}

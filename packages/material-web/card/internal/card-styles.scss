@@ -1,0 +1,70 @@
+/**
+ * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+:host {
+  display: block;
+  box-sizing: border-box;
+  border-radius: var(--md-card-border-radius, 12px);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 280ms cubic-bezier(0.2, 0, 0, 1), background-color 280ms cubic-bezier(0.2, 0, 0, 1), border-color 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.card-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Elevated Variant */
+:host([variant="elevated"]) {
+  background-color: var(--md-card-elevated-container-color, var(--md-sys-color-surface-container-low, #f7f2fa));
+  box-shadow: var(--md-card-elevated-shadow, 0px 1px 3px 1px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3));
+}
+:host([variant="elevated"][clickable]:hover) {
+  cursor: pointer;
+  box-shadow: var(--md-card-elevated-hover-shadow, 0px 2px 6px 2px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3));
+  background-color: var(--md-card-elevated-hover-container-color, var(--md-sys-color-surface-container-medium, #f3edf7));
+}
+
+/* Filled Variant */
+:host([variant="filled"]) {
+  background-color: var(--md-card-filled-container-color, var(--md-sys-color-surface-container-highest, #ece6f0));
+  box-shadow: none;
+}
+:host([variant="filled"][clickable]:hover) {
+  cursor: pointer;
+  box-shadow: var(--md-card-filled-hover-shadow, 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15));
+  background-color: var(--md-card-filled-hover-container-color, var(--md-sys-color-surface-container-highest-hover, #e6dfec));
+}
+
+/* Outlined Variant */
+:host([variant="outlined"]) {
+  background-color: var(--md-card-outlined-container-color, var(--md-sys-color-surface, #fef7ff));
+  border: 1px solid var(--md-card-outlined-outline-color, var(--md-sys-color-outline-variant, #cac4d0));
+  box-shadow: none;
+}
+:host([variant="outlined"][clickable]:hover) {
+  cursor: pointer;
+  box-shadow: var(--md-card-outlined-hover-shadow, 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15));
+  background-color: var(--md-card-outlined-hover-container-color, var(--md-sys-color-surface-container-low, #f7f2fa));
+}
+
+.card-content-area {
+  padding: var(--md-card-padding, 16px);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+slot[name="media"]::slotted(*) {
+  width: 100%;
+  object-fit: cover;
+  aspect-ratio: 16/9;
+}

@@ -1,0 +1,986 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Material 3 for the Web — @aphrody-code/material-web</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <meta
+      name="description"
+      content="A complete Material Design 3 component system for the modern web: Lit web components. The MUI + MUI X migration target."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (() => {
+        try {
+          let t = localStorage.getItem("m3-theme");
+          if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="shell">
+      <!-- Floating Translucent Header -->
+      <header class="topbar">
+        <md-icon style="color: var(--md-sys-color-primary)">deployed_code</md-icon>
+        <div class="topbar__brand">
+          <b>M3 Interactive Showcase</b>
+          <span id="topbar-subtitle">Bun-native &bull; WebGL-free &bull; Pure Web Components</span>
+        </div>
+        <div class="topbar__spacer"></div>
+
+        <!-- Live adaptive window size class badge -->
+        <span id="size-class-badge" class="size-class-badge" aria-label="Window size class">
+          <md-icon>aspect_ratio</md-icon>
+          <span id="size-class-text">expanded</span>
+        </span>
+        <md-tooltip for="size-class-badge"
+          >Live M3 window size class — resize the window</md-tooltip
+        >
+
+        <!-- Dynamic color swatches -->
+        <div class="swatches" role="group" aria-label="Material You seed colour">
+          <button
+            type="button"
+            class="swatch swatch--active"
+            title="Baseline"
+            aria-label="Baseline"
+            data-hex="#6750a4"
+            style="background: #6750a4"
+          ></button>
+          <button
+            type="button"
+            class="swatch"
+            title="Ocean"
+            aria-label="Ocean"
+            data-hex="#00658f"
+            style="background: #00658f"
+          ></button>
+          <button
+            type="button"
+            class="swatch"
+            title="Forest"
+            aria-label="Forest"
+            data-hex="#3a6a1e"
+            style="background: #3a6a1e"
+          ></button>
+          <button
+            type="button"
+            class="swatch"
+            title="Sunset"
+            aria-label="Sunset"
+            data-hex="#9a4521"
+            style="background: #9a4521"
+          ></button>
+          <button
+            type="button"
+            class="swatch"
+            title="Rosé"
+            aria-label="Rosé"
+            data-hex="#9c4146"
+            style="background: #9c4146"
+          ></button>
+        </div>
+
+        <!-- Theme toggle -->
+        <md-icon-button id="theme-toggle" aria-label="Toggle colour scheme">
+          <md-icon id="theme-toggle-icon">dark_mode</md-icon>
+        </md-icon-button>
+        <md-tooltip for="theme-toggle">Toggle light / dark</md-tooltip>
+
+        <!-- Catalog Dialog Button -->
+        <md-elevated-button id="btn-show-catalog">
+          <md-icon slot="icon">grid_on</md-icon>
+          M3 Component Catalog
+        </md-elevated-button>
+      </header>
+
+      <!-- Main Layout -->
+      <div class="main-container">
+        <!-- Sidebar Navigation Rail -->
+        <div class="rail-container">
+          <md-navigation-rail id="nav-rail">
+            <md-navigation-rail-item label="Gemini AI" selected value="gemini">
+              <md-icon slot="active-icon">auto_awesome</md-icon>
+              <md-icon slot="inactive-icon">auto_awesome</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="WASM" value="wasm">
+              <md-icon slot="active-icon">memory</md-icon>
+              <md-icon slot="inactive-icon">memory</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Actions" value="actions">
+              <md-icon slot="active-icon">touch_app</md-icon>
+              <md-icon slot="inactive-icon">touch_app</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Inputs" value="inputs">
+              <md-icon slot="active-icon">edit</md-icon>
+              <md-icon slot="inactive-icon">edit</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Feedback" value="feedback">
+              <md-icon slot="active-icon">notifications</md-icon>
+              <md-icon slot="inactive-icon">notifications</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Containment" value="containment">
+              <md-icon slot="active-icon">dashboard</md-icon>
+              <md-icon slot="inactive-icon">dashboard</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Navigation" value="navigation">
+              <md-icon slot="active-icon">explore</md-icon>
+              <md-icon slot="inactive-icon">explore</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Data Display" value="data">
+              <md-icon slot="active-icon">table_rows</md-icon>
+              <md-icon slot="inactive-icon">table_rows</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="MUI X" value="datagrid">
+              <md-icon slot="active-icon">grid_on</md-icon>
+              <md-icon slot="inactive-icon">grid_on</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Charts" value="charts">
+              <md-icon slot="active-icon">insights</md-icon>
+              <md-icon slot="inactive-icon">insights</md-icon>
+            </md-navigation-rail-item>
+            <md-navigation-rail-item label="Date & Time" value="datetime">
+              <md-icon slot="active-icon">event</md-icon>
+              <md-icon slot="inactive-icon">event</md-icon>
+            </md-navigation-rail-item>
+          </md-navigation-rail>
+        </div>
+
+        <!-- Scrollable Content Area -->
+        <main class="content" id="scroll-container">
+          <!-- 1. GEMINI AI MODE -->
+          <section class="section" id="gemini">
+            <h2 class="section__head">Gemini AI Mode</h2>
+            <p class="section__sub">
+              faithful transposition of Google Search dark-mode visual grammar onto M3 components
+            </p>
+            <div class="grid">
+              <div class="specimen specimen--full">
+                <div class="gemini-container">
+                  <div class="gemini">
+                    <div class="gemini__main">
+                      <h3 class="gemini__greeting">Hi. What's on your mind?</h3>
+
+                      <!-- Search pill -->
+                      <div class="gemini__pillwrap">
+                        <div class="gemini__pill">
+                          <md-icon-button aria-label="Add context">
+                            <md-icon>add</md-icon>
+                          </md-icon-button>
+                          <md-outlined-text-field
+                            id="gemini-search-field"
+                            class="gemini__field"
+                            aria-label="Search"
+                            placeholder="Search or ask anything"
+                            value="material design 3"
+                          ></md-outlined-text-field>
+                          <md-icon-button
+                            id="gemini-clear-btn"
+                            aria-label="Clear"
+                            style="display: none"
+                          >
+                            <md-icon>close</md-icon>
+                          </md-icon-button>
+                          <md-icon-button aria-label="Voice search">
+                            <md-icon>mic</md-icon>
+                          </md-icon-button>
+                          <md-icon-button aria-label="Search by image">
+                            <md-icon>photo_camera</md-icon>
+                          </md-icon-button>
+                          <md-assist-chip
+                            id="gemini-mode-chip"
+                            class="gemini__chip"
+                            label="AI Mode"
+                          >
+                            <md-icon slot="icon" class="gemini__sparkle">auto_awesome</md-icon>
+                          </md-assist-chip>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <md-elevated-card
+                          id="gemini-dropdown"
+                          class="gemini__dropdown"
+                          style="display: none"
+                        >
+                          <md-list id="gemini-suggestions-list"></md-list>
+                          <div class="gemini__dropfoot">
+                            <span>Report inappropriate predictions</span>
+                            <a href="#inputs">Learn more</a>
+                          </div>
+                        </md-elevated-card>
+                      </div>
+
+                      <div class="gemini__actions">
+                        <md-elevated-button id="gemini-search-btn">Search</md-elevated-button>
+                        <md-elevated-button id="gemini-lucky-btn">
+                          <md-icon slot="icon">bolt</md-icon>
+                          I'm Feeling Lucky
+                        </md-elevated-button>
+                      </div>
+
+                      <!-- SERP Results -->
+                      <div class="gemini__serp" id="gemini-serp">
+                        <div class="gemini__results">
+                          <div class="gemini__result">
+                            <div class="gemini__reshead">
+                              <md-avatar class="gemini__resfav" label="M3"></md-avatar>
+                              <div class="gemini__resmeta">
+                                <span class="gemini__ressite">Material Design</span>
+                                <span class="gemini__resurl"
+                                  >m3.material.io &rsaquo; foundations</span
+                                >
+                              </div>
+                            </div>
+                            <a href="#" class="gemini__restitle"
+                              >Material Design 3 &mdash; the design system</a
+                            >
+                            <p class="gemini__ressnip">
+                              Material 3 is the latest version of Google's open-source design
+                              system, with updated tokens, dynamic colour and expressive components.
+                            </p>
+                          </div>
+
+                          <div class="gemini__result">
+                            <div class="gemini__reshead">
+                              <md-avatar class="gemini__resfav" label="MW"></md-avatar>
+                              <div class="gemini__resmeta">
+                                <span class="gemini__ressite">material-web</span>
+                                <span class="gemini__resurl"
+                                  >github.com &rsaquo; material-components &rsaquo;
+                                  material-web</span
+                                >
+                              </div>
+                            </div>
+                            <a href="#" class="gemini__restitle"
+                              >Material Web &mdash; Web Components for Material 3</a
+                            >
+                            <p class="gemini__ressnip">
+                              A library of Material Design 3 web components, self-contained on the
+                              --md-sys-* system tokens, with first-class React wrappers.
+                            </p>
+                          </div>
+                        </div>
+
+                        <!-- Knowledge Panel -->
+                        <md-elevated-card class="gemini__knowledge">
+                          <h4 class="gemini__khead">Material Design 3</h4>
+                          <span class="gemini__ksub">Design System</span>
+                          <md-divider style="margin: 12px 0"></md-divider>
+                          <p class="gemini__kdesc">
+                            Material You is the new design language introduced in Android 12,
+                            featuring a highly personalized dynamic color theme engine based on a
+                            single source seed color.
+                          </p>
+                          <md-list class="gemini__klist">
+                            <md-list-item>
+                              <div slot="headline">Developer</div>
+                              <div slot="supporting-text">Google LLC</div>
+                            </md-list-item>
+                            <md-list-item>
+                              <div slot="headline">Initial release</div>
+                              <div slot="supporting-text">October 2021</div>
+                            </md-list-item>
+                          </md-list>
+                        </md-elevated-card>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. WASM SECTION -->
+          <section class="section" id="wasm">
+            <h2 class="section__head">WebAssembly (WASM)</h2>
+            <p class="section__sub">
+              High performance color extraction, specs validation, and SASS compilation
+            </p>
+            <div class="grid">
+              <!-- Color generation bench -->
+              <div class="specimen specimen--full" style="padding: 20px">
+                <div class="specimen__title" style="display: flex; align-items: center; gap: 8px">
+                  <md-icon>palette</md-icon>
+                  <span>Dynamic Color Generation (Rust WASM vs JS MCU)</span>
+                </div>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px">
+                  <div style="display: flex; flex-direction: column; gap: 12px; min-width: 220px">
+                    <md-outlined-text-field
+                      id="wasm-seed-color"
+                      label="Seed Color Hex"
+                      value="#6750a4"
+                    ></md-outlined-text-field>
+                    <label
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                      "
+                    >
+                      <input
+                        id="wasm-dark-theme"
+                        type="checkbox"
+                        style="width: 18px; height: 18px"
+                      />
+                      <span>Dark Theme Mode</span>
+                    </label>
+                  </div>
+
+                  <div
+                    id="wasm-bench-results"
+                    style="flex: 1; display: flex; flex-direction: column; gap: 8px"
+                  >
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap">
+                      <md-elevated-card style="padding: 16px; flex: 1; min-width: 150px">
+                        <div style="font-size: 0.85rem; opacity: 0.8">JS MCU Time</div>
+                        <div
+                          id="wasm-js-time"
+                          style="
+                            font-size: 1.5rem;
+                            font-weight: bold;
+                            color: var(--md-sys-color-secondary);
+                          "
+                        >
+                          0 &micro;s
+                        </div>
+                      </md-elevated-card>
+
+                      <md-elevated-card
+                        style="
+                          padding: 16px;
+                          flex: 1;
+                          min-width: 150px;
+                          border: 1px solid var(--md-sys-color-primary);
+                        "
+                      >
+                        <div
+                          style="
+                            font-size: 0.85rem;
+                            opacity: 0.8;
+                            font-weight: bold;
+                            color: var(--md-sys-color-primary);
+                          "
+                        >
+                          Rust WASM Time
+                        </div>
+                        <div
+                          id="wasm-rust-time"
+                          style="
+                            font-size: 1.5rem;
+                            font-weight: bold;
+                            color: var(--md-sys-color-primary);
+                          "
+                        >
+                          0 &micro;s
+                        </div>
+                      </md-elevated-card>
+                    </div>
+
+                    <div
+                      style="
+                        margin-top: 8px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                        font-size: 0.85rem;
+                      "
+                    >
+                      <div>
+                        <b>HCT Values:</b> Hue=<span id="wasm-hct-hue">0</span>, Chroma=<span
+                          id="wasm-hct-chroma"
+                          >0</span
+                        >, Tone=<span id="wasm-hct-tone">0</span>
+                      </div>
+                      <div>
+                        <b>Color Match:</b>
+                        <span id="wasm-color-match" style="font-weight: bold; color: green"
+                          >YES</span
+                        >
+                        (JS: <span id="wasm-js-hex">#6750a4</span> | WASM:
+                        <span id="wasm-rust-hex">#6750a4</span>)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- M3 Spec Validator -->
+              <div class="specimen" style="grid-column: span 6">
+                <div class="specimen__title" style="display: flex; align-items: center; gap: 8px">
+                  <md-icon>rule</md-icon>
+                  <span>M3 Specification Validator</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px">
+                  <textarea
+                    id="wasm-val-textarea"
+                    class="code-textarea"
+                    rows="10"
+                    style="
+                      width: 100%;
+                      font-family: monospace;
+                      padding: 12px;
+                      border-radius: 8px;
+                      background: var(--md-sys-color-surface-container-high);
+                      color: var(--md-sys-color-on-surface);
+                      border: 1px solid var(--md-sys-color-outline-variant);
+                    "
+                  ></textarea>
+
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      font-size: 0.85rem;
+                    "
+                  >
+                    <span
+                      ><b>Validation Score:</b>
+                      <span id="wasm-val-score" style="font-weight: bold">100</span>/100</span
+                    >
+                  </div>
+
+                  <div
+                    id="wasm-val-issues-container"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 8px;
+                      max-height: 250px;
+                      overflow-y: auto;
+                    "
+                  >
+                    <!-- issues injected here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- SASS Compiler -->
+              <div class="specimen" style="grid-column: span 6">
+                <div class="specimen__title" style="display: flex; align-items: center; gap: 8px">
+                  <md-icon>sass</md-icon>
+                  <span>SASS/SCSS Real-time Compiler</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px">
+                  <textarea
+                    id="wasm-scss-textarea"
+                    class="code-textarea"
+                    rows="10"
+                    style="
+                      width: 100%;
+                      font-family: monospace;
+                      padding: 12px;
+                      border-radius: 8px;
+                      background: var(--md-sys-color-surface-container-high);
+                      color: var(--md-sys-color-on-surface);
+                      border: 1px solid var(--md-sys-color-outline-variant);
+                    "
+                  ></textarea>
+
+                  <div style="font-size: 0.85rem; font-weight: bold">Compiled Output CSS:</div>
+                  <pre
+                    id="wasm-compiled-css"
+                    style="
+                      margin: 0;
+                      padding: 12px;
+                      font-family: monospace;
+                      font-size: 0.8rem;
+                      border-radius: 8px;
+                      background: var(--md-sys-color-surface-container-low);
+                      overflow-x: auto;
+                      max-height: 250px;
+                      border: 1px solid var(--md-sys-color-outline-variant);
+                      color: var(--md-sys-color-on-surface-variant);
+                    "
+                  ></pre>
+                  <div
+                    id="wasm-compile-error"
+                    style="color: var(--md-sys-color-error); font-size: 0.8rem; display: none"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. ACTIONS -->
+          <section class="section" id="actions">
+            <h2 class="section__head">Actions</h2>
+            <p class="section__sub">buttons, fab, segmented sets</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Standard Buttons</div>
+                <div class="specimen__row">
+                  <md-elevated-button>Elevated</md-elevated-button>
+                  <md-filled-button>Filled</md-filled-button>
+                  <md-filled-tonal-button>Tonal</md-filled-tonal-button>
+                  <md-outlined-button>Outlined</md-outlined-button>
+                  <md-text-button>Text</md-text-button>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Buttons with Icons</div>
+                <div class="specimen__row">
+                  <md-filled-button> <md-icon slot="icon">add</md-icon>Create </md-filled-button>
+                  <md-outlined-button>
+                    <md-icon slot="icon">settings</md-icon>Settings
+                  </md-outlined-button>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Floating Action Buttons</div>
+                <div class="specimen__row">
+                  <md-fab size="small" aria-label="Small fab">
+                    <md-icon slot="icon">edit</md-icon>
+                  </md-fab>
+                  <md-fab aria-label="Standard fab">
+                    <md-icon slot="icon">add</md-icon>
+                  </md-fab>
+                  <md-fab size="large" aria-label="Large fab">
+                    <md-icon slot="icon">palette</md-icon>
+                  </md-fab>
+                  <md-branded-fab label="Google Brand">
+                    <md-icon slot="icon" style="color: #4285f4">auto_awesome</md-icon>
+                  </md-branded-fab>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Segmented Buttons</div>
+                <div class="specimen__row">
+                  <md-outlined-segmented-button-set>
+                    <md-outlined-segmented-button
+                      label="Day"
+                      selected
+                    ></md-outlined-segmented-button>
+                    <md-outlined-segmented-button label="Week"></md-outlined-segmented-button>
+                    <md-outlined-segmented-button label="Month"></md-outlined-segmented-button>
+                  </md-outlined-segmented-button-set>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. INPUTS -->
+          <section class="section" id="inputs">
+            <h2 class="section__head">Inputs</h2>
+            <p class="section__sub">text fields, selects, sliders, chips</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Text Fields</div>
+                <div class="specimen__col">
+                  <md-outlined-text-field
+                    label="Outlined Field"
+                    placeholder="Type here"
+                  ></md-outlined-text-field>
+                  <md-filled-text-field
+                    label="Filled Field"
+                    placeholder="Type here"
+                  ></md-filled-text-field>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Selects</div>
+                <div class="specimen__col">
+                  <md-outlined-select label="Choose a Fruit" value="apple" id="demo-select">
+                    <md-select-option value="apple">
+                      <div slot="headline">Apple</div>
+                    </md-select-option>
+                    <md-select-option value="banana">
+                      <div slot="headline">Banana</div>
+                    </md-select-option>
+                    <md-select-option value="cherry">
+                      <div slot="headline">Cherry</div>
+                    </md-select-option>
+                  </md-outlined-select>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Checkboxes, Radios, Switches</div>
+                <div class="specimen__row" style="align-items: center">
+                  <md-checkbox checked></md-checkbox>
+                  <md-radio checked name="demo-radio"></md-radio>
+                  <md-radio name="demo-radio"></md-radio>
+                  <md-switch checked></md-switch>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Sliders</div>
+                <div class="specimen__col">
+                  <md-slider value="40" labeled></md-slider>
+                </div>
+              </div>
+              <div class="specimen specimen--full">
+                <div class="specimen__title">Chips</div>
+                <div class="specimen__row">
+                  <md-chip-set>
+                    <md-assist-chip label="Assist Chip">
+                      <md-icon slot="icon">local_laundry_service</md-icon>
+                    </md-assist-chip>
+                    <md-filter-chip label="Filter Chip" selected></md-filter-chip>
+                    <md-suggestion-chip label="Suggestion Chip"></md-suggestion-chip>
+                    <md-input-chip label="Input Chip" removable></md-input-chip>
+                  </md-chip-set>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. FEEDBACK -->
+          <section class="section" id="feedback">
+            <h2 class="section__head">Feedback</h2>
+            <p class="section__sub">dialogs, snackbars, progress indicators</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Alert & Badge</div>
+                <div class="specimen__row">
+                  <md-alert label="Demo Alert" headline="Important notice" type="info"
+                    >This is a custom alert component!</md-alert
+                  >
+                  <div style="position: relative">
+                    <md-icon>mail</md-icon>
+                    <md-badge
+                      label="3"
+                      style="position: absolute; top: -4px; right: -4px"
+                    ></md-badge>
+                  </div>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Dialog</div>
+                <div class="specimen__row">
+                  <md-filled-button id="btn-open-dialog">Open Dialog</md-filled-button>
+                  <md-dialog id="demo-dialog" headline="Dialog Title">
+                    <div slot="content">This is a native Material Design 3 Dialog component.</div>
+                    <div slot="actions">
+                      <md-text-button id="btn-close-dialog">Close</md-text-button>
+                    </div>
+                  </md-dialog>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Progress Indicators</div>
+                <div class="specimen__row" style="align-items: center; gap: 24px">
+                  <md-circular-progress indeterminate></md-circular-progress>
+                  <md-linear-progress indeterminate style="flex: 1"></md-linear-progress>
+                  <md-loading-indicator></md-loading-indicator>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. CONTAINMENT -->
+          <section class="section" id="containment">
+            <h2 class="section__head">Containment</h2>
+            <p class="section__sub">cards, dividers, accordions, carousels</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Cards</div>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap">
+                  <md-elevated-card style="padding: 16px; width: 180px">
+                    <h4>Elevated</h4>
+                    <p>Some card content.</p>
+                  </md-elevated-card>
+                  <md-filled-card style="padding: 16px; width: 180px">
+                    <h4>Filled</h4>
+                    <p>Some card content.</p>
+                  </md-filled-card>
+                  <md-outlined-card style="padding: 16px; width: 180px">
+                    <h4>Outlined</h4>
+                    <p>Some card content.</p>
+                  </md-outlined-card>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Expansion panel</div>
+                <div class="specimen__col">
+                  <md-expansion-panel header="Accordion Item 1">
+                    <p style="padding: 12px; margin: 0">This is accordion body text.</p>
+                  </md-expansion-panel>
+                  <md-expansion-panel header="Accordion Item 2">
+                    <p style="padding: 12px; margin: 0">This is more accordion body text.</p>
+                  </md-expansion-panel>
+                </div>
+              </div>
+              <div class="specimen specimen--full">
+                <div class="specimen__title">Carousel</div>
+                <md-carousel style="height: 200px">
+                  <md-carousel-item
+                    style="
+                      background: var(--md-sys-color-primary-container);
+                      color: var(--md-sys-color-on-primary-container);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      width: 250px;
+                      font-size: 1.5rem;
+                    "
+                    >Slide 1</md-carousel-item
+                  >
+                  <md-carousel-item
+                    style="
+                      background: var(--md-sys-color-secondary-container);
+                      color: var(--md-sys-color-on-secondary-container);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      width: 250px;
+                      font-size: 1.5rem;
+                    "
+                    >Slide 2</md-carousel-item
+                  >
+                  <md-carousel-item
+                    style="
+                      background: var(--md-sys-color-tertiary-container);
+                      color: var(--md-sys-color-on-tertiary-container);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      width: 250px;
+                      font-size: 1.5rem;
+                    "
+                    >Slide 3</md-carousel-item
+                  >
+                </md-carousel>
+              </div>
+            </div>
+          </section>
+
+          <!-- 7. NAVIGATION -->
+          <section class="section" id="navigation">
+            <h2 class="section__head">Navigation</h2>
+            <p class="section__sub">tabs, breadcrumbs, menus, paginator, stepper</p>
+            <div class="grid">
+              <div class="specimen specimen--full">
+                <div class="specimen__title">Tabs</div>
+                <md-tabs id="demo-tabs" active-tab-index="0">
+                  <md-primary-tab> <md-icon slot="icon">home</md-icon>Home </md-primary-tab>
+                  <md-primary-tab> <md-icon slot="icon">search</md-icon>Search </md-primary-tab>
+                  <md-primary-tab> <md-icon slot="icon">person</md-icon>Profile </md-primary-tab>
+                </md-tabs>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Breadcrumbs</div>
+                <md-breadcrumbs id="demo-breadcrumbs">
+                  <a href="#">Home</a>
+                  <a href="#">Settings</a>
+                  <span>Profile</span>
+                </md-breadcrumbs>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Dropdown Menu</div>
+                <div style="position: relative">
+                  <md-filled-button id="btn-menu-trigger">Open Menu</md-filled-button>
+                  <md-menu id="demo-menu" anchor="btn-menu-trigger">
+                    <md-menu-item headline="Option 1"></md-menu-item>
+                    <md-menu-item headline="Option 2"></md-menu-item>
+                    <md-menu-item headline="Option 3"></md-menu-item>
+                  </md-menu>
+                </div>
+              </div>
+              <div class="specimen specimen--full">
+                <div class="specimen__title">Stepper</div>
+                <md-stepper active-step="0">
+                  <md-step label="Step 1" completed></md-step>
+                  <md-step label="Step 2" active></md-step>
+                  <md-step label="Step 3"></md-step>
+                </md-stepper>
+              </div>
+            </div>
+          </section>
+
+          <!-- 8. DATA DISPLAY -->
+          <section class="section" id="data">
+            <h2 class="section__head">Data Display</h2>
+            <p class="section__sub">lists, avatars, skeletons</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">List</div>
+                <md-list
+                  style="
+                    max-width: 320px;
+                    background: var(--md-sys-color-surface-container-low);
+                    border-radius: 8px;
+                  "
+                >
+                  <md-list-item>
+                    <md-icon slot="start">star</md-icon>
+                    <div slot="headline">Starred Item</div>
+                    <div slot="supporting-text">Supporting details</div>
+                  </md-list-item>
+                  <md-list-item>
+                    <md-icon slot="start">favorite</md-icon>
+                    <div slot="headline">Favorite Item</div>
+                  </md-list-item>
+                </md-list>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Avatars</div>
+                <div class="specimen__col">
+                  <div style="display: flex; gap: 8px; align-items: center">
+                    <md-avatar label="AD"></md-avatar>
+                    <md-avatar
+                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop"
+                      label="Pic"
+                    ></md-avatar>
+                  </div>
+                  <md-avatar-group>
+                    <md-avatar label="A"></md-avatar>
+                    <md-avatar label="B"></md-avatar>
+                    <md-avatar label="C"></md-avatar>
+                  </md-avatar-group>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Skeleton & Info</div>
+                <div class="specimen__col" style="gap: 12px">
+                  <md-skeleton variant="text" width="80%"></md-skeleton>
+                  <md-skeleton variant="rect" width="100%" height="60px"></md-skeleton>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 9. MUI X COMPONENTS -->
+          <section class="section" id="datagrid">
+            <h2 class="section__head">MUI X Parity</h2>
+            <p class="section__sub">interactive table/data grid, tree view, scheduler</p>
+            <div class="grid">
+              <div class="specimen specimen--full">
+                <div class="specimen__title">Interactive Data Grid / Table</div>
+                <md-table id="demo-table" style="width: 100%; max-height: 300px"></md-table>
+              </div>
+              <div class="specimen" style="grid-column: span 6">
+                <div class="specimen__title">Tree View</div>
+                <md-tree id="demo-tree">
+                  <md-tree-item label="Root Node">
+                    <md-tree-item label="Child Node A"></md-tree-item>
+                    <md-tree-item label="Child Node B">
+                      <md-tree-item label="Leaf Node B1"></md-tree-item>
+                    </md-tree-item>
+                  </md-tree-item>
+                </md-tree>
+              </div>
+              <div class="specimen" style="grid-column: span 6">
+                <div class="specimen__title">Scheduler Calendar Mockup</div>
+                <md-scheduler id="demo-scheduler"></md-scheduler>
+              </div>
+            </div>
+          </section>
+
+          <!-- 10. CHARTS -->
+          <section class="section" id="charts">
+            <h2 class="section__head">Charts</h2>
+            <p class="section__sub">responsive canvas charting elements</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Line & Bar Charts</div>
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <md-line-chart id="demo-line-chart" style="height: 150px"></md-line-chart>
+                  <md-bar-chart id="demo-bar-chart" style="height: 150px"></md-bar-chart>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">Pie & Gauge</div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 16px;
+                    align-items: center;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <md-pie-chart
+                    id="demo-pie-chart"
+                    style="width: 140px; height: 140px"
+                  ></md-pie-chart>
+                  <md-gauge
+                    value="75"
+                    label="INP Speed"
+                    style="width: 140px; height: 140px"
+                  ></md-gauge>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 11. DATE & TIME PICKERS -->
+          <section class="section" id="datetime">
+            <h2 class="section__head">Date & Time Pickers</h2>
+            <p class="section__sub">native Intl formatting pickers</p>
+            <div class="grid">
+              <div class="specimen">
+                <div class="specimen__title">Date & Time Pickers</div>
+                <div class="specimen__col" style="gap: 16px">
+                  <md-date-picker label="Select Date"></md-date-picker>
+                  <md-time-picker label="Select Time"></md-time-picker>
+                </div>
+              </div>
+              <div class="specimen">
+                <div class="specimen__title">DateTime & Range</div>
+                <div class="specimen__col" style="gap: 16px">
+                  <md-date-time-picker label="Select Date & Time"></md-date-time-picker>
+                  <md-date-range-picker label="Select Date Range"></md-date-range-picker>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <!-- Catalog dialog (2D overview) -->
+      <md-dialog id="catalog-dialog" headline="M3 Component Catalog">
+        <div slot="content">
+          <p>
+            This showcase runs purely on Bun.serve + Bun.build using standard Web Components from
+            @aphrody-code/material-web without any React wrapper overhead.
+          </p>
+          <md-list>
+            <md-list-item>
+              <div slot="headline">Core Components</div>
+              <div slot="supporting-text">
+                Buttons, Fields, Selects, Sliders, Chips, Dialogs, Progress, Tabs, Lists, Menus
+              </div>
+            </md-list-item>
+            <md-list-item>
+              <div slot="headline">Aphrody M3 Extensions</div>
+              <div slot="supporting-text">
+                Snackbar, Alert, Accordion, Paginator, Autocomplete, Stepper, Carousels, Sheets
+              </div>
+            </md-list-item>
+            <md-list-item>
+              <div slot="headline">MUI X Parity Elements</div>
+              <div slot="supporting-text">
+                Data Grid Table, Tree Views, Scheduler Calendars, HTML Canvas Data Visualization
+                Charts
+              </div>
+            </md-list-item>
+          </md-list>
+        </div>
+        <div slot="actions">
+          <md-text-button id="btn-close-catalog">Close</md-text-button>
+        </div>
+      </md-dialog>
+
+      <!-- Snackbar alert -->
+      <md-snackbar id="demo-snackbar" message="Baseline color scheme loaded."></md-snackbar>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="./app.ts"></script>
+  </body>
+</html>

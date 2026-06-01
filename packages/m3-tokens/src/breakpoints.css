@@ -1,0 +1,21 @@
+/*
+ * Material Design 3 adaptive breakpoints — responsive CSS tokens.
+ * Import: `@import "@aphrody-code/m3-tokens/breakpoints.css";`
+ *
+ * `@custom-media` (PostCSS / postcss-custom-media) lets you write
+ * `@media (--md-expanded) { … }`. The `--md-breakpoint-*` custom properties
+ * expose the raw dp values for container queries and JS.
+ * Canonical M3 window size class boundaries: 600 / 840 / 1200 / 1600.
+ */
+@custom-media --md-medium (min-width: 600px);
+@custom-media --md-expanded (min-width: 840px);
+@custom-media --md-large (min-width: 1200px);
+@custom-media --md-extra-large (min-width: 1600px);
+
+:root {
+  --md-breakpoint-compact: 0px;
+  --md-breakpoint-medium: 600px;
+  --md-breakpoint-expanded: 840px;
+  --md-breakpoint-large: 1200px;
+  --md-breakpoint-extra-large: 1600px;
+}
