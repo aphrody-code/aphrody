@@ -88,8 +88,21 @@ GitHub sont désormais des archives gelées.
 > `cd apps/desktop && bun install && bun run build` puis `cargo`/`tauri`. Les
 > surfaces Go/Python et le reste du TS/UI restent dans les dépôts frères.
 
+> **Fusion `material-web` → aphrody (2026-06-01)** : le monorepo Material Design 3
+> autonome a été **fusionné dans CE dépôt**. Les 9 bibliothèques `@aphrody-code/*`
+> (`packages/{material-web,react,m3-tokens,m3-motion,m3-theme,m3-design,eslint-plugin-m3,doc-ai,bun-rs}`)
+> sont désormais **membres du workspace bun** (`workspace:*`, plus de `.git`/npm/pnpm
+> séparés) + `examples/showcase`. Outillage : **Bun + Turborepo** (`turbo.json`,
+> `bun run build` = `turbo run build --filter=@aphrody-code/*`), catalog partagé +
+> `patchedDependencies` (MCU 0.4.0, @webgpu/types) à la racine. `packages/bun-rs`
+> (FFI Rust) est **exclu du workspace Cargo** (self-rooted `[package]`). Publication
+> GitHub Packages : tag `m3-v*` → `.github/workflows/release-m3-packages.yml`
+> (`bun publish` inline les `workspace:*`). Deux apps consommatrices : `apps/web`
+> (client **grand public**, React + m3-react + TanStack, LLM custom shenron/rpbey) et
+> `apps/desktop` (dashboard **admin privé**, Angular). Le **cœur Rust reste 100 % Rust**.
+
 - **Rust primaire** : tout code systems/CLI/FFI cross-platform reste Rust nightly (Edition 2024). Le binaire `aphrody` (crate `cli`) ne doit dépendre d'aucune autre toolchain au runtime.
-- **Bun** (`aphrody-ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`. Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Web Components 3** (fork `packages/material-web`). Les forks `packages/*` gardent leur PM natif (npm/pnpm) et leur propre `.git`, hors workspace bun.
+- **Bun** (`@aphrody/ts`) : runtime/bundler/test pour TS/JS first-party sous `apps/*`, `packages/*` et `examples/*` (Turborepo). Lint = **oxlint** (oxc, `.oxlintrc.json`), format = **oxfmt** (oxc, `.oxfmtrc.json`). Web/UI = **Material Design 3** : la lib Lit `@aphrody-code/material-web` + les wrappers React `@aphrody-code/m3-react` et leurs sœurs (`m3-tokens`, `m3-motion`, `m3-theme`, `m3-design`, `eslint-plugin-m3`, `doc-ai`, `bun-rs`). Depuis la fusion 2026-06-01 ces packages sont **membres du workspace bun** (plus de `.git`/npm/pnpm séparés) et publiés sur GitHub Packages sous `@aphrody-code/*` (cf. note §2).
 - **Python** (`aphrody-py`) : géré par **uv**, lint/format **ruff**, tests **pytest**.
 - **C/C++** : toujours banni de la distribution, sauf wrappers FFI (`cxx::bridge`).
 - **FFI** : `mimalloc` global côté Rust, zero-copy via pointeurs bruts encapsulés.
@@ -125,7 +138,7 @@ cargo audit-machete        # unused deps detector
 
 ## 4. Architecture
 
-Dépôt **monorepo polyglotte** (cf. §2) : Rust primaire (`crates/*`, le gros du workspace) + surfaces in-tree Bun/TS (`apps/*`, `packages/{native,x,beyblade}`) et Python (`py/`). L'extraction du 2026-05-23 vers des dépôts frères a été **réunifiée le 2026-05-27** ; la surface Go a été **supprimée le 2026-05-31**.
+Dépôt **monorepo polyglotte** (cf. §2) : Rust primaire (`crates/*`, le gros du workspace) + surfaces in-tree Bun/TS (`apps/*`, `examples/*`, `packages/*` — dont les 9 libs Material Design 3 `@aphrody-code/*` fusionnées le 2026-06-01, + `native/x/beyblade`) et Python (`py/`). L'extraction du 2026-05-23 vers des dépôts frères a été **réunifiée le 2026-05-27** ; la surface Go a été **supprimée le 2026-05-31** ; le monorepo `material-web` a été **fusionné le 2026-06-01**.
 Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ### Cœur du workspace
@@ -195,7 +208,7 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 - **`octocrab` Search API** : `.sort("stars")` prend `&str`. Feature-gate `github` active pour isolation CI.
 - **Agents parallèles `isolation: "worktree"`** : non fiable (agents partagent parfois le main tree → races HEAD-switch). Intégrer par *harvest* (`git checkout <branch> -- <path>`) + hand-merge des fichiers partagés, jamais `git merge` de bases enchevêtrées. Nettoyer : `git worktree unlock` avant `git worktree remove --force`.
 - **Peer agy ↔ main concurrent** : le peer committe sur `main` avec l'identité git `aphrody-code` (identique à la nôtre). Re-vérifier `git log --oneline main..HEAD` avant tout fast-forward ; ne pas supposer la base de branche stable.
-- **UI / TS-JS / publish GitHub Packages** : surfaces **extraites vers `C:\src\aphrody-ts`** (2026-05-23). Les gotchas Lit autonome, Bun bundler, collisions `@property`↔Element, build wireit, et `publish-github-packages.ts`/`.npmrc`/`PUBLISHING.md` y vivent désormais. Ce dépôt = **Rust only**.
+- **UI / TS-JS / publish GitHub Packages (fusionné 2026-06-01)** : le monorepo Material Design 3 est **de retour dans CE dépôt** (`packages/*` + `apps/*` + `examples/*`). Gotchas vérifiés à la fusion : (a) bun ne **hoist pas** les packages workspace à la racine `node_modules` → un import bare *self* d'un package vers lui-même ne résout pas ; `packages/material-web/labs/gb` utilisait `@aphrody-code/material-web/…` au lieu d'un chemin relatif → corrigé en relatif (sinon `tsc` TS2307 à l'émission `.d.ts` de m3-react). (b) `sass-embedded` doit être déclaré explicitement (`packages/material-web` devDep) — il était hoisté ambigument dans l'ancien dépôt. (c) `examples/showcase` doit déclarer `@material/material-color-utilities` en dep directe. (d) `bun publish` inline les `workspace:*` depuis le champ `version` de `bun.lock` (cf. CLAUDE.md global). (e) `turbo.json` est ignoré par défaut dans `.gitignore` racine → `git add -f`. Publication : tag `m3-v*`.
 - **Extraction `x-client` / `@aphrody-code/x` (2026-05-31)** : le module de crawling/RAG Bun `packages/x` a été extrait vers le dépôt autonome `/home/ubuntu/x-client` (package `@aphrody-code/x`, registre `npm.pkg.github.com`). Les dépendances/chemins dans les dépôts clients `rg` et `rpbey` doivent être mis à jour pour consommer le binaire compiled `dist/` ou pointer vers le nouveau chemin local.
 - **Tests + `reqwest::Client` → panic `No provider set`** (rustls 0.23, providers ring+aws-lc ambigus) : installer le provider dans le `mod tests` via `static ONCE: Once` + `rustls::crypto::ring::default_provider().install_default()` (helper `install_rustls_provider()` ; modèle dans `a2a-client`/`aphrody-gateway`/`aphrody-messaging`) + `rustls = { workspace = true }` en `[dev-dependencies]`.
 - **Imports Python / conflit de namespace** : l'exécution de `pytest` depuis le dossier `py/` résout par défaut le dossier de configuration `py/aphrody` comme un namespace package vide (avec `__file__ = None`), ce qui provoque l'échec de l'import de `__version__`. Toujours exécuter ou préfixer les tests avec la variable d'environnement `PYTHONPATH=aphrody` pour forcer la résolution vers le package source `py/aphrody/aphrody/`.

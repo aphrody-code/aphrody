@@ -237,6 +237,40 @@ distribuable sur Linux/Windows/wasm** :
    Build hermétique avec lockfile pin SHA-256, zéro Bun/Node/Python dans le workflow.
 2. **Bridges natifs vendored** (`vendor/coreutils/`, `vendor/util-linux/`) — sub-projets externes
    conservés en read-only, hors workspace members (Bun/Electron archives supprimées).
+3. **Monorepo TypeScript / Material Design 3** (`packages/*` + `apps/*` + `examples/*`) — la couche
+   UI, fusionnée depuis le dépôt `material-web` le 2026-06-01 (cf. section ci-dessous). Bun + Turborepo,
+   hors workspace Cargo (le cœur reste 100 % Rust).
+
+## Frontend — Material Design 3 (monorepo TypeScript)
+
+Bun + Turborepo workspace (le seul polyglotte TS du dépôt, séparé du cœur Rust). Les bibliothèques
+sont publiées sur **GitHub Packages** sous le scope `@aphrody-code/*` (tag `m3-v*` →
+`.github/workflows/release-m3-packages.yml`).
+
+```
+packages/
+  material-web/   @aphrody-code/material-web   # lib Lit (web components <md-*>), self-contained sur --md-sys-*
+  react/          @aphrody-code/m3-react        # wrappers React (@lit/react), 1 par <md-*> (couvre MUI + MUI X)
+  m3-tokens/      @aphrody-code/m3-tokens       # tokens M3 + Material You runtime (dynamic-color depuis 1 seed)
+  m3-motion/      @aphrody-code/m3-motion       # transitions / motion M3 (React)
+  m3-theme/       @aphrody-code/m3-theme        # feuille de tokens « fusion » M3 + shadcn/ui + Tailwind v4
+  m3-design/      @aphrody-code/m3-design       # design compiler : brief NL → scaffold React M3
+  eslint-plugin-m3/ @aphrody-code/eslint-plugin-m3  # 8 règles lint M3 (oxlint + ESLint)
+  doc-ai/         @aphrody-code/doc-ai          # CLI doc/traduction (Gemini)
+  bun-rs/         @aphrody-code/bun-rs          # FFI native Rust (Sass, HCT) chargée via bun:ffi (exclue du workspace Cargo)
+apps/
+  web/            # client GRAND PUBLIC : chat/RAG sur LLM custom (shenron, rpbey, …), React + m3-react + TanStack, Bun-natif
+  desktop/        # dashboard ADMIN PRIVÉ : Tauri 2 + Angular 21 (re, forensics, dns, doctor, mcp, …)
+examples/
+  showcase/       # galerie m3-react + Material You, 100 % Bun (Bun.serve + bun build)
+```
+
+```bash
+bun install          # racine — lie le workspace, applique les patches (MCU 0.4.0, @webgpu/types)
+bun run build        # turbo : build des @aphrody-code/* (sass-embedded → css → tsc .d.ts + tsup dist)
+bun run typecheck    # turbo tsc
+cd apps/web && bun run dev   # client public (Bun.serve + HMR) → http://localhost:3210
+```
 
 ## Roadmap 2026
 

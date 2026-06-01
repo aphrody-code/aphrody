@@ -1,8 +1,21 @@
 # web (aphrody)
 
-A **full Material Design 3 React rebuild of [Open WebUI](https://github.com/open-webui/open-webui)** — the SvelteKit LLM chat app — rebuilt on a strict **Bun + TanStack** stack and rendered entirely with [`@aphrody-code/m3-react`](https://github.com/aphrody-code/material-web) (`<md-*>` web components wrapped for React), consumed from GitHub Packages.
+The **public consumer client** for aphrody — a Material Design 3 React app powered by custom
+in-house RAG + LLMs (**shenron**, **rpbey**, …). Strict **Bun + TanStack** stack, rendered entirely
+with [`@aphrody-code/m3-react`](../../packages/react) (`<md-*>` web components wrapped for React),
+now consumed from the in-repo workspace (post-merge) rather than GitHub Packages.
 
-> Stack rule for this example: **only Bun and TanStack**. No Next, no Vite, no Svelte, no markdown lib, no state lib. Bun is the runtime + bundler + dev server; TanStack Router + TanStack Query own routing and server state; everything visible is a Material 3 component.
+Two surfaces:
+- **`/`** — the public chat / RAG client (started life as a full M3 rebuild of
+  [Open WebUI](https://github.com/open-webui/open-webui); the table below maps that surface).
+- **`/a/$section`** — a React port of the Angular **admin** dashboard (`apps/desktop`): assistant,
+  dashboard, skills, mcp, commands, reverse, forensics, network, diagnostic, settings, about.
+  Auth-gated. (Per the public/admin split this is slated to move to a separate private `apps/admin`.)
+
+> Stack rule: **only Bun and TanStack**. No Next, no Vite, no Svelte, no markdown lib, no state lib.
+> Bun is the runtime + bundler + dev server; TanStack Router + TanStack Query own routing and server
+> state; everything visible is a Material 3 component. The Bun mock backend serves an OpenAI-compatible
+> SSE chat endpoint plus an `/api/run` aphrody-CLI mock for the admin port.
 
 ## What it covers
 
