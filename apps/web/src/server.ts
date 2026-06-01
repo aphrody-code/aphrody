@@ -16,6 +16,7 @@ import {
   WORKSPACE_MODELS,
 } from "./api/mock-data.ts";
 import type { Chat, ChatListItem, CompletionRequest } from "./api/types.ts";
+import { ACCOUNT, META, runMock } from "./aphrody/server-mock.ts";
 
 const PORT = Number(process.env.PORT ?? 3210);
 
@@ -146,6 +147,16 @@ const server = Bun.serve({
     "/api/workspace/knowledge": () => json(KNOWLEDGE),
     "/api/workspace/prompts": () => json(PROMPTS),
     "/api/workspace/tools": () => json(TOOLS),
+
+    // aphrody desktop port: CLI bridge + host metadata + linked account.
+    "/api/run": {
+      POST: async (req) => {
+        const { args } = (await req.json().catch(() => ({ args: [] }))) as { args?: string[] };
+        return json(runMock(Array.isArray(args) ? args : []));
+      },
+    },
+    "/api/meta": () => json(META),
+    "/api/account": () => json(ACCOUNT),
 
     // SPA + bundling catch-all (HTML import auto-bundles main.tsx + CSS).
     "/*": index,

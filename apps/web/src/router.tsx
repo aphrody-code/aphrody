@@ -16,6 +16,8 @@ import { ChatRoute } from "./routes/ChatRoute.tsx";
 import { WorkspaceRoute } from "./routes/WorkspaceRoute.tsx";
 import { AdminRoute } from "./routes/AdminRoute.tsx";
 import { NotesRoute } from "./routes/NotesRoute.tsx";
+import { AphrodyShell } from "./aphrody/AphrodyShell.tsx";
+import { AphrodySection } from "./aphrody/AphrodySection.tsx";
 import { auth } from "./api/client.ts";
 
 function Root() {
@@ -66,9 +68,32 @@ const notesRoute = createRoute({
   component: NotesRoute,
 });
 
+// Ported aphrody desktop app — its own icon-rail shell under /a/*.
+const aphrodyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "_aphrody",
+  component: AphrodyShell,
+  beforeLoad: () => {
+    if (!auth.token) throw redirect({ to: "/auth" });
+  },
+});
+const aphrodyIndexRoute = createRoute({
+  getParentRoute: () => aphrodyRoute,
+  path: "/a",
+  beforeLoad: () => {
+    throw redirect({ to: "/a/$section", params: { section: "assistant" } });
+  },
+});
+const aphrodySectionRoute = createRoute({
+  getParentRoute: () => aphrodyRoute,
+  path: "/a/$section",
+  component: AphrodySection,
+});
+
 const routeTree = rootRoute.addChildren([
   authRoute,
   appRoute.addChildren([indexRoute, chatRoute, workspaceRoute, adminRoute, notesRoute]),
+  aphrodyRoute.addChildren([aphrodyIndexRoute, aphrodySectionRoute]),
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });
