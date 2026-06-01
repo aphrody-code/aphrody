@@ -1,0 +1,43 @@
+# GitHub Pages — site de documentation (markdown pur, build Jekyll natif).
+# Source : dossier /docs de la branche configurée. Aucun workflow Actions requis
+# (le thème just-the-docs est servi via jekyll-remote-theme, supporté nativement
+# par GitHub Pages) — donc zéro minute CI consommée.
+title: Material 3 for the Web
+description: >-
+  Système de composants Material Design 3 complet pour le web — web components Lit
+  avec wrappers React de première classe. La cible de migration MUI + MUI X.
+remote_theme: just-the-docs/just-the-docs
+url: https://aphrody-code.github.io
+baseurl: /material-web
+
+# ── just-the-docs ──────────────────────────────────────────────────────────
+color_scheme: dark
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+heading_anchors: true
+back_to_top: true
+back_to_top_text: "Retour en haut"
+
+aux_links:
+  GitHub: https://github.com/aphrody-code/material-web
+aux_links_new_tab: true
+
+nav_external_links:
+  - title: "Guides de migration MUI → M3 (GitHub)"
+    url: https://github.com/aphrody-code/material-web/tree/feat/m3-monorepo/migration
+
+footer_content: >-
+  Material 3 for the Web — fork de @material/web restructuré en monorepo bun + Turborepo.
+  Documentation servie statiquement par GitHub Pages.
+
+# ── Jekyll ───────────────────────────────────────────────────────────────────
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+
+# Les *.fr.md sont des doublons français du contenu — exclus du build du site.
+exclude:
+  - "*.fr.md"
+  - "**/*.fr.md"

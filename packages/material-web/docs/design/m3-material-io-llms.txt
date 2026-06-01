@@ -1,0 +1,208 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+# Material Design 3
+
+> Material Design 3 (Material You) is Google's open-source design system. This is an
+> llms.txt-format index of the canonical specification site https://m3.material.io,
+> enumerated from its sitemap (https://m3.material.io/sitemap.xml, fetched 2026-05-29)
+> and grouped by the site's own navigation (Get started, Foundations, Styles,
+> Components, Develop, Blog). One line per page: title + URL + a distilled one-line
+> description. Descriptions are summaries in our own words, not verbatim article text.
+>
+> Source: https://m3.material.io (Google, Apache-2.0 / CC-BY content), fetched 2026-05-29.
+> Web caveat: m3.material.io is an Angular single-page app rendered client-side, so its
+> page bodies are not available as plain text via a simple fetch; canonical numeric values
+> (type scale, shape, motion, elevation, state layers) live in this repo's corpus
+> (docs/01-md3-spec-foundations.md) and the material-foundation GitHub token sources.
+> Web reality: @material/web implements the tokenized M3 "classic" foundations only;
+> M3 Expressive (springs, shape morphing, split buttons, button groups, FAB menus,
+> loading indicators, docked toolbars, emphasized type) is Android/Compose-only as of 2026.
+
+## Get started
+
+- [Material Design 3 home](https://m3.material.io/): system overview and entry point to Foundations, Styles, Components, Develop, and the Blog.
+- [Get started](https://m3.material.io/get-started): orientation for designers and developers adopting M3.
+- [Foundations index](https://m3.material.io/foundations): landing page for the system's underlying principles, accessibility, layout, interaction, and tokens.
+- [Styles index](https://m3.material.io/styles): landing page for color, typography, elevation, icons, shape, motion, and spacing.
+- [Components index](https://m3.material.io/components): landing page for the full component catalog.
+- [Search](https://m3.material.io/search.html): site search across the M3 documentation.
+
+## Foundations
+
+- [Foundations: principles](https://m3.material.io/foundations/overview/principles): the guiding design principles of Material 3.
+- [Foundations: assistive technology](https://m3.material.io/foundations/overview/assistive-technology): designing for screen readers and assistive tech.
+- [Designing: overview](https://m3.material.io/foundations/designing/overview): how to approach designing a Material product.
+- [Designing: structure](https://m3.material.io/foundations/designing/structure): structuring screens and information hierarchy (also the accessibility entry point).
+- [Designing: elements](https://m3.material.io/foundations/designing/elements): the building blocks of a Material UI.
+- [Designing: flow](https://m3.material.io/foundations/designing/flow): designing user flows across screens.
+- [Designing: color and contrast](https://m3.material.io/foundations/designing/color-contrast): contrast guidance for accessible color use.
+- [Customization](https://m3.material.io/foundations/customization): how far and where to customize M3 for a brand.
+- [Usability: overview](https://m3.material.io/foundations/usability/overview): usability foundations across the system.
+- [Usability: applying M3 Expressive](https://m3.material.io/foundations/usability/applying-m3-expressive): applying the Expressive evolution (research-backed emphasis, motion physics).
+- [Design tokens: overview](https://m3.material.io/foundations/design-tokens/overview): the three-tier token model (reference / system / component).
+- [Design tokens: how to use tokens](https://m3.material.io/foundations/design-tokens/how-to-use-tokens): consuming tokens across design and code.
+- [Interaction: states overview](https://m3.material.io/foundations/interaction/states/overview): the interaction-state model.
+- [Interaction: state layers](https://m3.material.io/foundations/interaction/states/state-layers): semi-transparent overlays (hover 8%, focus/pressed 10%, dragged 16%) using the on-* color.
+- [Interaction: applying states](https://m3.material.io/foundations/interaction/states/applying-states): how to apply states to components.
+- [Interaction: gestures](https://m3.material.io/foundations/interaction/gestures): supported touch gestures.
+- [Interaction: inputs](https://m3.material.io/foundations/interaction/inputs): input modalities (touch, pointer, keyboard).
+- [Interaction: selection](https://m3.material.io/foundations/interaction/selection): selection patterns and behavior.
+- [Layout: overview](https://m3.material.io/foundations/layout/layout-overview/overview): the layout system overview.
+- [Layout: parts of layout](https://m3.material.io/foundations/layout/layout-overview/parts-of-layout): regions and anatomy of a layout.
+- [Layout: adaptive design](https://m3.material.io/foundations/layout/layout-overview/adaptive-design): designing layouts that adapt across window sizes.
+- [Layout: breakpoints overview](https://m3.material.io/foundations/layout/breakpoints/overview): window size classes and breakpoint thresholds.
+- [Layout: compact breakpoint](https://m3.material.io/foundations/layout/breakpoints/compact): Compact width (<600dp), phones in portrait; bottom navigation bar.
+- [Layout: medium breakpoint](https://m3.material.io/foundations/layout/breakpoints/medium): Medium width (600-839dp), small tablets/foldables; navigation rail.
+- [Layout: expanded breakpoint](https://m3.material.io/foundations/layout/breakpoints/expanded): Expanded width (840-1199dp), tablets/desktop; rail or drawer.
+- [Layout: large and extra-large breakpoints](https://m3.material.io/foundations/layout/breakpoints/large-extra-large): Large (1200-1599dp) and Extra-large (>=1600dp); permanent drawer + multi-pane.
+- [Layout: canonical examples overview](https://m3.material.io/foundations/layout/canonical-examples/overview): the canonical layout patterns.
+- [Layout: list-detail](https://m3.material.io/foundations/layout/canonical-examples/list-detail): list-detail canonical layout.
+- [Layout: supporting pane](https://m3.material.io/foundations/layout/canonical-examples/supporting-pane): supporting-pane canonical layout.
+- [Layout: feed](https://m3.material.io/foundations/layout/canonical-examples/feed): feed canonical layout.
+- [Layout: grids and spacing overview](https://m3.material.io/foundations/layout/grids-spacing/overview): the grid and spacing system.
+- [Layout: grids](https://m3.material.io/foundations/layout/grids-spacing/grids): column grids, margins, and gutters.
+- [Layout: spacing](https://m3.material.io/foundations/layout/grids-spacing/spacing): the 4dp/8dp spacing scale.
+- [Layout: density](https://m3.material.io/foundations/layout/grids-spacing/density): density levels for information-dense UIs.
+- [Layout: scaffold overview](https://m3.material.io/foundations/layout/scaffold/overview): the layout scaffold container.
+- [Layout: scaffold bars](https://m3.material.io/foundations/layout/scaffold/bars): top/bottom app bars in the scaffold.
+- [Layout: scaffold panes](https://m3.material.io/foundations/layout/scaffold/panes): multi-pane regions in the scaffold.
+- [Layout: scaffold rails](https://m3.material.io/foundations/layout/scaffold/rails): navigation rail in the scaffold.
+- [Layout: bidirectionality (RTL)](https://m3.material.io/foundations/layout/bidirectionality-rtl): right-to-left and mirroring guidance.
+- [Content design: overview](https://m3.material.io/foundations/content-design/overview): writing and content guidance overview.
+- [Content design: alt text](https://m3.material.io/foundations/content-design/alt-text): writing accessible alternative text.
+- [Content design: notifications](https://m3.material.io/foundations/content-design/notifications): notification copy guidance.
+- [Content design: global writing overview](https://m3.material.io/foundations/content-design/global-writing/overview): writing for a global audience.
+- [Content design: global word choice](https://m3.material.io/foundations/content-design/global-writing/word-choice): word choice for translation and localization.
+- [Content design: grammar and punctuation](https://m3.material.io/foundations/content-design/style-guide/grammar-and-punctuation): UX style-guide grammar rules.
+- [Content design: UX writing best practices](https://m3.material.io/foundations/content-design/style-guide/ux-writing-best-practices): best practices for product copy.
+- [Content design: word choice](https://m3.material.io/foundations/content-design/style-guide/word-choice): style-guide word choice.
+- [Writing: best practices](https://m3.material.io/foundations/writing/best-practices): writing best practices.
+- [Writing: text resizing](https://m3.material.io/foundations/writing/text-resizing): supporting dynamic text sizes.
+- [Writing: text truncation](https://m3.material.io/foundations/writing/text-truncation): truncation rules.
+- [Building for all: user needs](https://m3.material.io/foundations/building-for-all/user-needs): inclusive design and user needs.
+- [Building for all: co-design](https://m3.material.io/foundations/building-for-all/co-design): co-designing with communities.
+- [Watches: overview](https://m3.material.io/foundations/watches/overview): M3 for Wear OS overview.
+- [Watches: foundations](https://m3.material.io/foundations/watches/foundations): watch-specific foundations.
+- [Watches: layout](https://m3.material.io/foundations/watches/layout): watch layout guidance.
+- [Watches: styles](https://m3.material.io/foundations/watches/styles): watch styling guidance.
+- [XR: design overview](https://m3.material.io/foundations/xr/design/overview): M3 for extended reality (XR) overview.
+- [XR: layout](https://m3.material.io/foundations/xr/design/layout): spatial layout for XR.
+- [XR: interaction](https://m3.material.io/foundations/xr/design/interaction): XR interaction model.
+- [XR: accessibility](https://m3.material.io/foundations/xr/design/accessibility): XR accessibility guidance.
+- [XR components: overview](https://m3.material.io/foundations/xr/components/overview): XR component set overview.
+- [XR components: app bars](https://m3.material.io/foundations/xr/components/app-bars): app bars in XR.
+- [XR components: dialogs](https://m3.material.io/foundations/xr/components/dialogs): dialogs in XR.
+- [XR components: nav bar](https://m3.material.io/foundations/xr/components/nav-bar): navigation bar in XR.
+- [XR components: nav rail](https://m3.material.io/foundations/xr/components/nav-rail): navigation rail in XR.
+- [XR components: toolbars](https://m3.material.io/foundations/xr/components/toolbars): toolbars in XR.
+- [Glossary](https://m3.material.io/foundations/glossary): definitions of M3 terms.
+
+## Styles
+
+- [Color: system overview](https://m3.material.io/styles/color/system/overview): the M3 color system overview.
+- [Color: how the system works](https://m3.material.io/styles/color/system/how-the-system-works): HCT color space, tonal palettes (13 tones), and color roles.
+- [Color: roles](https://m3.material.io/styles/color/roles): the ~47 semantic color roles and the on-* convention.
+- [Color: choosing a scheme](https://m3.material.io/styles/color/choosing-a-scheme): picking baseline, custom, or dynamic schemes.
+- [Color: static baseline](https://m3.material.io/styles/color/static/baseline): the baseline (default purple) static scheme.
+- [Color: static custom brand](https://m3.material.io/styles/color/static/custom-brand): building a static scheme from a brand color.
+- [Color: dynamic choosing a source](https://m3.material.io/styles/color/dynamic/choosing-a-source): choosing the source color for dynamic color.
+- [Color: dynamic content-based source](https://m3.material.io/styles/color/dynamic/content-based-source): deriving a scheme from in-app content.
+- [Color: dynamic user-generated source](https://m3.material.io/styles/color/dynamic/user-generated-source): deriving a scheme from a user wallpaper/photo.
+- [Color: advanced overview](https://m3.material.io/styles/color/advanced/overview): advanced color customization overview.
+- [Color: advanced define new colors](https://m3.material.io/styles/color/advanced/define-new-colors): adding custom colors and harmonizing them.
+- [Color: advanced adjust existing colors](https://m3.material.io/styles/color/advanced/adjust-existing-colors): tuning generated colors.
+- [Color: advanced apply colors](https://m3.material.io/styles/color/advanced/apply-colors): applying custom colors across the UI.
+- [Color: resources](https://m3.material.io/styles/color/resources): color tools (Theme Builder, material-color-utilities).
+- [Typography: overview](https://m3.material.io/styles/typography/overview): the type system overview.
+- [Typography: applying type](https://m3.material.io/styles/typography/applying-type): the 15-style type scale (display/headline/title/body/label x L/M/S).
+- [Typography: type scale tokens](https://m3.material.io/styles/typography/type-scale-tokens): type scale token names and values.
+- [Typography: fonts](https://m3.material.io/styles/typography/fonts): default typeface (Roboto / Roboto Flex) and font choices.
+- [Typography: editorial treatments](https://m3.material.io/styles/typography/editorial-treatments): expressive editorial typography.
+- [Elevation: overview](https://m3.material.io/styles/elevation/overview): the elevation system overview.
+- [Elevation: applying elevation](https://m3.material.io/styles/elevation/applying-elevation): tonal vs shadow elevation, 6 levels (0/1/3/6/8/12dp).
+- [Elevation: tokens](https://m3.material.io/styles/elevation/tokens): elevation level tokens.
+- [Icons: overview](https://m3.material.io/styles/icons/overview): Material Symbols icon system overview.
+- [Icons: applying icons](https://m3.material.io/styles/icons/applying-icons): using icons and the four variable axes (fill, weight, grade, optical size).
+- [Icons: designing icons](https://m3.material.io/styles/icons/designing-icons): designing custom icons on the Material grid.
+- [Shape: overview and principles](https://m3.material.io/styles/shape/overview-principles): the shape system principles.
+- [Shape: corner radius scale](https://m3.material.io/styles/shape/corner-radius-scale): the corner scale (None/XS 4 / S 8 / M 12 / L 16 / XL 28 / Full).
+- [Shape: shape morph](https://m3.material.io/styles/shape/shape-morph): animated shape morphing (M3 Expressive; not on web).
+- [Motion: overview how it works](https://m3.material.io/styles/motion/overview/how-it-works): the motion system overview.
+- [Motion: overview specs](https://m3.material.io/styles/motion/overview/specs): motion specifications.
+- [Motion: easing and duration tokens and specs](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs): easing curves and the 16 duration tokens (Short1 50ms - ExtraLong4 1000ms).
+- [Motion: applying easing and duration](https://m3.material.io/styles/motion/easing-and-duration/applying-easing-and-duration): pairing easing with duration.
+- [Motion: transition patterns](https://m3.material.io/styles/motion/transitions/transition-patterns): container transform, shared axis, fade through, fade.
+- [Motion: applying transitions](https://m3.material.io/styles/motion/transitions/applying-transitions): applying the transition patterns.
+- [Spacing: overview](https://m3.material.io/styles/spacing/overview): the spacing system overview.
+- [Spacing: applying spacing](https://m3.material.io/styles/spacing/applying-spacing): applying the spacing scale.
+- [Spacing: tokens](https://m3.material.io/styles/spacing/tokens): spacing tokens.
+
+## Components
+
+Each component documents Overview, Guidelines, Specs, and Accessibility; the Overview is linked here.
+
+- [All buttons](https://m3.material.io/components/all-buttons): comparison of all button types.
+- [Buttons](https://m3.material.io/components/buttons/overview): filled, tonal, elevated, outlined, and text buttons.
+- [Button groups](https://m3.material.io/components/button-groups/overview): grouped buttons (M3 Expressive; not on @material/web).
+- [Split button](https://m3.material.io/components/split-button/overview): split action button (M3 Expressive; not on @material/web).
+- [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview): single/multi-select segmented control.
+- [Icon buttons](https://m3.material.io/components/icon-buttons/overview): standard, filled, tonal, and outlined icon buttons.
+- [Floating action button (FAB)](https://m3.material.io/components/floating-action-button/overview): primary screen action FAB.
+- [Extended FAB](https://m3.material.io/components/extended-fab/overview): FAB with a text label.
+- [FAB menu](https://m3.material.io/components/fab-menu/overview): expandable FAB menu (M3 Expressive; not on @material/web).
+- [App bars](https://m3.material.io/components/app-bars/overview): top and bottom app bars.
+- [Toolbars](https://m3.material.io/components/toolbars/overview): docked and floating toolbars (Expressive additions; partial on web).
+- [Badges](https://m3.material.io/components/badges/overview): notification badges.
+- [Bottom sheets](https://m3.material.io/components/bottom-sheets/overview): modal and standard bottom sheets.
+- [Side sheets](https://m3.material.io/components/side-sheets/overview): modal and standard side sheets.
+- [Cards](https://m3.material.io/components/cards/overview): elevated, filled, and outlined cards.
+- [Carousel](https://m3.material.io/components/carousel/overview): multi-item scrolling carousel.
+- [Checkbox](https://m3.material.io/components/checkbox/overview): checkbox selection control.
+- [Chips](https://m3.material.io/components/chips/overview): assist, filter, input, and suggestion chips.
+- [Date pickers](https://m3.material.io/components/date-pickers/overview): docked and modal date selection.
+- [Time pickers](https://m3.material.io/components/time-pickers/overview): dial and input time selection.
+- [Dialogs](https://m3.material.io/components/dialogs/overview): basic and full-screen dialogs.
+- [Divider](https://m3.material.io/components/divider/overview): full-width and inset dividers.
+- [Lists](https://m3.material.io/components/lists/overview): single-, two-, and three-line list items.
+- [Loading indicator](https://m3.material.io/components/loading-indicator/overview): expressive loading indicator (M3 Expressive; not on @material/web).
+- [Menus](https://m3.material.io/components/menus/overview): dropdown and context menus.
+- [Navigation bar](https://m3.material.io/components/navigation-bar/overview): bottom navigation bar (Compact width).
+- [Navigation rail](https://m3.material.io/components/navigation-rail/overview): side navigation rail (Medium/Expanded width).
+- [Navigation drawer](https://m3.material.io/components/navigation-drawer/overview): modal and standard navigation drawer.
+- [Progress indicators](https://m3.material.io/components/progress-indicators/overview): linear and circular progress.
+- [Radio button](https://m3.material.io/components/radio-button/overview): single-select radio control.
+- [Search](https://m3.material.io/components/search/overview): search bar and search view.
+- [Sliders](https://m3.material.io/components/sliders/overview): continuous and discrete sliders.
+- [Snackbar](https://m3.material.io/components/snackbar/overview): transient feedback messages.
+- [Switch](https://m3.material.io/components/switch/overview): on/off toggle switch.
+- [Tabs](https://m3.material.io/components/tabs/overview): primary and secondary tabs.
+- [Text fields](https://m3.material.io/components/text-fields/overview): filled and outlined text fields.
+- [Tooltips](https://m3.material.io/components/tooltips/overview): plain and rich tooltips.
+
+## Develop
+
+- [Develop](https://m3.material.io/develop): implementation entry point across platforms.
+- [Develop: Android (Jetpack Compose)](https://m3.material.io/develop/android/jetpack-compose): M3 in Jetpack Compose (the most active M3 implementation).
+- [Develop: Android (MDC-Android)](https://m3.material.io/develop/android/mdc-android): M3 with Material Components for Android (Views).
+- [Develop: Flutter](https://m3.material.io/develop/flutter): M3 in Flutter.
+- [Develop: Web](https://m3.material.io/develop/web): M3 on the web via @material/web (maintenance mode; classic foundations only).
+
+## Blog
+
+A curated selection of high-signal posts from https://m3.material.io/blog (full list in the sitemap).
+
+- [Announcing Material You](https://m3.material.io/blog/announcing-material-you): the 2021 introduction of Material You and dynamic color.
+- [Building with M3 Expressive](https://m3.material.io/blog/building-with-m3-expressive): the 2025 Expressive evolution (motion physics, new shapes/components).
+- [Introducing Symbols](https://m3.material.io/blog/introducing-symbols): the Material Symbols variable icon font.
+- [Dynamic color harmony](https://m3.material.io/blog/dynamic-color-harmony): harmonizing brand colors with dynamic color.
+- [Material design tutorial: theme color](https://m3.material.io/blog/design-material-theme-color): designing a custom color theme.
+- [Material design tutorial: theme shape](https://m3.material.io/blog/design-material-theme-shape): customizing the shape scale.
+- [Material design tutorial: theme type](https://m3.material.io/blog/design-material-theme-type): customizing typography.
+- [Android dark theme tutorial](https://m3.material.io/blog/android-dark-theme-tutorial): implementing dark theme on Android.
+- [Android material motion](https://m3.material.io/blog/android-material-motion): applying motion transitions on Android.
+- [Jetpack Compose catalog](https://m3.material.io/blog/jetpack-compose-catalog): the Compose M3 component catalog.
+- [Designing for large screens (5 steps)](https://m3.material.io/blog/5-steps-large-screen-apps): adapting apps to large-screen/foldable form factors.
+- [Google I/O 2024](https://m3.material.io/blog/google-io-2024): Material updates from I/O 2024.
+- [How to build the Gemini app with Compose + Material Design 3](https://m3.material.io/blog/how-to-gemini-app-compose-material-design-3): building Gemini-style UI with Compose and M3.
+- [2023 Google Fonts redesign](https://m3.material.io/blog/2023-google-fonts-redesign): the Google Fonts site redesign.
+- [Data visualization accessibility](https://m3.material.io/blog/data-visualization-accessibility): accessible charts and data viz.

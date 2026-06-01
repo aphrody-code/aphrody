@@ -1,0 +1,144 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+# Google Design
+
+> design.google is Google's design publication and library: articles, interviews,
+> guides, and case studies on how Google approaches design across Material, typography,
+> color, motion, AI/Gemini, hardware, and accessibility. This is an llms.txt-format index
+> enumerated from the site sitemap (https://design.google/sitemap.xml, fetched 2026-05-29)
+> and grouped by theme. One line per page: title + URL + a distilled one-line description
+> (our own words / the page's own meta description, summarized; no verbatim article bodies).
+>
+> Source: https://design.google (Google), fetched 2026-05-29. The library holds ~300
+> articles; this index links the category/index pages plus a thematically complete
+> selection of the design-language-relevant articles. The full URL list lives in the
+> sitemap. For the M3 specification itself see docs/design/m3-material-io-llms.txt.
+>
+> Distilled in-repo companions: docs/design/references/gemini-visual-language.md,
+> docs/design/references/google-sans-family.md, docs/design/google/ANALYSE.md.
+
+## Site and category index
+
+- [Google Design home](https://design.google/): the publication home.
+- [About](https://design.google/about): about Google Design and the publication.
+- [Library](https://design.google/library): the full searchable article library.
+- [Community](https://design.google/community): events, programs, and the design community.
+- [Category: Gallery](https://design.google/category/gallery): visual showcases and passion projects.
+- [Category: Guides](https://design.google/category/guides): how-to and reference guides.
+- [Category: Perspectives](https://design.google/category/perspectives): essays and points of view.
+- [Category: Conversations](https://design.google/category/conversations): interviews with designers.
+- [Category: Spotlight](https://design.google/category/spotlight): featured work and people.
+- [Category: Podcasts](https://design.google/category/podcasts): the Method, Centered, and Design Notes podcasts.
+- [Category: Video](https://design.google/category/video): video talks and series.
+
+## AI and Gemini visual language
+
+- [Illustrating the Gemini app](https://design.google/library/gemini-ai-visual-design): how Google uses gradients, motion, and foundational shapes (the circle) to build trust and intuition in Gemini. (See docs/design/references/gemini-visual-language.md.)
+- [The AI sparkle icon: research](https://design.google/library/ai-sparkle-icon-research-pozos-schmidt): the history of the AI sparkle icon and what user research revealed about it.
+- [Six AI terms](https://design.google/library/six-ai-terms): a shared vocabulary for designing with AI.
+- [UX and AI](https://design.google/library/ux-ai): how AI reshapes UX practice.
+- [People + AI Guidebook](https://design.google/library/people-ai-guidebook): human-centered guidelines for designing AI products.
+- [People + AI research](https://design.google/library/people-ai-research): research underpinning human-AI interaction.
+- [The myth of neutral AI](https://design.google/library/fair-is-not-the-default-myth-of-neutral-ai): why fairness in AI must be designed for, not assumed.
+- [A new interaction paradigm (Soli)](https://design.google/library/a-new-interaction-design-paradigm): touchless, radar-based interaction with the Soli chip.
+- [Material Design + AI (Will Larche)](https://design.google/library/material-design-will-larche-ai): how AI intersects with the Material system.
+
+## Material Design and Material You
+
+- [Making Material You](https://design.google/library/making-material-you): the short-film series on Material You, a design system that adapts to the user.
+- [Expressive Material Design (Google Research)](https://design.google/library/expressive-material-design-google-research): research showing expressive design improves usability and evokes positive emotion.
+- [Design Notes: Material 3 Expressive](https://design.google/library/design-notes-material-3-expressive-liam-spradlin): the Material team on emotion-driven UX, research, and flexibility in M3 Expressive.
+- [Material Design eras](https://design.google/library/material-design-eras): how Material Design has evolved across UI/UX eras.
+- [Material Design launch (2014)](https://design.google/library/material-design-launch-2014): the original 2014 introduction of Material Design.
+- [Material Design dark theme](https://design.google/library/material-design-dark-theme): dark-theme color palettes, hierarchy, and best practices.
+- [Bringing Material Design to life](https://design.google/library/design-notes-bringing-material-design-life): motion and depth in early Material.
+- [Making more with Material](https://design.google/library/making-more-with-material): extending and customizing Material for brands.
+- [Materialize and mobilize: Material themes](https://design.google/library/materialize-and-mobilize-material-themes): theming products with Material.
+- [Staying true to your identity (Material branding)](https://design.google/library/staying-true-to-your-identity-material-branding): balancing Material with brand identity.
+- [Material FAB (Bethany Fong)](https://design.google/library/material-fab-bethany-fong): designing the floating action button.
+- [Absolutely fab button](https://design.google/library/absolutely-fab-button): the story of the FAB.
+- [Material icons (Sehee Lee)](https://design.google/library/material-icons-sehee-lee): designing the Material icon library.
+- [Introducing Material Symbols](https://design.google/library/introducing-material-symbols): the variable Material Symbols icon font.
+- [Material Design motion (Sharon Harris)](https://design.google/library/material-design-motion-sharon-harris): motion in the Material system.
+- [Material Design color (Ayan Daniels)](https://design.google/library/material-design-color-ayan-daniels): color in the Material system.
+- [Matias Duarte on Material Design UX](https://design.google/library/matias-duarte-material-design-ux): the VP of Design on Material's vision.
+- [Rich Fulcher: Material UX system](https://design.google/library/rich-fulcher-material-ux-system): building the Material UX system.
+- [Streamlining the process: Material guidelines](https://design.google/library/streamlining-the-process-material-guidelines): how the Material guidelines are made.
+- [Visit material.io](https://design.google/library/visit-materialio): pointer to the Material spec site.
+
+## Color
+
+- [Making sense of color](https://design.google/library/making-sense-color): Google's immersive color exhibition experiencing color through the senses.
+- [Colors change](https://design.google/library/colors-change): how and why color systems evolve.
+- [Color theory (Ruxandra Duru)](https://design.google/library/color-theory-ruxandra-duru): applied color theory at Google.
+- [Exploring color in Google Maps](https://design.google/library/exploring-color-google-maps): the color system behind Google Maps.
+- [YouTube's new red](https://design.google/library/youtube-new-red-color): redefining YouTube's brand red.
+
+## Typography and fonts
+
+- [Google Sans: evolving Google's typeface](https://design.google/library/google-sans-flex-font): the Google Sans family story (Google Sans, Text, Mono, Code, and variable Flex). (See docs/design/references/google-sans-family.md.)
+- [Roboto, but make it Flex](https://design.google/library/roboto-but-make-it-flex): Roboto Flex, the variable version of Roboto.
+- [Variable fonts are here to stay](https://design.google/library/variable-fonts-are-here-to-stay): how variable fonts enable compression, animation, and a style spectrum.
+- [Variable fonts (type)](https://design.google/library/variable-fonts-type): an introduction to variable font technology.
+- [Reimagining Google Fonts](https://design.google/library/reimagining-google-fonts): the Google Fonts platform redesign.
+- [Announcing Google Fonts Knowledge](https://design.google/library/announcing-google-fonts-knowledge): the typography learning resource.
+- [YouTube Sans](https://design.google/library/youtube-sans-font): designing YouTube's custom typeface.
+- [Roboto Serif](https://design.google/library/say-hello-roboto-serif): the Roboto Serif companion typeface.
+- [Lexend and readability](https://design.google/library/lexend-readability): the Lexend family designed for reading proficiency.
+- [Atkinson Hyperlegible (rebranding readability)](https://design.google/library/rebranding-readability-atkinson-font): a typeface designed for low vision.
+- [Superfamilies](https://design.google/library/superfamilies): large type families spanning many scripts.
+- [Modernizing Arabic typography](https://design.google/library/modernizing-arabic-typography-type-design): type design for Arabic.
+- [Perfect pairings: fonts](https://design.google/library/perfect-pairings-fonts): pairing typefaces effectively.
+- [Choosing web fonts: a beginner's guide](https://design.google/library/choosing-web-fonts-beginners-guide): practical web font selection.
+
+## Motion and sound
+
+- [Making motion meaningful](https://design.google/library/making-motion-meaningful): using motion to enhance usability, with animation best practices.
+- [Sounds good](https://design.google/library/sounds-good): designing sound for products.
+- [UX sound and haptics in Material](https://design.google/library/ux-sound-haptic-material-design): sound and haptic feedback in the Material system.
+- [Google Pixel sound design (Conor O'Sullivan)](https://design.google/library/google-pixel-sound-design-ux-conor-osullivan): designing Pixel's sounds.
+
+## Brand, identity, and hardware
+
+- [Evolving Google's identity](https://design.google/library/evolving-google-identity): Google's brand refresh (logo and typeface) for accessibility and UX.
+- [Google logo and brand (Robert Wong)](https://design.google/library/google-logo-brand-robert-wong): the thinking behind the Google logo.
+- [Google Design: hardware (Isabelle Olsson)](https://design.google/library/google-design-hardware-isabelle-olsson): designing Pixel and Nest hardware.
+- [Refreshing Chrome](https://design.google/library/refreshing-chrome): the Chrome visual refresh.
+- [The pixel wallpaper takes flight](https://design.google/library/pixel-wallpaper-takes-flight): designing Pixel wallpapers.
+- [Waymo: designing the self-driving car UI (Ryan Powell)](https://design.google/library/waymo-design-self-driving-car-ui-ryan-powell): UI for autonomous driving.
+
+## Layout, density, and adaptive design
+
+- [Demystifying density](https://design.google/library/demystifying-density): understanding dots per inch and UI density.
+- [Introducing Resizer](https://design.google/library/introducing-resizer): the responsive breakpoint preview tool.
+- [Designing great apps for new internet users](https://design.google/library/designing-great-apps-new-internet-users): designing for constrained devices/networks.
+
+## XR, ambient, and emerging interfaces
+
+- [Transparent screens (AI glasses, Glimmer)](https://design.google/library/transparent-screens): designing for AI glasses and Jetpack Compose Glimmer, the Android XR design system. (See docs/design/references/transparent-screens-glimmer.md.)
+- [Mastering ambiance (ambient computing)](https://design.google/library/mastering-ambiance-ambient-computing): designing ambient experiences.
+- [Beyond the desktop: field research](https://design.google/library/beyond-the-desktop-field-research): research beyond traditional screens.
+- [An immersive exchange (AR/VR)](https://design.google/library/an-immersive-exchange-AR-VR): designing for AR/VR.
+
+## Accessibility and inclusion
+
+- [Building for everyone](https://design.google/library/building-for-everyone): inclusive design at Google scale.
+- [Designing for a global audience: accessibility](https://design.google/library/accessibility-guidance-global-audience): accessibility guidance for global products.
+- [Designing global accessibility, part 1](https://design.google/library/designing-global-accessibility-part-1): foundations of global accessibility.
+- [Fair is not the default](https://design.google/library/fair-not-default): designing equitably rather than assuming neutrality.
+- [Racial equity in everyday products](https://design.google/library/racial-equity-everyday-products): embedding equity in product design.
+- [ML and human bias](https://design.google/library/ml-human-bias): bias in machine learning systems.
+
+## Principles, process, and craft
+
+- [Design is human](https://design.google/library/design-is-human): making human-centered products at scale.
+- [Is it good design?](https://design.google/library/is-it-good-design): criteria for evaluating design quality.
+- [Reviewing the design review](https://design.google/library/reviewing-the-design-review): improving the design-review process.
+- [Design sprints](https://design.google/library/design-sprints): the design sprint method.
+- [The rule of three](https://design.google/library/rule-of-three): a heuristic for design decisions.
+- [Minimal, meaningful](https://design.google/library/minimal-meaningful): restraint as a design value.
+- [Creating consistency one pixel at a time](https://design.google/library/creating-consistency-one-pixel-at-a-time): precision and consistency in UI.
+- [David Reinfurt teaches design](https://design.google/library/david-reinfurt-teaches-design): a designer-educator on fundamentals. (See docs/design/references/reinfurt-true-not-new.md.)
+- [I/O 2021: our definitive guide to design](https://design.google/library/io-2021-our-definitive-guide-design): the design talks and resources from Google I/O 2021 (Material You launch).
+- [I/O 2019: our definitive guide to design](https://design.google/library/io-2019-our-definitive-guide-design): design coverage from I/O 2019.
+- [Material Design Awards 2020](https://design.google/library/material-design-awards-2020): products recognized for exemplary Material use.

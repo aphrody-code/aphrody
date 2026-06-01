@@ -1,0 +1,28 @@
+{
+  "_comment": "MUI icon name (PascalCase, sans suffixe de style) -> traitement special. brand=garder en SVG (pas de glyphe Material Symbols). remap=nom Material Symbols different du snake_case naif.",
+  "brands": {
+    "GitHub": "github",
+    "Instagram": "instagram",
+    "Twitter": "twitter",
+    "X": "x",
+    "YouTube": "youtube",
+    "Facebook": "facebook",
+    "LinkedIn": "linkedin",
+    "Reddit": "reddit",
+    "Pinterest": "pinterest",
+    "WhatsApp": "whatsapp",
+    "Telegram": "telegram",
+    "Google": "google",
+    "Apple": "apple",
+    "Microsoft": "microsoft"
+  },
+  "remap": {
+    "_comment": "Cas ou le snake_case naif ne correspond pas a un glyphe valide. Verifie au build par le codemod contre material-symbols-names.json.",
+    "Login": "login",
+    "Logout": "logout",
+    "ArrowForwardIos": "arrow_forward_ios",
+    "ArrowBackIos": "arrow_back_ios",
+    "MoreVert": "more_vert",
+    "MoreHoriz": "more_horiz"
+  }
+}
