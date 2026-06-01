@@ -30,9 +30,9 @@
 //!
 //! ```no_run
 //! use std::time::Duration;
-//! use aphrody_cache::{Cache, CacheKey, CachedBytes, MemoryCache};
+//! use aphrody_llm_infra::cache::{Cache, CacheKey, CachedBytes, MemoryCache};
 //!
-//! # async fn run() -> Result<(), aphrody_cache::CacheError> {
+//! # async fn run() -> Result<(), aphrody_llm_infra::cache::CacheError> {
 //! let cache = MemoryCache::new(1024);
 //! let key   = CacheKey::from_hash(b"https://api.anthropic.com/v1/models");
 //! cache.put(&key, CachedBytes::from(b"<response>".to_vec()), Some(60_000)).await?;

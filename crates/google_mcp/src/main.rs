@@ -4,7 +4,7 @@ mod client_cmd;
 // Native-only: the module itself is `#[cfg(not(target_arch = "wasm32"))]`.
 #[cfg(not(target_arch = "wasm32"))] mod voice_tools;
 // Gemini web app tools (gemini_chat 3.5 Flash + gemini_image Nano Banana).
-#[cfg(not(target_arch = "wasm32"))] mod gemini_tools;
+
 #[cfg(not(target_arch = "wasm32"))] mod firefly_tools;
 #[cfg(not(target_arch = "wasm32"))] mod photoshop_tools;
 // Live Photoshop bridge — WebSocket server the in-app UXP plugin connects to.
@@ -67,11 +67,7 @@ static START_INSTANT: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 // Request DTOs
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
-pub struct DnsReconRequest {
-    #[schemars(description = "The target domain to scan (e.g., google.com)")]
-    pub domain: String,
-}
+
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct StyleGuideRequest {
@@ -98,15 +94,7 @@ pub struct ScreenCaptureRequest {
     pub save_path: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
-pub struct ChromeAutopsyRequest {
-    #[schemars(description = "Process ID of the target Chrome process.")]
-    pub pid: u32,
-    #[schemars(description = "Base memory address (decimal) to read. Defaults to 65536 (0x10000).")]
-    pub address: Option<usize>,
-    #[schemars(description = "Number of bytes to read. Capped at 4096. Defaults to 256.")]
-    pub size: Option<usize>,
-}
+
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct AdvancedReconRequest {
@@ -517,187 +505,7 @@ impl GoogleMcpServer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // 3. dns_recon — real DNS OSINT via the backend crate.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Execute the DNS OSINT Reconnaissance pipeline. It returns JSON \
-                          formatted OSINT data about a specific domain.")]
-    async fn dns_recon(
-        &self,
-        Parameters(DnsReconRequest { domain }): Parameters<DnsReconRequest>,
-    ) -> String {
-        let recon = backend::dns::DnsRecon::new();
-        match recon.run_osint(&domain).await {
-            Ok(results) => format!(
-                "DNS Recon completed. Found {} unique subdomains:\n{:#?}",
-                results.len(),
-                results
-            ),
-            Err(e) => format!("Error during DNS Recon: {e}"),
-        }
-    }
 
-    // -----------------------------------------------------------------------
-    // 4. auth_extract — Chrome Canary credential extraction. Windows-only: LOCALAPPDATA path +
-    //    backend::chromium parser. Other platforms: explicit unsupported message.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Execute Forensic Auth Extraction (ABE Bypass). Use only for authorized \
-                          forensic investigation. Windows-only: reads Chrome Canary \
-                          DPAPI-wrapped cookies from the local user profile.")]
-    async fn auth_extract(&self) -> String {
-        #[cfg(target_os = "windows")]
-        {
-            let local_app_data = match std::env::var("LOCALAPPDATA") {
-                Ok(v) if !v.is_empty() => v,
-                _ => {
-                    return "Error: LOCALAPPDATA environment variable is not set or empty."
-                        .to_string();
-                },
-            };
-            let canary_data =
-                std::path::PathBuf::from(local_app_data).join("Google/Chrome SxS/User Data");
-
-            if !canary_data.exists() {
-                return "Chrome Canary profile directory not found. Is Chrome Canary installed?"
-                    .to_string();
-            }
-
-            let mut parser = backend::chromium::ChromiumParser::new(canary_data);
-            if parser.load_master_key().is_err() {
-                return "Master key extraction failed. Run as the profile owner.".to_string();
-            }
-
-            let profiles = parser.get_profiles();
-            for profile in profiles {
-                match parser.get_cookies(&profile, "google.com") {
-                    Ok(cookies) => {
-                        if let Some((..)) = cookies.iter().find(|(n, _)| n == "__Secure-1PSID") {
-                            return format!(
-                                "Token __Secure-1PSID found in profile '{profile}'.\nAuth \
-                                 Extraction successful."
-                            );
-                        }
-                    },
-                    Err(e) => {
-                        tracing::warn!("Cookie read error for profile '{profile}': {e}");
-                    },
-                }
-            }
-            "No valid __Secure-1PSID token found in Chrome Canary profiles.".to_string()
-        }
-
-        #[cfg(not(target_os = "windows"))]
-        {
-            "Chrome credential extraction is not supported on this platform. Windows only (Chrome \
-             Canary + DPAPI)."
-                .to_string()
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // 5. chrome_autopsy — real process memory read. Windows: OpenProcess + ReadProcessMemory (Win32
-    //    API). Linux/macOS/wasm: platform not supported.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Read raw bytes from a target Chrome process via OS memory APIs. \
-                          Windows only: uses ReadProcessMemory. Other platforms report \
-                          unsupported.")]
-    async fn chrome_autopsy(
-        &self,
-        Parameters(ChromeAutopsyRequest { pid, address, size }): Parameters<ChromeAutopsyRequest>,
-    ) -> String {
-        let base_addr = address.unwrap_or(0x10000_usize);
-        // Cap at 4096 to avoid excessive reads.
-        let read_size = size.unwrap_or(256).min(4096);
-
-        #[cfg(target_os = "windows")]
-        {
-            use windows::Win32::{
-                Foundation::{CloseHandle, HANDLE},
-                System::{
-                    Diagnostics::Debug::ReadProcessMemory,
-                    Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
-                },
-            };
-
-            // SAFETY: All preconditions documented inline.
-            // - `OpenProcess` returns INVALID_HANDLE_VALUE on failure; we check `.is_err()`.
-            // - `ReadProcessMemory` writes into `buf` which is sized `read_size`;
-            //   `lpnumberofbytesread` reports actual bytes written — we never read beyond that
-            //   count.
-            // - `CloseHandle` is always called via a guard, preventing handle leaks.
-            unsafe {
-                let handle: HANDLE =
-                    match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
-                        Ok(h) => h,
-                        Err(e) => {
-                            return format!(
-                                "OpenProcess(pid={pid}) failed: {e}. Check that the process \
-                                 exists and you have sufficient privileges."
-                            );
-                        },
-                    };
-
-                // Ensure the handle is closed even if we return early.
-                struct HandleGuard(HANDLE);
-                impl Drop for HandleGuard {
-                    fn drop(&mut self) {
-                        // SAFETY: self.0 is a valid open handle obtained from OpenProcess.
-                        unsafe {
-                            let _ = CloseHandle(self.0);
-                        }
-                    }
-                }
-                let _guard = HandleGuard(handle);
-
-                let mut buf = vec![0u8; read_size];
-                let mut bytes_read: usize = 0;
-
-                let result = ReadProcessMemory(
-                    handle,
-                    base_addr as *const std::ffi::c_void,
-                    buf.as_mut_ptr().cast(),
-                    read_size,
-                    Some(&mut bytes_read as *mut usize),
-                );
-
-                if let Err(e) = result {
-                    return format!(
-                        "ReadProcessMemory(pid={pid}, addr=0x{base_addr:x}, size={read_size}) \
-                         failed: {e}"
-                    );
-                }
-
-                buf.truncate(bytes_read);
-                let hex: String = buf
-                    .chunks(16)
-                    .enumerate()
-                    .map(|(i, chunk)| {
-                        let offset = base_addr + i * 16;
-                        let hex_part: String = chunk.iter().map(|b| format!("{b:02x} ")).collect();
-                        let ascii_part: String = chunk
-                            .iter()
-                            .map(|&b| if (0x20..0x7f).contains(&b) { b as char } else { '.' })
-                            .collect();
-                        format!("0x{offset:08x}  {hex_part:<48}  {ascii_part}")
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n");
-
-                format!(
-                    "ReadProcessMemory success:\n- PID:          {pid}\n- Base address: \
-                     0x{base_addr:x}\n- Bytes read:   {bytes_read}\n\n{hex}"
-                )
-            }
-        }
-
-        #[cfg(not(target_os = "windows"))]
-        {
-            // Suppress unused-variable warnings on non-Windows.
-            let _ = (pid, base_addr, read_size);
-            "chrome_autopsy: ReadProcessMemory is not supported on this platform. Windows only."
-                .to_string()
-        }
-    }
 
     // -----------------------------------------------------------------------
     // 6. advanced_recon — real DNS resolution + TCP port probing.
@@ -976,58 +784,7 @@ impl GoogleMcpServer {
         voice_tools::transcribe(req).await
     }
 
-    // -----------------------------------------------------------------------
-    // gemini_chat — Gemini web app (3.5 Flash) via cookie auth, no API key.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Chat with the Gemini web app (gemini.google.com) using the signed-in \
-                          Google session cookies (~/.aphrody/google-cookies.json) — no API key. \
-                          Defaults to the 3.5 Flash model; pass model=flash-lite|pro to switch. \
-                          Returns { text, model, conversation_id }.")]
-    async fn gemini_chat(
-        &self,
-        Parameters(req): Parameters<gemini_tools::GeminiChatRequest>,
-    ) -> String {
-        gemini_tools::chat(req).await
-    }
 
-    // -----------------------------------------------------------------------
-    // gemini_image — Nano Banana image generation via the Gemini web app.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Generate an image with the Gemini web app's image model (Nano Banana) \
-                          using the signed-in Google session — no API key. Returns { text, \
-                          generated_image_urls, count }.")]
-    async fn gemini_image(
-        &self,
-        Parameters(req): Parameters<gemini_tools::GeminiImageRequest>,
-    ) -> String {
-        gemini_tools::image(req).await
-    }
-
-    // -----------------------------------------------------------------------
-    // gemini_video — Veo 3 video generation via the Gemini web app.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Generate a video with the Gemini web app's Veo model using the signed-in \
-                          Google session — no API key. Video generation is async (minutes); \
-                          re-issue to poll. Returns { text, generated_video_urls, count, note }.")]
-    async fn gemini_video(
-        &self,
-        Parameters(req): Parameters<gemini_tools::GeminiVideoRequest>,
-    ) -> String {
-        gemini_tools::video(req).await
-    }
-
-    // -----------------------------------------------------------------------
-    // gemini_deep_research — multi-step Deep Research via the Gemini web app.
-    // -----------------------------------------------------------------------
-    #[tool(description = "Run a Deep Research investigation with the Gemini web app (Pro model) \
-                          using the signed-in Google session — no API key. Returns a thorough \
-                          cited report as { report, model }.")]
-    async fn gemini_deep_research(
-        &self,
-        Parameters(req): Parameters<gemini_tools::GeminiDeepResearchRequest>,
-    ) -> String {
-        gemini_tools::deep_research(req).await
-    }
 
     // -----------------------------------------------------------------------
     // firefly_generate — Adobe Firefly Services image generation.

@@ -102,6 +102,12 @@ mod tests {
         // Read-only: does not mutate env. On any normal dev/CI machine a home
         // is resolvable; assert the happy path produces a `.aphrody` leaf.
         if let Ok(dir) = aphrody_state_dir() {
+            if let Ok(explicit) = std::env::var("APHRODY_HOME") {
+                if !explicit.is_empty() {
+                    assert_eq!(dir, PathBuf::from(explicit));
+                    return;
+                }
+            }
             assert_eq!(dir.file_name().unwrap(), ".aphrody");
         }
     }

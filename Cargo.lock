@@ -365,7 +365,6 @@ dependencies = [
  "aphrody-firefly",
  "aphrody-fsindex",
  "aphrody-guard",
- "aphrody-images",
  "aphrody-logo",
  "aphrody-memory",
  "aphrody-messaging",
@@ -507,7 +506,6 @@ dependencies = [
  "chrono",
  "futures-util",
  "gemini-runtime",
- "gemini-web",
  "rustls",
  "serde",
  "serde_json",
@@ -656,21 +654,6 @@ version = "1.0.0-canary"
 dependencies = [
  "base64 0.22.1",
  "serde",
-]
-
-[[package]]
-name = "aphrody-images"
-version = "1.0.0-canary"
-dependencies = [
- "base64 0.22.1",
- "gemini-web",
- "reqwest 0.13.3",
- "rustls",
- "serde",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -4529,22 +4512,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gemini-web"
-version = "1.0.0-canary"
-dependencies = [
- "regex",
- "reqwest 0.13.3",
- "rustls",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
 name = "generator"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5640,7 +5607,6 @@ dependencies = [
  "criterion",
  "futures-util",
  "gemini-runtime",
- "gemini-web",
  "reqwest 0.13.3",
  "rmcp",
  "rustls",

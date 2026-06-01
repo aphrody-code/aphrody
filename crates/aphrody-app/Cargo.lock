@@ -363,7 +363,6 @@ dependencies = [
  "chrono",
  "futures-util",
  "gemini-runtime",
- "gemini-web",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -3757,21 +3756,6 @@ dependencies = [
  "tokio",
  "url",
  "which",
-]
-
-[[package]]
-name = "gemini-web"
-version = "1.0.0-canary"
-dependencies = [
- "regex",
- "reqwest 0.13.3",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
 ]
 
 [[package]]
