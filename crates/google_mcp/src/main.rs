@@ -1623,8 +1623,110 @@ impl GoogleMcpServer {
 // Entry point
 // ---------------------------------------------------------------------------
 
+fn find_project_root() -> Option<std::path::PathBuf> {
+    let mut current = std::env::current_dir().ok()?;
+    loop {
+        if current.join(".env").is_file()
+            || current.join(".git").exists()
+            || current.join("Cargo.toml").is_file()
+        {
+            return Some(current);
+        }
+        let parent = current.parent()?;
+        if parent == current {
+            break;
+        }
+        current = parent.to_path_buf();
+    }
+    None
+}
+
+fn find_bxc_dir(root: &std::path::Path) -> Option<std::path::PathBuf> {
+    if let Some(parent) = root.parent() {
+        let sibling = parent.join("bxc");
+        if sibling.is_dir() {
+            return Some(sibling);
+        }
+    }
+    let sub = root.join("bxc");
+    if sub.is_dir() {
+        return Some(sub);
+    }
+    let pkg = root.join("packages/bxc");
+    if pkg.is_dir() {
+        return Some(pkg);
+    }
+    None
+}
+
+fn set_default_env_var(key: &str, val: &str) {
+    if std::env::var_os(key).is_none() {
+        // SAFETY: Mutating the environment is unsafe in Rust 2024. We do it at
+        // startup before spawning other threads.
+        unsafe {
+            std::env::set_var(key, val);
+        }
+    }
+}
+
+fn init_adaptive_env() {
+    // 1. Load the nearest .env file (gemini-cli walk-up rules)
+    let _ = a2a_server::load_environment(None);
+
+    // 2. Resolve project root
+    let root = find_project_root().unwrap_or_else(|| {
+        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+    });
+
+    // 3. Fallback for GOOGLE_APPLICATION_CREDENTIALS
+    if std::env::var_os("GOOGLE_APPLICATION_CREDENTIALS").is_none() {
+        let creds_path = root.join("secrets/aphrody-bot.json");
+        if creds_path.exists() {
+            unsafe {
+                std::env::set_var("GOOGLE_APPLICATION_CREDENTIALS", &creds_path);
+            }
+        }
+    }
+
+    // 4. Fallbacks for BXC database paths
+    let bxc_dir = find_bxc_dir(&root);
+    if let Some(bxc) = bxc_dir {
+        if std::env::var_os("BXC_DB_PATH").is_none() {
+            let db_path = bxc.join("data/bxc.sqlite");
+            if db_path.exists() {
+                unsafe {
+                    std::env::set_var("BXC_DB_PATH", &db_path);
+                }
+            }
+        }
+        if std::env::var_os("BXC_MEMORY_DB").is_none() {
+            let mem_path = bxc.join("bxc-memory.sqlite");
+            if mem_path.exists() {
+                unsafe {
+                    std::env::set_var("BXC_MEMORY_DB", &mem_path);
+                }
+            }
+        }
+    }
+
+    // 5. Static adaptive env defaults
+    set_default_env_var("REDIS_URL", "redis://127.0.0.1:6379");
+    set_default_env_var("DATABASE_URL", "postgresql://ubuntu@/rpb_neon?host=/var/run/postgresql");
+    set_default_env_var("DATABASE_URL_AZALEE", "postgresql://ubuntu@/rose_griffon?host=/var/run/postgresql");
+    set_default_env_var("RPBEY_LLM_URL", "http://127.0.0.1:8080/v1/chat/completions");
+    set_default_env_var("EMBED_URL", "http://127.0.0.1:7077");
+    set_default_env_var("GOOGLE_CLOUD_PROJECT", "aphrody");
+    set_default_env_var("GOOGLE_API_KEY", "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ");
+    set_default_env_var("GEMINI_API_KEY", "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ");
+    set_default_env_var("ANTIGRAVITY_API_KEY", "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ");
+    set_default_env_var("CONTEXT7_API_KEY", "ctx7sk-74b872cd-4bf3-4cb5-add9-82c1fd702261");
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Set up adaptive environment first
+    init_adaptive_env();
+
     // reqwest is built with `rustls-no-provider`; a CryptoProvider must be
     // installed before the first TLS connection or reqwest panics at runtime
     // with "No provider set" (async_impl/client.rs). The workspace `rustls`

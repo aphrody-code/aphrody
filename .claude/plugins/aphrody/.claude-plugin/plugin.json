@@ -29,22 +29,7 @@
     "aphrody": {
       "type": "stdio",
       "command": "aphrody-mcp",
-      "args": [],
-      "env": {
-        "REDIS_URL": "redis://127.0.0.1:6379",
-        "DATABASE_URL": "postgresql://ubuntu@/rpb_neon?host=/var/run/postgresql",
-        "DATABASE_URL_AZALEE": "postgresql://ubuntu@/rose_griffon?host=/var/run/postgresql",
-        "RPBEY_LLM_URL": "http://127.0.0.1:8080/v1/chat/completions",
-        "EMBED_URL": "http://127.0.0.1:7077",
-        "BXC_DB_PATH": "/home/ubuntu/bxc/data/bxc.sqlite",
-        "BXC_MEMORY_DB": "/home/ubuntu/bxc/bxc-memory.sqlite",
-        "GOOGLE_APPLICATION_CREDENTIALS": "/home/ubuntu/aphrody/secrets/aphrody-bot.json",
-        "GOOGLE_CLOUD_PROJECT": "aphrody",
-        "GOOGLE_API_KEY": "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ",
-        "GEMINI_API_KEY": "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ",
-        "ANTIGRAVITY_API_KEY": "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ",
-        "CONTEXT7_API_KEY": "ctx7sk-74b872cd-4bf3-4cb5-add9-82c1fd702261"
-      }
+      "args": []
     }
   },
   "interface": {
