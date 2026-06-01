@@ -514,32 +514,7 @@ To shortcut the usual "where is X?" search, the following were **removed**:
   `mrx-{core,detect,audit,watch,cli}` → `mrx`;
   plus the orphan crates `aphrody-shell` and `aphrody-sandbox`.
 
-## 9. Desktop GUI surface (in-repo)
 
-The graphical desktop application — the mainstream consumer agent — now lives
-entirely in THIS repo under `apps/desktop` (rapatriée from `aphrody-ts` on
-2026-05-24):
-
-- **Frontend** — `apps/desktop/src/` — Angular 21.2 + Angular Material 21.2,
-  pixel-faithful Gemini-style UI, fonts vendored offline (zero CDN). The one
-  polyglot (TypeScript) exception in this otherwise Rust-only repo.
-- **Rust shell** — `apps/desktop/src-tauri/` — Tauri 2, self-rooted
-  (`[workspace]` + own `Cargo.lock`), EXCLUDED from the core workspace. Its
-  `#[tauri::command]`s call `aphrody::run_captured` (CLI in-process, Rust to
-  Rust, no FFI hop) and `aphrody-voice` directly for native TTS/STT, so every
-  GUI action is the same code path the terminal runs.
-- **Legacy** — `crates/aphrody-app` is the earlier minimal Tauri shell (also
-  excluded); `apps/desktop` supersedes it as the canonical app.
-
-Positioning: a general-public autonomous AI assistant powered by Gemini, NOT a
-reverse-engineering tool. Surfaces: Assistant chat (`aphrody chat`),
-Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (all 37 CLI
-commands), multi-tab Settings (Compte, Apparence, Conversation backend
-agy/web/stub, Memoire, Ame/soul, Identite, Canaux, Actions, Agents, A propos),
-native voice-to-voice (aphrody-voice + Web Speech fallback), attachments.
-
-Build: `cd apps/desktop && bun install && bun run build`, then `cargo`/`tauri`
-in `apps/desktop/src-tauri`.
 
 ## 10. Related
 
@@ -5056,9 +5031,7 @@ Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
 
 ### Exclus du workspace
 
-- `crates/aphrody-app` — coquille Tauri v2, workspace propre (voir §3.1).
-- `apps/desktop/src-tauri` — app desktop Tauri 2 + Angular 21 (grand public),
-  rapatriée depuis `aphrody-ts` le 2026-05-24 ; self-rooted, voir §3.1.
+- `crates/aphrody-app` — coquille Tauri v2.
 - `aphrody-x-client`, `a2a-slimrpc` — bloqués upstream.
 - `gui`, `agui-bridge`, `mui-rs*` (6), `tuono*` (4) — **extraits vers
   `C:\src\aphrody-ts` le 2026-05-23** ; ces chemins n'existent plus dans ce
@@ -5078,33 +5051,6 @@ Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
   `mrx` ; orphelins `aphrody-shell`, `aphrody-sandbox`).
 - `vendor/` retiré (ne contenait que des stubs Bun/uv).
 
-### 3.1 Surface GUI desktop (in-repo)
-
-L'application desktop graphique — **l'agent autonome grand public** — vit
-désormais **entièrement dans CE repo** sous `apps/desktop` (rapatriée depuis
-`aphrody-ts` le 2026-05-24) :
-
-- **Frontend** — `apps/desktop/src/` — Angular 21.2 + Angular Material 21.2,
-  UI style Gemini pixel-fidèle, polices vendorisées hors-CDN. Seule exception
-  polyglotte (TypeScript) de ce repo par ailleurs Rust-only.
-- **Coquille Rust** — `apps/desktop/src-tauri/` — Tauri 2, self-rooted
-  (`[workspace]` + `Cargo.lock` propre), **exclue** du workspace core. Ses
-  `#[tauri::command]` appellent `aphrody::run_captured` (CLI in-process, Rust
-  vers Rust, sans saut FFI) et `aphrody-voice` pour la voix native (TTS/STT) :
-  une action GUI emprunte exactement le chemin de code du terminal.
-- **Héritage** — `crates/aphrody-app` est l'ancienne coquille Tauri minimale
-  (aussi exclue) ; `apps/desktop` la supersède comme app canonique.
-
-Positionnement : **assistant IA autonome grand public propulsé par Gemini** —
-pas un outil de reverse engineering. Surfaces : chat Assistant (`aphrody chat`),
-Accueil/Dashboard, Skills, MCP (`aphrody mcp list`), Commandes (les 37 commandes
-CLI), Settings multi-onglets (Compte via `aphrody antigravity whoami`, Apparence,
-Backend conversation agy/web/stub, Mémoire, Âme/soul, Identité, Canaux, Actions,
-Agents, À propos), voice-to-voice native (aphrody-voice + repli Web Speech),
-pièces jointes.
-
-Build : `cd apps/desktop && bun install && bun run build`, puis `cargo`/`tauri`
-dans `apps/desktop/src-tauri`.
 
 ## 4. Politique de langages
 
@@ -10427,6 +10373,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Merged the standalone `material-web` Material Design 3 monorepo into
+  this repo (2026-06-01).** The 9 `@aphrody-code/*` packages
+  (`material-web`, `react`/m3-react, `m3-tokens`, `m3-motion`, `m3-theme`,
+  `m3-design`, `eslint-plugin-m3`, `doc-ai`, `bun-rs`) + `examples/showcase`
+  are now Bun + Turborepo workspace members under `packages/*`; root
+  `package.json` gained the shared catalog + `patchedDependencies`; `bun-rs`
+  is excluded from the Cargo workspace; GitHub Packages publishing kept via
+  `.github/workflows/release-m3-packages.yml` (tag `m3-v*`). Also brought the
+  **`material-design` Claude Code plugin** (19 skills, 5 agents, color-guard
+  hook, bundled `mui-docs` MCP server) into `.claude/plugins/material-design/`
+  (registered in the local marketplace), plus its design corpus +
+  MUI→M3 migration kit under `packages/material-web/{docs,migration}/`.
+- **`apps/web`** — public consumer client (React + `@aphrody-code/m3-react`
+  + TanStack Router/Query, Bun-native `Bun.serve` + `bun build`), powered by
+  custom RAG/LLMs (shenron, rpbey). Includes a React port of the Angular
+  admin (`apps/desktop`) under `/a` (assistant, dashboard, skills, mcp,
+  commands, reverse, forensics, network, diagnostic, settings, about).
 - `aphrody doctor` subcommand — environment health check with rustls
   `CryptoProvider` probe, `ai.json` schema parse, `.well-known` pointer
   check, HTTP listener ping on `:8788`, cargo-vet audit count, peer

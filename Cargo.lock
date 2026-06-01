@@ -5595,6 +5595,7 @@ dependencies = [
 name = "google_mcp"
 version = "1.0.0-canary"
 dependencies = [
+ "a2a-server-lf",
  "anyhow",
  "aphrody-capture",
  "aphrody-firefly",

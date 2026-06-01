@@ -21,6 +21,7 @@ workspace = true
 
 [dependencies]
 rmcp               = { workspace = true }
+a2a-server         = { workspace = true }
 anyhow             = { workspace = true }
 clap               = { workspace = true }
 tokio              = { workspace = true }
