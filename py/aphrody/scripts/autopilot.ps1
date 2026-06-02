@@ -9,7 +9,7 @@ param(
 
 # 1. Setup paths and directories
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = (Get-Item (Join-Path $scriptPath "..\..")).FullName
+$repoRoot = (Get-Item (Join-Path $scriptPath "..\..\..")).FullName
 Set-Location $repoRoot
 
 $runDir = Join-Path $repoRoot "var/run"

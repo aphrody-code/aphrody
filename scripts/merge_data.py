@@ -8,16 +8,37 @@ import json
 import sqlite3
 
 DB_PATH = os.path.expanduser("~/.aphrody/x-store.sqlite")
-JSON_PATH = "/home/ubuntu/.gemini/antigravity-cli/brain/915df5ef-84a3-4d37-a2c1-92f6e24b5e5c/scratch/beyblade_data.json"
+def find_beyblade_data():
+    import sys
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+
+    home = os.path.expanduser("~")
+    current_scratch = os.path.join(home, ".gemini/antigravity-cli/brain/dd605dfb-b2ce-4b1b-b188-fef48150a92c/scratch/beyblade_data.json")
+    if os.path.exists(current_scratch):
+        return current_scratch
+
+    brain_dir = os.path.join(home, ".gemini/antigravity-cli/brain")
+    if os.path.exists(brain_dir):
+        try:
+            for d in os.listdir(brain_dir):
+                candidate = os.path.join(brain_dir, d, "scratch", "beyblade_data.json")
+                if os.path.exists(candidate):
+                    return candidate
+        except Exception:
+            pass
+
+    return os.path.join(home, ".gemini/antigravity-cli/brain/915df5ef-84a3-4d37-a2c1-92f6e24b5e5c/scratch/beyblade_data.json")
 
 
 def main():
-    if not os.path.exists(JSON_PATH):
-        print(f"JSON database not found at {JSON_PATH}!")
+    json_path = find_beyblade_data()
+    if not os.path.exists(json_path):
+        print(f"JSON database not found at {json_path}!")
         return
 
     print("Loading JSON database...")
-    with open(JSON_PATH, "r", encoding="utf-8") as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     tweets = data.get("tweets", {})

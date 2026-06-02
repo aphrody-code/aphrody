@@ -88,6 +88,7 @@ impl TerminalCommand for MirrorCommand {
 
 
 pub(crate) struct AuthCommand {
+    #[allow(dead_code)]
     pub force: bool,
 }
 

@@ -2,8 +2,33 @@
 import { ingestBeybladeData } from "../db/ingest";
 import { Store } from "../db/store";
 
+import { join } from "path";
+import { existsSync, readdirSync } from "fs";
+
+function findBeybladeData(): string {
+  const home = Bun.env.HOME || "/home/ubuntu";
+  const cliPath = process.argv[2];
+  if (cliPath) return cliPath;
+
+  const currentScratch = join(home, ".gemini/antigravity-cli/brain/dd605dfb-b2ce-4b1b-b188-fef48150a92c/scratch/beyblade_data.json");
+  if (existsSync(currentScratch)) return currentScratch;
+
+  const brainDir = join(home, ".gemini/antigravity-cli/brain");
+  if (existsSync(brainDir)) {
+    try {
+      const dirs = readdirSync(brainDir);
+      for (const d of dirs) {
+        const candidate = join(brainDir, d, "scratch", "beyblade_data.json");
+        if (existsSync(candidate)) return candidate;
+      }
+    } catch (_) {}
+  }
+
+  return join(home, ".gemini/antigravity-cli/brain/915df5ef-84a3-4d37-a2c1-92f6e24b5e5c/scratch/beyblade_data.json");
+}
+
 async function main() {
-  const filePath = "/home/ubuntu/.gemini/antigravity-cli/brain/915df5ef-84a3-4d37-a2c1-92f6e24b5e5c/scratch/beyblade_data.json";
+  const filePath = findBeybladeData();
   console.log(`Loading SQLite Store...`);
   const store = new Store(); // uses default path ~/.aphrody/x-store.sqlite
   
