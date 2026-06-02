@@ -21,10 +21,6 @@ Le serveur s'appuie sur plusieurs services système managés via `systemd` :
   * `postgresql@18-main.service` : Serveur PostgreSQL 18 local écoutant sur le port `5432` et via socket Unix (`/var/run/postgresql`). Utilisé pour le stockage principal et l'authentification partagée.
 * **Cache & Base de données clé-valeur** :
   * `redis-server.service` : Instance Redis locale (port `6379`). Utilisée pour le cache rapide, les files d'attente hors-ligne et le stockage vectoriel léger (VSIM).
-* **Serveurs d'Inférence IA Locaux (Sidecars)** :
-  * `rpbey-embed.service` : Moteur d'embeddings local (`Xenova/multilingual-e5-small`, 384 dimensions) propulsé par Transformers.js/ONNX et Bun. Écoute sur `127.0.0.1:7077`.
-  * `rpbey-llm.service` : Serveur d'inférence LLM local (`llama-server` avec le modèle `Llama-3.2-3B Q4` quantifié). Écoute sur `127.0.0.1:8080` avec une API compatible OpenAI.
-
 ---
 
 ## Écosystème RPBEY (République Populaire du Beyblade)
@@ -68,8 +64,6 @@ Nginx (écoutant sur les ports `80` et `443` avec SSL Certbot) sert de reverse-p
 | `azalee.rosegriffon.fr` | HTTPS | `azalee-web` (Next.js) | `3003` |
 | `api.rpbey.fr` | HTTPS | `rpb-bot` (Express/Bun API) | `3001` |
 | `127.0.0.1` | Local loopback | `bxc-api` (Elysia REST/GraphQL) | `3000` |
-| `127.0.0.1` | Local loopback | `embed-sidecar` (E5 Embedding API) | `7077` |
-| `127.0.0.1` | Local loopback | `llama-server` (Llama.cpp OpenAI API) | `8080` |
 
 ---
 

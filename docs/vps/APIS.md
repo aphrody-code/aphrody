@@ -16,8 +16,6 @@ Voici l'inventaire des ports d'écoute configurés sur le VPS pour l'ensemble de
 | `3002` | HTTP | `rpbey-web.service` | Standalone Next.js 16 Dashboard | Proxy via `rpbey.fr` |
 | `3003` | HTTP | `azalee-web.service` | Standalone Next.js 16 Azalée | Proxy via `azalee.rosegriffon.fr` |
 | `5050` | HTTP / WSS | `rpbey-gacha.service` | Express REST & Colyseus Bun WS | Proxy via `api.rpbey.fr/gacha/` |
-| `7077` | HTTP | `rpbey-embed.service` | Inférence vectorielle E5 (Bun) | Loopback local (`127.0.0.1`) |
-| `8080` | HTTP | `rpbey-llm.service` | API OpenAI-compat llama.cpp | Loopback local (`127.0.0.1`) |
 | `8788` | HTTP / JSON-RPC | `aphrody` A2A | Listener de coordination de l'agent | Loopback local (`127.0.0.1`) |
 
 ---

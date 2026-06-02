@@ -68,7 +68,7 @@ while true; do
                 fi
                 break
             fi
-        done < "$PLAN_FILE"
+        done < "$PLAN_FILE" || true
 
     timestamp=$(date -Iseconds)
     echo "Active Task: $task"
