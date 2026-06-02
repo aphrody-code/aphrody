@@ -19,7 +19,7 @@ done
 
 # Resolve repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 # Setup run, log, and ai dirs
@@ -53,20 +53,22 @@ while true; do
 
     # Find first pending task in PLAN.md
     task="Idle"
-    if [ -f "$PLAN_FILE" ]; then
         while IFS= read -r line; do
-            trimmed=$(echo "$line" | xargs)
+            trimmed="${line#${line%%[![:space:]]*}}"
+            trimmed="${trimmed%${trimmed##*[![:space:]]}}"
             if [[ "$trimmed" == -* ]] && [[ "$trimmed" == *"⏳"* ]]; then
                 task="${line#*⏳}"
-                task=$(echo "$task" | tr -d '`' | tr -d '\r' | xargs)
+                task="${task//[\`\r]/}"
+                task="${task#${task%%[![:space:]]*}}"
+                task="${task%${task##*[![:space:]]}}"
                 if [[ "$task" == \]* ]]; then
                     task="${task#]}"
-                    task=$(echo "$task" | xargs)
+                    task="${task#${task%%[![:space:]]*}}"
+                    task="${task%${task##*[![:space:]]}}"
                 fi
                 break
             fi
         done < "$PLAN_FILE"
-    fi
 
     timestamp=$(date -Iseconds)
     echo "Active Task: $task"
@@ -142,7 +144,7 @@ while true; do
     if [ -f "$PLAN_FILE" ]; then
         # Replace first occurrence of ⏳ task with ✅ task
         # Use python inline or sed (python is more cross-platform)
-        python -c "
+        python3 -c "
 import sys
 content = open('$PLAN_FILE', 'r', encoding='utf-8').read()
 target = '⏳'

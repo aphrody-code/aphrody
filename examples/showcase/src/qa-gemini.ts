@@ -39,7 +39,7 @@ Bun.env.CHROME_PATH = CHROME;
 // verdict). Honour an explicit override first.
 if (!Bun.env.BXC_RUST_BRIDGE_LIB) {
   for (const so of [
-    "/home/ubuntu/bxc/rust-bridge/target/release/libbxc_rust_bridge.so",
+    `${Bun.env.HOME || "/home/ubuntu"}/bxc/rust-bridge/target/release/libbxc_rust_bridge.so`,
     new URL(
       "../../../node_modules/@aphrody-code/bxc/rust-bridge/target/release/libbxc_rust_bridge.so",
       import.meta.url,

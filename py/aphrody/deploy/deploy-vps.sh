@@ -49,11 +49,14 @@ echo "==> Configuring systemd memory limits: High=${MEM_HIGH}, Max=${MEM_MAX}"
 UV_BIN=""
 if command -v uv &>/dev/null; then
   UV_BIN=$(command -v uv)
+elif [[ -n "${SUDO_USER:-}" ]] && [[ -x "/home/$SUDO_USER/.local/bin/uv" ]]; then
+  UV_BIN="/home/$SUDO_USER/.local/bin/uv"
 elif [[ -x "/home/ubuntu/.local/bin/uv" ]]; then
   UV_BIN="/home/ubuntu/.local/bin/uv"
 elif [[ -x "/root/.local/bin/uv" ]]; then
   UV_BIN="/root/.local/bin/uv"
 fi
+
 
 [[ -n "$WHEEL" ]] || { echo "provide --wheel <path-to-aphrody-*.whl>" >&2; exit 1; }
 

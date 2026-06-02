@@ -5,7 +5,7 @@
 set -e
 
 # Load user profile path for Chromium
-export HOME="/home/ubuntu"
+export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6 || echo "/home/ubuntu")}"
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.bun/bin:$HOME/.local/bin"
 
 DATA_DIR="$HOME/data/google-scraped"
