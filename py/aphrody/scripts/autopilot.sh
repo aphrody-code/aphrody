@@ -80,7 +80,11 @@ while true; do
     if [ "$task" = "Idle" ]; then
         echo "No pending tasks in PLAN.md. Resting."
         # Write log entry
-        echo "{\"ts\":\"$timestamp\",\"tick\":$tick,\"task\":\"$task\",\"claude\":\"\",\"gemini\":\"No tasks found\"}" >> "$LOG_FILE"
+        jq -cn \
+          --arg ts "$timestamp" \
+          --argjson tick "$tick" \
+          --arg task "$task" \
+          '{ts: $ts, tick: $tick, task: $task, claude: "", gemini: "No tasks found"}' >> "$LOG_FILE"
         
         if [ "$ONCE" -eq 1 ]; then break; fi
         sleep "$INTERVAL"
@@ -138,7 +142,13 @@ while true; do
     fi
 
     # Log entry
-    echo "{\"ts\":\"$timestamp\",\"tick\":$tick,\"task\":\"$task\",\"claude\":\"$claude_output\",\"gemini\":\"$gemini_output\"}" >> "$LOG_FILE"
+    jq -cn \
+      --arg ts "$timestamp" \
+      --argjson tick "$tick" \
+      --arg task "$task" \
+      --arg claude "$claude_output" \
+      --arg gemini "$gemini_output" \
+      '{ts: $ts, tick: $tick, task: $task, claude: $claude, gemini: $gemini}' >> "$LOG_FILE"
 
     # Mark the task completed in PLAN.md
     if [ -f "$PLAN_FILE" ]; then
