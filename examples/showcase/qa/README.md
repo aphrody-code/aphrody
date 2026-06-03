@@ -10,7 +10,7 @@ and `--md-sys-color-*` tokens).
 ## What it does
 
 `src/qa-gemini.ts` drives **real system Chromium** through
-[`@aphrody-code/bxc`](https://github.com/aphrody-code) and asserts the rendered
+[`@aphrody/bxc`](https://github.com/aphrody-code) and asserts the rendered
 surface. It:
 
 1. Serves a dedicated entry — `src/qa-gemini.html` -> `src/qa-gemini-entry.tsx`
@@ -42,15 +42,15 @@ surface. It:
 
 ## Run
 
-`@aphrody-code/bxc` is an **optional dependency** (published on GitHub Packages,
-which requires npm auth to install). It is deliberately NOT a hard dependency so
+`@aphrody/bxc` is an **optional dependency** (published on the public npm
+registry, `registry.npmjs.org`). It is deliberately NOT a hard dependency so
 a tokenless `bun install` of the monorepo never fails, and `bun run typecheck`
 (the gate) stays green without it — `qa-gemini.ts` is typechecked separately via
 `tsconfig.qa.json`. Install bxc first, then run:
 
 ```bash
 cd examples/showcase
-bun add -O @aphrody-code/bxc            # needs GitHub Packages auth (~/.npmrc)
+bun add -O @aphrody/bxc            # public npm, no auth needed
 bunx tsc -p tsconfig.qa.json --noEmit   # optional: typecheck the harness
 CHROME_BIN=/usr/local/bin/google-chrome bun run qa
 # also honoured: BXC_CHROME_BIN, CHROME_PATH

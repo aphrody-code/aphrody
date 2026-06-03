@@ -14,10 +14,7 @@
     "directory": "examples/showcase"
   },
   "type": "module",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
-  },
+  "private": true,
   "scripts": {
     "dev": "bun --hot src/server.ts",
     "start": "bun src/server.ts",
@@ -37,6 +34,6 @@
     "typescript": "catalog:"
   },
   "optionalDependencies": {
-    "@aphrody-code/bxc": "^0.5.7"
+    "@aphrody/bxc": "^0.6.4"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@aphrody-code/x",
+  "name": "@aphrody/x",
   "version": "1.0.0-canary",
   "private": true,
   "description": "Headless X (Twitter) client in pure TypeScript for Bun. Built on top of Bun Web APIs (fetch) and Bun APIs (Bun.file). Replicates the entire aphrody-x-client Rust functionality.",

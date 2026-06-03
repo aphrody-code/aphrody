@@ -2,7 +2,7 @@
 //
 // Real-browser visual-QA harness for the showcase "Gemini AI Mode" demo.
 //
-// Drives REAL system Chromium through @aphrody-code/bxc's `/browser` module
+// Drives REAL system Chromium through @aphrody/bxc's `/browser` module
 // (the `stealth` profile spawns Chrome via CDP — Lightpanda is rejected because
 // it has no ElementInternals, which every `md-*` web component depends on), and
 // evaluates the rendered surface against the Google design grammar captured in
@@ -17,8 +17,8 @@
 // Run:  CHROME_BIN=/usr/local/bin/google-chrome bun src/qa-gemini.ts
 // (also honours BXC_CHROME_BIN / CHROME_PATH — set whichever your env uses)
 
-import { Browser, type Page } from "@aphrody-code/bxc/browser";
-import { checkGoogleStyle, GOOGLE_TS_STYLE_RULES, parseSerp } from "@aphrody-code/bxc/google";
+import { Browser, type Page } from "@aphrody/bxc/browser";
+import { checkGoogleStyle, GOOGLE_TS_STYLE_RULES, parseSerp } from "@aphrody/bxc/google";
 import index from "./qa-gemini.html";
 
 // --- Resolve the real-Chrome binary and export it the way bxc expects -------
@@ -41,7 +41,7 @@ if (!Bun.env.BXC_RUST_BRIDGE_LIB) {
   for (const so of [
     `${Bun.env.HOME || "/home/ubuntu"}/bxc/rust-bridge/target/release/libbxc_rust_bridge.so`,
     new URL(
-      "../../../node_modules/@aphrody-code/bxc/rust-bridge/target/release/libbxc_rust_bridge.so",
+      "../../../node_modules/@aphrody/bxc/rust-bridge/target/release/libbxc_rust_bridge.so",
       import.meta.url,
     ).pathname,
   ]) {
