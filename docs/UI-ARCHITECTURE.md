@@ -425,7 +425,7 @@ Material Design 3 (Material You) apporte :
 
 ## Navigation
 
-*   [**Global DESIGN.md**](../../DESIGN.md) - Règles d'architecture globales, God Mode, et Desktop Best Practices.
+*   [**Global DESIGN.md**](../DESIGN.md) - Règles d'architecture globales, God Mode, et Desktop Best Practices.
 *   [Composants Natifs (Components)](components.md) - Utilisation des wrappers JSX pour `@material/web`.
 *   [Le Système de Thème (Theming)](theming.md) - Design Tokens, HCT, et couleurs statiques.
 *   [Typographie & Icônes (Typography & Icons)](typography-icons.md) - Google Sans et Material Symbols.
@@ -2617,7 +2617,7 @@ Plein détails dans `BUILD.md`.
 - [`../design/aphrody-terminal-integration-matrix.md`](../design/aphrody-terminal-integration-matrix.md) :
   matrice contract-de-vie par crate (chaque crate du workspace a un slot
   dans `aphrody-terminal`).
-- [`../PLAN-MOONSHOT.md`](../PLAN-MOONSHOT.md) : plan 30 jours qui drive
+- [`../PLAN-MOONSHOT.md`](PLAN-MOONSHOT.md) : plan 30 jours qui drive
   l'ambition `aphrody-terminal`.
 - `vendor/terminal/README.md` : README officiel Microsoft.
 - `vendor/terminal/doc/building.md` : procédure de build amont.
