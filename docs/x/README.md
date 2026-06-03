@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # aphrody-x — headless X / Twitter framework
 
+> **Not xAI:** This directory is **Twitter/X** (x.com). For **xAI Grok** (API `api.x.ai`, Grok CLI), see [`../grok/README.md`](../grok/README.md). For **bxc** integration see [`bxc-integration.md`](bxc-integration.md).
+
 `aphrody-x` (crate [`crates/aphrody-x-client`](../../crates/aphrody-x-client))
 is a complete, headless X/Twitter control framework: it drives an entire
 account from the command line using only the browser session cookies
@@ -22,6 +24,10 @@ It reaches and surpasses two reference tools:
 | [commands.md](commands.md) | Every command and flag, with examples. |
 | [architecture.md](architecture.md) | Internals: auth, queryId auto-refresh, POST-hybrid recovery, error model, stealth headers. |
 | [store.md](store.md) | The local-first SQLite store: sync, FTS5 search, follow graph, archive import, digest, scheduler. |
+| [bxc-integration.md](bxc-integration.md) | `bxc`, `@aphrody-code/x`, MCP `bxc_x_client`. |
+| [bxc-cookies.md](bxc-cookies.md) | bxc cookie jar JSON format, shortcuts, global paths. |
+| [grok-com-scan.md](grok-com-scan.md) | bxc detect/recon on grok.com (Cloudflare notes). |
+| [env-and-auth.md](env-and-auth.md) | Cookie vs developer API env vars. |
 
 ## Why it is "better"
 

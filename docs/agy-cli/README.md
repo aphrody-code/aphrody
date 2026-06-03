@@ -51,11 +51,25 @@ Référence fichiers en contexte : `@fichier`, `@dir/`, `@**/*.ts`.
 
 ## 4. Authentification
 
-- **Local** : OAuth navigateur (Keychain macOS / Credential Manager Windows /
-  libsecret Linux). Côté aphrody, le token est lu de l'entrée Credential Manager
-  `gemini:antigravity` (cf. `crates/cli/src/agy_backend.rs`).
+Source officielle : [Antigravity CLI reference](https://antigravity.google/docs/cli-reference).
+
+| Plateforme | Stockage OAuth `agy` | Lecture `aphrody antigravity` / `AgyBackend` |
+|------------|----------------------|-----------------------------------------------|
+| **Linux** | Fichier `~/.gemini/antigravity-cli/antigravity-oauth-token` (JSON `{"token":{…},"auth_method":"consumer"}`) | `antigravity-sdk` lit ce fichier en premier |
+| **Linux** (fallback) | `~/.config/aphrody/antigravity-token.json` après `aphrody antigravity login` | même SDK |
+| **Windows** | Credential Manager `gemini:antigravity` | `CredReadW` |
+| **macOS** | Keychain (équivalent desktop) | idem Windows via store OS |
+
+Variables shell recommandées (voir `awesome-grok-build/scripts/rust-nightly-env.sh`) :
+
+```bash
+export APHRODY_AGY_OAUTH_FILE="$HOME/.gemini/antigravity-cli/antigravity-oauth-token"
+export APHRODY_ANTIGRAVITY_CONFIG="$HOME/.config/antigravity/config.toml"
+```
+
 - **Remote / SSH** : URL d'autorisation + code one-time à coller en local.
-- **Clé API** : `export ANTIGRAVITY_API_KEY=…` (persister dans `~/.bashrc`/`~/.zshrc`).
+- **Clé API** (optionnel, facturé) : `ANTIGRAVITY_API_KEY` dans `~/.bashrc` — préférer le token OAuth `agy` (keyless Code Assist).
+- **Refresh** : ne pas compter sur `aphrody antigravity refresh` seul (OAuth public sans `client_secret`) ; relancer `agy` ou `aphrody antigravity login` pour re-minter.
 
 ## 5. Configuration & extensibilité
 

@@ -15,8 +15,8 @@ bun run build:mcp 2>/dev/null || bun build src/mcp/server.ts --outfile dist/stan
 if [[ -f dist/standalone/bxc-mcp ]]; then
   install -m 755 dist/standalone/bxc-mcp "$LOCAL_BIN/bxc-mcp"
 fi
-if [[ -f bin/bxc ]]; then
-  install -m 755 bin/bxc "$LOCAL_BIN/bxc"
+if [[ -f bin/bxc ]] && [[ "$(readlink -f bin/bxc 2>/dev/null || echo bin/bxc)" != "$(readlink -f "$LOCAL_BIN/bxc" 2>/dev/null || echo MISSING)" ]]; then
+  ln -sf "$BXC_ROOT/bin/bxc" "$LOCAL_BIN/bxc" 2>/dev/null || install -m 755 bin/bxc "$LOCAL_BIN/bxc"
 fi
 
 echo "==> [2/6] Build Rust x-cli (optional)"
