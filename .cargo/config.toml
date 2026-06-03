@@ -57,6 +57,9 @@ rustflags = [
 
 [target.x86_64-pc-windows-msvc]
 # Absolute path: WinGet's coreutils symlink shadows the real MSVC link.exe.
+# NOTE: this pins one machine's VS Insiders install — other Windows
+# contributors likely need to override `linker` (and the [env] VS paths below)
+# in a LOCAL, un-committed `.cargo/config.toml` to match their own toolchain.
 linker = "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\link.exe"
 rustflags = [
     # Google-grade modern CPU baseline (x86-64-v3 = Haswell+, AVX2, BMI2, FMA).
