@@ -140,7 +140,22 @@ production builds gated behind `experimental.exposeTestingApiInProductionBuild`
 There is **no** dev/build/start harness, no fixtures, no `next` test helpers in
 this package — it is purely the `instant()` navigation-testing primitive.
 
-### bxc port plan (`next-playwright` on bxc's test package)
+### bxc port — SHIPPED (`@aphrody-code/next-playwright`)
+
+> **Status (2026-06-04): DONE.** The port lives at
+> `bxc/packages/next-playwright` (`@aphrody-code/next-playwright`), built on
+> `@aphrody-code/bxc-test`. 8 offline tests green (`tsc --noEmit` + `oxlint`
+> clean). The cookie protocol (constant `next-instant-navigation-testing`, value
+> shape, nesting guard, `resolveURL` + error text, acquire/release `finally`) is
+> copied byte-for-byte; `src/context.ts` is the `CdpCookieContext` adapter over
+> `Network.setCookies/getCookies/deleteCookies` + `adaptPage()`; `src/step.ts` is
+> the bxc-runner step seam (`setStepReporter`, direct-execution default). The
+> port surfaced & fixed a real bxc gap: the `static` Network domain lacked
+> `Network.deleteCookies` (`src/cdp/domains/Network.ts`). The bxc-native,
+> page-direct variant remains at `bxc/src/next/` (`@aphrody-code/bxc/next`).
+> Plan: `bxc/docs/test-package-plan.md` §8.
+
+The original plan that drove this (kept for the record):
 
 **Reuse as-is (copy, MIT):**
 - The cookie protocol and constant `next-instant-navigation-testing` — it is the
