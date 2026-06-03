@@ -102,14 +102,14 @@ async function indexBatch(store: Store): Promise<number> {
       
       // Small delay to respect rate limits if using a live key
       if (apiKey) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await Bun.sleep(500);
       }
     } catch (err: any) {
       console.warn(`[embeddings-loop] Failed to embed tweet ${row.id}: ${err.message}`);
       // Backoff if we hit a rate limit
       if (err.message.includes("429")) {
         console.warn("[embeddings-loop] Rate limit hit. Waiting 30s...");
-        await new Promise(resolve => setTimeout(resolve, 30000));
+        await Bun.sleep(30000);
       }
     }
   }
@@ -185,14 +185,14 @@ async function main() {
       
       if (processed === 0) {
         // No new tweets to process, wait 30 seconds before checking again
-        await new Promise(resolve => setTimeout(resolve, 30000));
+        await Bun.sleep(30000);
       } else {
         // Minor cooldown between batches
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await Bun.sleep(2000);
       }
     } catch (err: any) {
       console.error(`[embeddings-loop] Error in loop iteration: ${err.message}`);
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      await Bun.sleep(15000);
     }
   }
 }

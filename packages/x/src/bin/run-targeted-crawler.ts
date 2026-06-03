@@ -143,7 +143,7 @@ async function main() {
         store.addFollow(target, "following", u);
         enqueue(u.username);
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Bun.sleep(2000);
     } catch (err: any) {
       console.error(`[targeted-crawler] Failed to fetch following for ${target}: ${err.message}`);
     }
@@ -162,7 +162,7 @@ async function main() {
         store.addFollow(target, "follower", u);
         enqueue(u.username);
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Bun.sleep(2000);
     } catch (err: any) {
       console.error(`[targeted-crawler] Failed to fetch verified followers for ${target}: ${err.message}`);
     }
@@ -224,11 +224,11 @@ async function main() {
       console.log(`[targeted-crawler] Completed @${username}.`);
       
       // Delay to respect rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Bun.sleep(2000);
     } catch (err: any) {
       console.error(`[targeted-crawler] Failed to process user @${username}: ${err.message}`);
       // Sleep a bit on failure
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await Bun.sleep(5000);
     }
   }
 
