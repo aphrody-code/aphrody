@@ -28,6 +28,7 @@
     "@aphrody/m3-react": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "bun-types": "catalog:",
     "typescript": "catalog:"
   }
