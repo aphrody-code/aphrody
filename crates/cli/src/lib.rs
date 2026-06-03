@@ -139,10 +139,10 @@ enum Commands {
         json: bool,
     },
 
-    /// Client natif A2A
+    /// A2A coordination (serve, tick, invoke peers)
     A2a {
-        #[arg(required = true)]
-        prompt: String,
+        #[command(subcommand)]
+        action: A2aAction,
     },
     /// Compilation hyper-optimisée de ChromeOS
     Cros {
@@ -631,6 +631,39 @@ enum CrosActions {
     Build,
 }
 
+/// `aphrody a2a` — file JSONL coordination + A2A 1.0 HTTP listener.
+#[derive(Subcommand)]
+pub(crate) enum A2aAction {
+    /// Start HTTP listener (`/ping`, `/msg`, JSON-RPC, agent card) on :8788.
+    Serve {
+        #[arg(long, default_value = "127.0.0.1:8788")]
+        bind: String,
+    },
+    /// Append one JSONL envelope (duel-tick / coord loop).
+    Tick {
+        #[arg(long)]
+        iteration: u64,
+        #[arg(long, default_value = "aphrody")]
+        side: String,
+        #[arg(long, default_value = "winclean")]
+        peer: String,
+        #[arg(long)]
+        subject: Option<String>,
+        #[arg(long)]
+        body: Option<String>,
+        #[arg(long, default_value = "ping")]
+        kind: String,
+    },
+    /// Invoke a native peer CLI (grok, agy, claude, bxc).
+    Invoke {
+        prompt: String,
+        #[arg(long, default_value = "grok")]
+        peer: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
 
 /// Actions for the `scan` kernel subcommand (repo analytics).
 #[derive(Subcommand, Debug, Clone)]
@@ -1008,8 +1041,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             MirrorCommand { action }.execute(ctx).await?;
         },
 
-        Some(Commands::A2a { prompt }) => {
-            commands::A2aCommand { prompt }.execute(ctx).await?;
+        Some(Commands::A2a { action }) => {
+            commands::dispatch_a2a(action, ctx).await?;
         },
         Some(Commands::Cros { action }) => {
             commands::CrosCommand { action }.execute(ctx).await?;

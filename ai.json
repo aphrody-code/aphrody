@@ -1,7 +1,94 @@
 {
   "version": "1.0.0",
-  "spec": "a2a/v0.4",
+  "spec": "a2a/v1.0",
   "id": "aphrody@aphrody-code/aphrody",
   "schema_version": "1.0.0",
-  "kind": "agent"
+  "kind": "agent",
+  "name": "aphrody",
+  "description": "Cross-platform Rust agent with A2A 1.0 JSON-RPC, file JSONL coordination, and native Claude Code / Grok / agy / bxc peers.",
+  "a2a_protocol_version": "1.0",
+  "documentation_url": "https://github.com/aphrody-code/aphrody/blob/main/docs/a2a/README.md",
+  "provider": {
+    "organization": "aphrody-code",
+    "url": "https://github.com/aphrody-code/aphrody"
+  },
+  "supported_interfaces": [
+    {
+      "url": "http://127.0.0.1:8788",
+      "protocol_binding": "JSONRPC",
+      "protocol_version": "1.0"
+    }
+  ],
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false,
+    "extendedAgentCard": false
+  },
+  "default_input_modes": ["text/plain"],
+  "default_output_modes": ["text/plain", "application/json"],
+  "peers": [
+    {
+      "id": "claude@aphrody-code/aphrody",
+      "role": "orchestrator",
+      "transport": "claude-code",
+      "binary": "claude",
+      "invocation": "claude -p <prompt> --output-format text",
+      "description": "Claude Code — plans and routes work to Grok/agy/bxc subagents."
+    },
+    {
+      "id": "grok@aphrody-code/aphrody",
+      "role": "subagent",
+      "transport": "cli",
+      "binary": "grok",
+      "model": "grok-build",
+      "invocation": "grok --prompt-file <f> --always-approve --permission-mode bypassPermissions --max-turns <N> --cwd <dir> --output-format json",
+      "description": "Grok Build (xAI). Do not use --effort with grok-build (HTTP 400 reasoningEffort)."
+    },
+    {
+      "id": "agy@aphrody-code/aphrody",
+      "role": "subagent",
+      "transport": "cli",
+      "binary": "agy",
+      "model": "gemini",
+      "invocation": "agy -p \"<prompt>\" --dangerously-skip-permissions --print-timeout 10m --add-dir <dir>",
+      "description": "Antigravity / Google Cloud Code CLI (Gemini backend)."
+    },
+    {
+      "id": "bxc@aphrody-code/aphrody",
+      "role": "subagent",
+      "transport": "cli",
+      "binary": "bxc",
+      "invocation": "bxc search <query> --json",
+      "description": "Bxc zero-spawn browser engine — web search, scrape, X client, MCP."
+    }
+  ],
+  "skills": [
+    {
+      "id": "grok.code",
+      "name": "Grok code task",
+      "description": "Headless Grok Build for codegen, refactor, verification.",
+      "tags": ["codegen", "grok", "json"]
+    },
+    {
+      "id": "agy.reason",
+      "name": "agy reasoning",
+      "description": "Antigravity/Gemini broad reasoning and generation.",
+      "tags": ["gemini", "reasoning"]
+    },
+    {
+      "id": "a2a.coord",
+      "name": "File A2A coordination",
+      "description": "JSONL mailboxes + HTTP /msg bridge compatible with a2a-protocol.org v1.0 data model.",
+      "tags": ["a2a", "coord", "jsonl"]
+    }
+  ],
+  "coord": {
+    "mailbox_dir": ".coord",
+    "inbox_pattern": "inbox-from-<peer-short-id>.jsonl",
+    "http_bind": "127.0.0.1:8788",
+    "envelope": {
+      "v": 1,
+      "kinds": ["ping", "ask", "fact", "ack", "error"]
+    }
+  }
 }

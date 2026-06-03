@@ -1,0 +1,34 @@
+[package]
+name = "a2a-coord"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Aphrody A2A coordination: ai.json manifest, JSONL mailboxes, native Claude/Grok/agy peers, HTTP listener."
+
+[lints]
+workspace = true
+
+[dependencies]
+a2a = { workspace = true }
+a2a-server = { workspace = true }
+aphrody-terminal-backend = { path = "../aphrody-terminal-backend" }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+getrandom = { workspace = true }
+which = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tower = { workspace = true }
+http-body-util = "0.1"
+tokio = { workspace = true }

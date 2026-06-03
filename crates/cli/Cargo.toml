@@ -86,6 +86,7 @@ aphrody-terminal-backend  = { path = "../aphrody-terminal-backend" }
 # A2A agent over JSON-RPC; reqwest-backed transports are native-only.
 a2a                       = { workspace = true }
 a2a-client                = { workspace = true }
+a2a-coord                 = { workspace = true }
 futures                   = { workspace = true }
 thiserror                 = { workspace = true }
 # Messaging (outbound connectors + bidirectional channels: Slack/Telegram/Matrix/Discord/X).
