@@ -82,7 +82,7 @@ L'intégration de ces trois piliers propulse Aphrody et Google OS au-delà d'un 
 
 ## 6. Références Architectures Cibles
 
-- Voir [Architecture OS 2026 : Meilleures Pratiques Unix](docs/google-os-plan/ARCHITECTURE_2026.md) pour les détails sur le noyau, l'I/O et le modèle de processus.
+- Voir Architecture OS 2026 : Meilleures Pratiques Unix pour les détails sur le noyau, l'I/O et le modèle de processus.
 
 
 <!-- ============================================== -->
@@ -426,9 +426,9 @@ Material Design 3 (Material You) apporte :
 ## Navigation
 
 *   [**Global DESIGN.md**](../DESIGN.md) - Règles d'architecture globales, God Mode, et Desktop Best Practices.
-*   [Composants Natifs (Components)](components.md) - Utilisation des wrappers JSX pour `@material/web`.
-*   [Le Système de Thème (Theming)](theming.md) - Design Tokens, HCT, et couleurs statiques.
-*   [Typographie & Icônes (Typography & Icons)](typography-icons.md) - Google Sans et Material Symbols.
+*   Composants Natifs (Components) - Utilisation des wrappers JSX pour `@material/web`.
+*   Le Système de Thème (Theming) - Design Tokens, HCT, et couleurs statiques.
+*   Typographie & Icônes (Typography & Icons) - Google Sans et Material Symbols.
 
 
 <!-- ============================================== -->
@@ -2576,10 +2576,10 @@ Branche officielle : `microsoft/terminal:main`. Licence : **MIT**
 | Fichier                                  | Rôle                                                                                                            |
 |------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md)   | Cartographie complète : binaires produits, dossiers de `src/`, couches, composants réutilisables, tests, specs. |
-| [`BUILD.md`](./BUILD.md)                 | Build officiel Microsoft + procédure spécifique `scripts/terminal/build.ps1` (toolset v145 + SDK 10.0.26100.0). |
-| [`INTEGRATION.md`](./INTEGRATION.md)     | Matrice d'intégration pour `google_os` / `aphrody` : composants utiles, stratégie FFI, sécurité, go/no-go.   |
-| [`PATCHES.diff`](./PATCHES.diff)         | Patches locaux appliqués au sous-module (overlays vcpkg v143→v145, warning C4875). Réappliquer : `cd vendor/terminal && git apply ../../docs/terminal/PATCHES.diff`. |
-| [`GEMINI_CLI.md`](./GEMINI_CLI.md)       | Diagnostic du crash `gemini-cli` sur Windows (Node v26 + npm 11 incompatibles `node-pty`). Workaround Bun documenté + plans de repli. |
+| `BUILD.md`                 | Build officiel Microsoft + procédure spécifique `scripts/terminal/build.ps1` (toolset v145 + SDK 10.0.26100.0). |
+| `INTEGRATION.md`     | Matrice d'intégration pour `google_os` / `aphrody` : composants utiles, stratégie FFI, sécurité, go/no-go.   |
+| `PATCHES.diff`         | Patches locaux appliqués au sous-module (overlays vcpkg v143→v145, warning C4875). Réappliquer : `cd vendor/terminal && git apply ../../docs/terminal/PATCHES.diff`. |
+| `GEMINI_CLI.md`       | Diagnostic du crash `gemini-cli` sur Windows (Node v26 + npm 11 incompatibles `node-pty`). Workaround Bun documenté + plans de repli. |
 
 ## Build local
 
@@ -2611,10 +2611,10 @@ Plein détails dans `BUILD.md`.
 
 ## À consulter en complément
 
-- [`../design/aphrody-terminal-spec.md`](../design/aphrody-terminal-spec.md) :
+- `../design/aphrody-terminal-spec.md` :
   **spec normative aphrody-terminal LLM-first** (5 piliers, WASM-native,
   M3-themed) — successeur Rust pur du modèle vendor/terminal Win-only.
-- [`../design/aphrody-terminal-integration-matrix.md`](../design/aphrody-terminal-integration-matrix.md) :
+- `../design/aphrody-terminal-integration-matrix.md` :
   matrice contract-de-vie par crate (chaque crate du workspace a un slot
   dans `aphrody-terminal`).
 - [`../PLAN-MOONSHOT.md`](PLAN-MOONSHOT.md) : plan 30 jours qui drive
