@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdVirtualScroller as MdVirtualScrollerElement } from "@aphrody-code/material-web/virtualscroll/virtual-scroller.js";
+import { MdVirtualScroller as MdVirtualScrollerElement } from "@aphrody/material-web/virtualscroll/virtual-scroller.js";
 
 export const MdVirtualScroller = createComponent({
   react: React,

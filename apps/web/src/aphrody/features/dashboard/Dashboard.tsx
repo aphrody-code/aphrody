@@ -1,7 +1,7 @@
 // Accueil dashboard (React port of Angular DashboardComponent): account banner, real-state stat tiles (doctor/version/meta/mcp) + quick actions.
 
 import { useNavigate } from "@tanstack/react-router";
-import { MdFilledTonalButton, MdIcon } from "@aphrody-code/m3-react";
+import { MdFilledTonalButton, MdIcon } from "@aphrody/m3-react";
 import { execJson, execText, useAccount, useExec, useMeta } from "../../client.ts";
 import { PageHead, Panel, StatTile } from "../../ui.tsx";
 

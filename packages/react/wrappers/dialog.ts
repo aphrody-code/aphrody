@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdDialog as MdDialogElement } from "@aphrody-code/material-web/dialog/dialog.js";
+import { MdDialog as MdDialogElement } from "@aphrody/material-web/dialog/dialog.js";
 
 export const MdDialog = createComponent({
   react: React,

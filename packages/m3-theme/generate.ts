@@ -7,7 +7,7 @@
 //
 // Run with: bun run generate   (also formats the output via oxfmt).
 
-import { argbToHct, deriveScheme } from "@aphrody-code/bun-rs";
+import { argbToHct, deriveScheme } from "@aphrody/bun-rs";
 
 /** One M3 system colour role: its `--md-sys-color-<name>` light + dark hex. */
 type Role = readonly [name: string, light: string, dark: string];

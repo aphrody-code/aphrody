@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // The runtime token asset consumed by Tailwind (`@theme`) and any host that
-// needs the M3 families @aphrody-code/material-web does NOT project as runtime vars
+// needs the M3 families @aphrody/material-web does NOT project as runtime vars
 // (typescale/shape/elevation/motion/state). This test pins that contract.
 const css = readFileSync(fileURLToPath(new URL("../src/m3-tokens.css", import.meta.url)), "utf8");
 

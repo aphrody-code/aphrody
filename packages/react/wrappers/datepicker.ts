@@ -3,9 +3,9 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdDatePicker as MdDatePickerElement } from "@aphrody-code/material-web/datepicker/date-picker.js";
-import { MdDateRangePicker as MdDateRangePickerElement } from "@aphrody-code/material-web/datepicker/date-range-picker.js";
-import { MdDateTimePicker as MdDateTimePickerElement } from "@aphrody-code/material-web/datepicker/date-time-picker.js";
+import { MdDatePicker as MdDatePickerElement } from "@aphrody/material-web/datepicker/date-picker.js";
+import { MdDateRangePicker as MdDateRangePickerElement } from "@aphrody/material-web/datepicker/date-range-picker.js";
+import { MdDateTimePicker as MdDateTimePickerElement } from "@aphrody/material-web/datepicker/date-time-picker.js";
 
 export const MdDatePicker = createComponent({
   react: React,

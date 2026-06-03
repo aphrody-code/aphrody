@@ -16,8 +16,8 @@ export default defineConfig({
   esbuildOptions(options) {
     options.external = [
       ...(options.external ?? []),
-      "@aphrody-code/m3-tokens",
-      "@aphrody-code/m3-tokens/*",
+      "@aphrody/m3-tokens",
+      "@aphrody/m3-tokens/*",
     ];
   },
   async onSuccess() {

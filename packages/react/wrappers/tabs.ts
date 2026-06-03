@@ -3,9 +3,9 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdPrimaryTab as MdPrimaryTabElement } from "@aphrody-code/material-web/tabs/primary-tab.js";
-import { MdSecondaryTab as MdSecondaryTabElement } from "@aphrody-code/material-web/tabs/secondary-tab.js";
-import { MdTabs as MdTabsElement } from "@aphrody-code/material-web/tabs/tabs.js";
+import { MdPrimaryTab as MdPrimaryTabElement } from "@aphrody/material-web/tabs/primary-tab.js";
+import { MdSecondaryTab as MdSecondaryTabElement } from "@aphrody/material-web/tabs/secondary-tab.js";
+import { MdTabs as MdTabsElement } from "@aphrody/material-web/tabs/tabs.js";
 
 export const MdPrimaryTab = createComponent({
   react: React,

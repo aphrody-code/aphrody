@@ -3,19 +3,19 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { Button as MdButtonElement } from "@aphrody-code/material-web/labs/gb/components/button/md-button.js";
-import { MdElevatedCard as MdElevatedCardElement } from "@aphrody-code/material-web/labs/card/elevated-card.js";
-import { MdFilledCard as MdFilledCardElement } from "@aphrody-code/material-web/labs/card/filled-card.js";
-import { MdItem as MdItemElement } from "@aphrody-code/material-web/labs/item/item.js";
-import { MenuGroup as MdMenuGroupElement } from "@aphrody-code/material-web/labs/gb/components/menu/md-menu-group.js";
-import { MdNavigationBar as MdNavigationBarElement } from "@aphrody-code/material-web/labs/navigationbar/navigation-bar.js";
-import { MdNavigationDrawer as MdNavigationDrawerElement } from "@aphrody-code/material-web/labs/navigationdrawer/navigation-drawer.js";
-import { MdNavigationDrawerModal as MdNavigationDrawerModalElement } from "@aphrody-code/material-web/labs/navigationdrawer/navigation-drawer-modal.js";
-import { MdNavigationTab as MdNavigationTabElement } from "@aphrody-code/material-web/labs/navigationtab/navigation-tab.js";
-import { MdOutlinedCard as MdOutlinedCardElement } from "@aphrody-code/material-web/labs/card/outlined-card.js";
-import { MdOutlinedSegmentedButton as MdOutlinedSegmentedButtonElement } from "@aphrody-code/material-web/labs/segmentedbutton/outlined-segmented-button.js";
-import { MdOutlinedSegmentedButtonSet as MdOutlinedSegmentedButtonSetElement } from "@aphrody-code/material-web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
-import { SplitButton as MdSplitButtonElement } from "@aphrody-code/material-web/labs/gb/components/splitbutton/md-split-button.js";
+import { Button as MdButtonElement } from "@aphrody/material-web/labs/gb/components/button/md-button.js";
+import { MdElevatedCard as MdElevatedCardElement } from "@aphrody/material-web/labs/card/elevated-card.js";
+import { MdFilledCard as MdFilledCardElement } from "@aphrody/material-web/labs/card/filled-card.js";
+import { MdItem as MdItemElement } from "@aphrody/material-web/labs/item/item.js";
+import { MenuGroup as MdMenuGroupElement } from "@aphrody/material-web/labs/gb/components/menu/md-menu-group.js";
+import { MdNavigationBar as MdNavigationBarElement } from "@aphrody/material-web/labs/navigationbar/navigation-bar.js";
+import { MdNavigationDrawer as MdNavigationDrawerElement } from "@aphrody/material-web/labs/navigationdrawer/navigation-drawer.js";
+import { MdNavigationDrawerModal as MdNavigationDrawerModalElement } from "@aphrody/material-web/labs/navigationdrawer/navigation-drawer-modal.js";
+import { MdNavigationTab as MdNavigationTabElement } from "@aphrody/material-web/labs/navigationtab/navigation-tab.js";
+import { MdOutlinedCard as MdOutlinedCardElement } from "@aphrody/material-web/labs/card/outlined-card.js";
+import { MdOutlinedSegmentedButton as MdOutlinedSegmentedButtonElement } from "@aphrody/material-web/labs/segmentedbutton/outlined-segmented-button.js";
+import { MdOutlinedSegmentedButtonSet as MdOutlinedSegmentedButtonSetElement } from "@aphrody/material-web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
+import { SplitButton as MdSplitButtonElement } from "@aphrody/material-web/labs/gb/components/splitbutton/md-split-button.js";
 
 export const MdButton = createComponent({
   react: React,

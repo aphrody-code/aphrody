@@ -7,7 +7,7 @@ import {
   MdOutlinedButton,
   MdPrimaryTab,
   MdTabs,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { useAccount, useMeta, useRun } from "../../client.ts";
 import { CodeOutput, Hint, PageHead, Panel, StatTile } from "../../ui.tsx";
 import { getState, setState, useUi } from "../../../store.ts";
@@ -284,7 +284,7 @@ function AproposTab({ meta }: { meta: MetaLike | undefined }) {
           <Hint icon="info" title="Métadonnées indisponibles" />
         )}
         <p className="aph-muted aph-settings-note">
-          React 19 + Material 3 (@aphrody-code/m3-react), propulsé en local par le binaire aphrody.
+          React 19 + Material 3 (@aphrody/m3-react), propulsé en local par le binaire aphrody.
         </p>
       </Panel>
     </div>

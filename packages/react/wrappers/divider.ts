@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdDivider as MdDividerElement } from "@aphrody-code/material-web/divider/divider.js";
+import { MdDivider as MdDividerElement } from "@aphrody/material-web/divider/divider.js";
 
 export const MdDivider = createComponent({
   react: React,

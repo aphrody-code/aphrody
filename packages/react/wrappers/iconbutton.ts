@@ -3,10 +3,10 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdFilledIconButton as MdFilledIconButtonElement } from "@aphrody-code/material-web/iconbutton/filled-icon-button.js";
-import { MdFilledTonalIconButton as MdFilledTonalIconButtonElement } from "@aphrody-code/material-web/iconbutton/filled-tonal-icon-button.js";
-import { MdIconButton as MdIconButtonElement } from "@aphrody-code/material-web/iconbutton/icon-button.js";
-import { MdOutlinedIconButton as MdOutlinedIconButtonElement } from "@aphrody-code/material-web/iconbutton/outlined-icon-button.js";
+import { MdFilledIconButton as MdFilledIconButtonElement } from "@aphrody/material-web/iconbutton/filled-icon-button.js";
+import { MdFilledTonalIconButton as MdFilledTonalIconButtonElement } from "@aphrody/material-web/iconbutton/filled-tonal-icon-button.js";
+import { MdIconButton as MdIconButtonElement } from "@aphrody/material-web/iconbutton/icon-button.js";
+import { MdOutlinedIconButton as MdOutlinedIconButtonElement } from "@aphrody/material-web/iconbutton/outlined-icon-button.js";
 
 export const MdFilledIconButton = createComponent({
   react: React,

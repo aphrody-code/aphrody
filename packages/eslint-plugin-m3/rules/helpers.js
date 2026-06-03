@@ -65,7 +65,7 @@ export function singleTextChild(jsxElement) {
 /**
  * Les ~49 rôles de couleur M3 exposés en runtime par material-web sous
  * `--md-sys-color-<role>` (kebab-case). Source unique : la table `ROLES` de
- * `@aphrody-code/m3-tokens` (dynamic-color), kebab-isée par le même algorithme
+ * `@aphrody/m3-tokens` (dynamic-color), kebab-isée par le même algorithme
  * (`role.replace(/([A-Z])/g, "-$1").toLowerCase()`). Sert à valider les
  * `var(--md-sys-color-*)` écrits à la main (typos) — cf. règle valid-color-role.
  */

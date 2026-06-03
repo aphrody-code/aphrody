@@ -1,7 +1,7 @@
 # Exemple de migration de bout en bout — Paramètres de compte
 
 Cet exemple montre **la même UI** écrite deux fois : en MUI (`before/`) puis
-migrée vers les wrappers `@aphrody-code/m3-react` + layout Tailwind + tokens M3
+migrée vers les wrappers `@aphrody/m3-react` + layout Tailwind + tokens M3
 (`after/`). Il sert de référence concrète au reste du kit de migration et
 respecte le contrat partagé [`../00-CONVENTIONS.md`](../00-CONVENTIONS.md).
 

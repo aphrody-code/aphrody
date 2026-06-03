@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdElevation as MdElevationElement } from "@aphrody-code/material-web/elevation/elevation.js";
+import { MdElevation as MdElevationElement } from "@aphrody/material-web/elevation/elevation.js";
 
 export const MdElevation = createComponent({
   react: React,

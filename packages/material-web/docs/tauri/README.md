@@ -22,7 +22,7 @@ Le dossier est divisé en guides thématiques pour vous accompagner pas-à-pas :
 
 ```mermaid
 graph TD
-    ReactApp["Application React / Lit Frontend"] -->|M3 Theme / UI| UIComponents["@aphrody-code/m3-theme / m3-react"]
+    ReactApp["Application React / Lit Frontend"] -->|M3 Theme / UI| UIComponents["@aphrody/m3-theme / m3-react"]
     ReactApp -->|Appels IPC Typés| TauriClient["Tauri 2.0 JavaScript API (window.__TAURI_INTERNALS__)"]
     
     subgraph Client-Side Webview

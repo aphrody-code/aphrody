@@ -1,10 +1,10 @@
 // -----------------------------------------------------------------------------
-// @aphrody-code/m3-tokens — dynamic-color
+// @aphrody/m3-tokens — dynamic-color
 // -----------------------------------------------------------------------------
 // Runtime "Material You" dynamic colour: derive the full set of M3
 // `--md-sys-color-*` roles from ANY single seed colour, for light and dark, and
 // apply them live. This is the signature Material 3 capability — a host app can
-// re-theme every `<md-*>` element (and every `@aphrody-code/m3-react` wrapper) from
+// re-theme every `<md-*>` element (and every `@aphrody/m3-react` wrapper) from
 // one colour, with no rebuild — that MUI has no native equivalent for.
 //
 // Built on @material/material-color-utilities (7 scheme variants: tonalSpot,

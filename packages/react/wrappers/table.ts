@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdTable as MdTableElement } from "@aphrody-code/material-web/table/table.js";
+import { MdTable as MdTableElement } from "@aphrody/material-web/table/table.js";
 
 export const MdTable = createComponent({
   react: React,

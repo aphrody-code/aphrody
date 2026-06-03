@@ -4,11 +4,11 @@
  * Conforme à 00-CONVENTIONS.md §2/§3/§4. Implémente, en un seul passage AST :
  *  1. collecte des local-names MUI importés (nommés, default, alias) depuis
  *     `@mui/material` et `@mui/material/<Composant>`.
- *  2. réécriture des éléments JSX -> wrappers `@aphrody-code/m3-react` (variant-aware
+ *  2. réécriture des éléments JSX -> wrappers `@aphrody/m3-react` (variant-aware
  *     pour Button/TextField/Select).
  *  3. réécriture des props (startIcon/endIcon -> slots, onChange (e,val), sx,
  *     props sans équivalent) avec marqueurs MIGRATION-TODO.
- *  4. réécriture/insertion des imports vers `@aphrody-code/m3-react`.
+ *  4. réécriture/insertion des imports vers `@aphrody/m3-react`.
  *
  * Les transforms de `transforms/` ne font que paramétrer ce moteur (quels
  * composants traiter) pour rester focalisés (Button, champs, imports, orchestrateur).
@@ -220,7 +220,7 @@ export function runEngine(file: FileInfo, api: API, options: Options & EngineOpt
   const migratedLocals = new Set<string>();
 
   // 2) Réécriture des éléments JSX.
-  const neededImports = new Set<string>(); // wrappers @aphrody-code/m3-react à importer
+  const neededImports = new Set<string>(); // wrappers @aphrody/m3-react à importer
   let needMdIconImport = false;
 
   root.find(j.JSXElement).forEach((path) => {
@@ -301,7 +301,7 @@ export function runEngine(file: FileInfo, api: API, options: Options & EngineOpt
     if ((decl.specifiers || []).length === 0) j(p).remove();
   }
 
-  // 4) Insertion de l'import @aphrody-code/m3-react.
+  // 4) Insertion de l'import @aphrody/m3-react.
   if (neededImports.size > 0 || needMdIconImport) {
     const body = root.get().node.program.body;
     // Insère APRÈS le prologue de directives ("use client" / "use strict") :
@@ -312,7 +312,7 @@ export function runEngine(file: FileInfo, api: API, options: Options & EngineOpt
     if (needMdIconImport) {
       // md-icon est utilisé en custom-element brut : import d'effet de bord.
       toInsert.push(
-        j.importDeclaration([], j.stringLiteral("@aphrody-code/material-web/icon/icon.js")),
+        j.importDeclaration([], j.stringLiteral("@aphrody/material-web/icon/icon.js")),
       );
     }
     const specs = [...neededImports]

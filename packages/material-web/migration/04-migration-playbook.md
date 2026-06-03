@@ -146,7 +146,7 @@ Pendant la transition, **les deux librairies sont chargées**. C'est le coût te
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Runtime      | bun uniquement (`bun install`, `bun build`, `bun test`). Jamais npm/pnpm (`00-CONVENTIONS.md §7.1`).                                                      |
 | Dépendances  | `bun add @lit/react` (non installé — requis par les wrappers, `00-CONVENTIONS.md §0`), `@material/web@2.4.1` (fork aphrody).                              |
-| Wrappers     | scaffold de `migration/wrappers/` (package logique `@aphrody-code/m3-react`) — 1 wrapper React par `md-*` via `createComponent` (`00-CONVENTIONS.md §2`). |
+| Wrappers     | scaffold de `migration/wrappers/` (package logique `@aphrody/m3-react`) — 1 wrapper React par `md-*` via `createComponent` (`00-CONVENTIONS.md §2`). |
 | Codemods     | scaffold de `migration/codemods/` (jscodeshift + ast-grep).                                                                                               |
 | CI           | brancher la pipeline de tests (unitaires custom elements, snapshots Playwright, axe — cf. §5) **avant** de migrer quoi que ce soit.                       |
 | Feature flag | mécanisme pour basculer un écran/composant entre MUI et md-\* (env var, flag par route, ou simple swap d'import).                                         |
@@ -204,13 +204,13 @@ Pendant la transition, **les deux librairies sont chargées**. C'est le coût te
 
 | Couche                   | Emplacement                                      | Rôle                                                                                                                                                                                                                       | Phase                          |
 | ------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Wrappers React**       | `migration/wrappers/` (`@aphrody-code/m3-react`) | 1 wrapper par `md-*` via `@lit/react` `createComponent`, mappe les events natifs en `onInput`/`onChange` (`00-CONVENTIONS.md §2`). C'est la **couche cible** des codemods.                                                 | 0 (scaffold) → utilisé partout |
-| **Codemods jscodeshift** | `migration/codemods/`                            | transforment les **imports** (`@mui/material/Button` → `@aphrody-code/m3-react`), renomment les composants (variant-dépendant : `Button variant="outlined"` → `MdOutlinedButton`), réécrivent les **props** mappables 1:1. | 2–5                            |
+| **Wrappers React**       | `migration/wrappers/` (`@aphrody/m3-react`) | 1 wrapper par `md-*` via `@lit/react` `createComponent`, mappe les events natifs en `onInput`/`onChange` (`00-CONVENTIONS.md §2`). C'est la **couche cible** des codemods.                                                 | 0 (scaffold) → utilisé partout |
+| **Codemods jscodeshift** | `migration/codemods/`                            | transforment les **imports** (`@mui/material/Button` → `@aphrody/m3-react`), renomment les composants (variant-dépendant : `Button variant="outlined"` → `MdOutlinedButton`), réécrivent les **props** mappables 1:1. | 2–5                            |
 | **Règles ast-grep**      | `migration/codemods/`                            | détection/lint des patterns **non automatisables** (signale `sx=`, `styled(`, `onChange={(e,v)=>}`) pour traitement manuel.                                                                                                | 2–5                            |
 
 ### Ce qui s'automatise (codemods)
 
-- Remplacement des **imports** MUI → wrappers `@aphrody-code/m3-react`.
+- Remplacement des **imports** MUI → wrappers `@aphrody/m3-react`.
 - **Renommage** de composant, y compris la résolution **variant-dépendante** (`Button`/`IconButton`/`TextField`/`Chip` — cf. `00-CONVENTIONS.md §3`) quand le variant est un littéral statique.
 - Props **1:1** (`disabled`, `value`, `label`…) — après vérification du nom réel sur l'élément md.
 - `startIcon`/`endIcon` → `<md-icon slot="icon">` / `slot="start"`/`end` quand l'icône est statique.

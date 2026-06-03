@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# `@aphrody-code/m3-react`
+# `@aphrody/m3-react`
 
 Wrappers React **par élément `md-*`** du fork aphrody `@material/web` (v2.4.1, 119 éléments),
 générés avec [`@lit/react`](https://www.npmjs.com/package/@lit/react) `createComponent`.
@@ -32,7 +32,7 @@ Dans un projet consommateur :
 // package.json
 {
   "dependencies": {
-    "@aphrody-code/m3-react": "file:../migration/wrappers",
+    "@aphrody/m3-react": "file:../migration/wrappers",
     "react": "^19",
     "react-dom": "^19",
   },
@@ -46,7 +46,7 @@ Importer un wrapper enregistre l'élément custom correspondant **comme effet de
 Aucun import side-effect supplémentaire n'est nécessaire.
 
 ```tsx
-import { MdFilledButton, MdOutlinedTextField, MdCheckbox } from "@aphrody-code/m3-react";
+import { MdFilledButton, MdOutlinedTextField, MdCheckbox } from "@aphrody/m3-react";
 
 function LoginForm() {
   const [email, setEmail] = React.useState("");
@@ -80,7 +80,7 @@ function LoginForm() {
 Les sous-composants MUI (`DialogTitle`, `CardHeader`, `startIcon`…) deviennent du contenu slotté :
 
 ```tsx
-import { MdDialog, MdFilledButton, MdTextButton, MdIcon } from "@aphrody-code/m3-react";
+import { MdDialog, MdFilledButton, MdTextButton, MdIcon } from "@aphrody/m3-react";
 
 <MdDialog open onClosed={(e) => console.log((e.target as any).returnValue)}>
   <div slot="headline">Supprimer ?</div>
@@ -101,7 +101,7 @@ import { MdDialog, MdFilledButton, MdTextButton, MdIcon } from "@aphrody-code/m3
 > au démarrage de l'app :
 >
 > ```ts
-> import { ensureMaterialSymbols } from "@aphrody-code/material-web/icon/material-symbols.js";
+> import { ensureMaterialSymbols } from "@aphrody/material-web/icon/material-symbols.js";
 > ensureMaterialSymbols(); // ou { iconNames: ["delete", "search", …] } pour subseter
 > ```
 >
@@ -206,122 +206,122 @@ leurs classes exportées ne suivent pas la convention `Md*` (`Button`, `Card`, `
 
 | Wrapper                        | Tag                                | Import élément                                                                        | # events |
 | ------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------- | -------- |
-| `Md3dCanvas`                   | `md-3d-canvas`                     | `@aphrody-code/material-web/canvas3d/canvas-3d.js`                                    | —        |
-| `Md3dCard`                     | `md-3d-card`                       | `@aphrody-code/material-web/card3d/card-3d.js`                                        | —        |
-| `Md3dGlobe`                    | `md-3d-globe`                      | `@aphrody-code/material-web/globe3d/globe-3d.js`                                      | —        |
-| `MdAccordion`                  | `md-accordion`                     | `@aphrody-code/material-web/expansion/accordion.js`                                   | —        |
-| `MdAlert`                      | `md-alert`                         | `@aphrody-code/material-web/alert/alert.js`                                           | 1        |
-| `MdAreaChart`                  | `md-area-chart`                    | `@aphrody-code/material-web/charts/area-chart.js`                                     | —        |
-| `MdAssistChip`                 | `md-assist-chip`                   | `@aphrody-code/material-web/chips/assist-chip.js`                                     | —        |
-| `MdAutocomplete`               | `md-autocomplete`                  | `@aphrody-code/material-web/autocomplete/autocomplete.js`                             | 2        |
-| `MdAvatar`                     | `md-avatar`                        | `@aphrody-code/material-web/avatar/avatar.js`                                         | 1        |
-| `MdAvatarGroup`                | `md-avatar-group`                  | `@aphrody-code/material-web/avatar/avatar-group.js`                                   | —        |
-| `MdBackdrop`                   | `md-backdrop`                      | `@aphrody-code/material-web/backdrop/backdrop.js`                                     | —        |
-| `MdBadge`                      | `md-badge`                         | `@aphrody-code/material-web/badge/badge.js`                                           | —        |
-| `MdBarChart`                   | `md-bar-chart`                     | `@aphrody-code/material-web/charts/bar-chart.js`                                      | —        |
-| `MdBottomAppBar`               | `md-bottom-app-bar`                | `@aphrody-code/material-web/appbar/bottom-app-bar.js`                                 | —        |
-| `MdBottomSheet`                | `md-bottom-sheet`                  | `@aphrody-code/material-web/sheet/bottom-sheet.js`                                    | 4        |
-| `MdBrandedFab`                 | `md-branded-fab`                   | `@aphrody-code/material-web/fab/branded-fab.js`                                       | —        |
-| `MdBreadcrumbs`                | `md-breadcrumbs`                   | `@aphrody-code/material-web/breadcrumbs/breadcrumbs.js`                               | —        |
-| `MdButton`                     | `md-button`                        | `@aphrody-code/material-web/labs/gb/components/button/md-button.js`                   | —        |
-| `MdButtonGroup`                | `md-button-group`                  | `@aphrody-code/material-web/buttongroup/button-group.js`                              | 1        |
-| `MdCard`                       | `md-card`                          | `@aphrody-code/material-web/card/card.js`                                             | —        |
-| `MdCarousel`                   | `md-carousel`                      | `@aphrody-code/material-web/carousel/carousel.js`                                     | 1        |
-| `MdCarouselItem`               | `md-carousel-item`                 | `@aphrody-code/material-web/carousel/carousel-item.js`                                | —        |
-| `MdCheckbox`                   | `md-checkbox`                      | `@aphrody-code/material-web/checkbox/checkbox.js`                                     | 2        |
-| `MdChipSet`                    | `md-chip-set`                      | `@aphrody-code/material-web/chips/chip-set.js`                                        | —        |
-| `MdCircularProgress`           | `md-circular-progress`             | `@aphrody-code/material-web/progress/circular-progress.js`                            | —        |
-| `MdDatePicker`                 | `md-date-picker`                   | `@aphrody-code/material-web/datepicker/date-picker.js`                                | 1        |
-| `MdDateRangePicker`            | `md-date-range-picker`             | `@aphrody-code/material-web/datepicker/date-range-picker.js`                          | 3        |
-| `MdDateTimePicker`             | `md-date-time-picker`              | `@aphrody-code/material-web/datepicker/date-time-picker.js`                           | 3        |
-| `MdDialog`                     | `md-dialog`                        | `@aphrody-code/material-web/dialog/dialog.js`                                         | 5        |
-| `MdDivider`                    | `md-divider`                       | `@aphrody-code/material-web/divider/divider.js`                                       | —        |
-| `MdElevatedButton`             | `md-elevated-button`               | `@aphrody-code/material-web/button/elevated-button.js`                                | —        |
-| `MdElevatedCard`               | `md-elevated-card`                 | `@aphrody-code/material-web/labs/card/elevated-card.js`                               | —        |
-| `MdElevation`                  | `md-elevation`                     | `@aphrody-code/material-web/elevation/elevation.js`                                   | —        |
-| `MdExpansionPanel`             | `md-expansion-panel`               | `@aphrody-code/material-web/expansion/expansion-panel.js`                             | 1        |
-| `MdFab`                        | `md-fab`                           | `@aphrody-code/material-web/fab/fab.js`                                               | —        |
-| `MdFabMenu`                    | `md-fab-menu`                      | `@aphrody-code/material-web/fabmenu/fab-menu.js`                                      | 2        |
-| `MdFabMenuItem`                | `md-fab-menu-item`                 | `@aphrody-code/material-web/fabmenu/fab-menu-item.js`                                 | 1        |
-| `MdFilledButton`               | `md-filled-button`                 | `@aphrody-code/material-web/button/filled-button.js`                                  | —        |
-| `MdFilledCard`                 | `md-filled-card`                   | `@aphrody-code/material-web/labs/card/filled-card.js`                                 | —        |
-| `MdFilledField`                | `md-filled-field`                  | `@aphrody-code/material-web/field/filled-field.js`                                    | —        |
-| `MdFilledIconButton`           | `md-filled-icon-button`            | `@aphrody-code/material-web/iconbutton/filled-icon-button.js`                         | —        |
-| `MdFilledSelect`               | `md-filled-select`                 | `@aphrody-code/material-web/select/filled-select.js`                                  | 6        |
-| `MdFilledTextField`            | `md-filled-text-field`             | `@aphrody-code/material-web/textfield/filled-text-field.js`                           | 2        |
-| `MdFilledTonalButton`          | `md-filled-tonal-button`           | `@aphrody-code/material-web/button/filled-tonal-button.js`                            | —        |
-| `MdFilledTonalIconButton`      | `md-filled-tonal-icon-button`      | `@aphrody-code/material-web/iconbutton/filled-tonal-icon-button.js`                   | —        |
-| `MdFilterChip`                 | `md-filter-chip`                   | `@aphrody-code/material-web/chips/filter-chip.js`                                     | —        |
-| `MdFocusRing`                  | `md-focus-ring`                    | `@aphrody-code/material-web/focus/md-focus-ring.js`                                   | —        |
-| `MdGauge`                      | `md-gauge`                         | `@aphrody-code/material-web/charts/gauge.js`                                          | —        |
-| `MdGridList`                   | `md-grid-list`                     | `@aphrody-code/material-web/gridlist/grid-list.js`                                    | —        |
-| `MdGridTile`                   | `md-grid-tile`                     | `@aphrody-code/material-web/gridlist/grid-tile.js`                                    | —        |
-| `MdIcon`                       | `md-icon`                          | `@aphrody-code/material-web/icon/icon.js`                                             | —        |
-| `MdIconButton`                 | `md-icon-button`                   | `@aphrody-code/material-web/iconbutton/icon-button.js`                                | —        |
-| `MdInputChip`                  | `md-input-chip`                    | `@aphrody-code/material-web/chips/input-chip.js`                                      | 2        |
-| `MdItem`                       | `md-item`                          | `@aphrody-code/material-web/labs/item/item.js`                                        | —        |
-| `MdLinearProgress`             | `md-linear-progress`               | `@aphrody-code/material-web/progress/linear-progress.js`                              | —        |
-| `MdLineChart`                  | `md-line-chart`                    | `@aphrody-code/material-web/charts/line-chart.js`                                     | —        |
-| `MdLink`                       | `md-link`                          | `@aphrody-code/material-web/link/link.js`                                             | —        |
-| `MdList`                       | `md-list`                          | `@aphrody-code/material-web/list/list.js`                                             | —        |
-| `MdListDetail`                 | `md-list-detail`                   | `@aphrody-code/material-web/layout/md-list-detail.js`                                 | —        |
-| `MdListItem`                   | `md-list-item`                     | `@aphrody-code/material-web/list/list-item.js`                                        | —        |
-| `MdLoadingIndicator`           | `md-loading-indicator`             | `@aphrody-code/material-web/loadingindicator/loading-indicator.js`                    | —        |
-| `MdMenu`                       | `md-menu`                          | `@aphrody-code/material-web/menu/menu.js`                                             | 4        |
-| `MdMenuGroup`                  | `md-menu-group`                    | `@aphrody-code/material-web/labs/gb/components/menu/md-menu-group.js`                 | —        |
-| `MdMenuItem`                   | `md-menu-item`                     | `@aphrody-code/material-web/menu/menu-item.js`                                        | 1        |
-| `MdMobileStepper`              | `md-mobile-stepper`                | `@aphrody-code/material-web/mobilestepper/mobile-stepper.js`                          | —        |
-| `MdNavigationBar`              | `md-navigation-bar`                | `@aphrody-code/material-web/labs/navigationbar/navigation-bar.js`                     | 1        |
-| `MdNavigationDrawer`           | `md-navigation-drawer`             | `@aphrody-code/material-web/labs/navigationdrawer/navigation-drawer.js`               | 1        |
-| `MdNavigationDrawerModal`      | `md-navigation-drawer-modal`       | `@aphrody-code/material-web/labs/navigationdrawer/navigation-drawer-modal.js`         | 1        |
-| `MdNavigationRail`             | `md-navigation-rail`               | `@aphrody-code/material-web/navigationrail/navigation-rail.js`                        | 2        |
-| `MdNavigationRailItem`         | `md-navigation-rail-item`          | `@aphrody-code/material-web/navigationrail/navigation-rail-item.js`                   | —        |
-| `MdNavigationTab`              | `md-navigation-tab`                | `@aphrody-code/material-web/labs/navigationtab/navigation-tab.js`                     | —        |
-| `MdOutlinedButton`             | `md-outlined-button`               | `@aphrody-code/material-web/button/outlined-button.js`                                | —        |
-| `MdOutlinedCard`               | `md-outlined-card`                 | `@aphrody-code/material-web/labs/card/outlined-card.js`                               | —        |
-| `MdOutlinedField`              | `md-outlined-field`                | `@aphrody-code/material-web/field/outlined-field.js`                                  | —        |
-| `MdOutlinedIconButton`         | `md-outlined-icon-button`          | `@aphrody-code/material-web/iconbutton/outlined-icon-button.js`                       | —        |
-| `MdOutlinedSegmentedButton`    | `md-outlined-segmented-button`     | `@aphrody-code/material-web/labs/segmentedbutton/outlined-segmented-button.js`        | —        |
-| `MdOutlinedSegmentedButtonSet` | `md-outlined-segmented-button-set` | `@aphrody-code/material-web/labs/segmentedbuttonset/outlined-segmented-button-set.js` | —        |
-| `MdOutlinedSelect`             | `md-outlined-select`               | `@aphrody-code/material-web/select/outlined-select.js`                                | 6        |
-| `MdOutlinedTextField`          | `md-outlined-text-field`           | `@aphrody-code/material-web/textfield/outlined-text-field.js`                         | 2        |
-| `MdPaginator`                  | `md-paginator`                     | `@aphrody-code/material-web/paginator/paginator.js`                                   | 1        |
-| `MdPane`                       | `md-pane`                          | `@aphrody-code/material-web/layout/md-pane.js`                                        | —        |
-| `MdPieChart`                   | `md-pie-chart`                     | `@aphrody-code/material-web/charts/pie-chart.js`                                      | —        |
-| `MdPopover`                    | `md-popover`                       | `@aphrody-code/material-web/popover/popover.js`                                       | 2        |
-| `MdPrimaryTab`                 | `md-primary-tab`                   | `@aphrody-code/material-web/tabs/primary-tab.js`                                      | —        |
-| `MdRadarChart`                 | `md-radar-chart`                   | `@aphrody-code/material-web/charts/radar-chart.js`                                    | —        |
-| `MdRadio`                      | `md-radio`                         | `@aphrody-code/material-web/radio/radio.js`                                           | 2        |
-| `MdRating`                     | `md-rating`                        | `@aphrody-code/material-web/rating/rating.js`                                         | 2        |
-| `MdRipple`                     | `md-ripple`                        | `@aphrody-code/material-web/ripple/ripple.js`                                         | —        |
-| `MdScaffold`                   | `md-scaffold`                      | `@aphrody-code/material-web/layout/md-scaffold.js`                                    | —        |
-| `MdScatterChart`               | `md-scatter-chart`                 | `@aphrody-code/material-web/charts/scatter-chart.js`                                  | —        |
-| `MdScheduler`                  | `md-scheduler`                     | `@aphrody-code/material-web/scheduler/scheduler.js`                                   | 3        |
-| `MdSearchBar`                  | `md-search-bar`                    | `@aphrody-code/material-web/search/search-bar.js`                                     | 4        |
-| `MdSecondaryTab`               | `md-secondary-tab`                 | `@aphrody-code/material-web/tabs/secondary-tab.js`                                    | —        |
-| `MdSelectOption`               | `md-select-option`                 | `@aphrody-code/material-web/select/select-option.js`                                  | —        |
-| `MdSideSheet`                  | `md-side-sheet`                    | `@aphrody-code/material-web/sheet/side-sheet.js`                                      | 4        |
-| `MdSkeleton`                   | `md-skeleton`                      | `@aphrody-code/material-web/skeleton/skeleton.js`                                     | —        |
-| `MdSlider`                     | `md-slider`                        | `@aphrody-code/material-web/slider/slider.js`                                         | 2        |
-| `MdSnackbar`                   | `md-snackbar`                      | `@aphrody-code/material-web/snackbar/snackbar.js`                                     | 4        |
-| `MdSparkline`                  | `md-sparkline`                     | `@aphrody-code/material-web/charts/sparkline.js`                                      | —        |
-| `MdSplitButton`                | `md-split-button`                  | `@aphrody-code/material-web/labs/gb/components/splitbutton/md-split-button.js`        | —        |
-| `MdStep`                       | `md-step`                          | `@aphrody-code/material-web/stepper/step.js`                                          | —        |
-| `MdStepper`                    | `md-stepper`                       | `@aphrody-code/material-web/stepper/stepper.js`                                       | 1        |
-| `MdSubMenu`                    | `md-sub-menu`                      | `@aphrody-code/material-web/menu/sub-menu.js`                                         | 4        |
-| `MdSuggestionChip`             | `md-suggestion-chip`               | `@aphrody-code/material-web/chips/suggestion-chip.js`                                 | —        |
-| `MdSupportingPane`             | `md-supporting-pane`               | `@aphrody-code/material-web/layout/md-supporting-pane.js`                             | —        |
-| `MdSurface`                    | `md-surface`                       | `@aphrody-code/material-web/surface/surface.js`                                       | —        |
-| `MdSwitch`                     | `md-switch`                        | `@aphrody-code/material-web/switch/switch.js`                                         | 2        |
-| `MdTable`                      | `md-table`                         | `@aphrody-code/material-web/table/table.js`                                           | 2        |
-| `MdTabs`                       | `md-tabs`                          | `@aphrody-code/material-web/tabs/tabs.js`                                             | 1        |
-| `MdTextButton`                 | `md-text-button`                   | `@aphrody-code/material-web/button/text-button.js`                                    | —        |
-| `MdTimePicker`                 | `md-time-picker`                   | `@aphrody-code/material-web/timepicker/time-picker.js`                                | 1        |
-| `MdToolbar`                    | `md-toolbar`                       | `@aphrody-code/material-web/toolbar/md-toolbar.js`                                    | —        |
-| `MdTooltip`                    | `md-tooltip`                       | `@aphrody-code/material-web/tooltip/tooltip.js`                                       | 2        |
-| `MdTopAppBar`                  | `md-top-app-bar`                   | `@aphrody-code/material-web/appbar/top-app-bar.js`                                    | —        |
-| `MdTree`                       | `md-tree`                          | `@aphrody-code/material-web/tree/tree.js`                                             | 1        |
-| `MdTreeItem`                   | `md-tree-item`                     | `@aphrody-code/material-web/tree/tree-item.js`                                        | 2        |
-| `MdType`                       | `md-type`                          | `@aphrody-code/material-web/typography/md-type.js`                                    | —        |
-| `MdVirtualScroller`            | `md-virtual-scroller`              | `@aphrody-code/material-web/virtualscroll/virtual-scroller.js`                        | 1        |
-| `MdWebgpuCanvas`               | `md-webgpu-canvas`                 | `@aphrody-code/material-web/effects/webgpu-canvas.js`                                 | —        |
+| `Md3dCanvas`                   | `md-3d-canvas`                     | `@aphrody/material-web/canvas3d/canvas-3d.js`                                    | —        |
+| `Md3dCard`                     | `md-3d-card`                       | `@aphrody/material-web/card3d/card-3d.js`                                        | —        |
+| `Md3dGlobe`                    | `md-3d-globe`                      | `@aphrody/material-web/globe3d/globe-3d.js`                                      | —        |
+| `MdAccordion`                  | `md-accordion`                     | `@aphrody/material-web/expansion/accordion.js`                                   | —        |
+| `MdAlert`                      | `md-alert`                         | `@aphrody/material-web/alert/alert.js`                                           | 1        |
+| `MdAreaChart`                  | `md-area-chart`                    | `@aphrody/material-web/charts/area-chart.js`                                     | —        |
+| `MdAssistChip`                 | `md-assist-chip`                   | `@aphrody/material-web/chips/assist-chip.js`                                     | —        |
+| `MdAutocomplete`               | `md-autocomplete`                  | `@aphrody/material-web/autocomplete/autocomplete.js`                             | 2        |
+| `MdAvatar`                     | `md-avatar`                        | `@aphrody/material-web/avatar/avatar.js`                                         | 1        |
+| `MdAvatarGroup`                | `md-avatar-group`                  | `@aphrody/material-web/avatar/avatar-group.js`                                   | —        |
+| `MdBackdrop`                   | `md-backdrop`                      | `@aphrody/material-web/backdrop/backdrop.js`                                     | —        |
+| `MdBadge`                      | `md-badge`                         | `@aphrody/material-web/badge/badge.js`                                           | —        |
+| `MdBarChart`                   | `md-bar-chart`                     | `@aphrody/material-web/charts/bar-chart.js`                                      | —        |
+| `MdBottomAppBar`               | `md-bottom-app-bar`                | `@aphrody/material-web/appbar/bottom-app-bar.js`                                 | —        |
+| `MdBottomSheet`                | `md-bottom-sheet`                  | `@aphrody/material-web/sheet/bottom-sheet.js`                                    | 4        |
+| `MdBrandedFab`                 | `md-branded-fab`                   | `@aphrody/material-web/fab/branded-fab.js`                                       | —        |
+| `MdBreadcrumbs`                | `md-breadcrumbs`                   | `@aphrody/material-web/breadcrumbs/breadcrumbs.js`                               | —        |
+| `MdButton`                     | `md-button`                        | `@aphrody/material-web/labs/gb/components/button/md-button.js`                   | —        |
+| `MdButtonGroup`                | `md-button-group`                  | `@aphrody/material-web/buttongroup/button-group.js`                              | 1        |
+| `MdCard`                       | `md-card`                          | `@aphrody/material-web/card/card.js`                                             | —        |
+| `MdCarousel`                   | `md-carousel`                      | `@aphrody/material-web/carousel/carousel.js`                                     | 1        |
+| `MdCarouselItem`               | `md-carousel-item`                 | `@aphrody/material-web/carousel/carousel-item.js`                                | —        |
+| `MdCheckbox`                   | `md-checkbox`                      | `@aphrody/material-web/checkbox/checkbox.js`                                     | 2        |
+| `MdChipSet`                    | `md-chip-set`                      | `@aphrody/material-web/chips/chip-set.js`                                        | —        |
+| `MdCircularProgress`           | `md-circular-progress`             | `@aphrody/material-web/progress/circular-progress.js`                            | —        |
+| `MdDatePicker`                 | `md-date-picker`                   | `@aphrody/material-web/datepicker/date-picker.js`                                | 1        |
+| `MdDateRangePicker`            | `md-date-range-picker`             | `@aphrody/material-web/datepicker/date-range-picker.js`                          | 3        |
+| `MdDateTimePicker`             | `md-date-time-picker`              | `@aphrody/material-web/datepicker/date-time-picker.js`                           | 3        |
+| `MdDialog`                     | `md-dialog`                        | `@aphrody/material-web/dialog/dialog.js`                                         | 5        |
+| `MdDivider`                    | `md-divider`                       | `@aphrody/material-web/divider/divider.js`                                       | —        |
+| `MdElevatedButton`             | `md-elevated-button`               | `@aphrody/material-web/button/elevated-button.js`                                | —        |
+| `MdElevatedCard`               | `md-elevated-card`                 | `@aphrody/material-web/labs/card/elevated-card.js`                               | —        |
+| `MdElevation`                  | `md-elevation`                     | `@aphrody/material-web/elevation/elevation.js`                                   | —        |
+| `MdExpansionPanel`             | `md-expansion-panel`               | `@aphrody/material-web/expansion/expansion-panel.js`                             | 1        |
+| `MdFab`                        | `md-fab`                           | `@aphrody/material-web/fab/fab.js`                                               | —        |
+| `MdFabMenu`                    | `md-fab-menu`                      | `@aphrody/material-web/fabmenu/fab-menu.js`                                      | 2        |
+| `MdFabMenuItem`                | `md-fab-menu-item`                 | `@aphrody/material-web/fabmenu/fab-menu-item.js`                                 | 1        |
+| `MdFilledButton`               | `md-filled-button`                 | `@aphrody/material-web/button/filled-button.js`                                  | —        |
+| `MdFilledCard`                 | `md-filled-card`                   | `@aphrody/material-web/labs/card/filled-card.js`                                 | —        |
+| `MdFilledField`                | `md-filled-field`                  | `@aphrody/material-web/field/filled-field.js`                                    | —        |
+| `MdFilledIconButton`           | `md-filled-icon-button`            | `@aphrody/material-web/iconbutton/filled-icon-button.js`                         | —        |
+| `MdFilledSelect`               | `md-filled-select`                 | `@aphrody/material-web/select/filled-select.js`                                  | 6        |
+| `MdFilledTextField`            | `md-filled-text-field`             | `@aphrody/material-web/textfield/filled-text-field.js`                           | 2        |
+| `MdFilledTonalButton`          | `md-filled-tonal-button`           | `@aphrody/material-web/button/filled-tonal-button.js`                            | —        |
+| `MdFilledTonalIconButton`      | `md-filled-tonal-icon-button`      | `@aphrody/material-web/iconbutton/filled-tonal-icon-button.js`                   | —        |
+| `MdFilterChip`                 | `md-filter-chip`                   | `@aphrody/material-web/chips/filter-chip.js`                                     | —        |
+| `MdFocusRing`                  | `md-focus-ring`                    | `@aphrody/material-web/focus/md-focus-ring.js`                                   | —        |
+| `MdGauge`                      | `md-gauge`                         | `@aphrody/material-web/charts/gauge.js`                                          | —        |
+| `MdGridList`                   | `md-grid-list`                     | `@aphrody/material-web/gridlist/grid-list.js`                                    | —        |
+| `MdGridTile`                   | `md-grid-tile`                     | `@aphrody/material-web/gridlist/grid-tile.js`                                    | —        |
+| `MdIcon`                       | `md-icon`                          | `@aphrody/material-web/icon/icon.js`                                             | —        |
+| `MdIconButton`                 | `md-icon-button`                   | `@aphrody/material-web/iconbutton/icon-button.js`                                | —        |
+| `MdInputChip`                  | `md-input-chip`                    | `@aphrody/material-web/chips/input-chip.js`                                      | 2        |
+| `MdItem`                       | `md-item`                          | `@aphrody/material-web/labs/item/item.js`                                        | —        |
+| `MdLinearProgress`             | `md-linear-progress`               | `@aphrody/material-web/progress/linear-progress.js`                              | —        |
+| `MdLineChart`                  | `md-line-chart`                    | `@aphrody/material-web/charts/line-chart.js`                                     | —        |
+| `MdLink`                       | `md-link`                          | `@aphrody/material-web/link/link.js`                                             | —        |
+| `MdList`                       | `md-list`                          | `@aphrody/material-web/list/list.js`                                             | —        |
+| `MdListDetail`                 | `md-list-detail`                   | `@aphrody/material-web/layout/md-list-detail.js`                                 | —        |
+| `MdListItem`                   | `md-list-item`                     | `@aphrody/material-web/list/list-item.js`                                        | —        |
+| `MdLoadingIndicator`           | `md-loading-indicator`             | `@aphrody/material-web/loadingindicator/loading-indicator.js`                    | —        |
+| `MdMenu`                       | `md-menu`                          | `@aphrody/material-web/menu/menu.js`                                             | 4        |
+| `MdMenuGroup`                  | `md-menu-group`                    | `@aphrody/material-web/labs/gb/components/menu/md-menu-group.js`                 | —        |
+| `MdMenuItem`                   | `md-menu-item`                     | `@aphrody/material-web/menu/menu-item.js`                                        | 1        |
+| `MdMobileStepper`              | `md-mobile-stepper`                | `@aphrody/material-web/mobilestepper/mobile-stepper.js`                          | —        |
+| `MdNavigationBar`              | `md-navigation-bar`                | `@aphrody/material-web/labs/navigationbar/navigation-bar.js`                     | 1        |
+| `MdNavigationDrawer`           | `md-navigation-drawer`             | `@aphrody/material-web/labs/navigationdrawer/navigation-drawer.js`               | 1        |
+| `MdNavigationDrawerModal`      | `md-navigation-drawer-modal`       | `@aphrody/material-web/labs/navigationdrawer/navigation-drawer-modal.js`         | 1        |
+| `MdNavigationRail`             | `md-navigation-rail`               | `@aphrody/material-web/navigationrail/navigation-rail.js`                        | 2        |
+| `MdNavigationRailItem`         | `md-navigation-rail-item`          | `@aphrody/material-web/navigationrail/navigation-rail-item.js`                   | —        |
+| `MdNavigationTab`              | `md-navigation-tab`                | `@aphrody/material-web/labs/navigationtab/navigation-tab.js`                     | —        |
+| `MdOutlinedButton`             | `md-outlined-button`               | `@aphrody/material-web/button/outlined-button.js`                                | —        |
+| `MdOutlinedCard`               | `md-outlined-card`                 | `@aphrody/material-web/labs/card/outlined-card.js`                               | —        |
+| `MdOutlinedField`              | `md-outlined-field`                | `@aphrody/material-web/field/outlined-field.js`                                  | —        |
+| `MdOutlinedIconButton`         | `md-outlined-icon-button`          | `@aphrody/material-web/iconbutton/outlined-icon-button.js`                       | —        |
+| `MdOutlinedSegmentedButton`    | `md-outlined-segmented-button`     | `@aphrody/material-web/labs/segmentedbutton/outlined-segmented-button.js`        | —        |
+| `MdOutlinedSegmentedButtonSet` | `md-outlined-segmented-button-set` | `@aphrody/material-web/labs/segmentedbuttonset/outlined-segmented-button-set.js` | —        |
+| `MdOutlinedSelect`             | `md-outlined-select`               | `@aphrody/material-web/select/outlined-select.js`                                | 6        |
+| `MdOutlinedTextField`          | `md-outlined-text-field`           | `@aphrody/material-web/textfield/outlined-text-field.js`                         | 2        |
+| `MdPaginator`                  | `md-paginator`                     | `@aphrody/material-web/paginator/paginator.js`                                   | 1        |
+| `MdPane`                       | `md-pane`                          | `@aphrody/material-web/layout/md-pane.js`                                        | —        |
+| `MdPieChart`                   | `md-pie-chart`                     | `@aphrody/material-web/charts/pie-chart.js`                                      | —        |
+| `MdPopover`                    | `md-popover`                       | `@aphrody/material-web/popover/popover.js`                                       | 2        |
+| `MdPrimaryTab`                 | `md-primary-tab`                   | `@aphrody/material-web/tabs/primary-tab.js`                                      | —        |
+| `MdRadarChart`                 | `md-radar-chart`                   | `@aphrody/material-web/charts/radar-chart.js`                                    | —        |
+| `MdRadio`                      | `md-radio`                         | `@aphrody/material-web/radio/radio.js`                                           | 2        |
+| `MdRating`                     | `md-rating`                        | `@aphrody/material-web/rating/rating.js`                                         | 2        |
+| `MdRipple`                     | `md-ripple`                        | `@aphrody/material-web/ripple/ripple.js`                                         | —        |
+| `MdScaffold`                   | `md-scaffold`                      | `@aphrody/material-web/layout/md-scaffold.js`                                    | —        |
+| `MdScatterChart`               | `md-scatter-chart`                 | `@aphrody/material-web/charts/scatter-chart.js`                                  | —        |
+| `MdScheduler`                  | `md-scheduler`                     | `@aphrody/material-web/scheduler/scheduler.js`                                   | 3        |
+| `MdSearchBar`                  | `md-search-bar`                    | `@aphrody/material-web/search/search-bar.js`                                     | 4        |
+| `MdSecondaryTab`               | `md-secondary-tab`                 | `@aphrody/material-web/tabs/secondary-tab.js`                                    | —        |
+| `MdSelectOption`               | `md-select-option`                 | `@aphrody/material-web/select/select-option.js`                                  | —        |
+| `MdSideSheet`                  | `md-side-sheet`                    | `@aphrody/material-web/sheet/side-sheet.js`                                      | 4        |
+| `MdSkeleton`                   | `md-skeleton`                      | `@aphrody/material-web/skeleton/skeleton.js`                                     | —        |
+| `MdSlider`                     | `md-slider`                        | `@aphrody/material-web/slider/slider.js`                                         | 2        |
+| `MdSnackbar`                   | `md-snackbar`                      | `@aphrody/material-web/snackbar/snackbar.js`                                     | 4        |
+| `MdSparkline`                  | `md-sparkline`                     | `@aphrody/material-web/charts/sparkline.js`                                      | —        |
+| `MdSplitButton`                | `md-split-button`                  | `@aphrody/material-web/labs/gb/components/splitbutton/md-split-button.js`        | —        |
+| `MdStep`                       | `md-step`                          | `@aphrody/material-web/stepper/step.js`                                          | —        |
+| `MdStepper`                    | `md-stepper`                       | `@aphrody/material-web/stepper/stepper.js`                                       | 1        |
+| `MdSubMenu`                    | `md-sub-menu`                      | `@aphrody/material-web/menu/sub-menu.js`                                         | 4        |
+| `MdSuggestionChip`             | `md-suggestion-chip`               | `@aphrody/material-web/chips/suggestion-chip.js`                                 | —        |
+| `MdSupportingPane`             | `md-supporting-pane`               | `@aphrody/material-web/layout/md-supporting-pane.js`                             | —        |
+| `MdSurface`                    | `md-surface`                       | `@aphrody/material-web/surface/surface.js`                                       | —        |
+| `MdSwitch`                     | `md-switch`                        | `@aphrody/material-web/switch/switch.js`                                         | 2        |
+| `MdTable`                      | `md-table`                         | `@aphrody/material-web/table/table.js`                                           | 2        |
+| `MdTabs`                       | `md-tabs`                          | `@aphrody/material-web/tabs/tabs.js`                                             | 1        |
+| `MdTextButton`                 | `md-text-button`                   | `@aphrody/material-web/button/text-button.js`                                    | —        |
+| `MdTimePicker`                 | `md-time-picker`                   | `@aphrody/material-web/timepicker/time-picker.js`                                | 1        |
+| `MdToolbar`                    | `md-toolbar`                       | `@aphrody/material-web/toolbar/md-toolbar.js`                                    | —        |
+| `MdTooltip`                    | `md-tooltip`                       | `@aphrody/material-web/tooltip/tooltip.js`                                       | 2        |
+| `MdTopAppBar`                  | `md-top-app-bar`                   | `@aphrody/material-web/appbar/top-app-bar.js`                                    | —        |
+| `MdTree`                       | `md-tree`                          | `@aphrody/material-web/tree/tree.js`                                             | 1        |
+| `MdTreeItem`                   | `md-tree-item`                     | `@aphrody/material-web/tree/tree-item.js`                                        | 2        |
+| `MdType`                       | `md-type`                          | `@aphrody/material-web/typography/md-type.js`                                    | —        |
+| `MdVirtualScroller`            | `md-virtual-scroller`              | `@aphrody/material-web/virtualscroll/virtual-scroller.js`                        | 1        |
+| `MdWebgpuCanvas`               | `md-webgpu-canvas`                 | `@aphrody/material-web/effects/webgpu-canvas.js`                                 | —        |

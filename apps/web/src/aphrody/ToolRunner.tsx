@@ -9,7 +9,7 @@ import {
   MdFilledButton,
   MdIcon,
   MdOutlinedTextField,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { run } from "./client.ts";
 import type { ExecResult } from "./types.ts";
 

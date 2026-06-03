@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# @aphrody-code/m3-design
+# @aphrody/m3-design
 
-`@aphrody-code/m3-design` is the natural-language design compiler of the **material-web** Material Design 3 monorepo. It turns raw, natural-language design briefs directly into **Material Design 3 (M3)** React scaffolds, emitting a production-ready `index.tsx` layout tree built on `@aphrody-code/m3-react` components, plus an HCT tonal-palette theme stylesheet and W3C design-token JSON.
+`@aphrody/m3-design` is the natural-language design compiler of the **material-web** Material Design 3 monorepo. It turns raw, natural-language design briefs directly into **Material Design 3 (M3)** React scaffolds, emitting a production-ready `index.tsx` layout tree built on `@aphrody/m3-react` components, plus an HCT tonal-palette theme stylesheet and W3C design-token JSON.
 
 It is meant to be a fast, deterministic scaffold generator for autonomous agents and tooling: it replaces manual visual-configuration forms with a semantic parser and an HCT-inspired tonal theme engine, so a single prompt yields a self-contained, type-checked React artifact.
 
@@ -45,15 +45,15 @@ Implements an approximation of Google's **HCT (Hue, Chroma, Tone)** color space 
 
 - **Sine Saturation Tuning**: drops saturation near tone boundaries (Tone 0 and Tone 100) to better match perceptual curves.
 - **Tonal Palettes**: computes 18 tone steps `[0, 6, 10, 12, 20, 22, 30, 40, 50, 60, 70, 80, 90, 94, 95, 98, 99, 100]` across 6 core keys: `primary`, `secondary`, `tertiary`, `error`, `neutral`, and `neutral-variant`.
-- **CSS Compilation**: maps palettes to M3 light and dark mode system tokens (e.g. `--md-sys-color-primary-container`, `--md-sys-color-surface-container`), matching the runtime `--md-sys-color-*` roles emitted by `@aphrody-code/material-web`.
+- **CSS Compilation**: maps palettes to M3 light and dark mode system tokens (e.g. `--md-sys-color-primary-container`, `--md-sys-color-surface-container`), matching the runtime `--md-sys-color-*` roles emitted by `@aphrody/material-web`.
 
 ### 3. Layout Generator (`src/generator.ts`)
 
 The core code-generation engine. It processes the parsed `DesignBrief` and compiles the `SEED_TEMPLATE` into a finished React tree:
 
-- **Import Aliasing**: every component in the generated artifact imports the real `Md*` export from `@aphrody-code/m3-react`, aliased to a friendly local name (e.g. `MdScaffold as Scaffold`, `MdType as TypeText`).
+- **Import Aliasing**: every component in the generated artifact imports the real `Md*` export from `@aphrody/m3-react`, aliased to a friendly local name (e.g. `MdScaffold as Scaffold`, `MdType as TypeText`).
 - **Layout Adapters**: mutates scaffolding structures (e.g. strips the navigation rail and adds a bottom app bar for mobile targets; restructures list items into slide sequences for deck outputs).
-- **Self-Contained Primitives**: when a brief enables them, inline definitions for `ThinkingIndicator`, `StreamingText`, and the `useStreamingText` hook are injected directly into the artifact so the output compiles without external dependencies beyond `@aphrody-code/m3-react`.
+- **Self-Contained Primitives**: when a brief enables them, inline definitions for `ThinkingIndicator`, `StreamingText`, and the `useStreamingText` hook are injected directly into the artifact so the output compiles without external dependencies beyond `@aphrody/m3-react`.
 - **Action Router / Registry**: when delegation is requested, a single root-level event handler dispatches `data-action` / `data-id` interactions through a central registry (see below).
 - **Environment Injectors**: injects dark-mode classes and desaturates colors for additive environments (such as translucent AR/XR overlays).
 - **Self-Critique Engine**: runs static analysis on the artifact and grades it across 5 axes: `philosophy`, `hierarchy`, `detail`, `functionalParity`, and `innovation`.
@@ -145,7 +145,7 @@ bun src/server.ts
 
 ## Mapped Component Catalog
 
-The layout generator scaffolds against a catalog of components imported from `@aphrody-code/m3-react`. Each friendly local name aliases the real `Md*` React wrapper.
+The layout generator scaffolds against a catalog of components imported from `@aphrody/m3-react`. Each friendly local name aliases the real `Md*` React wrapper.
 
 | Category           | Local Name           | Real Export            | Custom Element              |
 | :----------------- | :------------------- | :--------------------- | :-------------------------- |

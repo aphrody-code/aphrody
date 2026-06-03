@@ -1,7 +1,7 @@
 // Full-screen voice-to-voice overlay (React port of Angular VoiceOverlayComponent): browser SpeechRecognition feeds `aphrody chat`, replies spoken via speechSynthesis.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdIcon } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody/m3-react";
 import { run } from "../../client.ts";
 
 interface VoiceTurn {

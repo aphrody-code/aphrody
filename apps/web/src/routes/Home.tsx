@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { MdCircularProgress } from "@aphrody-code/m3-react";
+import { MdCircularProgress } from "@aphrody/m3-react";
 import { useCreateChat } from "../api/queries.ts";
 
 export function Home() {

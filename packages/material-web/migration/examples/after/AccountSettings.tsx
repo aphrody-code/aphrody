@@ -1,5 +1,5 @@
 // =============================================================================
-// APRÈS — Écran "Paramètres de compte" migré vers @aphrody-code/m3-react
+// APRÈS — Écran "Paramètres de compte" migré vers @aphrody/m3-react
 // =============================================================================
 // Même UI que ../before/AccountSettings.tsx, migrée selon le contrat partagé :
 //   • Wrappers @lit/react des éléments <md-*> réels   (contrat §2, §3)
@@ -16,7 +16,7 @@
 import * as React from "react";
 import "./theme.css"; // tokens --md-sys-* (remplace ThemeProvider/createTheme)
 
-// --- Wrappers @aphrody-code/m3-react (réexportés depuis migration/wrappers) -------
+// --- Wrappers @aphrody/m3-react (réexportés depuis migration/wrappers) -------
 // (cf. ../../wrappers/index.ts ; convention de nommage contrat §2)
 import {
   MdTopAppBar,

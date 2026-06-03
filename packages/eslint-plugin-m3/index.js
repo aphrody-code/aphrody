@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * @aphrody-code/eslint-plugin-m3 — règles de lint pour les sites consommant
- * material-web (@aphrody-code/m3-react + Material Symbols).
+ * @aphrody/eslint-plugin-m3 — règles de lint pour les sites consommant
+ * material-web (@aphrody/m3-react + Material Symbols).
  *
  * API ESLint-compatible : fonctionne tel quel sous **oxlint** (`jsPlugins`) ET
  * sous **ESLint** (`plugins`). Les règles ciblent les composants `Md*` (wrappers
  * React) et `md-*` (custom elements).
  *
  * oxlint (.oxlintrc.json) :
- *   { "jsPlugins": ["./node_modules/@aphrody-code/eslint-plugin-m3/index.js"],
+ *   { "jsPlugins": ["./node_modules/@aphrody/eslint-plugin-m3/index.js"],
  *     "rules": { "m3/no-sx-prop": "error", "m3/valid-icon-name": "error" } }
  *
  * ESLint (flat config) :
- *   import m3 from "@aphrody-code/eslint-plugin-m3";
+ *   import m3 from "@aphrody/eslint-plugin-m3";
  *   export default [ m3.configs.recommended ];
  */
 import noHardcodedColor from "./rules/no-hardcoded-color.js";

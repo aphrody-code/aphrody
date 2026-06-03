@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdStep as MdStepElement } from "@aphrody-code/material-web/stepper/step.js";
-import { MdStepper as MdStepperElement } from "@aphrody-code/material-web/stepper/stepper.js";
+import { MdStep as MdStepElement } from "@aphrody/material-web/stepper/step.js";
+import { MdStepper as MdStepperElement } from "@aphrody/material-web/stepper/stepper.js";
 
 export const MdStep = createComponent({
   react: React,

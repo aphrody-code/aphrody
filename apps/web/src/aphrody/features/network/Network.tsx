@@ -1,7 +1,7 @@
 // Network view host — web search panel, plus a raw CLI output view.
 
 import { useState } from "react";
-import { MdIcon } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody/m3-react";
 import { PageHead } from "../../ui.tsx";
 import { ToolRunner, type ToolAction } from "../../ToolRunner.tsx";
 import { WebSearchPanel } from "./WebSearchPanel.tsx";

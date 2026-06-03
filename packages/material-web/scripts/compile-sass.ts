@@ -2,7 +2,7 @@
 //
 // Sass build. Compiles every non-partial `*.scss` to a sibling `*.css`.
 //
-// Prefers the native Rust grass compiler via the @aphrody-code/bun-rs FFI
+// Prefers the native Rust grass compiler via the @aphrody/bun-rs FFI
 // (fastest), but that native lib only builds on a machine that has the
 // out-of-tree `m3-tokens` crate. When `libbun_rs.so` is missing (CI, fresh
 // clone) we transparently fall back to `sass-embedded` (dart-sass), which is

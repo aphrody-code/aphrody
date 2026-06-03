@@ -1,5 +1,5 @@
 /**
- * Public API for @aphrody-code/doc-ai.
+ * Public API for @aphrody/doc-ai.
  *
  * Backward-compatible entry points {@link generateDocumentation} and
  * {@link translateMarkdown} keep their original signatures; the additional

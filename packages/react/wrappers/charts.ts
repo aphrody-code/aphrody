@@ -3,14 +3,14 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdLineChart as MdLineChartElement } from "@aphrody-code/material-web/charts/line-chart.js";
-import { MdBarChart as MdBarChartElement } from "@aphrody-code/material-web/charts/bar-chart.js";
-import { MdPieChart as MdPieChartElement } from "@aphrody-code/material-web/charts/pie-chart.js";
-import { MdAreaChart as MdAreaChartElement } from "@aphrody-code/material-web/charts/area-chart.js";
-import { MdSparkline as MdSparklineElement } from "@aphrody-code/material-web/charts/sparkline.js";
-import { MdGauge as MdGaugeElement } from "@aphrody-code/material-web/charts/gauge.js";
-import { MdScatterChart as MdScatterChartElement } from "@aphrody-code/material-web/charts/scatter-chart.js";
-import { MdRadarChart as MdRadarChartElement } from "@aphrody-code/material-web/charts/radar-chart.js";
+import { MdLineChart as MdLineChartElement } from "@aphrody/material-web/charts/line-chart.js";
+import { MdBarChart as MdBarChartElement } from "@aphrody/material-web/charts/bar-chart.js";
+import { MdPieChart as MdPieChartElement } from "@aphrody/material-web/charts/pie-chart.js";
+import { MdAreaChart as MdAreaChartElement } from "@aphrody/material-web/charts/area-chart.js";
+import { MdSparkline as MdSparklineElement } from "@aphrody/material-web/charts/sparkline.js";
+import { MdGauge as MdGaugeElement } from "@aphrody/material-web/charts/gauge.js";
+import { MdScatterChart as MdScatterChartElement } from "@aphrody/material-web/charts/scatter-chart.js";
+import { MdRadarChart as MdRadarChartElement } from "@aphrody/material-web/charts/radar-chart.js";
 
 export const MdLineChart = createComponent({
   react: React,

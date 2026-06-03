@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdAlert as MdAlertElement } from "@aphrody-code/material-web/alert/alert.js";
+import { MdAlert as MdAlertElement } from "@aphrody/material-web/alert/alert.js";
 
 export const MdAlert = createComponent({
   react: React,

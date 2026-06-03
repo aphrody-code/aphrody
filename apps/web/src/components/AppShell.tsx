@@ -2,7 +2,7 @@
 // routed page (<Outlet/>). Auth is guarded in the router (redirect to /auth).
 
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { MdIcon, MdIconButton, MdMenuItem, MdTopAppBar } from "@aphrody-code/m3-react";
+import { MdIcon, MdIconButton, MdMenuItem, MdTopAppBar } from "@aphrody/m3-react";
 import { Menu } from "./ui/Menu.tsx";
 import { Sidebar } from "./Sidebar.tsx";
 import { useConfig } from "../api/queries.ts";

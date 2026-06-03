@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBottomAppBar as MdBottomAppBarElement } from "@aphrody-code/material-web/appbar/bottom-app-bar.js";
-import { MdTopAppBar as MdTopAppBarElement } from "@aphrody-code/material-web/appbar/top-app-bar.js";
+import { MdBottomAppBar as MdBottomAppBarElement } from "@aphrody/material-web/appbar/bottom-app-bar.js";
+import { MdTopAppBar as MdTopAppBarElement } from "@aphrody/material-web/appbar/top-app-bar.js";
 
 export const MdBottomAppBar = createComponent({
   react: React,

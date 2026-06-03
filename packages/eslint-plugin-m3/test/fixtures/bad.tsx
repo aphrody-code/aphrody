@@ -1,7 +1,7 @@
 // Fixture VOLONTAIREMENT non conforme — doit déclencher chaque règle m3.
 import Button from "@mui/material/Button"; // no-mui-import
 import { Delete } from "@mui/icons-material"; // no-mui-import
-import { MdFilledButton, MdIcon, MdIconButton, MdSwitch, MdTooltip } from "@aphrody-code/m3-react";
+import { MdFilledButton, MdIcon, MdIconButton, MdSwitch, MdTooltip } from "@aphrody/m3-react";
 
 export function Bad() {
   return (

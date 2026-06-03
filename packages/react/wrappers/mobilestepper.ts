@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdMobileStepper as MdMobileStepperElement } from "@aphrody-code/material-web/mobilestepper/mobile-stepper.js";
+import { MdMobileStepper as MdMobileStepperElement } from "@aphrody/material-web/mobilestepper/mobile-stepper.js";
 
 export const MdMobileStepper = createComponent({
   react: React,

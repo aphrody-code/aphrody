@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdWebgpuCanvas as MdWebgpuCanvasElement } from "@aphrody-code/material-web/effects/webgpu-canvas.js";
+import { MdWebgpuCanvas as MdWebgpuCanvasElement } from "@aphrody/material-web/effects/webgpu-canvas.js";
 
 export const MdWebgpuCanvas = createComponent({
   react: React,

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdPopover as MdPopoverElement } from "@aphrody-code/material-web/popover/popover.js";
+import { MdPopover as MdPopoverElement } from "@aphrody/material-web/popover/popover.js";
 
 export const MdPopover = createComponent({
   react: React,

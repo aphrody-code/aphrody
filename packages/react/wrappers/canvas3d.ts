@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { M3Canvas3D as Md3dCanvasElement } from "@aphrody-code/material-web/canvas3d/canvas-3d.js";
+import { M3Canvas3D as Md3dCanvasElement } from "@aphrody/material-web/canvas3d/canvas-3d.js";
 
 export const Md3dCanvas = createComponent({
   react: React,

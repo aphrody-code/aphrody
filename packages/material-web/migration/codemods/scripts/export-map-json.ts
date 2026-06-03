@@ -34,7 +34,7 @@ const map = {
   $schema: "https://aphrody-code.github.io/material-web/schemas/mui-m3-map.json",
   meta: {
     description:
-      "Mapping canonique MUI (@mui/material@9 + @mui/icons-material) -> material-web (@aphrody-code/m3-react + Material Symbols). Généré depuis migration/codemods/lib/.",
+      "Mapping canonique MUI (@mui/material@9 + @mui/icons-material) -> material-web (@aphrody/m3-react + Material Symbols). Généré depuis migration/codemods/lib/.",
     targetPackage: M3_PKG,
     muiPackages: MUI_PKGS,
     generatedBy: "migration/codemods/scripts/export-map-json.ts",

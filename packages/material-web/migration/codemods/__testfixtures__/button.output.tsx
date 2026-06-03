@@ -1,5 +1,5 @@
-import "@aphrody-code/material-web/icon/icon.js";
-import { MdFilledButton, MdOutlinedButton, MdTextButton } from "@aphrody-code/m3-react";
+import "@aphrody/material-web/icon/icon.js";
+import { MdFilledButton, MdOutlinedButton, MdTextButton } from "@aphrody/m3-react";
 import SaveIcon from "@mui/icons-material/Save";
 
 export function Demo() {

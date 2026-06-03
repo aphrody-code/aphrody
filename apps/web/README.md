@@ -2,7 +2,7 @@
 
 The **public consumer client** for aphrody — a Material Design 3 React app powered by custom
 in-house RAG + LLMs (**shenron**, **rpbey**, …). Strict **Bun + TanStack** stack, rendered entirely
-with [`@aphrody-code/m3-react`](../../packages/react) (`<md-*>` web components wrapped for React),
+with [`@aphrody/m3-react`](../../packages/react) (`<md-*>` web components wrapped for React),
 now consumed from the in-repo workspace (post-merge) rather than GitHub Packages.
 
 Two surfaces:
@@ -32,7 +32,7 @@ A faithful slice of Open WebUI's surface, re-expressed in M3:
 | Workspace (models/knowledge/prompts/tools) | `routes/WorkspaceRoute` | `md-tabs`, `md-outlined-card` grid, `md-search-bar` |
 | Notes | `routes/NotesRoute` | `md-outlined-card`, `md-outlined-text-field` |
 
-**Material You**: the whole app re-themes live from a seed colour (Settings → Accent) via `@aphrody-code/m3-tokens/dynamic-color`, with light / dark / system modes.
+**Material You**: the whole app re-themes live from a seed colour (Settings → Accent) via `@aphrody/m3-tokens/dynamic-color`, with light / dark / system modes.
 
 **Streaming chat**: a `Bun.serve` mock backend exposes an OpenAI-compatible **SSE** `/api/chat/completions` endpoint; the client parses deltas, renders them through a tiny zero-dependency Markdown renderer (code blocks, lists, inline styles), auto-scrolls, and persists the message tree (`{messages, currentId}`, the open-webui history model) through TanStack Query mutations. Edit-in-place and regenerate are wired.
 

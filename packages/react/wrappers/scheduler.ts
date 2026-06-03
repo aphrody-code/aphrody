@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdScheduler as MdSchedulerElement } from "@aphrody-code/material-web/scheduler/scheduler.js";
+import { MdScheduler as MdSchedulerElement } from "@aphrody/material-web/scheduler/scheduler.js";
 
 export const MdScheduler = createComponent({
   react: React,

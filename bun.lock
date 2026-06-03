@@ -18,9 +18,9 @@
       "name": "web",
       "version": "0.0.0",
       "dependencies": {
-        "@aphrody-code/m3-react": "workspace:*",
-        "@aphrody-code/m3-tokens": "workspace:*",
-        "@aphrody-code/material-web": "workspace:*",
+        "@aphrody/m3-react": "workspace:*",
+        "@aphrody/m3-tokens": "workspace:*",
+        "@aphrody/material-web": "workspace:*",
         "@tanstack/react-query": "^5.0.0",
         "@tanstack/react-router": "^1.0.0",
         "react": "catalog:",
@@ -34,12 +34,12 @@
       },
     },
     "examples/showcase": {
-      "name": "@aphrody-code/m3-showcase",
+      "name": "@aphrody/m3-showcase",
       "version": "0.0.0",
       "dependencies": {
-        "@aphrody-code/bun-rs": "workspace:*",
-        "@aphrody-code/m3-tokens": "workspace:*",
-        "@aphrody-code/material-web": "workspace:*",
+        "@aphrody/bun-rs": "workspace:*",
+        "@aphrody/m3-tokens": "workspace:*",
+        "@aphrody/material-web": "workspace:*",
         "@material/material-color-utilities": "catalog:",
       },
       "devDependencies": {
@@ -51,12 +51,12 @@
       },
     },
     "packages/bun-rs": {
-      "name": "@aphrody-code/bun-rs",
-      "version": "3.2.0",
+      "name": "@aphrody/bun-rs",
+      "version": "3.2.1",
     },
     "packages/doc-ai": {
-      "name": "@aphrody-code/doc-ai",
-      "version": "3.2.0",
+      "name": "@aphrody/doc-ai",
+      "version": "3.2.1",
       "bin": {
         "doc-ai": "./src/cli.ts",
       },
@@ -71,8 +71,8 @@
       },
     },
     "packages/eslint-plugin-m3": {
-      "name": "@aphrody-code/eslint-plugin-m3",
-      "version": "3.2.0",
+      "name": "@aphrody/eslint-plugin-m3",
+      "version": "3.2.1",
       "peerDependencies": {
         "oxlint": ">=1.0.0",
       },
@@ -81,11 +81,11 @@
       ],
     },
     "packages/m3-design": {
-      "name": "@aphrody-code/m3-design",
-      "version": "3.2.0",
+      "name": "@aphrody/m3-design",
+      "version": "3.2.1",
       "dependencies": {
-        "@aphrody-code/bun-rs": "workspace:*",
-        "@aphrody-code/m3-react": "workspace:*",
+        "@aphrody/bun-rs": "workspace:*",
+        "@aphrody/m3-react": "workspace:*",
       },
       "devDependencies": {
         "bun-types": "catalog:",
@@ -93,8 +93,8 @@
       },
     },
     "packages/m3-motion": {
-      "name": "@aphrody-code/m3-motion",
-      "version": "3.2.0",
+      "name": "@aphrody/m3-motion",
+      "version": "3.2.1",
       "dependencies": {
         "motion": "catalog:",
       },
@@ -110,13 +110,13 @@
       },
     },
     "packages/m3-theme": {
-      "name": "@aphrody-code/m3-theme",
-      "version": "3.2.0",
+      "name": "@aphrody/m3-theme",
+      "version": "3.2.1",
       "dependencies": {
-        "@aphrody-code/m3-tokens": "workspace:*",
+        "@aphrody/m3-tokens": "workspace:*",
       },
       "devDependencies": {
-        "@aphrody-code/bun-rs": "workspace:*",
+        "@aphrody/bun-rs": "workspace:*",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "bun-types": "catalog:",
@@ -131,8 +131,8 @@
       },
     },
     "packages/m3-tokens": {
-      "name": "@aphrody-code/m3-tokens",
-      "version": "3.2.0",
+      "name": "@aphrody/m3-tokens",
+      "version": "3.2.1",
       "dependencies": {
         "@material/material-color-utilities": "catalog:",
       },
@@ -143,8 +143,8 @@
       },
     },
     "packages/material-web": {
-      "name": "@aphrody-code/material-web",
-      "version": "3.2.0",
+      "name": "@aphrody/material-web",
+      "version": "3.2.1",
       "dependencies": {
         "@lit/context": "catalog:",
         "lit": "catalog:",
@@ -165,11 +165,11 @@
       },
     },
     "packages/react": {
-      "name": "@aphrody-code/m3-react",
-      "version": "3.2.0",
+      "name": "@aphrody/m3-react",
+      "version": "3.2.1",
       "dependencies": {
-        "@aphrody-code/m3-tokens": "workspace:*",
-        "@aphrody-code/material-web": "workspace:*",
+        "@aphrody/m3-tokens": "workspace:*",
+        "@aphrody/material-web": "workspace:*",
         "@lit/react": "catalog:",
       },
       "devDependencies": {
@@ -246,31 +246,11 @@
 
     "@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@4.0.27", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@standard-schema/spec": "^1.1.0", "eventsource-parser": "^3.0.8" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ubkAJ+xODouwtmN1tYlvTPphH1hPOBfZaEQe8U7skGvFAnIRs9PPpsq57bC2+Ky/MB4yzhd6YOsxTAx9sGpazw=="],
 
-    "@aphrody-code/bun-rs": ["@aphrody-code/bun-rs@workspace:packages/bun-rs"],
-
     "@aphrody-code/bxc": ["@aphrody-code/bxc@0.5.7", "https://npm.pkg.github.com/download/@aphrody-code/bxc/0.5.7/a99ad21497afe596e5337d98cd4aabc75a4d378c", { "dependencies": { "@aphrody-code/challonge": "0.1.1", "@aphrody-code/fut": "0.1.1", "@aphrody-code/voiranime": "0.1.1", "@aphrody-code/worldbeyblade": "0.1.1", "@aphrody-code/xcom": "0.1.1", "@aphrody-code/zukan": "0.1.1", "@bogeychan/elysia-logger": "^0.1.10", "@elysiajs/cors": "^1.4.2", "@elysiajs/swagger": "^1.3.1", "@libsql/client": "^0.17.3", "@mozilla/readability": "^0.6.0", "bottleneck": "^2.19.5", "class-validator": "^0.15.1", "drizzle-orm": "^0.45.2", "elysia": "^1.4.28", "graphql": "^16.14.0", "graphql-yoga": "^5.21.0", "lru-cache": "^11.5.1", "p-limit": "^7.3.0", "p-queue": "^9.3.0", "p-retry": "^8.0.0", "reflect-metadata": "^0.2.2", "type-graphql": "^2.0.0-rc.3", "zod": "^4.4.3" }, "bin": { "bxc": "bin/bxc" } }, "sha512-QYSU0iT3ZsO0PLNLzg87+75aPqKGj4irFBPLNhf1TErNkGW8k/hctW7RbVZs68EqC3Kw6KAIiACQ55g3wLODlA=="],
 
     "@aphrody-code/challonge": ["@aphrody-code/challonge@0.1.1", "https://npm.pkg.github.com/download/@aphrody-code/challonge/0.1.1/33d41f5bb7f1ad9569988c440e469bb30a73bd44", {}, "sha512-k+zmKNlWDNKBpd2J3jEu/0eCSqrqUsC5d8YQoGVZ8lFgJx0Xok4V7Csum0ONXuZZSMTbJGw/iQ1q5hThtChp3w=="],
 
-    "@aphrody-code/doc-ai": ["@aphrody-code/doc-ai@workspace:packages/doc-ai"],
-
-    "@aphrody-code/eslint-plugin-m3": ["@aphrody-code/eslint-plugin-m3@workspace:packages/eslint-plugin-m3"],
-
     "@aphrody-code/fut": ["@aphrody-code/fut@0.1.1", "https://npm.pkg.github.com/download/@aphrody-code/fut/0.1.1/9b71a656903d1eb2f881f61295254cfcb88dc2ca", { "dependencies": { "bottleneck": "^2.19.5", "lru-cache": "^11.5.1", "p-queue": "^8.0.1", "p-retry": "^6.2.0", "zod": "^3.24.2" } }, "sha512-45h0fmhb5Zx2is5xGbTw3ZVSixI8NV7ickmUhCM5f3wy3RShzgQNSXW72vz9xFFB0aXo6EzPGSsA0fcRg2eDug=="],
-
-    "@aphrody-code/m3-design": ["@aphrody-code/m3-design@workspace:packages/m3-design"],
-
-    "@aphrody-code/m3-motion": ["@aphrody-code/m3-motion@workspace:packages/m3-motion"],
-
-    "@aphrody-code/m3-react": ["@aphrody-code/m3-react@workspace:packages/react"],
-
-    "@aphrody-code/m3-showcase": ["@aphrody-code/m3-showcase@workspace:examples/showcase"],
-
-    "@aphrody-code/m3-theme": ["@aphrody-code/m3-theme@workspace:packages/m3-theme"],
-
-    "@aphrody-code/m3-tokens": ["@aphrody-code/m3-tokens@workspace:packages/m3-tokens"],
-
-    "@aphrody-code/material-web": ["@aphrody-code/material-web@workspace:packages/material-web"],
 
     "@aphrody-code/voiranime": ["@aphrody-code/voiranime@0.1.1", "https://npm.pkg.github.com/download/@aphrody-code/voiranime/0.1.1/92fb5bd53beb445e95861db75e099e4bbcacdf07", {}, "sha512-cyyg2LAq1NItJtdOHxZs7XAbs/dXehgEgDZQj7lkymFjOBFfTJ/eMUIEUZNaQynKNDx6wQSAejNxfz994A4t7Q=="],
 
@@ -281,6 +261,26 @@
     "@aphrody-code/xcom": ["@aphrody-code/xcom@0.1.1", "https://npm.pkg.github.com/download/@aphrody-code/xcom/0.1.1/03a36cb6e5fbc21f51c3501afd0f4c8c4f73c5ef", {}, "sha512-YSvk3DoR/1JWShGGH53X1yhWbK9IVwkxkwyMWXQWgtFioWugrTIW48hOcYcIRzzT1m+7xGVP+mARtJE7opsSiA=="],
 
     "@aphrody-code/zukan": ["@aphrody-code/zukan@0.1.1", "https://npm.pkg.github.com/download/@aphrody-code/zukan/0.1.1/889d4069e1e422a3de7428313daea7f75dbe8fc7", { "dependencies": { "cheerio": "^1.2.0" } }, "sha512-sRbGb9JQFJTEV0lEofhb0VQLeL46OW1klrNtvMRUG2xwTCr+gnICNLE6fyIz4Eo4ccz8IQU44pr6piZ9zuUoyg=="],
+
+    "@aphrody/bun-rs": ["@aphrody/bun-rs@workspace:packages/bun-rs"],
+
+    "@aphrody/doc-ai": ["@aphrody/doc-ai@workspace:packages/doc-ai"],
+
+    "@aphrody/eslint-plugin-m3": ["@aphrody/eslint-plugin-m3@workspace:packages/eslint-plugin-m3"],
+
+    "@aphrody/m3-design": ["@aphrody/m3-design@workspace:packages/m3-design"],
+
+    "@aphrody/m3-motion": ["@aphrody/m3-motion@workspace:packages/m3-motion"],
+
+    "@aphrody/m3-react": ["@aphrody/m3-react@workspace:packages/react"],
+
+    "@aphrody/m3-showcase": ["@aphrody/m3-showcase@workspace:examples/showcase"],
+
+    "@aphrody/m3-theme": ["@aphrody/m3-theme@workspace:packages/m3-theme"],
+
+    "@aphrody/m3-tokens": ["@aphrody/m3-tokens@workspace:packages/m3-tokens"],
+
+    "@aphrody/material-web": ["@aphrody/material-web@workspace:packages/material-web"],
 
     "@bogeychan/elysia-logger": ["@bogeychan/elysia-logger@0.1.10", "", { "peerDependencies": { "elysia": ">= 1.2.10", "pino": ">= 9.6.0" } }, "sha512-wFp3KUCNIkCV4zcbo70gifHH99ch7e4LNrP5Xa5e2MRO2MDyPgM92SWQmrzkng6PsSZk13+UKJskGNQ+ZuDZkQ=="],
 

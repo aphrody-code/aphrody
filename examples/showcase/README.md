@@ -1,4 +1,4 @@
-# @aphrody-code/m3-showcase
+# @aphrody/m3-showcase
 
 The single, light, **Bun-native** example for this monorepo. It merges what the
 former `nextjs` and `m3-world` examples demonstrated into one app, with **no
@@ -8,10 +8,10 @@ Next.js and no Vite** — only [Bun APIs](https://bun.com/docs/runtime/bun-apis)
 
 It exercises the full shippable surface:
 
-- **`@aphrody-code/m3-react`** — every `md-*` web component through its React
+- **`@aphrody/m3-react`** — every `md-*` web component through its React
   wrapper (buttons, inputs, chips, cards, dialogs, pickers, table, …) in one
   interactive gallery (`src/showcase.tsx`).
-- **`@aphrody-code/m3-tokens/dynamic-color`** — live Material You seed picker,
+- **`@aphrody/m3-tokens/dynamic-color`** — live Material You seed picker,
   light/dark, re-themed at runtime (`applyDynamicColor`).
 - **`@react-three/fiber` + `@react-three/drei`** — a light WebGL backdrop
   (`src/components/three/`), no heavy image assets.
@@ -43,6 +43,6 @@ src/
 ```
 
 Two tsconfigs split the two runtimes: `tsconfig.json` (browser / Web APIs, no
-`bun-types`) type-checks the client island and the `@aphrody-code/material-web`
+`bun-types`) type-checks the client island and the `@aphrody/material-web`
 source it traverses under the same DOM semantics the library was authored with;
 `tsconfig.node.json` (`bun-types`) type-checks the `Bun.serve` server + smoke.

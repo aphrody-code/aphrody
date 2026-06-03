@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdAccordion as MdAccordionElement } from "@aphrody-code/material-web/expansion/accordion.js";
-import { MdExpansionPanel as MdExpansionPanelElement } from "@aphrody-code/material-web/expansion/expansion-panel.js";
+import { MdAccordion as MdAccordionElement } from "@aphrody/material-web/expansion/accordion.js";
+import { MdExpansionPanel as MdExpansionPanelElement } from "@aphrody/material-web/expansion/expansion-panel.js";
 
 export const MdAccordion = createComponent({
   react: React,

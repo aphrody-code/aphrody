@@ -11,9 +11,9 @@ import {
   MdPrimaryTab,
   MdSearchBar,
   MdTabs,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { Menu } from "../components/ui/Menu.tsx";
-import { MdMenuItem } from "@aphrody-code/m3-react";
+import { MdMenuItem } from "@aphrody/m3-react";
 import { useKnowledge, usePrompts, useTools, useWorkspaceModels } from "../api/queries.ts";
 
 interface Card {

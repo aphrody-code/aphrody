@@ -1,7 +1,7 @@
 // Vue diagnostic : bandeau de méta hôte, tableau de bord doctor, carte version, et sortie texte brute repliable (ToolRunner).
 
 import { useState } from "react";
-import { MdIcon } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody/m3-react";
 import { useMeta } from "../../client.ts";
 import { ToolRunner, type ToolAction } from "../../ToolRunner.tsx";
 import { DoctorDashboard } from "./DoctorDashboard.tsx";

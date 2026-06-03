@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdAvatar as MdAvatarElement } from "@aphrody-code/material-web/avatar/avatar.js";
-import { MdAvatarGroup as MdAvatarGroupElement } from "@aphrody-code/material-web/avatar/avatar-group.js";
+import { MdAvatar as MdAvatarElement } from "@aphrody/material-web/avatar/avatar.js";
+import { MdAvatarGroup as MdAvatarGroupElement } from "@aphrody/material-web/avatar/avatar-group.js";
 
 export const MdAvatar = createComponent({
   react: React,

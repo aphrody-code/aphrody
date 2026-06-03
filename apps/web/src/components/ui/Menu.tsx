@@ -3,7 +3,7 @@
 // sync no matter how the menu is dismissed.
 
 import { useEffect, useRef, useState, type ComponentRef } from "react";
-import { MdMenu } from "@aphrody-code/m3-react";
+import { MdMenu } from "@aphrody/m3-react";
 
 export function Menu({
   trigger,

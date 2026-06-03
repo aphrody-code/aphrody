@@ -3,11 +3,11 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdElevatedButton as MdElevatedButtonElement } from "@aphrody-code/material-web/button/elevated-button.js";
-import { MdFilledButton as MdFilledButtonElement } from "@aphrody-code/material-web/button/filled-button.js";
-import { MdFilledTonalButton as MdFilledTonalButtonElement } from "@aphrody-code/material-web/button/filled-tonal-button.js";
-import { MdOutlinedButton as MdOutlinedButtonElement } from "@aphrody-code/material-web/button/outlined-button.js";
-import { MdTextButton as MdTextButtonElement } from "@aphrody-code/material-web/button/text-button.js";
+import { MdElevatedButton as MdElevatedButtonElement } from "@aphrody/material-web/button/elevated-button.js";
+import { MdFilledButton as MdFilledButtonElement } from "@aphrody/material-web/button/filled-button.js";
+import { MdFilledTonalButton as MdFilledTonalButtonElement } from "@aphrody/material-web/button/filled-tonal-button.js";
+import { MdOutlinedButton as MdOutlinedButtonElement } from "@aphrody/material-web/button/outlined-button.js";
+import { MdTextButton as MdTextButtonElement } from "@aphrody/material-web/button/text-button.js";
 
 export const MdElevatedButton = createComponent({
   react: React,

@@ -6,7 +6,7 @@
 id: detect-mui-imports
 language: tsx
 severity: warning
-message: Import MUI détecté — à migrer vers @aphrody-code/m3-react (cf. 00-CONVENTIONS.md §3).
+message: Import MUI détecté — à migrer vers @aphrody/m3-react (cf. 00-CONVENTIONS.md §3).
 note: |
   Utiliser les codemods jscodeshift pour la réécriture variant-aware :
     bunx jscodeshift -t transforms/orchestrator.ts --parser=tsx <fichiers>

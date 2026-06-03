@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdFilledTextField as MdFilledTextFieldElement } from "@aphrody-code/material-web/textfield/filled-text-field.js";
-import { MdOutlinedTextField as MdOutlinedTextFieldElement } from "@aphrody-code/material-web/textfield/outlined-text-field.js";
+import { MdFilledTextField as MdFilledTextFieldElement } from "@aphrody/material-web/textfield/filled-text-field.js";
+import { MdOutlinedTextField as MdOutlinedTextFieldElement } from "@aphrody/material-web/textfield/outlined-text-field.js";
 
 export const MdFilledTextField = createComponent({
   react: React,

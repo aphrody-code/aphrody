@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBrandedFab as MdBrandedFabElement } from "@aphrody-code/material-web/fab/branded-fab.js";
-import { MdFab as MdFabElement } from "@aphrody-code/material-web/fab/fab.js";
+import { MdBrandedFab as MdBrandedFabElement } from "@aphrody/material-web/fab/branded-fab.js";
+import { MdFab as MdFabElement } from "@aphrody/material-web/fab/fab.js";
 
 export const MdBrandedFab = createComponent({
   react: React,

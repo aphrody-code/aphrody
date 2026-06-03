@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# @aphrody-code/m3-tokens
+# @aphrody/m3-tokens
 
 Material Design 3 design tokens for the web, in TypeScript. Two capabilities:
 
@@ -17,7 +17,7 @@ Built on [`@material/material-color-utilities`](https://www.npmjs.com/package/@m
 ## Install
 
 ```bash
-bun add @aphrody-code/m3-tokens
+bun add @aphrody/m3-tokens
 ```
 
 ## Material You — `dynamic-color`
@@ -29,7 +29,7 @@ import {
   applyDynamicColor,
   clearDynamicColor,
   type SchemeVariant,
-} from "@aphrody-code/m3-tokens/dynamic-color";
+} from "@aphrody/m3-tokens/dynamic-color";
 
 // 1. A role map for one mode: { "--md-sys-color-primary": "#…", … } (~47 roles)
 const light = schemeFromSeed("#00658f");
@@ -59,8 +59,8 @@ applyDynamicColor("#00658f", { variant: "expressive", contrastLevel: 1 });
 clearDynamicColor(); // revert to the stylesheet baseline
 ```
 
-Because `@aphrody-code/material-web` only emits `--md-sys-color-*` at runtime, setting those
-roles re-themes **every** `<md-*>` element (and every `@aphrody-code/m3-react`
+Because `@aphrody/material-web` only emits `--md-sys-color-*` at runtime, setting those
+roles re-themes **every** `<md-*>` element (and every `@aphrody/m3-react`
 wrapper) with no rebuild — the signature Material 3 capability.
 
 ### Scheme variants
@@ -125,7 +125,7 @@ const ROLES: readonly string[]; // ~47 camelCase role names
 ## MUI → M3 — `theme-to-tokens`
 
 ```ts
-import { muiThemeToTokens } from "@aphrody-code/m3-tokens/theme-to-tokens";
+import { muiThemeToTokens } from "@aphrody/m3-tokens/theme-to-tokens";
 
 const { css, lightRoles, darkRoles, typescale, shape } = await muiThemeToTokens(muiTheme, {
   darkTheme: muiDarkTheme,
@@ -146,8 +146,8 @@ bun run demo '#6750A4'  # from a Material You seed colour
 
 ## Runtime token asset
 
-`@aphrody-code/m3-tokens/m3-tokens.css` declares the M3 token families
-`@aphrody-code/material-web` does **not** project as runtime variables (typescale, shape,
+`@aphrody/m3-tokens/m3-tokens.css` declares the M3 token families
+`@aphrody/material-web` does **not** project as runtime variables (typescale, shape,
 elevation, motion, state) on `:root` — useful for Tailwind `@theme` consumption.
 
 ## Toolchain

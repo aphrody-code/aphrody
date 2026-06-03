@@ -3,7 +3,7 @@
 // and inline bold/italic/code/links — enough to render LLM replies in M3 style.
 
 import { Fragment, type ReactNode } from "react";
-import { MdIcon, MdIconButton } from "@aphrody-code/m3-react";
+import { MdIcon, MdIconButton } from "@aphrody/m3-react";
 
 let keySeq = 0;
 const nextKey = () => `md-${keySeq++}`;

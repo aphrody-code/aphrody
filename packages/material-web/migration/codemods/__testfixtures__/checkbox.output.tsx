@@ -1,4 +1,4 @@
-import { MdCheckbox, MdSwitch } from "@aphrody-code/m3-react";
+import { MdCheckbox, MdSwitch } from "@aphrody/m3-react";
 
 export function Toggles() {
   return (

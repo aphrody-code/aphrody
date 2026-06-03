@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { schemeFromSeed } from "@aphrody-code/m3-tokens/dynamic-color";
+import { schemeFromSeed } from "@aphrody/m3-tokens/dynamic-color";
 
 // shadcn/ui token -> M3 system role mappings.
 // Derived from generate.ts ALIASES.

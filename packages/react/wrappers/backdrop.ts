@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBackdrop as MdBackdropElement } from "@aphrody-code/material-web/backdrop/backdrop.js";
+import { MdBackdrop as MdBackdropElement } from "@aphrody/material-web/backdrop/backdrop.js";
 
 export const MdBackdrop = createComponent({
   react: React,

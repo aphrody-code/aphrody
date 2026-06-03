@@ -1,6 +1,6 @@
 // Vue À propos : logo aphrody, état du compte (useAccount), méta hôte (useMeta), carte version et liens utiles.
 
-import { MdIcon, MdOutlinedCard, MdTextButton } from "@aphrody-code/m3-react";
+import { MdIcon, MdOutlinedCard, MdTextButton } from "@aphrody/m3-react";
 import { useAccount, useMeta } from "../../client.ts";
 import { VersionCard } from "../diagnostic/VersionCard.tsx";
 
@@ -85,7 +85,7 @@ export function About() {
       </div>
 
       <p className="aph-about__note aph-muted">
-        Interface portée en React 19 + Material 3 (@aphrody-code/m3-react), propulsée en local par
+        Interface portée en React 19 + Material 3 (@aphrody/m3-react), propulsée en local par
         le binaire aphrody. Apparence inspirée de l'app Gemini.
       </p>
     </div>

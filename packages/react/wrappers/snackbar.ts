@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSnackbar as MdSnackbarElement } from "@aphrody-code/material-web/snackbar/snackbar.js";
+import { MdSnackbar as MdSnackbarElement } from "@aphrody/material-web/snackbar/snackbar.js";
 
 export const MdSnackbar = createComponent({
   react: React,

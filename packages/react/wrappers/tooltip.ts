@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdTooltip as MdTooltipElement } from "@aphrody-code/material-web/tooltip/tooltip.js";
+import { MdTooltip as MdTooltipElement } from "@aphrody/material-web/tooltip/tooltip.js";
 
 export const MdTooltip = createComponent({
   react: React,

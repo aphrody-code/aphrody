@@ -15,7 +15,7 @@ Entry points:
 - **`aphrody-labs.ts`** — promoted upstream `labs/` components (badge, cards,
   navigation bar/drawer/tab, outlined segmented button set).
 - Both are re-exported from **`all.ts`**.
-- React wrappers: **`apps/m3-react`** (`@aphrody-code/m3-react`), one per element.
+- React wrappers: **`apps/m3-react`** (`@aphrody/m3-react`), one per element.
 
 ## New components (24 custom elements)
 

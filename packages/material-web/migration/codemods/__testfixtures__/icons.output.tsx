@@ -1,5 +1,5 @@
 "use client";
-import "@aphrody-code/material-web/icon/icon.js";
+import "@aphrody/material-web/icon/icon.js";
 import { GitHub } from "@mui/icons-material";
 
 export function Demo() {

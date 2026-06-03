@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { M3Globe3D as Md3dGlobeElement } from "@aphrody-code/material-web/globe3d/globe-3d.js";
+import { M3Globe3D as Md3dGlobeElement } from "@aphrody/material-web/globe3d/globe-3d.js";
 
 export const Md3dGlobe = createComponent({
   react: React,

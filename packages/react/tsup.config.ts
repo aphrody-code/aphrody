@@ -3,16 +3,16 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 /**
- * Build config for @aphrody-code/m3-react.
+ * Build config for @aphrody/m3-react.
  *
  * Ships an ESM `dist/` (`.js` + `.d.ts`) so the package is consumable from a
  * Next.js app (App Router / RSC) without `transpilePackages`.
  *
  * Key constraints:
  *  - Two entry points: the full barrel (`index.ts`) and `transitions/`.
- *  - `react`, `react-dom` and `@aphrody-code/material-web` are EXTERNAL — they must resolve
+ *  - `react`, `react-dom` and `@aphrody/material-web` are EXTERNAL — they must resolve
  *    in the consumer (peer deps / its own node_modules). In particular the deep
- *    `@aphrody-code/material-web/<dir>/<el>.js` imports are kept verbatim so the consumer's
+ *    `@aphrody/material-web/<dir>/<el>.js` imports are kept verbatim so the consumer's
  *    bundler (webpack/turbopack) loads the element definitions client-side.
  *  - Every emitted `.js` chunk gets a leading `'use client';` directive so
  *    Next RSC treats the whole package as client components (web components are
@@ -41,7 +41,7 @@ async function prependUseClient(dir: string): Promise<void> {
 
 export default defineConfig({
   // The full barrel, the transitions entry, AND every per-family wrapper as its
-  // own entry so consumers can deep-import (`@aphrody-code/m3-react/button`) and pull
+  // own entry so consumers can deep-import (`@aphrody/m3-react/button`) and pull
   // only that family + a shared chunk — real tree-shaking despite `sideEffects`.
   entry: [
     "index.ts",
@@ -60,12 +60,12 @@ export default defineConfig({
   treeshake: true,
   // Keep React and the web-component library out of the bundle.
   external: ["react", "react-dom", "react/jsx-runtime"],
-  // `@aphrody-code/material-web` and ALL its deep `.js` subpaths stay external.
+  // `@aphrody/material-web` and ALL its deep `.js` subpaths stay external.
   esbuildOptions(options) {
     options.external = [
       ...(options.external ?? []),
-      "@aphrody-code/material-web",
-      "@aphrody-code/material-web/*",
+      "@aphrody/material-web",
+      "@aphrody/material-web/*",
     ];
   },
   async onSuccess() {

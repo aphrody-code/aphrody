@@ -1,6 +1,6 @@
 /*
  * Material Design 3 adaptive breakpoints — responsive CSS tokens.
- * Import: `@import "@aphrody-code/m3-tokens/breakpoints.css";`
+ * Import: `@import "@aphrody/m3-tokens/breakpoints.css";`
  *
  * `@custom-media` (PostCSS / postcss-custom-media) lets you write
  * `@media (--md-expanded) { … }`. The `--md-breakpoint-*` custom properties

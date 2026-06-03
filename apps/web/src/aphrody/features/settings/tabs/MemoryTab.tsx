@@ -1,6 +1,6 @@
 // Mémoire tab: surface the agent's local memory store + the discovered memory providers (read-only, honest).
 
-import { MdIcon } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody/m3-react";
 import { execText, useExec } from "../../../client.ts";
 import { CodeOutput, Hint, Panel, Spinner } from "../../../ui.tsx";
 

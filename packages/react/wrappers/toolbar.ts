@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdToolbar as MdToolbarElement } from "@aphrody-code/material-web/toolbar/md-toolbar.js";
+import { MdToolbar as MdToolbarElement } from "@aphrody/material-web/toolbar/md-toolbar.js";
 
 export const MdToolbar = createComponent({
   react: React,

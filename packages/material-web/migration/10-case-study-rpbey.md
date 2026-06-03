@@ -2,7 +2,7 @@
 
 # 10 — Étude de cas réelle : migration d'un dashboard MUI v9 (`rpbey`)
 
-> **But.** Confronter le kit de migration et la couverture `@aphrody-code/m3-react`
+> **But.** Confronter le kit de migration et la couverture `@aphrody/m3-react`
 > à une **application de production réelle** plutôt qu'à des fixtures. La cible est
 > `rpbey` (`@rose-griffon/dashboard`) : un dashboard **Next.js 16 + Bun + RSC**,
 > ~466 fichiers TS/TSX, dont **~50 % couplés à MUI**. Tous les chiffres ci-dessous
@@ -60,7 +60,7 @@ le couplage au **moteur de styling Emotion** (`sx`, `theme.*`) est massif.
 
 - **augmentation de la palette** avec des _surface tones_ `lowest / low / main / high /
 highest` et des rôles **`container` / `onContainer`** sur les couleurs — ce sont
-  littéralement les rôles `--md-sys-color-*` que `@aphrody-code/m3-tokens` dérive
+  littéralement les rôles `--md-sys-color-*` que `@aphrody/m3-tokens` dérive
   nativement d'une couleur seed (`dynamic-color`) ;
 - variants **`filled` / `elevated`** ajoutés à `Card` et `Paper` (= variants M3) ;
 - `borderRadius: 12`, boutons pilule (`9999`), fontes variables

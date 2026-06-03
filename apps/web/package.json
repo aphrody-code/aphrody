@@ -2,7 +2,7 @@
   "name": "web",
   "version": "0.0.0",
   "private": true,
-  "description": "Full Material Design 3 React rebuild of Open WebUI — 100% Bun-native (Bun.serve + bun build) on TanStack Router + TanStack Query, rendered with @aphrody-code/m3-react.",
+  "description": "Full Material Design 3 React rebuild of Open WebUI — 100% Bun-native (Bun.serve + bun build) on TanStack Router + TanStack Query, rendered with @aphrody/m3-react.",
   "license": "Apache-2.0",
   "author": "aphrody-code",
   "type": "module",
@@ -14,9 +14,9 @@
     "smoke": "bun src/smoke.ts"
   },
   "dependencies": {
-    "@aphrody-code/m3-react": "workspace:*",
-    "@aphrody-code/m3-tokens": "workspace:*",
-    "@aphrody-code/material-web": "workspace:*",
+    "@aphrody/m3-react": "workspace:*",
+    "@aphrody/m3-tokens": "workspace:*",
+    "@aphrody/material-web": "workspace:*",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "react": "catalog:",

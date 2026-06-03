@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { M3Card3D as Md3dCardElement } from "@aphrody-code/material-web/card3d/card-3d.js";
+import { M3Card3D as Md3dCardElement } from "@aphrody/material-web/card3d/card-3d.js";
 
 export const Md3dCard = createComponent({
   react: React,

@@ -147,7 +147,7 @@ fork degenerates into a rewrite.
 ## 4. Option B — TUNE / WRAP + MIGRATE (the current approach)
 
 Native Lit `md-*` web components self-contained on `--md-sys-*`, React wrappers
-(`@aphrody-code/m3-react`), MUI→M3 codemod kit (`migration/`), consumer lint
+(`@aphrody/m3-react`), MUI→M3 codemod kit (`migration/`), consumer lint
 plugin (`eslint-plugin-m3`).
 
 | Axis                              | Assessment                                                                                                                                                                                                                                                      |
@@ -219,7 +219,7 @@ makes sense here — vendoring algorithms, not components.
   we are choosing to avoid.
 - **Trademark:** "MUI", "Material UI", "MUI X" are MUI's marks; "Material",
   "Material Design" are Google's. Don't name forks in a way that implies
-  endorsement. Our `@aphrody-code/*` + `@material/web` (the existing Google fork)
+  endorsement. Our `@aphrody/*` + `@material/web` (the existing Google fork)
   naming is already clear of this.
 
 ---

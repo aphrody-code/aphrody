@@ -1,7 +1,7 @@
-# Codemods — MUI React → `@aphrody-code/m3-react`
+# Codemods — MUI React → `@aphrody/m3-react`
 
 Transforms automatisés pour migrer du code **MUI React** (`@mui/material`) vers les
-wrappers **`@aphrody-code/m3-react`** (web components `<md-*>` du fork material-web).
+wrappers **`@aphrody/m3-react`** (web components `<md-*>` du fork material-web).
 
 > Contrat de référence : [`../00-CONVENTIONS.md`](../00-CONVENTIONS.md).
 > Tout ce kit respecte §2 (nommage des wrappers), §3 (mapping canonique) et §4
@@ -48,11 +48,11 @@ autres imports/JSX MUI sont laissés intacts (migration par lots).
 
 ### Ce qui est AUTOMATISÉ
 
-- **Imports** (§2/§3) — réécriture `@mui/material` → `@aphrody-code/m3-react` :
+- **Imports** (§2/§3) — réécriture `@mui/material` → `@aphrody/m3-react` :
   - imports nommés `import { Button } from '@mui/material'`
   - imports default sous-chemin `import Button from '@mui/material/Button'`
   - **alias** `import { Button as Btn } from '@mui/material'`
-  - regroupe les wrappers en un seul `import { ... } from '@aphrody-code/m3-react'` (trié)
+  - regroupe les wrappers en un seul `import { ... } from '@aphrody/m3-react'` (trié)
   - ajoute l'import d'effet de bord `@material/web/icon/icon.js` si un `<md-icon>` est généré
 - **Choix du wrapper variant-aware** (§3) :
   - `Button variant="contained"|absent` → `MdFilledButton`,

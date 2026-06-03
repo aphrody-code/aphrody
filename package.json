@@ -2,7 +2,7 @@
   "name": "@aphrody/ts",
   "version": "1.0.0-canary",
   "private": true,
-  "description": "aphrody-ts — Bun + Turborepo workspace for aphrody's first-party TypeScript/JS. apps/* (web = public RAG/LLM client, admin = ported M3 admin) + the Material Design 3 UI libraries under packages/* (material-web Lit lib, m3-react wrappers, m3-tokens, m3-motion, m3-theme, m3-design, eslint-plugin-m3, doc-ai, bun-rs), published to GitHub Packages as @aphrody-code/*. Merged from the standalone material-web monorepo 2026-06-01.",
+  "description": "aphrody-ts — Bun + Turborepo workspace for aphrody's first-party TypeScript/JS. apps/* (web = public RAG/LLM client, admin = ported M3 admin) + the Material Design 3 UI libraries under packages/* (material-web Lit lib, m3-react wrappers, m3-tokens, m3-motion, m3-theme, m3-design, eslint-plugin-m3, doc-ai, bun-rs), published to npm as @aphrody/*. Merged from the standalone material-web monorepo 2026-06-01.",
   "license": "Apache-2.0",
   "workspaces": {
     "packages": [
@@ -51,10 +51,10 @@
   },
   "type": "module",
   "scripts": {
-    "build": "turbo run build --filter=@aphrody-code/*",
-    "typecheck": "turbo run typecheck --filter=@aphrody-code/*",
-    "test": "turbo run test --filter=@aphrody-code/*",
-    "test:browser": "turbo run test:browser --filter=@aphrody-code/material-web",
+    "build": "turbo run build --filter=@aphrody/*",
+    "typecheck": "turbo run typecheck --filter=@aphrody/*",
+    "test": "turbo run test --filter=@aphrody/*",
+    "test:browser": "turbo run test:browser --filter=@aphrody/material-web",
     "dev": "turbo run dev",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

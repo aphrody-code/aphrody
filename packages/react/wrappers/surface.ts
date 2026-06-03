@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSurface as MdSurfaceElement } from "@aphrody-code/material-web/surface/surface.js";
+import { MdSurface as MdSurfaceElement } from "@aphrody/material-web/surface/surface.js";
 
 export const MdSurface = createComponent({
   react: React,

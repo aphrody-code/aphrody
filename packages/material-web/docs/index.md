@@ -20,19 +20,19 @@ Un système de composants **Material Design 3** complet pour le web moderne : de
 ## Ce que c'est
 
 - **Lib Lit self-contained** — chaque `<md-*>` consomme les rôles `--md-sys-color-*` (≈47, light + dark) émis au runtime ; le reste (typescale, shape, elevation, motion, state) est résolu au compile-time Sass.
-- **Wrappers React** (`@aphrody-code/m3-react`) — un wrapper `@lit/react` par élément, events custom typés.
-- **Material You runtime** (`@aphrody-code/m3-tokens`) — dérive les rôles de couleur depuis n'importe quelle couleur seed (7 variantes de scheme + niveaux de contraste WCAG).
+- **Wrappers React** (`@aphrody/m3-react`) — un wrapper `@lit/react` par élément, events custom typés.
+- **Material You runtime** (`@aphrody/m3-tokens`) — dérive les rôles de couleur depuis n'importe quelle couleur seed (7 variantes de scheme + niveaux de contraste WCAG).
 - **Couverture MUI + MUI X Community** — Data Grid, charts, pickers, tree, scheduler, et la surface `@mui/material`.
 
 ## Démarrage
 
 ```bash
 # Toolchain : bun uniquement
-bun add @aphrody-code/m3-react @aphrody-code/material-web
+bun add @aphrody/m3-react @aphrody/material-web
 ```
 
 ```tsx
-import { MdFilledButton, MdOutlinedTextField } from "@aphrody-code/m3-react";
+import { MdFilledButton, MdOutlinedTextField } from "@aphrody/m3-react";
 
 export function Demo() {
   return (

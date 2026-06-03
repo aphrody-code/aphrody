@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 // Size budgets that lock in the tree-shaking guarantee: a deep family import
 // must stay tiny, and the barrel must stay light. Built from source with React
-// and @aphrody-code/material-web kept external (they resolve in the consumer / load the
+// and @aphrody/material-web kept external (they resolve in the consumer / load the
 // element code on demand), minified + gzipped — the figures a real consumer
 // pays for the wrapper layer. Guards against accidental bloat or a regression
 // of the per-family subpath split.
@@ -12,8 +12,8 @@ const EXTERNAL = [
   "react-dom",
   "react/jsx-runtime",
   "@lit/react",
-  "@aphrody-code/material-web",
-  "@aphrody-code/material-web/*",
+  "@aphrody/material-web",
+  "@aphrody/material-web/*",
 ];
 
 async function gzipBytes(entry: string): Promise<number> {

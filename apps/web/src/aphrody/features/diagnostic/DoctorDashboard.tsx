@@ -1,7 +1,7 @@
 // Tableau de bord diagnostic : exécute `aphrody doctor` et transforme chaque ligne de vérification en ligne d'état (ok/warn/error).
 
 import { useMemo, useState } from "react";
-import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody-code/m3-react";
+import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody/m3-react";
 import { execText, useRun } from "../../client.ts";
 
 /** Tonalité d'un état, qui pilote la couleur de la puce et de l'icône. */

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdNavigationRail as MdNavigationRailElement } from "@aphrody-code/material-web/navigationrail/navigation-rail.js";
-import { MdNavigationRailItem as MdNavigationRailItemElement } from "@aphrody-code/material-web/navigationrail/navigation-rail-item.js";
+import { MdNavigationRail as MdNavigationRailElement } from "@aphrody/material-web/navigationrail/navigation-rail.js";
+import { MdNavigationRailItem as MdNavigationRailItemElement } from "@aphrody/material-web/navigationrail/navigation-rail-item.js";
 
 export const MdNavigationRail = createComponent({
   react: React,

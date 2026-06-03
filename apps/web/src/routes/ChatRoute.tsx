@@ -1,7 +1,7 @@
 // "/c/:chatId" — loads the chat by id and renders the ChatView.
 
 import { useParams } from "@tanstack/react-router";
-import { MdCircularProgress } from "@aphrody-code/m3-react";
+import { MdCircularProgress } from "@aphrody/m3-react";
 import { ChatView } from "../components/chat/ChatView.tsx";
 import { useChat } from "../api/queries.ts";
 

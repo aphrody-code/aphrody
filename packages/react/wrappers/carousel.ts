@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdCarousel as MdCarouselElement } from "@aphrody-code/material-web/carousel/carousel.js";
-import { MdCarouselItem as MdCarouselItemElement } from "@aphrody-code/material-web/carousel/carousel-item.js";
+import { MdCarousel as MdCarouselElement } from "@aphrody/material-web/carousel/carousel.js";
+import { MdCarouselItem as MdCarouselItemElement } from "@aphrody/material-web/carousel/carousel-item.js";
 
 export const MdCarousel = createComponent({
   react: React,

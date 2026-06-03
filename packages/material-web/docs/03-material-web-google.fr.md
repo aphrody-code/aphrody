@@ -226,7 +226,7 @@ export const FilledButton = createComponent({
 
 - **React 19+** : prise en charge native des Custom Elements (props et events) ; on peut utiliser `<md-*>` directement en JSX.
 
-Le fork local fournit d'ailleurs des wrappers React prêts à l'emploi (cf. § 7, `apps/m3-react` / `@aphrody-code/m3-react`).
+Le fork local fournit d'ailleurs des wrappers React prêts à l'emploi (cf. § 7, `apps/m3-react` / `@aphrody/m3-react`).
 
 ### Angulaire
 
@@ -254,7 +254,7 @@ Le manifeste du fork est `material-web/APHRODY-M3.md`. Objectif déclaré : **co
 - **`aphrody-labs.ts`** — promeut les composants `labs/` upstream jugés stables (badge, cards, navigation bar/drawer/tab, segmented button set). Ceux-ci réutilisent les styles SASS upstream.
 - **`all.ts`** ré-exporte les deux.
 - Build dédié : scripts npm `build:aphrody` (`bun run aphrody-build.ts`) et `typecheck:aphrody` (`tsc -p tsconfig.aphrody.json`), config `tsconfig.aphrody.json`. Bundle Bun natif, ~102 Ko, lit gardé externe ; sortie git-ignorée dans `dist-aphrody/`. Minifier CSS-in-JS en option via `aphrody-css-minify.ts` (`--css-transpile`).
-- Wrappers React : `apps/m3-react` ($`@aphrody-code/m3-react`), un par élément.
+- Wrappers React : `apps/m3-react` ($`@aphrody/m3-react`), un par élément.
 
 ### 7.2 Nouveaux composants ajoutés (24 custom elements self-contained)
 

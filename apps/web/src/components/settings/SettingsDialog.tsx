@@ -14,7 +14,7 @@ import {
   MdSwitch,
   MdTabs,
   MdTextButton,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { useConfig } from "../../api/queries.ts";
 import { getState, setState, useUi, type ThemeMode } from "../../store.ts";
 

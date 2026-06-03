@@ -1,8 +1,8 @@
 {
-  "name": "@aphrody-code/m3-codemods",
+  "name": "@aphrody/m3-codemods",
   "version": "0.1.0",
   "private": true,
-  "description": "Codemods MUI React -> @aphrody-code/m3-react (jscodeshift + ast-grep)",
+  "description": "Codemods MUI React -> @aphrody/m3-react (jscodeshift + ast-grep)",
   "type": "commonjs",
   "scripts": {
     "test": "bun run scripts/run-fixtures.ts"

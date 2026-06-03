@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdType as MdTypeElement } from "@aphrody-code/material-web/typography/md-type.js";
+import { MdType as MdTypeElement } from "@aphrody/material-web/typography/md-type.js";
 
 export const MdType = createComponent({
   react: React,

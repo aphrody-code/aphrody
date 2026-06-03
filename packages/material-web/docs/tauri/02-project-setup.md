@@ -55,7 +55,7 @@ Dans le fichier `package.json` de votre package hôte (`examples/showcase/packag
 
 ```json
 {
-  "name": "@aphrody-code/m3-showcase",
+  "name": "@aphrody/m3-showcase",
   "scripts": {
     "dev": "bun run src/server.ts",
     "build": "bun run build.ts",
@@ -69,7 +69,7 @@ Dans le fichier `package.json` de votre package hôte (`examples/showcase/packag
 
 Pour appeler ces scripts depuis la racine du monorepo via Turborepo, ajoutez la tâche dans `turbo.json` ou lancez-les directement avec Bun :
 ```bash
-bun --filter @aphrody-code/m3-showcase run tauri:dev
+bun --filter @aphrody/m3-showcase run tauri:dev
 ```
 
 ---

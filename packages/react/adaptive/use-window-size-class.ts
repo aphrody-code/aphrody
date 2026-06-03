@@ -2,7 +2,7 @@
  * Adaptive layout hooks for React — Material Design 3 window size classes.
  *
  * The **breakpoint values and classification logic are platform-agnostic** and
- * live in `@aphrody-code/m3-tokens/breakpoints` (pure TypeScript, no DOM). This
+ * live in `@aphrody/m3-tokens/breakpoints` (pure TypeScript, no DOM). This
  * module re-exports them and adds the *web* reactivity layer (`matchMedia` /
  * `resize`). That split is what makes the design system portable: a React
  * Native shell can share the very same `BREAKPOINTS` / `classifyWidth` from
@@ -20,10 +20,10 @@ import {
   mediaQuery,
   type WindowSizeClass,
   WINDOW_SIZE_CLASSES,
-} from "@aphrody-code/m3-tokens/breakpoints";
+} from "@aphrody/m3-tokens/breakpoints";
 
 // Re-export the canonical, platform-agnostic primitives so consumers can import
-// everything adaptive from a single entrypoint (`@aphrody-code/m3-react/adaptive`).
+// everything adaptive from a single entrypoint (`@aphrody/m3-react/adaptive`).
 export { BREAKPOINTS, classifyWidth, WINDOW_SIZE_CLASSES };
 export type { WindowSizeClass };
 

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSkeleton as MdSkeletonElement } from "@aphrody-code/material-web/skeleton/skeleton.js";
+import { MdSkeleton as MdSkeletonElement } from "@aphrody/material-web/skeleton/skeleton.js";
 
 export const MdSkeleton = createComponent({
   react: React,

@@ -8,7 +8,7 @@ Ce fichier est **la source de vérité unique** du kit de migration MUI (React) 
 
 - **MUI** : `material-ui/packages/mui-material/` — `@mui/material@9.0.1`, ~100 composants réels (154 modules), styling Emotion, palette **Material 2**, theming `createTheme` + CSS vars (`createThemeWithVars.js`).
 - **material-web (fork)** : `material-web/` — `@material/web@2.4.1`, **93 éléments `<md-*>` réels** (liste : `migration/scripts/md-elements.txt`). Entrées : `all.ts` re-exporte `aphrody-components.ts` + `aphrody-labs.ts` + composants upstream. Composants **self-contained** consommant les tokens `--md-sys-*` directement (avec fallbacks), bundle `tsc`+`lit` (pas de SASS).
-- **Wrappers React** : RÉALISÉS dans le monorepo material-web → `material-web/packages/react` (package `@aphrody-code/m3-react`). Le package tokens vit dans `material-web/packages/tokens` (`@aphrody-code/m3-tokens`). material-web est un monorepo bun + turbo (`workspaces: ["packages/*", "catalog"]`, `turbo.json`).
+- **Wrappers React** : RÉALISÉS dans le monorepo material-web → `material-web/packages/react` (package `@aphrody/m3-react`). Le package tokens vit dans `material-web/packages/tokens` (`@aphrody/m3-tokens`). material-web est un monorepo bun + turbo (`workspaces: ["packages/*", "catalog"]`, `turbo.json`).
 - **`@lit/react` n'est pas installé** — le wrapper layer en dépend (`bun add @lit/react`, bun uniquement, jamais npm/pnpm).
 - M3 Expressive (2025) non implémenté côté web ; `md-type` porte le type scale M3.
 
@@ -44,7 +44,7 @@ migration/
     events: { onInput: "input", onChange: "change" },
   });
   ```
-- Les wrappers réexportent depuis `material-web/packages/react/index.ts`. Package = `@aphrody-code/m3-react` (réalise le plan du fork).
+- Les wrappers réexportent depuis `material-web/packages/react/index.ts`. Package = `@aphrody/m3-react` (réalise le plan du fork).
 - L'import de l'élément se fait depuis son chemin `@material/web/...` (effet de bord d'enregistrement) ; pour les composants du fork, depuis `aphrody-components.ts` / `aphrody-labs.ts` / `all.ts`.
 
 ## 3. Mapping canonique MUI → material-web (cœur — à étendre, pas à contredire)

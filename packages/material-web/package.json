@@ -1,6 +1,6 @@
 {
-  "name": "@aphrody-code/material-web",
-  "version": "3.2.0",
+  "name": "@aphrody/material-web",
+  "version": "3.2.1",
   "description": "Material Design 3 web components (Lit) — MUI + MUI X migration target",
   "keywords": [
     "components",
@@ -39,8 +39,7 @@
   ],
   "type": "module",
   "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "scripts": {
     "build": "wireit",

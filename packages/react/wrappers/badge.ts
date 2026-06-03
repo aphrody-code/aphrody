@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBadge as MdBadgeElement } from "@aphrody-code/material-web/badge/badge.js";
+import { MdBadge as MdBadgeElement } from "@aphrody/material-web/badge/badge.js";
 
 export const MdBadge = createComponent({
   react: React,

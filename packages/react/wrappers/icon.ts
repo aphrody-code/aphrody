@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdIcon as MdIconElement } from "@aphrody-code/material-web/icon/icon.js";
+import { MdIcon as MdIconElement } from "@aphrody/material-web/icon/icon.js";
 
 export const MdIcon = createComponent({
   react: React,

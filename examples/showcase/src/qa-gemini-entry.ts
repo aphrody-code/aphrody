@@ -3,9 +3,9 @@
  * QA-only client entry: mounts the REAL Gemini AI Mode visual grammar
  * using pure Web Components without any React.
  */
-import "@aphrody-code/material-web/all.js";
-import "@aphrody-code/material-web/aphrody-components.js";
-import { cssFromSeed } from "@aphrody-code/m3-tokens/dynamic-color";
+import "@aphrody/material-web/all.js";
+import "@aphrody/material-web/aphrody-components.js";
+import { cssFromSeed } from "@aphrody/m3-tokens/dynamic-color";
 import "./showcase.css";
 import "./theme.css";
 

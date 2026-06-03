@@ -1,4 +1,4 @@
-import { MdDialog, MdFilledButton, MdTextButton } from "@aphrody-code/m3-react";
+import { MdDialog, MdFilledButton, MdTextButton } from "@aphrody/m3-react";
 
 export function Confirm({ open }) {
   return (

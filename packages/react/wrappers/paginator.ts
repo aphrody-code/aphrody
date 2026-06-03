@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdPaginator as MdPaginatorElement } from "@aphrody-code/material-web/paginator/paginator.js";
+import { MdPaginator as MdPaginatorElement } from "@aphrody/material-web/paginator/paginator.js";
 
 export const MdPaginator = createComponent({
   react: React,

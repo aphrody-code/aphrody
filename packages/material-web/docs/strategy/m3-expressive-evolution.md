@@ -53,7 +53,7 @@ Le sous-système M3 Expressive introduit 7 variantes de génération chromatique
 
 #### Exemple d'application dynamique Web
 ```typescript
-import { applyDynamicColor } from "@aphrody-code/m3-tokens/dynamic-color";
+import { applyDynamicColor } from "@aphrody/m3-tokens/dynamic-color";
 
 // Application instantanée d'un schéma expressif issu d'un seed de couleur
 applyDynamicColor("#9B72CB", {
@@ -178,7 +178,7 @@ export function useTextFieldState(initialValue = ""): WebTextFieldState {
 Ce hook s'intègre avec nos wrappers React comme suit :
 ```tsx
 import React, { useRef, useEffect } from "react";
-import { MdOutlinedTextField } from "@aphrody-code/m3-react";
+import { MdOutlinedTextField } from "@aphrody/m3-react";
 import { useTextFieldState } from "./useTextFieldState";
 
 export function ExpressiveInput() {
@@ -284,8 +284,8 @@ Pour intégrer pleinement les capacités de M3 Expressive au sein de notre monor
 
 ### Phase 2 : Composants de Navigation et Saisie (Priorité Moyenne)
 1.  **Élargissement du Navigation Rail** : Modifier [navigation-rail-styles.ts](file:///home/ubuntu/material-web/packages/material-web/navigationrail/internal/navigation-rail-styles.ts) pour passer la largeur par défaut (`--_width`) de `80px` à `96px` et la hauteur de l'item à `64px`. Mettre en place un modificateur ou une variable permettant l'expansion en volet latéral fluide à la place de l'ancien `NavigationDrawer`.
-2.  **Création du package d'état `useTextFieldState`** : Créer le fichier utilitaire ou le hook `useTextFieldState` dans `@aphrody-code/m3-react` pour offrir l'API d'état atomique aux consommateurs React.
+2.  **Création du package d'état `useTextFieldState`** : Créer le fichier utilitaire ou le hook `useTextFieldState` dans `@aphrody/m3-react` pour offrir l'API d'état atomique aux consommateurs React.
 
 ### Phase 3 : Mouvement Physique et Effets Avancés (Priorité Basse)
-1.  **Interpolateurs physiques Web** : Intégrer un parseur léger dans `@aphrody-code/m3-motion` capable de traduire des paramètres de ressorts physiques (damping, stiffness) en approximations complexes à base de splines de bézier ou en animations programmées avec le Web Animations API.
+1.  **Interpolateurs physiques Web** : Intégrer un parseur léger dans `@aphrody/m3-motion` capable de traduire des paramètres de ressorts physiques (damping, stiffness) en approximations complexes à base de splines de bézier ou en animations programmées avec le Web Animations API.
 2.  **Stabilisation des composants Labs** : Finaliser l'intégration des composants issus de `labs/gb` (comme les split-buttons, button-groups) au sein du bundle principal stable de `@material/web`.

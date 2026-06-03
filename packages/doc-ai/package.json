@@ -1,6 +1,6 @@
 {
-  "name": "@aphrody-code/doc-ai",
-  "version": "3.2.0",
+  "name": "@aphrody/doc-ai",
+  "version": "3.2.1",
   "description": "AI-first documentation and automatic translation system",
   "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/doc-ai#readme",
   "bugs": {
@@ -30,8 +30,7 @@
     }
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

@@ -7,7 +7,7 @@ const VAR_RE = /var\(\s*--md-sys-color-([a-z0-9-]+)/gi;
 /**
  * Valide les rôles référencés via `var(--md-sys-color-<role>)`. material-web
  * n'émet en runtime que ~49 rôles `--md-sys-color-*` (cf. la table `ROLES` de
- * `@aphrody-code/m3-tokens`) ; un nom inconnu (typo, rôle MUI/Tailwind, casse)
+ * `@aphrody/m3-tokens`) ; un nom inconnu (typo, rôle MUI/Tailwind, casse)
  * résout en `unset` silencieux — la couleur disparaît sans erreur. Cette règle
  * scanne TOUTES les chaînes du fichier (style/sx inline, `className` arbitraire
  * Tailwind `[var(--md-sys-color-x)]`, CSS-in-JS) et signale les rôles absents,

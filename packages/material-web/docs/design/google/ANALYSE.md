@@ -7,11 +7,11 @@
 > d'article : ce sont uniquement des **faits et tokens** extraits par échantillonnage des
 > captures (`-colors` ImageMagick + recalage sur les tokens canoniques Google dark).
 > But pour material-web : montrer comment cette grammaire se transpose **fidèlement** sur
-> notre stack (`--md-sys-color-*` de `@aphrody-code/m3-tokens` + composants `@aphrody-code/m3-react`),
+> notre stack (`--md-sys-color-*` de `@aphrody/m3-tokens` + composants `@aphrody/m3-react`),
 > sans copier les couleurs en dur (le seul hex conservé est le gradient « sparkle » de marque Gemini).
 >
 > Démo live correspondante : section **« Gemini AI Mode »** de l'exemple `examples/showcase`
-> (`@aphrody-code/m3-showcase`) — surface de recherche reconstruite avec de vrais composants Md\*.
+> (`@aphrody/m3-showcase`) — surface de recherche reconstruite avec de vrais composants Md\*.
 
 Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + autocomplétion),
 `search.png` (SERP classique), `result.png` (réponse synthétisée AI Mode).
@@ -36,7 +36,7 @@ Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + auto
 > mais chaque rôle de couleur observé ci-dessus est exprimé via le **rôle M3 équivalent**
 > (`--md-sys-color-*`), jamais en dur. La table dark Google sert de _guide d'intention_ : elle
 > dit quel **rôle sémantique** (surface, on-surface, on-surface-variant, primary, outline…) joue
-> chaque élément, et le moteur Material You (`@aphrody-code/m3-tokens/dynamic-color`) en produit la
+> chaque élément, et le moteur Material You (`@aphrody/m3-tokens/dynamic-color`) en produit la
 > valeur réelle (light + dark, WCAG-AA par construction). Le **seul hex conservé** est le gradient
 > « sparkle » Gemini (`#4285f4 → #9b72cb → #d96570`), couleur de marque transverse exposée en une
 > custom property unique `--gemini-sparkle`.
@@ -193,7 +193,7 @@ Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + auto
 
 ## Synthèse — système de composants cible (material-web)
 
-| Élément de grammaire                                 | Réf. image              | Composants `@aphrody-code/m3-react`                                                               |
+| Élément de grammaire                                 | Réf. image              | Composants `@aphrody/m3-react`                                                               |
 | ---------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
 | Tokens (dark Google → rôles M3 + `--gemini-sparkle`) | toutes                  | `--md-sys-color-*` + custom property `--gemini-sparkle`                                           |
 | Top bar (liens + app-grid + avatar)                  | google, search, ai_mode | `MdIconButton`, `MdAvatar`                                                                        |
@@ -213,7 +213,7 @@ Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + auto
   (défini une seule fois en custom property). Fonctionne en light **et** dark (toggle + seed picker
   Material You déjà présents dans le showcase).
 - **Composants réels uniquement** : n'utiliser que des exports `Md*` réellement présents dans
-  `@aphrody-code/m3-react` (cf. `packages/react/index.ts`). Pas de composant inventé.
+  `@aphrody/m3-react` (cf. `packages/react/index.ts`). Pas de composant inventé.
 - **Icônes Material Symbols** via `MdIcon` (texte enfant = ligature) ; la police variable est chargée par
   le showcase (plages d'axes) — sparkle = `auto_awesome`.
 - **Style** : tabs + double-quotes (formatter), header SPDX sur les fichiers `.ts/.tsx`, pas d'emoji, bun only.
@@ -221,5 +221,5 @@ Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + auto
 ### Démo
 
 La transposition vivante est la section **« Gemini AI Mode »** de `examples/showcase`
-(`@aphrody-code/m3-showcase`) : home pill + chip AI Mode (gradient sparkle), dropdown d'autocomplétion,
+(`@aphrody/m3-showcase`) : home pill + chip AI Mode (gradient sparkle), dropdown d'autocomplétion,
 rail latéral, et un mock SERP/Knowledge-panel compact — le tout sur les tokens M3, vérifié en dark.

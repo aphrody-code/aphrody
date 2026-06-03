@@ -1,4 +1,4 @@
-// Ambient shims for @aphrody-code/material-web build artifacts that are NOT present in this
+// Ambient shims for @aphrody/material-web build artifacts that are NOT present in this
 // source checkout of the fork.
 //
 // material-web's build pipeline generates two kinds of style modules that the

@@ -8,7 +8,7 @@
  * @fileoverview A convenience bundle import that includes common components.
  *
  * WARNING: This import is intended for prototyping and development builds only.
- * It is smaller than `@aphrody-code/material-web/all.js` and includes the most common
+ * It is smaller than `@aphrody/material-web/all.js` and includes the most common
  * components for starting a project. Import only the individual components used
  * for production.
  */

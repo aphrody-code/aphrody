@@ -1,7 +1,7 @@
 // MCP view: parses `aphrody mcp list` (NDJSON, one server per line) into a filterable list of tools with inline input schema.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MdIcon, MdIconButton, MdOutlinedTextField } from "@aphrody-code/m3-react";
+import { MdIcon, MdIconButton, MdOutlinedTextField } from "@aphrody/m3-react";
 import { run } from "../../client.ts";
 import { Hint, PageHead, Spinner } from "../../ui.tsx";
 

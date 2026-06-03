@@ -6,7 +6,7 @@ import {
   MdIcon,
   MdOutlinedButton,
   MdOutlinedTextField,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { execText, run } from "../../../client.ts";
 import { Hint, Panel, Spinner } from "../../../ui.tsx";
 

@@ -70,7 +70,7 @@ ceux de Google Sans). **Trois voies** :
 ### a. CDN Google Fonts, plages variables (prototypage)
 
 ```ts
-import { ensureMaterialSymbols } from "@aphrody-code/material-web/icon/material-symbols.js";
+import { ensureMaterialSymbols } from "@aphrody/material-web/icon/material-symbols.js";
 ensureMaterialSymbols(); // injecte le <link> Outlined, plages variables complètes
 ```
 
@@ -99,7 +99,7 @@ codemod (§5) collecte précisément ce set.
 ### c. Self-hébergé woff2/ttf (offline, zéro CDN)
 
 ```ts
-import { ensureMaterialSymbolsFontFace } from "@aphrody-code/material-web/icon/material-symbols.js";
+import { ensureMaterialSymbolsFontFace } from "@aphrody/material-web/icon/material-symbols.js";
 ensureMaterialSymbolsFontFace("/fonts/MaterialSymbolsOutlined.woff2");
 ```
 

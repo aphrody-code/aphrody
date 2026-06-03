@@ -2,7 +2,7 @@
 // Every feature composes these instead of raw Angular Material.
 
 import type { ReactNode } from "react";
-import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody-code/m3-react";
+import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody/m3-react";
 
 /** Titled section card (replaces the Angular `mat-card` panels). */
 export function Panel({

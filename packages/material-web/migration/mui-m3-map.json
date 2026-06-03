@@ -1,8 +1,8 @@
 {
   "$schema": "https://aphrody-code.github.io/material-web/schemas/mui-m3-map.json",
   "meta": {
-    "description": "Mapping canonique MUI (@mui/material@9 + @mui/icons-material) -> material-web (@aphrody-code/m3-react + Material Symbols). Généré depuis migration/codemods/lib/.",
-    "targetPackage": "@aphrody-code/m3-react",
+    "description": "Mapping canonique MUI (@mui/material@9 + @mui/icons-material) -> material-web (@aphrody/m3-react + Material Symbols). Généré depuis migration/codemods/lib/.",
+    "targetPackage": "@aphrody/m3-react",
     "muiPackages": ["@mui/material"],
     "generatedBy": "migration/codemods/scripts/export-map-json.ts",
     "docs": ["00-CONVENTIONS.md", "10-case-study-rpbey.md", "11-material-symbols.md"]
@@ -166,11 +166,11 @@
   "gapComponents": {
     "Modal": "primitive (gap) -> md-dialog (modal) + md-backdrop pour le scrim",
     "Popper": "primitive (gap) -> Popover API native + md-menu / md-popover",
-    "Collapse": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-    "Fade": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-    "Grow": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-    "Slide": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-    "Zoom": "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+    "Collapse": "transition (gap) -> @aphrody/m3-motion + motion tokens",
+    "Fade": "transition (gap) -> @aphrody/m3-motion + motion tokens",
+    "Grow": "transition (gap) -> @aphrody/m3-motion + motion tokens",
+    "Slide": "transition (gap) -> @aphrody/m3-motion + motion tokens",
+    "Zoom": "transition (gap) -> @aphrody/m3-motion + motion tokens",
     "CssBaseline": "pas d-element md -> reset CSS + import des tokens M3",
     "ScopedCssBaseline": "pas d-element md -> reset CSS scopé + tokens M3"
   },

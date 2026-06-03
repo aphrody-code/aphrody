@@ -2,7 +2,7 @@
 // re-running whenever the seed, the theme mode, or the OS preference changes.
 
 import { useEffect } from "react";
-import { applyDynamicColor } from "@aphrody-code/m3-tokens/dynamic-color";
+import { applyDynamicColor } from "@aphrody/m3-tokens/dynamic-color";
 import { isDark, useUi } from "../store.ts";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

@@ -1,8 +1,8 @@
 # Kit de migration MUI → material-web
 
-Tout le nécessaire pour migrer une codebase **React + MUI** (`@mui/material@9`) vers le monorepo **material-web** (fork aphrody, web components Lit) via la couche React `@aphrody-code/m3-react`.
+Tout le nécessaire pour migrer une codebase **React + MUI** (`@mui/material@9`) vers le monorepo **material-web** (fork aphrody, web components Lit) via la couche React `@aphrody/m3-react`.
 
-> Cible réalisée : `material-web/packages/react` (`@aphrody-code/m3-react`, **120 tags `md-*`** wrappés) + `material-web/packages/m3-tokens` (`@aphrody-code/m3-tokens`). Voir aussi `../docs/` pour l'état de Material Design 3 sur le web.
+> Cible réalisée : `material-web/packages/react` (`@aphrody/m3-react`, **120 tags `md-*`** wrappés) + `material-web/packages/m3-tokens` (`@aphrody/m3-tokens`). Voir aussi `../docs/` pour l'état de Material Design 3 sur le web.
 
 ## Par où commencer
 
@@ -31,8 +31,8 @@ Tout le nécessaire pour migrer une codebase **React + MUI** (`@mui/material@9`)
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [`codemods/`](./codemods/)                                       | Transforms jscodeshift (imports, JSX variant-aware, props/events) + règles ast-grep                                                                         | fixtures **4/4 PASS**, `tsc --strict` 0 erreur, validé sur app réelle (cf. `10`) |
 | [`examples/`](./examples/)                                       | Écran « Paramètres de compte » migré avant/après + notes point par point                                                                                    | complet                                                                          |
-| [`scripts/`](./scripts/)                                         | `md-elements.txt` (**120 tags** de référence, synchro `packages/react`), `theme-to-tokens.ts` (copie canonique dans le package `@aphrody-code/m3-tokens`)   | —                                                                                |
-| [`../packages/eslint-plugin-m3/`](../packages/eslint-plugin-m3/) | Plugin lint `@aphrody-code/eslint-plugin-m3` (oxlint `jsPlugins` + ESLint) — 6 règles M3 pour les sites consommant la lib ; complément continu des codemods | testé sur oxlint réel (6/6)                                                      |
+| [`scripts/`](./scripts/)                                         | `md-elements.txt` (**120 tags** de référence, synchro `packages/react`), `theme-to-tokens.ts` (copie canonique dans le package `@aphrody/m3-tokens`)   | —                                                                                |
+| [`../packages/eslint-plugin-m3/`](../packages/eslint-plugin-m3/) | Plugin lint `@aphrody/eslint-plugin-m3` (oxlint `jsPlugins` + ESLint) — 6 règles M3 pour les sites consommant la lib ; complément continu des codemods | testé sur oxlint réel (6/6)                                                      |
 
 ## Les pièges à retenir
 

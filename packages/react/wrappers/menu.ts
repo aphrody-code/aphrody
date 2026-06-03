@@ -3,9 +3,9 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdMenu as MdMenuElement } from "@aphrody-code/material-web/menu/menu.js";
-import { MdMenuItem as MdMenuItemElement } from "@aphrody-code/material-web/menu/menu-item.js";
-import { MdSubMenu as MdSubMenuElement } from "@aphrody-code/material-web/menu/sub-menu.js";
+import { MdMenu as MdMenuElement } from "@aphrody/material-web/menu/menu.js";
+import { MdMenuItem as MdMenuItemElement } from "@aphrody/material-web/menu/menu-item.js";
+import { MdSubMenu as MdSubMenuElement } from "@aphrody/material-web/menu/sub-menu.js";
 
 export const MdMenu = createComponent({
   react: React,

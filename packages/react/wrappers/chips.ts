@@ -3,11 +3,11 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdAssistChip as MdAssistChipElement } from "@aphrody-code/material-web/chips/assist-chip.js";
-import { MdChipSet as MdChipSetElement } from "@aphrody-code/material-web/chips/chip-set.js";
-import { MdFilterChip as MdFilterChipElement } from "@aphrody-code/material-web/chips/filter-chip.js";
-import { MdInputChip as MdInputChipElement } from "@aphrody-code/material-web/chips/input-chip.js";
-import { MdSuggestionChip as MdSuggestionChipElement } from "@aphrody-code/material-web/chips/suggestion-chip.js";
+import { MdAssistChip as MdAssistChipElement } from "@aphrody/material-web/chips/assist-chip.js";
+import { MdChipSet as MdChipSetElement } from "@aphrody/material-web/chips/chip-set.js";
+import { MdFilterChip as MdFilterChipElement } from "@aphrody/material-web/chips/filter-chip.js";
+import { MdInputChip as MdInputChipElement } from "@aphrody/material-web/chips/input-chip.js";
+import { MdSuggestionChip as MdSuggestionChipElement } from "@aphrody/material-web/chips/suggestion-chip.js";
 
 export const MdAssistChip = createComponent({
   react: React,

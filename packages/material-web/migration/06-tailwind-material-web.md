@@ -154,7 +154,7 @@ Résultat : `bg-primary text-on-primary`, `bg-surface-container text-on-surface`
 
 Noms vérifiés dans `material-web/tokens/_md-sys-typescale.scss` ; valeurs réelles dans `material-web/tokens/versions/v0_192/_md-sys-typescale.scss`. Namespaces Tailwind vérifiés : `--text-*` (taille, `utilities.ts:5268`), `--leading-*` (`utilities.ts:4931`), `--tracking-*` (`utilities.ts:4950`), `--font-weight-*` (`utilities.ts:3974`).
 
-> ⚠️ **Couverture partielle — le `tracking` (letter-spacing) N'EST PAS émis par la lib.** `_md-sys-typescale.scss` range tous les `*-tracking` dans `$unsupported-tokens` (lignes `:82-114`), filtrés à l'émission (`validate.values(... $unsupported-tokens)`, `:144-148`). Seuls `*-size`, `*-line-height`, `*-weight` (et `*-font`) sortent comme `var(--md-sys-typescale-*)` au runtime. Donc `var(--md-sys-typescale-body-large-tracking)` **ne résout vers RIEN** par défaut. Deux remèdes : (1) importer `@aphrody-code/m3-tokens/m3-tokens.css` qui déclare ces 15 vars sur `:root`, ou (2) inliner la valeur réelle en dur dans le `@theme`.
+> ⚠️ **Couverture partielle — le `tracking` (letter-spacing) N'EST PAS émis par la lib.** `_md-sys-typescale.scss` range tous les `*-tracking` dans `$unsupported-tokens` (lignes `:82-114`), filtrés à l'émission (`validate.values(... $unsupported-tokens)`, `:144-148`). Seuls `*-size`, `*-line-height`, `*-weight` (et `*-font`) sortent comme `var(--md-sys-typescale-*)` au runtime. Donc `var(--md-sys-typescale-body-large-tracking)` **ne résout vers RIEN** par défaut. Deux remèdes : (1) importer `@aphrody/m3-tokens/m3-tokens.css` qui déclare ces 15 vars sur `:root`, ou (2) inliner la valeur réelle en dur dans le `@theme`.
 
 Un nom de taille Tailwind (`--text-body-large`) peut embarquer ses `line-height`/`letter-spacing`/`font-weight` par défaut via la syntaxe à valeurs liées de v4 :
 
@@ -172,7 +172,7 @@ Un nom de taille Tailwind (`--text-body-large`) peut embarquer ses `line-height`
   --text-title-medium: var(--md-sys-typescale-title-medium-size); /* 1rem */
   --text-title-medium--line-height: var(--md-sys-typescale-title-medium-line-height); /* 1.5rem */
   /* letter-spacing : --md-sys-typescale-*-tracking N'EST PAS émis par la lib.
-     Résout uniquement si @aphrody-code/m3-tokens/m3-tokens.css est importé, sinon inliner : */
+     Résout uniquement si @aphrody/m3-tokens/m3-tokens.css est importé, sinon inliner : */
   --text-title-medium--letter-spacing: var(
     --md-sys-typescale-title-medium-tracking
   ); /* 0.009375rem — via m3-tokens.css */
@@ -193,11 +193,11 @@ Usage : `<h1 class="text-display-large">`, `<p class="text-body-large">`, `<span
 
 Noms vérifiés dans `material-web/tokens/_md-sys-shape.scss:15-23` ; valeurs dans `material-web/tokens/versions/v0_192/_md-sys-shape.scss` (`none 0px`, `extra-small 4px`, `small 8px`, `medium 12px`, `large 16px`, `extra-large 28px`, `full 9999px`). Namespace `--radius-*` → utilitaires `rounded-*` (vérifié : `tailwindcss/packages/tailwindcss/src/utilities.ts:2339` — `themeKeys: ['--radius']`).
 
-> ⚠️ **`--md-sys-shape-corner-*` N'EST PAS émis au runtime par la lib.** La famille shape est résolue au compile-time Sass : les composants consomment des tokens composant (`--md-comp-<x>-container-shape`), pas de `--md-sys-shape-*` dans le DOM (0 occurrence dans le CSS compilé). Donc `var(--md-sys-shape-corner-medium)` ci-dessous **ne résout vers rien** tant que l'app ne déclare pas ces vars elle-même. Deux options : (1) importer `@aphrody-code/m3-tokens/m3-tokens.css` (déclare les 7 corners sur `:root`), ou (2) inliner directement les px. Ce n'est PAS une dérivation native de la lib, c'est un jeu de vars parallèle.
+> ⚠️ **`--md-sys-shape-corner-*` N'EST PAS émis au runtime par la lib.** La famille shape est résolue au compile-time Sass : les composants consomment des tokens composant (`--md-comp-<x>-container-shape`), pas de `--md-sys-shape-*` dans le DOM (0 occurrence dans le CSS compilé). Donc `var(--md-sys-shape-corner-medium)` ci-dessous **ne résout vers rien** tant que l'app ne déclare pas ces vars elle-même. Deux options : (1) importer `@aphrody/m3-tokens/m3-tokens.css` (déclare les 7 corners sur `:root`), ou (2) inliner directement les px. Ce n'est PAS une dérivation native de la lib, c'est un jeu de vars parallèle.
 
 ```css
 @theme inline {
-  /* Résout uniquement si @aphrody-code/m3-tokens/m3-tokens.css est importé.
+  /* Résout uniquement si @aphrody/m3-tokens/m3-tokens.css est importé.
      Sinon, remplacer chaque var() par sa valeur px en commentaire. */
   --radius-none: var(--md-sys-shape-corner-none); /* 0px */
   --radius-extra-small: var(--md-sys-shape-corner-extra-small); /* 4px */
@@ -211,13 +211,13 @@ Noms vérifiés dans `material-web/tokens/_md-sys-shape.scss:15-23` ; valeurs da
 
 Usage : `rounded-large`, `rounded-extra-large`, `rounded-full`. Pour `Paper` MUI (voir §4) → `<div class="bg-surface-container rounded-medium">`. Les coins **partiels** (`corner-large-top`, `corner-large-start/end`…) sont `$unsupported-tokens` côté M3 et n'ont pas d'équivalent `--radius-*` unique → composer au cas par cas avec `rounded-t-*`/`rounded-s-*`.
 
-### 2.5 Motion, elevation, state — familles SANS var runtime (`@aphrody-code/m3-tokens/m3-tokens.css`)
+### 2.5 Motion, elevation, state — familles SANS var runtime (`@aphrody/m3-tokens/m3-tokens.css`)
 
 Trois familles M3 supplémentaires (motion, elevation, state) ne sont **émises par AUCUNE `--md-sys-*` au runtime** : comme shape et typescale-tracking, elles sont résolues au compile-time Sass dans les composants (motion = passthrough, elevation = calculée par `<md-elevation>`, state = vars locales `--_*` dans le shadow DOM). Pour les rendre mappables en `@theme`, le package fork fournit un **asset CSS prêt à importer** qui les déclare comme vraies vars sur `:root`, avec les valeurs réelles de `versions/v0_192/_md-sys-*.scss` :
 
 ```css
 /* app.css — APRÈS @import "tailwindcss" */
-@import "@aphrody-code/m3-tokens/m3-tokens.css"; /* déclare shape(7) + tracking(15) + motion-duration(16) + motion-easing(10) + elevation(6) + state(4) sur :root */
+@import "@aphrody/m3-tokens/m3-tokens.css"; /* déclare shape(7) + tracking(15) + motion-duration(16) + motion-easing(10) + elevation(6) + state(4) sur :root */
 ```
 
 Une fois importé, le `@theme` peut consommer ces familles. Le fichier embarque un bloc `@theme inline` d'exemple complet en commentaire.
@@ -476,7 +476,7 @@ Le point névralgique. Tailwind v4 déclare ses couches dans cet ordre (vérifi�
 /* (0) Familles M3 SANS var runtime (shape/tracking/motion/elevation/state).
    Déclare ces vars sur :root avec les valeurs réelles v0_192 (cf. §2.4/§2.5).
    color + typescale size/line-height/weight sont déjà émis par la lib → pas ici. */
-@import "@aphrody-code/m3-tokens/m3-tokens.css";
+@import "@aphrody/m3-tokens/m3-tokens.css";
 
 /* (1) Tokens COULEUR M3 = SOURCE DE VÉRITÉ (seule famille en var runtime native). light + dark scoped. */
 :root {
@@ -577,7 +577,7 @@ Bonne nouvelle : le preflight de Tailwind v4 cible le **light DOM** ; il **ne fr
 ## 7. Recommandation finale — architecture la plus propre
 
 1. **Moteur** : Tailwind **v4.3.0** (repo local `tailwindcss/`) via **`@tailwindcss/vite`**. `@import "tailwindcss"` comme unique entrée.
-2. **Source de vérité COULEUR = tokens `--md-sys-color-*`** posés sur `:root` (générés par `material-color-utilities` — cf. `02-theme-token-migration.md`). C'est la **seule famille réellement émise au runtime** par la lib ; les `md-*` la consomment nativement. Pour shape/typescale-tracking/motion/elevation/state (résolus au compile-time, donc absents du DOM), importer **`@aphrody-code/m3-tokens/m3-tokens.css`** qui les déclare sur `:root` avec les valeurs réelles v0_192 (§2.4/§2.5) — jeu de vars parallèle, pas une dérivation.
+2. **Source de vérité COULEUR = tokens `--md-sys-color-*`** posés sur `:root` (générés par `material-color-utilities` — cf. `02-theme-token-migration.md`). C'est la **seule famille réellement émise au runtime** par la lib ; les `md-*` la consomment nativement. Pour shape/typescale-tracking/motion/elevation/state (résolus au compile-time, donc absents du DOM), importer **`@aphrody/m3-tokens/m3-tokens.css`** qui les déclare sur `:root` avec les valeurs réelles v0_192 (§2.4/§2.5) — jeu de vars parallèle, pas une dérivation.
 3. **Tailwind dérive ses tokens des `--md-sys-*` via `@theme inline`** (couleurs §2.2 = dérivation native ; typescale size/line-height/weight §2.3 = native ; tracking §2.3 + radius §2.4 + ease §2.5 = via m3-tokens.css) → `bg-primary`/`text-on-surface`/`rounded-large`/`ease-emphasized` alignés sur M3 et **réactifs aux overrides scopés** (pour la couleur). Optionnel : `--color-*: initial` pour purger la palette par défaut. **Non couvrables** : élévation fidèle (→ `<md-elevation>`), durations (arbitraire `duration-[var(…)]`), state des `md-*` (shadow DOM).
 4. **Répartition stricte** : Tailwind = layout + host + composants non-`md` (`Box/Stack/Grid/Container/Paper` → `<div>` + utilitaires, §4) ; **theming interne des `md-*` = tokens uniquement** ; **`::part()`** (CSS classique ou `@custom-variant`, §3) pour les rares retouches ciblées des sous-parties exposées.
 5. **Robustesse** : conserver le preflight (il n'atteint pas le shadow DOM des `md-*`) ; ajouter la règle `:not(:defined)` anti-FOUC ; mettre les overrides `::part`/tokens composant dans `@layer components`.

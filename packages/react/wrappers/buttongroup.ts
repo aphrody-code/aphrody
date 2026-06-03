@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdButtonGroup as MdButtonGroupElement } from "@aphrody-code/material-web/buttongroup/button-group.js";
+import { MdButtonGroup as MdButtonGroupElement } from "@aphrody/material-web/buttongroup/button-group.js";
 
 export const MdButtonGroup = createComponent({
   react: React,

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdRating as MdRatingElement } from "@aphrody-code/material-web/rating/rating.js";
+import { MdRating as MdRatingElement } from "@aphrody/material-web/rating/rating.js";
 
 export const MdRating = createComponent({
   react: React,

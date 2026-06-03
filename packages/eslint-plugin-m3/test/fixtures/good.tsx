@@ -1,5 +1,5 @@
 // Fixture conforme — ne doit déclencher AUCUNE règle m3.
-import { MdFilledButton, MdIcon, MdIconButton, MdSwitch, MdTooltip } from "@aphrody-code/m3-react";
+import { MdFilledButton, MdIcon, MdIconButton, MdSwitch, MdTooltip } from "@aphrody/m3-react";
 
 export function Good() {
   return (

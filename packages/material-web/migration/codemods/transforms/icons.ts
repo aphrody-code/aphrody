@@ -10,7 +10,7 @@
  *
  * Stratégie (cf. lib/icon-names.ts) :
  *   - glyphe Material Symbols valide -> <md-icon>glyph</md-icon> + import d'effet
- *     de bord '@aphrody-code/material-web/icon/icon.js'.
+ *     de bord '@aphrody/material-web/icon/icon.js'.
  *   - logo de marque (GitHub, X…) absent de Material Symbols -> ÉLÉMENT INCHANGÉ
  *     + MIGRATION-TODO (garder l'icône en SVG / set de marque dédié).
  *   - conversion non validée -> élément inchangé + MIGRATION-TODO (avec le snake
@@ -28,7 +28,7 @@ import { resolveMuiIcon } from "../lib/icon-names";
 import { addMigrationTodo, flushMigrationTodos } from "../lib/jsx-helpers";
 
 const MUI_ICONS_PKG = "@mui/icons-material";
-const MD_ICON_SIDE_EFFECT = "@aphrody-code/material-web/icon/icon.js";
+const MD_ICON_SIDE_EFFECT = "@aphrody/material-web/icon/icon.js";
 
 export const parser = "tsx";
 

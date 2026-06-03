@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdTimePicker as MdTimePickerElement } from "@aphrody-code/material-web/timepicker/time-picker.js";
+import { MdTimePicker as MdTimePickerElement } from "@aphrody/material-web/timepicker/time-picker.js";
 
 export const MdTimePicker = createComponent({
   react: React,

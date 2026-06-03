@@ -116,7 +116,7 @@ Include:
 1. Title: Component name and tag name.
 2. Introduction: What the component does, its visual representation, and alignment with M3 guidelines.
 3. HTML Example: A clear, clean specimen example showing standard usage.
-4. React Wrapper Example: Examples of import and consumption using @aphrody-code/m3-react wrapper.
+4. React Wrapper Example: Examples of import and consumption using @aphrody/m3-react wrapper.
 5. API Reference: Tables for:
    - Reactive properties/attributes (type, default, description).
    - Custom events dispatched.

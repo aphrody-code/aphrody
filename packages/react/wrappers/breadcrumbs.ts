@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBreadcrumbs as MdBreadcrumbsElement } from "@aphrody-code/material-web/breadcrumbs/breadcrumbs.js";
+import { MdBreadcrumbs as MdBreadcrumbsElement } from "@aphrody/material-web/breadcrumbs/breadcrumbs.js";
 
 export const MdBreadcrumbs = createComponent({
   react: React,

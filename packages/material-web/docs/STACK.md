@@ -89,9 +89,9 @@ The system is **adaptive across platforms** without per-target rewrites:
 
 | Layer                       | Package                                                        | Platform                  | Shares                                                            |
 | --------------------------- | -------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
-| Design tokens / breakpoints | `@aphrody-code/m3-tokens` (`./breakpoints`, `./dynamic-color`) | **any** (pure TS, no DOM) | values + logic — usable from React Native too                     |
-| Adaptive React hooks        | `@aphrody-code/m3-react/adaptive`                              | web                       | re-exports the `m3-tokens` primitives, adds `matchMedia`/`resize` |
-| Web components              | `@material/web` + `@aphrody-code/m3-react`                     | web / webview             | the full `<md-*>` UI                                              |
+| Design tokens / breakpoints | `@aphrody/m3-tokens` (`./breakpoints`, `./dynamic-color`) | **any** (pure TS, no DOM) | values + logic — usable from React Native too                     |
+| Adaptive React hooks        | `@aphrody/m3-react/adaptive`                              | web                       | re-exports the `m3-tokens` primitives, adds `matchMedia`/`resize` |
+| Web components              | `@material/web` + `@aphrody/m3-react`                     | web / webview             | the full `<md-*>` UI                                              |
 
 The M3 window size classes (600 / 840 / 1200 / 1600 dp) are defined **once** in
 `m3-tokens/breakpoints` and consumed identically everywhere — so the same app

@@ -117,7 +117,7 @@ export function materialSymbolsFontFaceCss(
  *
  * @example
  * ```ts
- * import {ensureMaterialSymbols} from '@aphrody-code/material-web/icon/material-symbols.js';
+ * import {ensureMaterialSymbols} from '@aphrody/material-web/icon/material-symbols.js';
  * ensureMaterialSymbols(); // full Outlined set, variable ranges
  * ensureMaterialSymbols({iconNames: ['home', 'search', 'settings']}); // subset
  * ```

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdList as MdListElement } from "@aphrody-code/material-web/list/list.js";
-import { MdListItem as MdListItemElement } from "@aphrody-code/material-web/list/list-item.js";
+import { MdList as MdListElement } from "@aphrody/material-web/list/list.js";
+import { MdListItem as MdListItemElement } from "@aphrody/material-web/list/list-item.js";
 
 export const MdList = createComponent({
   react: React,

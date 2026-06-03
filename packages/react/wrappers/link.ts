@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdLink as MdLinkElement } from "@aphrody-code/material-web/link/link.js";
+import { MdLink as MdLinkElement } from "@aphrody/material-web/link/link.js";
 
 export const MdLink = createComponent({
   react: React,

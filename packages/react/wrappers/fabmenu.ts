@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdFabMenu as MdFabMenuElement } from "@aphrody-code/material-web/fabmenu/fab-menu.js";
-import { MdFabMenuItem as MdFabMenuItemElement } from "@aphrody-code/material-web/fabmenu/fab-menu-item.js";
+import { MdFabMenu as MdFabMenuElement } from "@aphrody/material-web/fabmenu/fab-menu.js";
+import { MdFabMenuItem as MdFabMenuItemElement } from "@aphrody/material-web/fabmenu/fab-menu-item.js";
 
 export const MdFabMenu = createComponent({
   react: React,

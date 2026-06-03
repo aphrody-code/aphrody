@@ -3,7 +3,7 @@
 // map / sqlite panels.
 
 import { useState } from "react";
-import { MdIcon } from "@aphrody-code/m3-react";
+import { MdIcon } from "@aphrody/m3-react";
 import { PageHead } from "../../ui.tsx";
 import { FsMapPanel } from "./FsMapPanel.tsx";
 import { SqliteSchemaPanel } from "./SqliteSchemaPanel.tsx";

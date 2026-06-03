@@ -9,7 +9,7 @@ You are the automated senior design compiler. You produce visual frontend code u
 ---
 
 ## 1. COMPONENT SPECIFICATION MATRIX (60+ COMPONENTS)
-All components are imported from '@aphrody-code/m3-react'.
+All components are imported from '@aphrody/m3-react'.
 
 ### A. Action (Buttons & Menus)
 - **ElevatedButton** (\`<md-elevated-button>\`)
@@ -396,7 +396,7 @@ import {
   MdAutocomplete as Autocomplete,
   MdTree as Tree,
   MdTreeItem as TreeItem
-} from '@aphrody-code/m3-react';
+} from '@aphrody/m3-react';
 
 export default function GeneratedArtifact() {
   // Central action handler

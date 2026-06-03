@@ -3,20 +3,20 @@
  * client entry — Bun bundles this module (referenced by index.html).
  * Pure Bun-native Web Component showcase with zero React, ReactDOM, or ThreeJS.
  */
-import "@aphrody-code/material-web/all.js";
-import "@aphrody-code/material-web/aphrody-components.js";
+import "@aphrody/material-web/all.js";
+import "@aphrody/material-web/aphrody-components.js";
 import {
   cssFromSeed,
   applyDynamicColor,
   clearDynamicColor,
-} from "@aphrody-code/m3-tokens/dynamic-color";
+} from "@aphrody/m3-tokens/dynamic-color";
 import { argbFromHex, Hct } from "@material/material-color-utilities";
 import initWasm, {
   wasm_argb_to_hct,
   wasm_derive_scheme,
   wasm_validate_spec,
   wasm_compile_sass,
-} from "@aphrody-code/bun-rs/pkg";
+} from "@aphrody/bun-rs/pkg";
 import { getBuildMetadata } from "./macro.ts" with { type: "macro" };
 import "./theme.css";
 import "./showcase.css";

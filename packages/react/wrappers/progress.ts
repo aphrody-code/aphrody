@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdCircularProgress as MdCircularProgressElement } from "@aphrody-code/material-web/progress/circular-progress.js";
-import { MdLinearProgress as MdLinearProgressElement } from "@aphrody-code/material-web/progress/linear-progress.js";
+import { MdCircularProgress as MdCircularProgressElement } from "@aphrody/material-web/progress/circular-progress.js";
+import { MdLinearProgress as MdLinearProgressElement } from "@aphrody/material-web/progress/linear-progress.js";
 
 export const MdCircularProgress = createComponent({
   react: React,

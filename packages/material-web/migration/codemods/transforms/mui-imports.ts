@@ -5,7 +5,7 @@
  *   - imports nommés    `import {Button} from '@mui/material'`
  *   - imports default   `import Button from '@mui/material/Button'`
  *   - alias             `import {Button as B} from '@mui/material'`
- * Réécrit vers `@aphrody-code/m3-react` (§2) en choisissant le wrapper variant-aware.
+ * Réécrit vers `@aphrody/m3-react` (§2) en choisissant le wrapper variant-aware.
  *
  * Usage :
  *   bunx jscodeshift -t transforms/mui-imports.ts --parser=tsx <fichiers...>

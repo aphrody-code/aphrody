@@ -11,7 +11,7 @@ import {
   MdOutlinedButton,
   MdOutlinedTextField,
   MdTextButton,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { api } from "../../api/client.ts";
 import { useConfig } from "../../api/queries.ts";
 import { session } from "../../store.ts";

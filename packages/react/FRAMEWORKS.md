@@ -1,4 +1,4 @@
-# Intégration frameworks (SSR / RSC) — `@aphrody-code/m3-react`
+# Intégration frameworks (SSR / RSC) — `@aphrody/m3-react`
 
 Guide d'intégration des wrappers Material 3 dans un framework React à rendu
 serveur — **Next.js App Router**, Remix, ou tout setup RSC / SSR / hydration.
@@ -72,8 +72,8 @@ import {
   MdLineChart,
   MdTabs,
   MdPrimaryTab,
-} from "@aphrody-code/m3-react";
-import { Fade } from "@aphrody-code/m3-react/transitions";
+} from "@aphrody/m3-react";
+import { Fade } from "@aphrody/m3-react/transitions";
 import { useRef, useState } from "react";
 
 export function Demo() {
@@ -157,7 +157,7 @@ le layout serveur :
 :root {
   --md-sys-color-primary: #6750a4;
   --md-sys-color-on-primary: #fff;
-  /* … générés depuis @aphrody-code/m3-tokens en prod … */
+  /* … générés depuis @aphrody/m3-tokens en prod … */
 }
 ```
 
@@ -174,7 +174,7 @@ les compile :
 // next.config.ts
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
-  transpilePackages: ["@aphrody-code/m3-react", "@material/web"],
+  transpilePackages: ["@aphrody/m3-react", "@material/web"],
 };
 export default nextConfig;
 ```
@@ -195,7 +195,7 @@ export default nextConfig;
 bun run build              # à la racine du monorepo → @material/web .js + dist react
 
 # 2. dans VOTRE app Next.js : importer les wrappers (déjà marqués 'use client')
-#    import { MdFilledButton } from "@aphrody-code/m3-react";
+#    import { MdFilledButton } from "@aphrody/m3-react";
 #    next build → vert, sans transpilePackages
 ```
 

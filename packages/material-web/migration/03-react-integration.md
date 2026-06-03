@@ -1,6 +1,6 @@
 # 03 — Intégration des web components Lit (`md-*`) dans React
 
-Ce document est le **socle technique** des wrappers `@aphrody-code/m3-react` : il explique _comment_ et _pourquoi_ on enrobe les éléments `<md-*>` (web components Lit, `@material/web@2.4.1`, fork aphrody) pour les consommer depuis React et Next.js. À lire **avant** de regarder les wrappers générés dans `migration/wrappers/`. Tout y est ancré dans le code réel du fork (`material-web/…`) et sourcé. Convention de nommage, mapping et garde-fous : voir `migration/00-CONVENTIONS.md` (§2, §4, §7) — ce doc ne les contredit jamais.
+Ce document est le **socle technique** des wrappers `@aphrody/m3-react` : il explique _comment_ et _pourquoi_ on enrobe les éléments `<md-*>` (web components Lit, `@material/web@2.4.1`, fork aphrody) pour les consommer depuis React et Next.js. À lire **avant** de regarder les wrappers générés dans `migration/wrappers/`. Tout y est ancré dans le code réel du fork (`material-web/…`) et sourcé. Convention de nommage, mapping et garde-fous : voir `migration/00-CONVENTIONS.md` (§2, §4, §7) — ce doc ne les contredit jamais.
 
 > Rappels du contrat (`00-CONVENTIONS.md`) : **bun uniquement** (`bun add @lit/react`, jamais npm/pnpm) ; `@lit/react` **n'est pas installé** ; ne jamais inventer un élément/prop/slot `md-*` — vérifier dans `material-web/`. Les utilitaires Tailwind **ne franchissent pas** le Shadow DOM (voir `06-tailwind-material-web.md`).
 
@@ -29,7 +29,7 @@ Deux frictions historiques côté React **≤ 18** (renderer DOM par attributs) 
 1. **Propriétés vs attributs.** Le JSX de React 18 sérialise toute prop _connue comme attribut_ en `setAttribute(name, String(value))`. Conséquences : une valeur non-string (`number`, `object`, `array`, `boolean false`) est mal transmise, et une propriété qui n'a **pas** de reflected attribute (ex. `md-slider.value` est `@property({type:Number})` sans `reflect`, ou `md-select.value` qui est un **getter/setter** pur, `select.ts:171-185`) n'est tout simplement **jamais** assignée.
 2. **Events custom.** React 18 n'a pas de syntaxe `onClose`/`onclose` qui s'abonne à `addEventListener('close', …)`. Les events natifs DOM (`change`, `input`) et surtout les events custom (`close-menu`, `closed`, `remove`) sont invisibles depuis le JSX — il faut un `ref` + `addEventListener` manuel + cleanup.
 
-`@lit/react` `createComponent` résout les deux d'un coup, de manière typée. C'est pour ça que les wrappers `@aphrody-code/m3-react` reposent dessus (cf. `00-CONVENTIONS.md` §2).
+`@lit/react` `createComponent` résout les deux d'un coup, de manière typée. C'est pour ça que les wrappers `@aphrody/m3-react` reposent dessus (cf. `00-CONVENTIONS.md` §2).
 
 ---
 
@@ -153,7 +153,7 @@ Côté events, React 19 introduit la prise en charge des handlers `on…` pour l
 | Ergonomie `onChange` camelCase, nommage stable                 | —                                                  | events en **lowercase** côté natif (`onclose`)      | `onClose` (camelCase, mappé)                                            |
 | API stable d'équipe (DX, mocking, codemods)                    | —                                                  | —                                                   | **Point d'API unique** ciblé par les codemods MUI→md                    |
 
-**Conclusion pour `@aphrody-code/m3-react`** : on garde `createComponent` parce qu'il apporte le **typage** (props + events), une **API camelCase stable** alignée MUI que les codemods peuvent cibler mécaniquement, et l'indépendance vis-à-vis de la version de React (le wrapper marche en 17/18/19). React 19 ne supprime _aucune_ de ces valeurs ; il rend simplement le wrapper non bloquant pour les apps qui voudraient s'en passer.
+**Conclusion pour `@aphrody/m3-react`** : on garde `createComponent` parce qu'il apporte le **typage** (props + events), une **API camelCase stable** alignée MUI que les codemods peuvent cibler mécaniquement, et l'indépendance vis-à-vis de la version de React (le wrapper marche en 17/18/19). React 19 ne supprime _aucune_ de ces valeurs ; il rend simplement le wrapper non bloquant pour les apps qui voudraient s'en passer.
 
 Sources : [react.dev — React 19](https://react.dev/blog/2024/12/05/react-19), [lit.dev — React](https://lit.dev/docs/frameworks/react/), [custom-elements-everywhere.com](https://custom-elements-everywhere.com/).
 
@@ -317,7 +317,7 @@ Conséquences pratiques en Next.js (App Router) :
 
    ```tsx
    "use client";
-   import { MdFilledButton } from "@aphrody-code/m3-react";
+   import { MdFilledButton } from "@aphrody/m3-react";
    ```
 
 2. **Import des définitions côté client uniquement.** Centraliser l'enregistrement dans un composant client monté haut dans l'arbre, ou laisser chaque wrapper importer sa propre définition (les wrappers sont déjà `'use client'`). Ne jamais importer `@material/web/...` depuis un module serveur.
@@ -368,7 +368,7 @@ import "@material/web/all.js"; // re-exporte aphrody-components + aphrody-labs +
 import "@material/web/aphrody-components.js";
 ```
 
-- **Pour `@aphrody-code/m3-react`** : stratégie (a). Chaque wrapper importe l'unique définition dont il a besoin → tree-shaking et code-splitting naturels (n'embarque que les éléments réellement utilisés). Les composants du **fork** s'importent depuis `aphrody-components.ts` / `aphrody-labs.ts` / `all.ts` (cf. `00-CONVENTIONS.md` §0, §2).
+- **Pour `@aphrody/m3-react`** : stratégie (a). Chaque wrapper importe l'unique définition dont il a besoin → tree-shaking et code-splitting naturels (n'embarque que les éléments réellement utilisés). Les composants du **fork** s'importent depuis `aphrody-components.ts` / `aphrody-labs.ts` / `all.ts` (cf. `00-CONVENTIONS.md` §0, §2).
 - **`customElements.whenDefined`** : pour attendre qu'un élément soit prêt avant une action impérative (utile si on pilote `.show()` juste après le mount), ou pour gérer le révélateur anti-FOUC manuellement :
 
   ```ts
@@ -386,7 +386,7 @@ Chaque élément md augmente déjà `HTMLElementTagNameMap` dans son fichier pub
 
 ### 8.2 `JSX.IntrinsicElements` — seulement si on écrit le tag à la main
 
-Si vous écrivez `<md-filled-button>` **directement** en JSX (sans wrapper), TS ne le connaît pas. Il faut augmenter `JSX.IntrinsicElements`. **Avec les wrappers `@aphrody-code/m3-react`, ce n'est pas nécessaire** : on écrit `<MdFilledButton>` (un composant React typé). À ne faire que pour l'usage tag brut :
+Si vous écrivez `<md-filled-button>` **directement** en JSX (sans wrapper), TS ne le connaît pas. Il faut augmenter `JSX.IntrinsicElements`. **Avec les wrappers `@aphrody/m3-react`, ce n'est pas nécessaire** : on écrit `<MdFilledButton>` (un composant React typé). À ne faire que pour l'usage tag brut :
 
 ```ts
 // global.d.ts — UNIQUEMENT si vous utilisez les tags md-* nus dans le JSX

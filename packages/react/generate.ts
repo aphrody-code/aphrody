@@ -1,5 +1,5 @@
 /**
- * Generator for @aphrody-code/m3-react.
+ * Generator for @aphrody/m3-react.
  *
  * Reads migration/scripts/md-elements.txt (119 tags), resolves each tag to its
  * real entry file + exported element class inside material-web/ by scanning the
@@ -310,7 +310,7 @@ for (const [group, items] of [...groups.entries()].sort()) {
   // imports — alias element class to <Name>Element to avoid clashing with wrapper const.
   for (const r of items) {
     lines.push(
-      `import {${r.className} as ${r.name}Element} from '@aphrody-code/material-web/${r.file}';`,
+      `import {${r.className} as ${r.name}Element} from '@aphrody/material-web/${r.file}';`,
     );
   }
   lines.push("");
@@ -369,7 +369,7 @@ const rows = resolved
   .sort((a, b) => a.name.localeCompare(b.name))
   .map((r) => {
     const ev = Object.keys(r.events ?? {}).length || "—";
-    return `| \`${r.name}\` | \`${r.tag}\` | \`@aphrody-code/material-web/${r.file}\` | ${ev} |`;
+    return `| \`${r.name}\` | \`${r.tag}\` | \`@aphrody/material-web/${r.file}\` | ${ev} |`;
   })
   .join("\n");
 const listSection =

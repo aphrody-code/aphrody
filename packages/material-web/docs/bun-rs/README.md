@@ -107,5 +107,5 @@ cargo test -p bun-rs
 Pour tester le chargement client et serveur de l'application de prévisualisation :
 
 ```bash
-bun run --filter=@aphrody-code/m3-showcase smoke
+bun run --filter=@aphrody/m3-showcase smoke
 ```

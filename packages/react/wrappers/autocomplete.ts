@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdAutocomplete as MdAutocompleteElement } from "@aphrody-code/material-web/autocomplete/autocomplete.js";
+import { MdAutocomplete as MdAutocompleteElement } from "@aphrody/material-web/autocomplete/autocomplete.js";
 
 export const MdAutocomplete = createComponent({
   react: React,

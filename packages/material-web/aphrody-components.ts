@@ -7,7 +7,7 @@
 /**
  * @fileoverview Aphrody's Material Design 3 extension bundle — the components,
  * layouts, typography, and brand effects added on top of upstream
- * `@aphrody-code/material-web` to complete the M3 catalog (snackbar, app-bars, navigation
+ * `@aphrody/material-web` to complete the M3 catalog (snackbar, app-bars, navigation
  * rail, search, toolbars, sheets, carousel, loading indicator, button group,
  * FAB menu, date/time pickers), the adaptive layout family (scaffold, panes,
  * list-detail, supporting-pane), the Google Sans Flex typography element, and

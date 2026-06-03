@@ -1,7 +1,7 @@
 // Channels tab: configure messaging integration credentials. Secrets are masked; only changed fields are persisted.
 
 import { useEffect, useState } from "react";
-import { MdFilledButton, MdIcon, MdOutlinedTextField } from "@aphrody-code/m3-react";
+import { MdFilledButton, MdIcon, MdOutlinedTextField } from "@aphrody/m3-react";
 import { execJson, run } from "../../../client.ts";
 import { Hint, Panel, Spinner } from "../../../ui.tsx";
 

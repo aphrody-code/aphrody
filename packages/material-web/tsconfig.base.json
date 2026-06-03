@@ -16,7 +16,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUnusedLocals": true,
     "paths": {
-      "@aphrody-code/material-web/*": ["./*"]
+      "@aphrody/material-web/*": ["./*"]
     },
     "sourceMap": true,
     "inlineSources": true,

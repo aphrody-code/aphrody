@@ -10,7 +10,7 @@ import {
   MdList,
   MdListItem,
   MdSearchBar,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { useChats, useCreateChat, useDeleteChat } from "../api/queries.ts";
 import type { ChatListItem } from "../api/types.ts";
 

@@ -3,10 +3,10 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdListDetail as MdListDetailElement } from "@aphrody-code/material-web/layout/md-list-detail.js";
-import { MdPane as MdPaneElement } from "@aphrody-code/material-web/layout/md-pane.js";
-import { MdScaffold as MdScaffoldElement } from "@aphrody-code/material-web/layout/md-scaffold.js";
-import { MdSupportingPane as MdSupportingPaneElement } from "@aphrody-code/material-web/layout/md-supporting-pane.js";
+import { MdListDetail as MdListDetailElement } from "@aphrody/material-web/layout/md-list-detail.js";
+import { MdPane as MdPaneElement } from "@aphrody/material-web/layout/md-pane.js";
+import { MdScaffold as MdScaffoldElement } from "@aphrody/material-web/layout/md-scaffold.js";
+import { MdSupportingPane as MdSupportingPaneElement } from "@aphrody/material-web/layout/md-supporting-pane.js";
 
 export const MdListDetail = createComponent({
   react: React,

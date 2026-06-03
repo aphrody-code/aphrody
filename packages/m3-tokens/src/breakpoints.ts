@@ -2,7 +2,7 @@
  * Material Design 3 adaptive layout tokens — window size classes & breakpoints.
  *
  * Canonical source of truth for the responsive system shared by `<md-scaffold>`
- * (web components) and `@aphrody-code/m3-react/adaptive` (React hooks). The
+ * (web components) and `@aphrody/m3-react/adaptive` (React hooks). The
  * boundaries `600 / 840 / 1200 / 1600` dp are the official M3 window size class
  * breakpoints (m3.material.io — Foundations › Layout › Window size classes).
  */

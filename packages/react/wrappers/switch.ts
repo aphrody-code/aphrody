@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSwitch as MdSwitchElement } from "@aphrody-code/material-web/switch/switch.js";
+import { MdSwitch as MdSwitchElement } from "@aphrody/material-web/switch/switch.js";
 
 export const MdSwitch = createComponent({
   react: React,

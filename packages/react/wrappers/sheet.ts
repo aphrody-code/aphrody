@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdBottomSheet as MdBottomSheetElement } from "@aphrody-code/material-web/sheet/bottom-sheet.js";
-import { MdSideSheet as MdSideSheetElement } from "@aphrody-code/material-web/sheet/side-sheet.js";
+import { MdBottomSheet as MdBottomSheetElement } from "@aphrody/material-web/sheet/bottom-sheet.js";
+import { MdSideSheet as MdSideSheetElement } from "@aphrody/material-web/sheet/side-sheet.js";
 
 export const MdBottomSheet = createComponent({
   react: React,

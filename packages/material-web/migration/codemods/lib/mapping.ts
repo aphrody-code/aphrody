@@ -1,5 +1,5 @@
 /**
- * lib/mapping.ts — Table de mapping partagée MUI -> @aphrody-code/m3-react.
+ * lib/mapping.ts — Table de mapping partagée MUI -> @aphrody/m3-react.
  *
  * SOURCE DE VÉRITÉ : `migration/00-CONVENTIONS.md` §3 (mapping canonique) et §4
  * (règles props/events). Toutes les valeurs ici proviennent du contrat ; aucun
@@ -12,7 +12,7 @@
  */
 
 /** Nom du package des wrappers React (cf. §2). */
-export const M3_PKG = "@aphrody-code/m3-react";
+export const M3_PKG = "@aphrody/m3-react";
 
 /** Package(s) MUI source à intercepter (cf. §0). */
 export const MUI_PKGS = ["@mui/material"];
@@ -154,11 +154,11 @@ export const GAP_COMPONENTS: Record<string, string> = {
   // élément md dédié (résolues par tokens / Tailwind / Popover API natif).
   Modal: "primitive (gap) -> md-dialog (modal) + md-backdrop pour le scrim",
   Popper: "primitive (gap) -> Popover API native + md-menu / md-popover",
-  Collapse: "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-  Fade: "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-  Grow: "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-  Slide: "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
-  Zoom: "transition (gap) -> @aphrody-code/m3-motion + motion tokens",
+  Collapse: "transition (gap) -> @aphrody/m3-motion + motion tokens",
+  Fade: "transition (gap) -> @aphrody/m3-motion + motion tokens",
+  Grow: "transition (gap) -> @aphrody/m3-motion + motion tokens",
+  Slide: "transition (gap) -> @aphrody/m3-motion + motion tokens",
+  Zoom: "transition (gap) -> @aphrody/m3-motion + motion tokens",
   CssBaseline: "pas d-element md -> reset CSS + import des tokens M3",
   ScopedCssBaseline: "pas d-element md -> reset CSS scopé + tokens M3",
 };

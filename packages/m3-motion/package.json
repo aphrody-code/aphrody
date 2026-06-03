@@ -1,6 +1,6 @@
 {
-  "name": "@aphrody-code/m3-motion",
-  "version": "3.2.0",
+  "name": "@aphrody/m3-motion",
+  "version": "3.2.1",
   "description": "Material 3 animation plugin powered by Motion (formerly Framer Motion)",
   "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-motion#readme",
   "bugs": {
@@ -26,8 +26,7 @@
     }
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",

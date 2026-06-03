@@ -3,7 +3,7 @@
  *
  * The ~47 `--md-sys-color-*` roles (light + dark) are generated at SSR by the
  * library itself: `layout.tsx` injects `cssFromSeed("#6750a4")` from
- * `@aphrody-code/m3-tokens/dynamic-color` into a `<style>`, so the baseline palette
+ * `@aphrody/m3-tokens/dynamic-color` into a `<style>`, so the baseline palette
  * is engine-produced (and WCAG-AA by construction, see the m3-tokens contrast
  * tests) and rendered before first paint — no flash, no JS recomputation.
  *

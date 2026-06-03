@@ -16,7 +16,7 @@ import {
   MdTable,
   MdTabs,
   MdTextButton,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 import { useAdminUsers } from "../api/queries.ts";
 
 const COLUMNS = [

@@ -3,7 +3,7 @@ import { defineConfig } from "tsup";
 // NOTE: `.d.ts` files are emitted separately by `tsc` (see the `build`
 // script). tsup's rollup-based dts pipeline trips over the `baseUrl`
 // deprecation in TypeScript 6, so we keep `dts: false` here — same pattern as
-// @aphrody-code/m3-react.
+// @aphrody/m3-react.
 export default defineConfig({
   entry: ["src/theme-to-tokens.ts", "src/dynamic-color.ts", "src/breakpoints.ts"],
   format: ["esm"],

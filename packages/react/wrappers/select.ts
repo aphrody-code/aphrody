@@ -3,9 +3,9 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdFilledSelect as MdFilledSelectElement } from "@aphrody-code/material-web/select/filled-select.js";
-import { MdOutlinedSelect as MdOutlinedSelectElement } from "@aphrody-code/material-web/select/outlined-select.js";
-import { MdSelectOption as MdSelectOptionElement } from "@aphrody-code/material-web/select/select-option.js";
+import { MdFilledSelect as MdFilledSelectElement } from "@aphrody/material-web/select/filled-select.js";
+import { MdOutlinedSelect as MdOutlinedSelectElement } from "@aphrody/material-web/select/outlined-select.js";
+import { MdSelectOption as MdSelectOptionElement } from "@aphrody/material-web/select/select-option.js";
 
 export const MdFilledSelect = createComponent({
   react: React,

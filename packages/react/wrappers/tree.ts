@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdTree as MdTreeElement } from "@aphrody-code/material-web/tree/tree.js";
-import { MdTreeItem as MdTreeItemElement } from "@aphrody-code/material-web/tree/tree-item.js";
+import { MdTree as MdTreeElement } from "@aphrody/material-web/tree/tree.js";
+import { MdTreeItem as MdTreeItemElement } from "@aphrody/material-web/tree/tree-item.js";
 
 export const MdTree = createComponent({
   react: React,

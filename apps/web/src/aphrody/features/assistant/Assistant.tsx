@@ -1,7 +1,7 @@
 // Assistant chat surface (React port of Angular AssistantComponent): Gemini-style hero + composer + conversation, sending runs `aphrody chat --prompt`.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdAssistChip, MdChipSet, MdIcon, MdIconButton, MdMenuItem } from "@aphrody-code/m3-react";
+import { MdAssistChip, MdChipSet, MdIcon, MdIconButton, MdMenuItem } from "@aphrody/m3-react";
 import { run } from "../../client.ts";
 import { Menu } from "../../../components/ui/Menu.tsx";
 import { VoiceOverlay } from "./VoiceOverlay.tsx";

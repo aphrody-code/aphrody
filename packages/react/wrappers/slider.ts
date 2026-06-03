@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSlider as MdSliderElement } from "@aphrody-code/material-web/slider/slider.js";
+import { MdSlider as MdSliderElement } from "@aphrody/material-web/slider/slider.js";
 
 export const MdSlider = createComponent({
   react: React,

@@ -1,4 +1,4 @@
-# @aphrody-code/m3-motion
+# @aphrody/m3-motion
 
 High-fidelity React animation components for Material Design 3 (M3) motion specifications, powered by [Motion](https://motion.dev/) (formerly Framer Motion).
 
@@ -9,7 +9,7 @@ This package implements the core Material Design 3 motion patterns—including *
 ## Installation
 
 ```bash
-bun add @aphrody-code/m3-motion motion
+bun add @aphrody/m3-motion motion
 ```
 
 Ensure you have `react` (>= 18.0.0) and `motion` (>= 12.0.0) installed in your project.
@@ -44,7 +44,7 @@ import {
   M3ContainerTransform, 
   M3ContainerTransformStart, 
   M3ContainerTransformEnd 
-} from "@aphrody-code/m3-motion";
+} from "@aphrody/m3-motion";
 
 export const MorphingCard = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -95,7 +95,7 @@ import {
   M3ContainerTransform, 
   M3ContainerTransformStart, 
   M3ContainerTransformEnd 
-} from "@aphrody-code/m3-motion";
+} from "@aphrody/m3-motion";
 
 export const ListView = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -154,7 +154,7 @@ Used for transitions between UI elements that have a spatial or navigational rel
 
 ```tsx
 import React, { useState } from "react";
-import { M3SharedAxis } from "@aphrody-code/m3-motion";
+import { M3SharedAxis } from "@aphrody/m3-motion";
 
 export const StepWizard = () => {
   const [step, setStep] = useState(0);
@@ -192,7 +192,7 @@ Used for transitions between primary views that do not have a strong spatial rel
 
 ```tsx
 import React, { useState } from "react";
-import { M3FadeThrough } from "@aphrody-code/m3-motion";
+import { M3FadeThrough } from "@aphrody/m3-motion";
 
 export const AppNavigation = () => {
   const [currentTab, setCurrentTab] = useState("home");
@@ -222,7 +222,7 @@ export const AppNavigation = () => {
 Developers have direct access to official Material Design 3 timings and curves:
 
 ```tsx
-import { m3Easings, m3Durations, m3Springs } from "@aphrody-code/m3-motion";
+import { m3Easings, m3Durations, m3Springs } from "@aphrody/m3-motion";
 
 // Custom animation example using M3 tokens
 const myCustomTransition = {

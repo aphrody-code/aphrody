@@ -8,7 +8,7 @@ import {
   MdIconButton,
   MdOutlinedCard,
   MdOutlinedTextField,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 
 interface Note {
   id: string;

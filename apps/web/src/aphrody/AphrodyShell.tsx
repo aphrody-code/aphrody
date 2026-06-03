@@ -2,7 +2,7 @@
 // deep glow background + the routed content. Port of Angular AppComponent's rail.
 
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { MdIcon, MdIconButton } from "@aphrody-code/m3-react";
+import { MdIcon, MdIconButton } from "@aphrody/m3-react";
 import { useAccount } from "./client.ts";
 import { getState, setState, useUi } from "../store.ts";
 

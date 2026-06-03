@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdCheckbox as MdCheckboxElement } from "@aphrody-code/material-web/checkbox/checkbox.js";
+import { MdCheckbox as MdCheckboxElement } from "@aphrody/material-web/checkbox/checkbox.js";
 
 export const MdCheckbox = createComponent({
   react: React,

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdRipple as MdRippleElement } from "@aphrody-code/material-web/ripple/ripple.js";
+import { MdRipple as MdRippleElement } from "@aphrody/material-web/ripple/ripple.js";
 
 export const MdRipple = createComponent({
   react: React,

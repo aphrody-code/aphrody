@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdLoadingIndicator as MdLoadingIndicatorElement } from "@aphrody-code/material-web/loadingindicator/loading-indicator.js";
+import { MdLoadingIndicator as MdLoadingIndicatorElement } from "@aphrody/material-web/loadingindicator/loading-indicator.js";
 
 export const MdLoadingIndicator = createComponent({
   react: React,

@@ -1,7 +1,7 @@
 // Header model picker — an M3 menu listing every available model with a check on
 // the active one. Mirrors open-webui's ModelSelector (single-model variant).
 
-import { MdIcon, MdMenuItem, MdTextButton } from "@aphrody-code/m3-react";
+import { MdIcon, MdMenuItem, MdTextButton } from "@aphrody/m3-react";
 import { Menu } from "../ui/Menu.tsx";
 import { useModels } from "../../api/queries.ts";
 

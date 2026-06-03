@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# @aphrody-code/doc-ai
+# @aphrody/doc-ai
 
 AI-first documentation and automatic translation CLI for the material-web M3
 monorepo. It translates Markdown, generates Lit component API guides, and

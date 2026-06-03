@@ -54,16 +54,16 @@ Pour utiliser notre barre de titre personnalisée M3, vous devez désactiver la 
 
 ## 3. Mise en œuvre dans React
 
-Le package `@aphrody-code/m3-theme` expose le module `/tauri` qui regroupe les utilitaires d'intégration native.
+Le package `@aphrody/m3-theme` expose le module `/tauri` qui regroupe les utilitaires d'intégration native.
 
 ### A. Initialisation et synchronisation du Thème (`useM3TauriThemeSync`)
 Le hook `useM3TauriThemeSync` synchronise l'état du thème dynamique M3 (clair/sombre) avec le gestionnaire de fenêtre natif de Tauri via FFI.
 
 ```tsx
 import React from "react";
-import { M3ThemeProvider } from "@aphrody-code/m3-theme/react";
-import { M3TauriTitlebar, useM3TauriThemeSync } from "@aphrody-code/m3-theme/tauri";
-import "@aphrody-code/m3-theme/tokens.css";
+import { M3ThemeProvider } from "@aphrody/m3-theme/react";
+import { M3TauriTitlebar, useM3TauriThemeSync } from "@aphrody/m3-theme/tauri";
+import "@aphrody/m3-theme/tokens.css";
 
 function DesktopAppLayout() {
   // Synchronise automatiquement le thème résolu M3 vers Tauri

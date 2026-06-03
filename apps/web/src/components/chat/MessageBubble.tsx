@@ -2,7 +2,7 @@
 // carries Copy / Regenerate actions; user messages carry Copy / Edit (in-place).
 
 import { useState } from "react";
-import { MdIcon, MdIconButton, MdOutlinedTextField, MdTextButton } from "@aphrody-code/m3-react";
+import { MdIcon, MdIconButton, MdOutlinedTextField, MdTextButton } from "@aphrody/m3-react";
 import { Markdown } from "./Markdown.tsx";
 import type { ChatMessage } from "../../api/types.ts";
 

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { parseBrief } from "./parser.ts";
 import { generateTheme } from "./hct.ts";
 import { SEED_TEMPLATE } from "./prompts.ts";
-import { validateSpec } from "@aphrody-code/bun-rs";
+import { validateSpec } from "@aphrody/bun-rs";
 import type { DesignBrief, GenerationResult, GeneratedFile, M3Theme } from "./types.ts";
 
 export class DesignCompiler {
@@ -117,7 +117,7 @@ export class DesignCompiler {
   private generateCustomizedReactCode(brief: DesignBrief): string {
     let code = SEED_TEMPLATE.replace(/\r\n/g, "\n");
 
-    // 1. Extra imports — only real @aphrody-code/m3-react exports are imported
+    // 1. Extra imports — only real @aphrody/m3-react exports are imported
     // (aliased Md* -> local name). Interaction primitives (ThinkingIndicator,
     // StreamingText, useStreamingText) are NOT m3-react exports; they are
     // injected as inline self-contained definitions (see steps 4 & 5).
@@ -468,7 +468,7 @@ export class DesignCompiler {
   private performSelfCritique(brief: DesignBrief, code: string) {
     const validation = validateSpec(code);
 
-    const hasLitProps = code.includes("@aphrody-code/m3-react");
+    const hasLitProps = code.includes("@aphrody/m3-react");
     const hasActionRouter = code.includes("Action Router");
     const hasSpringTiming = code.includes("cubic-bezier");
 

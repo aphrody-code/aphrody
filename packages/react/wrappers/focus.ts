@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdFocusRing as MdFocusRingElement } from "@aphrody-code/material-web/focus/md-focus-ring.js";
+import { MdFocusRing as MdFocusRingElement } from "@aphrody/material-web/focus/md-focus-ring.js";
 
 export const MdFocusRing = createComponent({
   react: React,

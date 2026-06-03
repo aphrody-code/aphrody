@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdRadio as MdRadioElement } from "@aphrody-code/material-web/radio/radio.js";
+import { MdRadio as MdRadioElement } from "@aphrody/material-web/radio/radio.js";
 
 export const MdRadio = createComponent({
   react: React,

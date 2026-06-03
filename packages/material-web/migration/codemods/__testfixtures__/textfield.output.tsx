@@ -3,7 +3,7 @@ import {
   MdMenuItem,
   MdOutlinedSelect,
   MdOutlinedTextField,
-} from "@aphrody-code/m3-react";
+} from "@aphrody/m3-react";
 
 export function Form() {
   return (

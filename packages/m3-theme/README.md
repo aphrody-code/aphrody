@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# @aphrody-code/m3-theme
+# @aphrody/m3-theme
 
 Canonical **Material 3 fusion** tokens — one generated stylesheet
 (`tokens.css`), light and dark, that maps the **shadcn/ui** and **Tailwind v4**
 colour aliases onto the Material 3 system roles (`--md-sys-color-*`) emitted by
-[`@aphrody-code/material-web`](../material-web). Import it once and style with
+[`@aphrody/material-web`](../material-web). Import it once and style with
 either vocabulary; no app hand-rolls colour values.
 
 ## What's in `tokens.css`
@@ -24,7 +24,7 @@ dark theme only re-declares the M3 palette — the aliases follow automatically.
 
 ```ts
 // In any Bun/web app — Bun bundles the CSS into the page.
-import "@aphrody-code/m3-theme/tokens.css";
+import "@aphrody/m3-theme/tokens.css";
 ```
 
 ```html
@@ -46,11 +46,11 @@ Material 3 **baseline** palette (seed `#6750A4`) plus the shadcn/Tailwind alias
 maps, both declared once in the script. The dark palette and both alias layers
 are derived from those declarations so the sheet never drifts by hand. To theme
 from a different seed, swap the palette for the output of
-[`@aphrody-code/m3-tokens/dynamic-color`](../m3-tokens) `schemeFromSeed(seed, { dark })`.
+[`@aphrody/m3-tokens/dynamic-color`](../m3-tokens) `schemeFromSeed(seed, { dark })`.
 
 ## Dynamic Runtime Theme System
 
-In addition to the static `tokens.css` stylesheet, `@aphrody-code/m3-theme` provides a fully dynamic runtime theme system for both JavaScript/TypeScript environments and React applications.
+In addition to the static `tokens.css` stylesheet, `@aphrody/m3-theme` provides a fully dynamic runtime theme system for both JavaScript/TypeScript environments and React applications.
 
 This system derives the complete set of Material 3 custom properties (`--md-sys-color-*`) dynamically from a single seed color, automatically maps the shadcn/ui and Tailwind v4 color variables, and manages light/dark/system mode.
 
@@ -59,7 +59,7 @@ This system derives the complete set of Material 3 custom properties (`--md-sys-
 To dynamically update the theme on the DOM without a full rebuild:
 
 ```ts
-import { applyDynamicFusionTheme } from "@aphrody-code/m3-theme";
+import { applyDynamicFusionTheme } from "@aphrody/m3-theme";
 
 // Applies theme inline to document.documentElement (HTML element)
 applyDynamicFusionTheme("#6750A4", {
@@ -78,10 +78,10 @@ Options:
 
 ### 2. React Hook & Provider: `M3ThemeProvider` & `useM3Theme`
 
-Wrap your React app in the provider to handle user-facing theme configuration, light/dark/system mode, and seed color switching. This updates both `@aphrody-code/material-web` (Lit components) and Tailwind v4 / shadcn/ui (React layout components) synchronously.
+Wrap your React app in the provider to handle user-facing theme configuration, light/dark/system mode, and seed color switching. This updates both `@aphrody/material-web` (Lit components) and Tailwind v4 / shadcn/ui (React layout components) synchronously.
 
 ```tsx
-import { M3ThemeProvider, useM3Theme } from "@aphrody-code/m3-theme/react";
+import { M3ThemeProvider, useM3Theme } from "@aphrody/m3-theme/react";
 
 function App() {
   return (
@@ -126,8 +126,8 @@ For React applications compiled into Tauri 2.0 desktop shells, this package prov
 *   **`M3TauriTitlebar`**: A highly polished, Material Design 3 custom titlebar component. It handles window dragging (`data-tauri-drag-region`), maximize/restore state, and window actions (minimize, maximize, close) without external library requirements, automatically hiding when the application runs in a normal web browser.
 
 ```tsx
-import { M3ThemeProvider } from "@aphrody-code/m3-theme/react";
-import { M3TauriTitlebar, useM3TauriThemeSync } from "@aphrody-code/m3-theme/tauri";
+import { M3ThemeProvider } from "@aphrody/m3-theme/react";
+import { M3TauriTitlebar, useM3TauriThemeSync } from "@aphrody/m3-theme/tauri";
 
 function MainAppLayout() {
   // Syncs M3 theme mode back to Tauri window
@@ -145,7 +145,7 @@ function MainAppLayout() {
 }
 ```
 
-## Relationship to `@aphrody-code/m3-tokens`
+## Relationship to `@aphrody/m3-tokens`
 
 `m3-tokens` is the **engine** (MUI-theme → M3 token generation, runtime Material
 You via `material-color-utilities`, the raw `--md-sys-color-*` and breakpoint

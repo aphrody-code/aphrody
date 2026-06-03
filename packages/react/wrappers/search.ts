@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdSearchBar as MdSearchBarElement } from "@aphrody-code/material-web/search/search-bar.js";
+import { MdSearchBar as MdSearchBarElement } from "@aphrody/material-web/search/search-bar.js";
 
 export const MdSearchBar = createComponent({
   react: React,

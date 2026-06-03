@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createComponent } from "@lit/react";
 
-import { MdGridList as MdGridListElement } from "@aphrody-code/material-web/gridlist/grid-list.js";
-import { MdGridTile as MdGridTileElement } from "@aphrody-code/material-web/gridlist/grid-tile.js";
+import { MdGridList as MdGridListElement } from "@aphrody/material-web/gridlist/grid-list.js";
+import { MdGridTile as MdGridTileElement } from "@aphrody/material-web/gridlist/grid-tile.js";
 
 export const MdGridList = createComponent({
   react: React,

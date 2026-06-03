@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# @aphrody-code/eslint-plugin-m3
+# @aphrody/eslint-plugin-m3
 
 Règles de lint pour les sites qui **consomment** material-web
-(`@aphrody-code/m3-react` + Material Symbols). Écrit avec l'API ESLint-compatible :
+(`@aphrody/m3-react` + Material Symbols). Écrit avec l'API ESLint-compatible :
 tourne **sous oxlint** (champ `jsPlugins`) **et sous ESLint** (champ `plugins`),
 sans transpilation (ESM pur).
 
@@ -29,7 +29,7 @@ Deux règles sont **auto-corrigeables** (`oxlint --fix` ou `eslint --fix`) : `va
 ## Installation
 
 ```bash
-bun add -D @aphrody-code/eslint-plugin-m3
+bun add -D @aphrody/eslint-plugin-m3
 ```
 
 ## Usage — oxlint (recommandé, Rust, rapide)
@@ -38,7 +38,7 @@ bun add -D @aphrody-code/eslint-plugin-m3
 
 ```json
 {
-  "jsPlugins": ["./node_modules/@aphrody-code/eslint-plugin-m3/index.js"],
+  "jsPlugins": ["./node_modules/@aphrody/eslint-plugin-m3/index.js"],
   "rules": {
     "m3/valid-icon-name": "error",
     "m3/no-sx-prop": "error",
@@ -57,7 +57,7 @@ bun add -D @aphrody-code/eslint-plugin-m3
 
 ```js
 // eslint.config.js
-import m3 from "@aphrody-code/eslint-plugin-m3";
+import m3 from "@aphrody/eslint-plugin-m3";
 
 export default [
   m3.configs.recommended, // ou m3.configs.strict (tout en error)
@@ -67,7 +67,7 @@ export default [
 Ou à la carte :
 
 ```js
-import m3 from "@aphrody-code/eslint-plugin-m3";
+import m3 from "@aphrody/eslint-plugin-m3";
 export default [
   { plugins: { m3 }, rules: { "m3/no-sx-prop": "error", "m3/valid-icon-name": "error" } },
 ];

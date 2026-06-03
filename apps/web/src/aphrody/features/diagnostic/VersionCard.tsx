@@ -1,7 +1,7 @@
 // Version + système : carte M3 croisant les méta de l'hôte (useMeta) avec la sortie de `aphrody version`.
 
 import { useState } from "react";
-import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody-code/m3-react";
+import { MdCircularProgress, MdIcon, MdIconButton, MdOutlinedCard } from "@aphrody/m3-react";
 import { execText, useMeta, useRun } from "../../client.ts";
 
 /** Une ligne clé/valeur affichée dans la carte (valeur monospace optionnelle). */
