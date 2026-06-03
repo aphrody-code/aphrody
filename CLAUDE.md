@@ -191,7 +191,7 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 - **rand** : version 0.8 imposée par `denokv_proto` (pas de 0.9).
 - **GTK3 CVE** : ignorés dans `deny.toml` (wry/tao Linux).
 - **wasm** : `tokio` require features sélectives (`tokio-stream`, `js-sys`, `wasm-bindgen-futures`).
-- **mrx scan** : écrit `path.json`/`monorepo-map.json` dans cwd (gitignored).
+- **mrx scan** : écrit `path.json`/`monorepo-map.json` dans `<root>` (= `--root`, défaut `$VPS_ROOT`/`$HOME/vps`), **pas le cwd** — vérifié 2026-06-04. Rediriger via `--out`/`--map` pour ne pas polluer un repo scanné.
 - **Verify strictly** : `cargo check` ne suffit pas, tester le comportement réel (curl, exit codes, etc.).
 - **Edge headless WebGPU** : requestAdapter pending en headless. Utiliser CDP/Chromedp.
 - **Licence GPL** : `unicorn-engine` est GPL-2.0, banni d'aphrody (Apache-2.0) pour éviter contamination.
