@@ -1,19 +1,21 @@
 # Aphrody Unified UI / GUI / Web App / Material Design Documentation
 
-> **AVERTISSEMENT (2026-05-21) — document agrégé largement HISTORIQUE.**
+> **AVERTISSEMENT (mis à jour 2026-06-04) — document agrégé largement HISTORIQUE.**
 > Ce fichier concatène d'anciennes sources (`DESIGN.md`, `DESIGN-GOOGLE.md`,
 > `md3/*`, `terminal/*`) désormais supprimées. Plusieurs parties décrivent une
 > architecture **abandonnée** : « God Mode / Google OS » et l'« Architecture à
-> 3 Piliers », notamment le **Pilier II fork C++ de Windows Terminal** et le
-> **Pilier III Bun/JSX**. Ces approches ne reflètent PLUS l'état réel d'aphrody :
-> - **Policy 100 % Rust** : Bun/JS/TS bannis ; pas de fork C++ de Windows
->   Terminal. Le terminal LLM-first est en Rust pur (crates `aphrody-terminal-*`).
-> - **MD3 natif côté Rust** : tokens dans `m3-tokens`, icônes dans
->   `aphrody-icons`, renderer wgpu dans `mui-rs*` (exclu du build par défaut),
->   intégration React via `aphrody-react-reconciler`. Le crate `gui` (wry+tao)
->   est exclu du workspace par défaut.
-> - Les composants `@material/web` / `packages/ui` décrits plus bas relèvent de
->   l'ancienne piste JS, conservés ici uniquement comme référence visuelle M3.
+> 3 Piliers » (Pilier II fork C++ de Windows Terminal, etc.). État réel actuel :
+> - **Cœur 100 % Rust** : le binaire `aphrody`, le terminal LLM-first et le
+>   systems/FFI restent 100 % Rust. Pas de fork C++ de Windows Terminal.
+> - **UI = monorepo Material Design 3 Bun/TS** (pivot polyglotte 2026-05-21,
+>   fusion `material-web` 2026-06-01) : les libs `@aphrody-code/*` dans
+>   `packages/*` (Lit `material-web`, wrappers React `m3-react`, `m3-tokens`,
+>   `m3-motion`, `m3-theme`, …) + client `apps/web` sont la **vraie** surface UI.
+>   Bun/TS est désormais citoyen de première classe — cf. [`CLAUDE.md`](../CLAUDE.md) §2.
+> - **Crates supprimés/extraits** depuis la rédaction : `crates/gui` (wry+tao),
+>   `mui-rs*`, la plupart des `crates/aphrody-terminal-*` (seul
+>   `aphrody-terminal-backend` subsiste). Les sections ci-dessous qui les citent
+>   sont obsolètes.
 >
 > État courant : [`ARCHITECTURE.md`](ARCHITECTURE.md),
 > [`cargo/CRATES.md`](cargo/CRATES.md), [`SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md).

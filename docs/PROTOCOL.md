@@ -156,19 +156,19 @@ repository is published to GitHub Pages.
 - **`file-transport/v1`** — Defines the seven channels in section 4 and the
   envelope contract.
   - URI: `https://aphrody.dev/a2a-extensions/file-transport/v1`
-  - Spec: [`docs/extensions/file-transport-v1.md`](./extensions/file-transport-v1.md)
+  - Spec: `docs/extensions/file-transport-v1.md` — removed with the file-based transport (see section 9).
 
 - **`honest-delivery/v1`** — Mandatory tri-state delivery classification
   (`FAIT` / `INCOMPLET` / `NON_FAIT`) attached to every claimed deliverable,
   with a 5-point UI gate for browser-facing artefacts.
   - URI: `https://aphrody.dev/a2a-extensions/honest-delivery/v1`
-  - Spec: [`docs/extensions/honest-delivery-v1.md`](./extensions/honest-delivery-v1.md)
+  - Spec: `docs/extensions/honest-delivery-v1.md` — removed with the file-based transport (see section 9).
 
 - **`context7-version-pinning/v1`** — Required `context7` MCP fact-check
   (`resolve-library-id` then `query-docs`) before adding any dependency or
   making a non-trivial library API decision.
   - URI: `https://aphrody.dev/a2a-extensions/context7-version-pinning/v1`
-  - Spec: [`docs/extensions/context7-version-pinning-v1.md`](./extensions/context7-version-pinning-v1.md)
+  - Spec: `docs/extensions/context7-version-pinning-v1.md` — removed with the file-based transport (see section 9).
 
 Implementers MAY declare additional extensions in the `agent.capabilities.extensions`
 array of their manifest, using vendor-namespaced URIs to avoid collision.

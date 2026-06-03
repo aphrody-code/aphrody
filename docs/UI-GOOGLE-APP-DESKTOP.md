@@ -1,13 +1,20 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Aphrody UI — Google-app-desktop minimal assistant bar
 
+> **AVERTISSEMENT (2026-06-04) — document HISTORIQUE / aspirationnel.** Le crate
+> `crates/gui` (winit/wgpu/Vello + `mui-rs*`) décrit ici a été **supprimé/extrait
+> du dépôt** ; aucun des chemins `crates/gui/src/*.rs` cités plus bas n'existe
+> aujourd'hui. La surface UI réelle d'aphrody est le **monorepo Material Design 3
+> Bun/TS** (`packages/*` = `@aphrody-code/*`, client `apps/web`). Conserver comme
+> spec de référence visuelle, pas comme description de code livré.
+
 A minimal, always-available desktop assistant styled like the Google app for
 desktop (<https://search.google/google-app/desktop/>): a frameless, borderless,
 translucent, always-on-top floating bar that exposes a single Gemini **3.5
 Flash** model and the full aphrody Rust stack (voice, image/video, filesystem).
 
-Home crate: `crates/gui` (native Material 3 surface — `mui-rs-renderer` /
-Vello / wgpu + winit + Taffy). No browser, no Electron.
+Home crate (historique, supprimé) : `crates/gui` (native Material 3 surface —
+`mui-rs-renderer` / Vello / wgpu + winit + Taffy). No browser, no Electron.
 
 ## Window (implemented)
 

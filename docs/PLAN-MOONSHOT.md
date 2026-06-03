@@ -8,8 +8,9 @@
 > file-based `ai.json` (+ `schemas/ai.json/v1.json`, `docs/posts/2026-05-ai-json.md`),
 > et le layout de worktrees `C:/worktree/` (l'ancien `docs/WORKTREES.md` a été
 > supprimé le 2026-05-21). Le positionnement « owns ai.json » et les angles
-> marketing n2b/bxc ne sont plus valides ; l'A2A passe par gRPC et le tooling
-> est 100 % Rust. À ré-évaluer avant tout lancement. Le reste (cadence,
+> marketing n2b/bxc ne sont plus valides ; l'A2A passe par gRPC, et le **cœur**
+> est 100 % Rust (monorepo polyglotte depuis 2026-05-21 : UI Bun/TS, ML Python —
+> cf. [`../CLAUDE.md`](../CLAUDE.md) §2). À ré-évaluer avant tout lancement. Le reste (cadence,
 > canaux, risques génériques) demeure utile.
 >
 > Sibling document to `docs/PLAN.md`. The orchestrator reconciles the two.
