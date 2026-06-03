@@ -25,13 +25,19 @@ rustc-wrapper  = "sccache"
 # jobs           = 8
 
 
-# Default host target. Override with `--target <triple>` for cross-builds
-# (see aliases `build-linux-x64`, `build-darwin-arm64`, `build-wasm`, …).
-# Cross-compile pre-reqs:
+# No hardcoded default `target` — Cargo builds for the HOST triple by default,
+# which is what every platform's README "Quick start" expects:
+#   - Linux  host → x86_64-unknown-linux-gnu   (cible #1)
+#   - Windows host → x86_64-pc-windows-msvc     (cible #2, tuned in [target.*] below)
+#   - macOS  host → aarch64/x86_64-apple-darwin
+# A hardcoded cross-target here used to force EVERY host to cross-compile to
+# Windows MSVC (needs the MSVC linker + windows target installed), which broke
+# `cargo build -p aphrody` for all Linux/macOS users out of the box.
+# For an explicit cross-build, pass `--target <triple>` or use the aliases
+# (`build-linux-x64`, `build-darwin-arm64`, `build-wasm`, …). Cross pre-reqs:
 #   - Linux from Win    → `cargo install cargo-zigbuild && rustup target add ...`
 #   - Darwin from Win   → `cargo install cargo-zigbuild --features macos`
 #   - wasm32-wasip1     → rustup target add wasm32-wasip1
-target          = "x86_64-pc-windows-msvc"
 # Nightly-only: parallel rustc frontend (massive speedup on cargo check).
 # Reproducibility flags remap build-host paths so the binary is byte-identical
 # regardless of where it was compiled (Chromium-grade hermeticity).
