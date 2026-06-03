@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/m3-react",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "React wrappers (@lit/react createComponent) for every <md-*> element of the @aphrody/material-web fork.",
   "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/react#readme",
   "bugs": {
@@ -58,8 +58,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@aphrody/m3-tokens": "workspace:*",
-    "@aphrody/material-web": "workspace:*",
+    "@aphrody/m3-tokens": "^3.2.2",
+    "@aphrody/material-web": "^3.2.2",
     "@lit/react": "catalog:"
   },
   "devDependencies": {
