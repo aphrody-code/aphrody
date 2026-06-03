@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/bun-rs",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Native Rust FFI wrappers for Bun.",
   "license": "Apache-2.0",
   "author": "aphrody-code",

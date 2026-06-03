@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/eslint-plugin-m3",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Lint rules for sites consuming material-web (@aphrody/m3-react + Material Symbols) — runs under oxlint (jsPlugins) and ESLint.",
   "keywords": [
     "eslint",

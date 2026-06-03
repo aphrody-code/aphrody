@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/m3-theme",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Canonical Material 3 fusion tokens (M3 + shadcn/ui + Tailwind v4), light + dark — one generated stylesheet mapping the shadcn and Tailwind colour aliases onto the M3 --md-sys-color-* roles emitted by @aphrody/material-web.",
   "keywords": [
     "design-tokens",
