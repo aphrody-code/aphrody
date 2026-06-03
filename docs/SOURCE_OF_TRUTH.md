@@ -3,8 +3,16 @@
 
 > **Document unique de référence** consolidant l'état du workspace.
 > Lire celui-ci en premier.
-> Mis à jour : **2026-05-21** (workspace lean : 57 membres, suppression
-> n2b/bxc/xtask, transport A2A 100 % gRPC).
+> Mis à jour : **2026-06-04** (monorepo polyglotte Rust + Bun + Python ;
+> ~70 crates Rust + surfaces `packages/`/`apps/`/`py/` ; transport A2A gRPC).
+>
+> **Note historique** : ce document décrivait à l'origine un workspace
+> « 100 % Rust ». Le projet est passé à un **monorepo polyglotte** le
+> 2026-05-21 (Rust primaire + Bun/TS pour l'UI Material Design 3 + Python pour
+> ML/data) — cf. [`CLAUDE.md`](../CLAUDE.md) §2 qui fait désormais autorité sur
+> la politique de langages. Les mentions « 100 % Rust » ci-dessous concernent
+> uniquement le **cœur CLI/systems/FFI**, qui reste 100 % Rust et sans
+> dépendance runtime vers Bun/Python.
 
 ---
 
@@ -15,8 +23,8 @@
 | **Nom du projet** | `aphrody` |
 | **Binaire distribué** | `aphrody` (cross-platform pur) |
 | **Repo GitHub** | `https://github.com/aphrody-code/aphrody` (privé initialement) |
-| **Stack** | Rust nightly (Edition 2024). 100 % Rust : pas de bun/node/python. |
-| **Workspace** | 57 membres actifs (71 crates sur disque, 14 exclus) |
+| **Stack** | Rust nightly (Edition 2024) primaire + Bun/TS (UI M3) + Python (ML/data). Cœur CLI 100 % Rust. |
+| **Workspace** | Monorepo polyglotte : ~70 crates Rust (`crates/*`) + `packages/`/`apps/`/`examples/` (Bun) + `py/` (Python) |
 | **Plateformes** (ordre strict) | (1) Linux Ubuntu 26.04 → (2) Windows 11 Insider Canary → (3) WebAssembly → (4) macOS (best-effort) |
 | **Licence** | Apache 2.0 |
 | **Status** | `1.0.0-canary`, pre-LTS |
@@ -48,8 +56,10 @@ Livrer **le CLI ultime cross-platform** :
 
 ### Règles transversales
 
-- **Web/UI** : tout nouveau projet web cible **WASM Rust natif** ou **WebGPU**.
-  Pas de fallback JS/TS.
+- **Web/UI** : la surface UI est le monorepo **Material Design 3** (Bun + TS,
+  libs `@aphrody-code/*` dans `packages/*`, client `apps/web`). Le cœur Rust
+  peut exposer du WASM/WebGPU, mais l'UI grand public est servie par la stack
+  Bun (cf. [`CLAUDE.md`](../CLAUDE.md) §2).
 - **Zéro stub / zéro placeholder / zéro scaffolding** : toute feature commencée
   doit être finie. Toute fonction doit faire ce qu'elle prétend faire.
 - **Linux Ubuntu 26.04 = cible #1 bloquante**. Ne compile pas Linux → ne merge pas.
@@ -123,13 +133,16 @@ Le binaire **`aphrody-mcp`** (serveur MCP natif) est produit par le crate
 
 ## 4. Politique de langages
 
+> **Pivot 2026-05-21** : monorepo polyglotte, **Rust primaire**. Source
+> d'autorité : [`CLAUDE.md`](../CLAUDE.md) §2.
+
 | Langage | Usage |
 |---|---|
-| **Rust nightly + Edition 2024** | Tout le code (binaires, libs, FFI, tooling, MCP, scripts portés en Rust). |
+| **Rust nightly + Edition 2024** (primaire) | Cœur CLI/systems/FFI, libs, MCP, A2A, tooling (`crates/*`). Le binaire `aphrody` ne dépend d'aucune autre toolchain au runtime. |
+| **Bun / TypeScript** | Citoyen de première classe pour l'UI : libs Material Design 3 `@aphrody-code/*` (`packages/*`), client web (`apps/*`), `examples/*`. Bun + Turborepo, lint oxlint, format oxfmt. |
+| **Python** | Citoyen de première classe pour ML/data/bridges (`py/`). uv + ruff + pytest. |
 | **C/C++** | Interdit dans le code distribué. Tolérable uniquement via `cxx::bridge` pour wrappers FFI inévitables. |
-| **JS/TS/Node/Bun** | **Bannis** (policy 100 % Rust). Plus aucune invocation `bun`/`node`/`npm`/`tsc` dans la CI. |
-| **Python** | **Banni** (scripts `.py` migrés en Rust ou supprimés). |
-| **PowerShell 7+ / Bash** | Wrappers d'install/déploiement uniquement (`scripts/deploy.{ps1,sh}`). |
+| **PowerShell 7+ / Bash** | Wrappers d'install/déploiement (`scripts/deploy.{ps1,sh}`) ; logique réelle dans une des 3 toolchains. |
 
 ## 5. Commandes critiques
 
@@ -193,7 +206,7 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 
 - Architecture workspace + supply-chain + FFI zero-copy.
 - Les crates métier conservés (`a2a*`, `google_mcp`, `backend`, `mrx`, …).
-- Politique 100 % Rust (node/bun/python bannis).
+- Politique langages : cœur 100 % Rust ; UI Bun/TS + ML Python (pivot polyglotte 2026-05-21, cf. §4).
 - Stack 2026 (Rust nightly, Edition 2024, mimalloc, sccache).
 
 ### Ce qui est abandonné
