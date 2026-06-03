@@ -18,7 +18,8 @@ The Scrapy crawler extracts layout tokens, feature flags, target models, interac
 - **Offline-First Safeguard**: Bypasses the multiprocessing crawler during pytest execution to ensure the test runner runs 100% offline, remaining fast and compatible with `httpx_mock`.
 
 ### Verification & Testing
-- Unit tests are implemented in [`tests/test_scraper.py`](../aphrody/tests/test_scraper.py).
+- Unit tests are implemented in `tests/test_scraper.py` (Python surface; this
+  Scrapy feature shipped in the now-archived `aphrody-py` repo, not in this tree).
 - The Scrapy Spider's HTML selectors, XPath link extraction, relative URL resolution, and JS callbacks are tested offline using mocked Scrapy `Response` objects.
 
 ---
@@ -65,7 +66,9 @@ The autonomous self-upgrading loop periodically audits the production Gemini Web
 - **Atomic Rollback**: Validation is strictly enforced. If `ruff` formatting, lint checks, or unit tests fail on the modified codebase, the client code is restored instantly from the backup, guaranteeing codebase stability.
 
 ### Verification & Testing
-- Unit tests in [`tests/test_auto_upgrade.py`](../aphrody/tests/test_auto_upgrade.py) verify the success, LLM, fallback, and validation-rollback paths.
+- Unit tests in `tests/test_auto_upgrade.py` verify the success, LLM, fallback,
+  and validation-rollback paths (Python surface; shipped in the now-archived
+  `aphrody-py` repo, not in this tree).
 
 ---
 
