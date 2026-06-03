@@ -1,8 +1,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = "/home/ubuntu/material-web";
-const jsonPath = join(root, "migration/codemods/data/material-symbols-names.json");
+// Resolve the repo root relative to this script
+// (packages/bun-rs/scripts/ -> repo root). material-web was merged in-tree on
+// 2026-06-01, so both the input JSON and the output Rust file live under packages/.
+const root = join(import.meta.dir, "../../..");
+const jsonPath = join(root, "packages/material-web/migration/codemods/data/material-symbols-names.json");
 const rustPath = join(root, "packages/bun-rs/src/symbols.rs");
 
 console.log("Reading symbols JSON from:", jsonPath);
