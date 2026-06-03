@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`docs/agent-stack/`** — Unified VPS agent config: CLI `--help` snapshots (agy, grok, claude, bxc, aphrody), `llms.txt` mirrors (xAI, Bun), MCP/env/session matrix, [X Pro integration](docs/agent-stack/x-pro-integration.md).
+- **X / Twitter stack** — `@aphrody-code/x` 1.0.6 (Gryphon decks + Radar), bxc 0.6.1 (`bxc_xpro_deck` MCP), `x-cli xpro` Rust subcommand, yoyo `@yoyo/x-pro` hub API.
+- **`scripts/vps-sync-agent-stack.sh`** — One-shot: rebuild bxc-mcp/aphrody-mcp, sync MCP JSON to Claude/Grok, verify services.
+
+### Added (prior)
+
 - **Merged the standalone `material-web` Material Design 3 monorepo into
   this repo (2026-06-01).** The 9 `@aphrody-code/*` packages
   (`material-web`, `react`/m3-react, `m3-tokens`, `m3-motion`, `m3-theme`,

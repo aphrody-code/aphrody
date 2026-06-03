@@ -62,6 +62,10 @@ the same binary runs in **1.4 s warm** — full numbers + comparisons in
 
 > Latest changes: [`CHANGELOG.md`](CHANGELOG.md) — Unreleased section tracks all of this session's shipped work.
 
+### Agent stack on this VPS (Claude · Grok · Gemini · bxc · aphrody)
+
+Shared MCP: `~/.config/aphrody/mcp.json` (`aphrody-mcp`, `bxc-mcp`). Grok: `~/.grok/config.toml` + [`docs/grok/README.md`](docs/grok/README.md). Full matrix: [`docs/agent-stack/README.md`](docs/agent-stack/README.md). X Pro decks + Radar: [`docs/x/README.md`](docs/x/README.md), bxc [`packages/x/docs/X_PRO.md`](../bxc/packages/x/docs/X_PRO.md) (sibling repo).
+
 ---
 
 ## Install (60 secondes)

@@ -50,6 +50,8 @@ Le binaire principal `aphrody` et son moteur de scraping/navigation `bxc` orches
 
 * **`bxc.service`** : Serveur d'automatisation de navigateur Zero-Spawn (Bun + V8 bindings + Lightpanda fusion). Il écoute sur le port `3000` (Elysia + Yoga) pour exécuter des tâches de reconnaissance web, de RAG et de scraping.
 * **Autopilot & RAG** : Des scripts programmés en tâche de fond (`run-targeted-crawler.ts`, `run-index-embeddings.ts`) maintiennent des stores de vecteurs locaux via SQLite et Redis pour alimenter la recherche sémantique des agents.
+* **Agents unifiés (2026-06)** : Claude Code, Grok Build, Gemini (`agy`) partagent `~/.config/aphrody/mcp.json` (`aphrody-mcp` + `bxc-mcp`). Doc : [`docs/agent-stack/README.md`](../agent-stack/README.md). Sync : `bash scripts/vps-sync-agent-stack.sh`.
+* **X Pro + Radar** : `pro.x.com/i/decks` (Gryphon GraphQL), `x.com/i/radar` — `@aphrody-code/x` 1.0.6, MCP `bxc_xpro_deck`, yoyo hub `:8790/api/pro`.
 
 ---
 
