@@ -15,7 +15,7 @@
 > `labs/` stables (badge, cards, navigation bar/drawer/tab, segmented button)
 > sont promus via `aphrody-labs.ts`. Tout est branché dans `all.ts` (via
 > `aphrody-components.ts`) + wrappers React dans `apps/m3-react`. Détail :
-> [`packages/material-web/APHRODY-M3.md`](../../packages/material-web/APHRODY-M3.md).
+> [`packages/material-web/APHRODY-M3.md`](../../packages/material-web/docs/material-web/APHRODY-M3.md).
 > Validation : `tsc --noEmit` exit 0 sur les 24 custom elements (flags stricts
 > du projet : noUnusedLocals, noImplicitOverride, noImplicitReturns,
 > noPropertyAccessFromIndexSignature).

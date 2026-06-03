@@ -64,7 +64,7 @@ automatically (explicit in D3D12/Vulkan).
 ## aphrody fit
 
 The 3D pipeline today renders via Blender/Cycles **OPTIX** (native GPU, see
-[blender-api-notes.md](../python/blender-api-notes.md)). A *web* real-time
+[blender-api-notes.md](../blender-api-notes.md)). A *web* real-time
 viewer (e.g. for the showcase page that currently uses `<model-viewer>`) would
 be the `wgpu` target: load the generated `.glb`, build one `RenderPipeline`,
 record a **render bundle** per static mesh, drive the turntable spin from a
