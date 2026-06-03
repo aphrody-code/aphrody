@@ -61,7 +61,8 @@ AH-19 of `docs/plans/agent-home.md` in dependency order, in one session.
   module-level `#![allow(unsafe_code)]` scoped to that file only.
 - **No emoji** in source or any string literal (hard rule). Plan markers
   ⏳/✅ are allowed in `docs/plans/agent-home.md` only.
-- **Anonymisation**: never write `yohan`, `pierre`, `yoyo`. Default agent
+- **Anonymisation**: never write the owner's real first/last name or personal
+  handles. Default agent
   identity templates use neutral placeholders (`aphrody`, the user's addressed
   name resolved at runtime from `USER.md`), never a real person.
 - **Package name is `aphrody`** — use `-p aphrody` for the CLI crate, never

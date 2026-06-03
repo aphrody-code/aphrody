@@ -4,8 +4,8 @@
 
 Documentation technique vérifiée sur le code réel du repo peer
 `C:\src\winclean` (branche `master`) et sur la configuration globale
-Antigravity / Gemini de la machine (`C:\Users\yohan\.gemini`,
-`C:\Users\yohan\AppData\Local\agy`). Lecture seule, zéro écriture côté
+Antigravity / Gemini de la machine (`C:\Users\<user>\.gemini`,
+`C:\Users\<user>\AppData\Local\agy`). Lecture seule, zéro écriture côté
 peer.
 
 > Note de localisation : CLAUDE.md §6.0 et l'ancienne doc référencent
@@ -209,7 +209,7 @@ Le projet A2A n'écrit **pas** de heartbeat lui-même. Le seul writer de
 
 Le handshake observé en live (log Antigravity) :
 `{"result":{"protocolVersion":"2024-11-05","capabilities":{"logging":{},"tools":{"listChanged":true}},"serverInfo":{"name":"Winclean.Mcp","version":"1.0.0.0"}},...}`
-(`C:\Users\yohan\.gemini\antigravity-cli\brain\fc00b276-.../.system_generated/tasks/task-667.log:1`).
+(`C:\Users\<user>\.gemini\antigravity-cli\brain\fc00b276-.../.system_generated/tasks/task-667.log:1`).
 
 ### 2.3. Pattern d'enregistrement et structure d'un outil
 
@@ -283,13 +283,13 @@ et un client A2A (Gemini) coordonnent via le même fichier disque.
 
 `agy.exe` **existe** mais **hors du repo winclean** (config utilisateur
 globale) :
-- `C:\Users\yohan\AppData\Local\agy\bin\agy.exe` (binaire).
-- `C:\Users\yohan\.local\bin\agy.cmd` (wrapper PATH) :
+- `C:\Users\<user>\AppData\Local\agy\bin\agy.exe` (binaire).
+- `C:\Users\<user>\.local\bin\agy.cmd` (wrapper PATH) :
   `"...\agy.exe" --dangerously-skip-permissions %*` — lance agy en mode YOLO
   (skip permissions), cohérent avec la philosophie « Max Autonomy »
   documentée (`apps/mcp/docs/best-practices/antigravity.md:5`).
 - Application desktop associée :
-  `C:\Users\yohan\AppData\Local\Programs\Antigravity\Antigravity.exe`
+  `C:\Users\<user>\AppData\Local\Programs\Antigravity\Antigravity.exe`
   (Electron).
 
 Aucune trace de `agy`/Antigravity **dans le code source winclean** (le grep
@@ -299,7 +299,7 @@ donc : (a) le `.mcp.json` du repo, (b) la config globale d'Antigravity CLI.
 ### 3.2. Configuration MCP que agy lit réellement
 
 Fichier vivant utilisé par Antigravity CLI :
-`C:\Users\yohan\.gemini\antigravity-cli\mcp_config.json` :
+`C:\Users\<user>\.gemini\antigravity-cli\mcp_config.json` :
 
 ```json
 {
@@ -316,7 +316,7 @@ Fichier vivant utilisé par Antigravity CLI :
 
 Donc agy découvre `winclean-core` comme **serveur MCP local stdio**,
 commande = chemin absolu vers `Winclean.Mcp.exe`, plus un serveur HTTP/SSE
-distant `microsoft-learn`. (`C:\Users\yohan\.gemini\config\mcp_config.json`
+distant `microsoft-learn`. (`C:\Users\<user>\.gemini\config\mcp_config.json`
 existe mais est vide/1 ligne — c'est `antigravity-cli/mcp_config.json` qui
 fait foi.)
 
@@ -330,15 +330,15 @@ Antigravity CLI ».
 
 Le projet est aussi enregistré côté Antigravity comme dossier git avec
 write :
-`C:\Users\yohan\.gemini\config\projects\0249e89b-...json:6-12`
+`C:\Users\<user>\.gemini\config\projects\0249e89b-...json:6-12`
 (`folderUri: file://C:/src/winclean`, `allowWrite: true`), lié dans le repo
 par le symlink `C:\src\winclean\.antigravitycli\<uuid>.json` →
-`C:\Users\yohan\.gemini\config\projects\<uuid>.json`.
+`C:\Users\<user>\.gemini\config\projects\<uuid>.json`.
 
 ### 3.3. Flux découvert dans les artefacts agy
 
 Un rapport produit par une vraie session agy le documente :
-`C:\Users\yohan\.gemini\antigravity-cli\brain\fc00b276-.../mcp_configuration_report.md`
+`C:\Users\<user>\.gemini\antigravity-cli\brain\fc00b276-.../mcp_configuration_report.md`
 - Diagramme (`:54-60`) :
   `Google Antigravity CLI --JSON-RPC via STDIO--> winclean-core MCP -->
   Native APIs --> Windows OS` ; et `--HTTP/SSE--> microsoft-learn`.

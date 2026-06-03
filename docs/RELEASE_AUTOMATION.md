@@ -9,7 +9,7 @@ The script [release.ts](file:///c:/src/aphrody-ts/scripts/release.ts) automates 
 
 ### Pipeline Steps
 
-1. **Auth Check**: Automatically extracts and loads the GITHUB_TOKEN from `C:\Users\yohan\vps-mirror\.npmrc` if not already present in the environment variables.
+1. **Auth Check**: Automatically extracts and loads the GITHUB_TOKEN from `C:\Users\<user>\vps-mirror\.npmrc` if not already present in the environment variables.
 2. **Version Bump**: Updates the `version` field in `packages/skills/package.json` and `apps/design/package.json` with the new target version.
 3. **Compile Standalone Binaries**: Builds the optimized standalone executables `bin/skills.exe` and `bin/design.exe` using `bun build --compile`.
 4. **Environment PATH update**: Automatically adds `bin/` to the user's system PATH via PowerShell if not already registered.

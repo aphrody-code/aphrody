@@ -33,7 +33,7 @@ with verifiable artifacts.
 - Apache-2.0 `// SPDX-License-Identifier: Apache-2.0` header on every
   new `.rs` file.
 - **No emoji** in source or commit messages (CLAUDE.md hard rule).
-- **Anonymisation**: never write the strings `yohan`, `pierre`, `yoyo`.
+- **Anonymisation**: never write the owner's real first/last name or personal handles.
   Use `aphrody-code` or `noreply@aphrody-code.dev`.
 - **Package name is `aphrody`** (cli was renamed); use `-p aphrody` in
   all cargo invocations, not `-p cli`.

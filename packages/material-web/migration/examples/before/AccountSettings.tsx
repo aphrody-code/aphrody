@@ -62,8 +62,8 @@ export default function AccountSettings() {
   const [tab, setTab] = React.useState(0);
 
   // --- État du formulaire (controlled inputs) -------------------------------
-  const [displayName, setDisplayName] = React.useState("Yohan");
-  const [email, setEmail] = React.useState("yohan@example.com");
+  const [displayName, setDisplayName] = React.useState("Alex");
+  const [email, setEmail] = React.useState("user@example.com");
   const [language, setLanguage] = React.useState("fr");
   const [newsletter, setNewsletter] = React.useState(true);
   const [twoFactor, setTwoFactor] = React.useState(false);

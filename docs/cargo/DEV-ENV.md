@@ -52,7 +52,7 @@ After apply : restart your shell, then verify with `cargo dev-fast`.
 | `BUN_INSTALL`                         | `~/.bun`                                          | Where bun binaries live                                |
 | `GITHUB_PERSONAL_ACCESS_TOKEN`        | `gho_***` (per `gh auth token`)                   | Rotate via `gh auth refresh` if leaked                 |
 
-## Known drift on yohan@aphrody (2026-05-18 audit)
+## Known drift on dev@aphrody (2026-05-18 audit)
 
 - `CARGO_HOME=D:\cargo` and `RUSTUP_HOME=D:\rustup` are set but **D: drive does not exist**
   on this machine (only C:\ with ~50 GB free). Cargo falls back to default

@@ -99,7 +99,7 @@ Captures dans ce dossier : `google.png` (accueil), `ai_mode.png` (AI Mode + auto
 
 1. **Rail gauche** (~112 px) : **G** coloré en haut, puis pile d'icônes — **liste+sparkle** (historique/découvrir),
    **compose/edit** (nouvelle conversation). Vertical, centré, espacé ~80 px.
-2. **Greeting** centré : `Hi, Yohan. What's on your mind?` — titre ~44-52 px, `#e8eaed` (personnalisé au prénom).
+2. **Greeting** centré : `Hi, Alex. What's on your mind?` — titre ~44-52 px, `#e8eaed` (personnalisé au prénom).
 3. **Barre de prompt** (plus large que l'accueil classique, ~760 px) : `+` à gauche, texte saisi
    (curseur visible), **`x` clear**, pilule **« AI Mode → »** (flèche = soumettre).
 4. **Dropdown autocomplétion** (attaché sous la barre, même largeur, fond `#303134`, coins bas arrondis) :
