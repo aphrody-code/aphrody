@@ -68,7 +68,7 @@ gantt
 - **Tâches** :
   - [x] Écrire un plugin de build TS (`sass-plugin.ts` / `sassRustPlugin` dans `src/index.ts`) en utilisant l'API de plugin de Bun, supportant les options `loadPaths` et `style`.
   - [x] Intégrer ce plugin dans l'exemple `showcase` et dans le pipeline principal de bundling de `@material/web` (`aphrody-build.ts` et `test/sass-plugin.test.ts`).
-  - [x] Écrire un script de benchmark (`packages/bun-rs/benchmark-sass.js`) pour comparer la vitesse de compilation de Grass FFI par rapport à `sass-embedded` et mesurer les gains de performance.
+  - [x] Écrire un script de benchmark (`packages/bun-rs/benchmark-sass.ts`) pour comparer la vitesse de compilation de Grass FFI par rapport à `sass-embedded` et mesurer les gains de performance.
   - [x] Valider l'intégration via le typecheck TS et la suite de tests bxc Chromium réelle.
 
 ### 🟩 Phase 5 : WebAssembly (WASM) & Integration clientside (Terminé)

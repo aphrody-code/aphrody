@@ -90,10 +90,10 @@ Vérifiez les performances aller-retour du FFI par rapport au JS pur :
 
 ```bash
 # Benchmark général d'appels FFI de base
-bun run packages/bun-rs/benchmark.js
+bun run packages/bun-rs/benchmark.ts
 
 # Benchmark spécifique de compilation Sass (Grass FFI vs Dart Sass)
-bun run packages/bun-rs/benchmark-sass.js
+bun run packages/bun-rs/benchmark-sass.ts
 ```
 
 ### 4. Exécuter les tests unitaires et d'intégration

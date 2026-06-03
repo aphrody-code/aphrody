@@ -81,7 +81,7 @@ Bun exécute JavaScript dans une boucle monothread, mais des tâches de longue d
 
 Chaque nouvel ajout FFI doit être profilé.
 
-- **Exécuter des benchmarks locaux** : Testez toujours la fonction JS FFI par rapport à son alternative JS pure dans `benchmark.js`.
+- **Exécuter des benchmarks locaux** : Testez toujours la fonction JS FFI par rapport à son alternative JS pure dans `benchmark.ts`.
 - **Garder les appels FFI à gros grains** : La traversée de la frontière de langage (JS ↔ Rust) a un léger surcoût. Évitez d'appeler une fonction FFI des millions de fois dans une boucle JS serrée. Au lieu de cela, transmettez un grand buffer ou tableau à Rust une fois et traitez l'ensemble de l'ensemble dans un seul appel de fonction native.
 
 ---
