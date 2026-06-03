@@ -1,0 +1,41 @@
+Aphrody — cross-platform Rust binary (Linux / Windows / macOS / wasm).
+
+Usage: aphrody [COMMAND]
+
+Commands:
+  auth          Authentification Google (God Mode / OAuth2)
+  mirror        Gère le mirroring des assets MD3
+  version       Affiche la version et l'état du système
+  doctor        Diagnostic env + intégration A2A + supply-chain (first-impression)
+  a2a           Client natif A2A
+  cros          Compilation hyper-optimisée de ChromeOS
+  search        Recherche Google Native
+  gemini        Lance le binaire natif Gemini CLI (bundlé via bun --compile)
+  agy           Forward vers le binaire natif Antigravity CLI (`agy`)
+  agy-loop      Boucle de codage autonome pour le CLI Antigravity (`agy`) via son hook `AfterAgent`. Câblé par le plugin aphrody-agy ; `start`/`stop`/`status` pilotent la boucle, `hook` est le driver invoqué par agy
+  term          Pont WebSocket-PTY pour le frontend WASM (localhost uniquement)
+  mcp           Model Context Protocol — list servers, call tools (~/.config/aphrody/mcp.json)
+  re            Reverse engineering — triage a binary (PE32/PE64/ELF32/ELF64)
+  memory        Tier-1 memory provider operations — migrate, audit, list backends
+  chat          Run the unified turn-loop chat agent (one-shot mode)
+  hermes        Agent multi-canaux voice-to-voice (Discord + X) — surpasse hermes-agent
+  agent         Launch an autonomous agent — aphrody's flagship Antigravity-in-Rust surface
+  notify        Envoie un message via Slack / Telegram / Matrix
+  completions   Génère des completions shell pour bash / zsh / fish / pwsh / elvish
+  self          Installer / bootstrap natif (remplace les .ps1/.sh scripts/)
+  scan          Repo analytics : scan tree (size/file-count) + scan manifests (Cargo/JSON/TOML)
+  oc-onboard    (ported from openclaw) Bootstrap aphrody local state + seed config
+  oc-reset      (ported from openclaw) Reset local state. Choose a scope: `config`, `config-creds-sessions`, or `full`
+  oc-uninstall  (ported from openclaw) Uninstall aphrody scopes (service / state / workspace / app, or `--all`)
+  oc-pairing    (ported from openclaw) Secure DM pairing — list / approve / inject requests against the local pairing store (~/.aphrody/pairing.json)
+  oc-docs       (ported from openclaw) Open or search the documentation site
+  notebooklm    Google NotebookLM RPC client — notebooks / sources / chat / artifacts
+  antigravity   Native Google AI Ultra / Gemini client (Antigravity). Scriptable, non-interactive, JSON output — `models`, `whoami`, `load`, `chat`
+  logo          Render or export the canonical aphrody logo (`assets/aphrody.webp`)
+  design        Material 3 design-token tooling (color CSS export + UI fusion sheet)
+  ide           Antigravity IDE installation inspector — info, extensions, RE, state, and launch
+  help          Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
