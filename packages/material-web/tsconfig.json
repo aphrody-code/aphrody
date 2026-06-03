@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "exclude": [
+    "scripts/",
+    "labs/gb/",
+    "tests-bxc/",
+    "test/",
+    "migration/",
+    "aphrody-build.ts",
+    "aphrody-css-minify.ts"
+  ]
+}

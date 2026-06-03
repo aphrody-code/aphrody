@@ -414,3 +414,15 @@ lefthook.yml
 !ts/bunfig.toml
 !ts/**/tsconfig.json
 !ts/**/tsconfig.*.json
+
+# --- Merged TS workspace: track build configs the publish CI needs ----------
+# The patterns above (tsconfig.json, tsconfig.*.json, turbo.json, bun.lock) were
+# inherited from aphrody's Rust-only era. The 2026-06 merge brought in the
+# @aphrody-code/* TS packages whose hand-written build configs + the workspace
+# lockfile MUST be tracked, or `release-m3-packages.yml`
+# (bun install --frozen-lockfile + turbo run build) cannot run. Re-include them:
+!/turbo.json
+!/bun.lock
+!/packages/*/tsconfig.json
+!/packages/*/tsconfig.*.json
+!/packages/*/turbo.json

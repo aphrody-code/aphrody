@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "allowUnreachableCode": false,
+    "declaration": true,
+    "declarationMap": false,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "importHelpers": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "paths": {
+      "@aphrody-code/material-web/*": ["./*"]
+    },
+    "sourceMap": true,
+    "inlineSources": true,
+    "strict": true,
+    "strictNullChecks": false,
+    "target": "es2022",
+    "lib": ["es2022", "dom", "esnext.disposable"],
+    "types": ["lit"]
+  }
+}
