@@ -138,10 +138,10 @@ wasm-pack build --target web --release crates/aphrody-wasm
 open crates/aphrody-wasm/examples/browser-playground.html   # or xdg-open / start
 ```
 
-### npm — `@aphrody-code/aphrody-wasm` (when published)
+### npm — `@aphrody/aphrody-wasm` (when published)
 
 ```bash
-npm install @aphrody-code/aphrody-wasm
+npm install @aphrody/aphrody-wasm
 # The package is a plain wasm bundle; any JS package manager can consume it.
 # aphrody itself ships no JS/Bun/Node toolchain (cf. CLAUDE.md §2).
 ```

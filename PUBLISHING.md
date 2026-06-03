@@ -1,79 +1,67 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Publishing aphrody packages to GitHub Packages
+# Publishing aphrody's Material Design 3 packages to npm
 
-aphrody's npm packages publish to **GitHub Packages** (registry
-`npm.pkg.github.com`, org `aphrody-code`). The `@aphrody-code` scope registry
-is set per-package via `publishConfig.registry` in each `package.json`; the
-release workflow (`.github/workflows/release-m3-packages.yml`) generates the
-auth `.npmrc` at CI time (`//npm.pkg.github.com/:_authToken=…`) and `bun publish`
-inlines `workspace:*` deps in dependency order.
+aphrody's first-party Material Design 3 packages publish to the **public npm
+registry** (`registry.npmjs.org`) under the **`@aphrody`** scope. Publication is
+fully automated by the GitHub Actions workflow
+[`.github/workflows/release-m3-packages.yml`](.github/workflows/release-m3-packages.yml),
+which fires on an **`m3-v*`** tag (decoupled from the core `release.yml`, which
+fires on `v*`).
 
-## Publishable packages
+> npm became the canonical registry (was GitHub Packages, `@aphrody-code`) on
+> 2026-06-04. The old `scripts/publish-github-packages.ts` /
+> `scripts/release.ts` GitHub-Packages flow is gone — the workflow is the only
+> publish path.
 
-| In-tree | Published as | Status |
-|---|---|---|
-| `packages/material-web` (`@material/web` fork + aphrody M3 extensions) | **`@aphrody-code/material-web@2.4.1`** ✅ live | renamed at publish time so the working tree stays a `@material/web` drop-in |
-| `apps/m3-react` | **`@aphrody-code/m3-react@1.0.0`** ✅ live | ships `src` (TS) + README + LICENSE |
+## Published packages (`@aphrody/*`)
 
-Both live on GitHub Packages (`github.com/aphrody-code` · npm.pkg.github.com).
+The workflow builds the publishable packages with
+`bunx turbo run build --filter='./packages/*'` (turbo pulls in their workspace
+deps automatically; `examples/*` are excluded) and publishes them in dependency
+order with `bun publish --access public --registry https://registry.npmjs.org`.
+`bun publish` inlines every `workspace:*` dependency with its resolved version.
 
-> **material-web build note:** upstream's `npm run build` (wireit) is bash-only
-> and breaks under Windows cmd (`$(ls -d */ | grep …)`). The publish script runs
-> the publishable steps via bash directly — `sass → css-to-ts → tsc` — which
-> emits the `.js`/`.d.ts` even with the env-only bun-types/`Timeout` type
-> warnings. nested-repo packages also get a temp authed `.npmrc` (removed after).
+| In-tree | Published as |
+|---|---|
+| `packages/m3-tokens` | `@aphrody/m3-tokens` |
+| `packages/material-web` | `@aphrody/material-web` |
+| `packages/react` | `@aphrody/m3-react` |
+| `packages/m3-motion` | `@aphrody/m3-motion` |
+| `packages/m3-theme` | `@aphrody/m3-theme` |
+| `packages/m3-design` | `@aphrody/m3-design` |
+| `packages/eslint-plugin-m3` | `@aphrody/eslint-plugin-m3` |
+| `packages/doc-ai` | `@aphrody/doc-ai` |
+| `packages/bun-rs` | `@aphrody/bun-rs` |
 
-The other forks — `packages/{lit, ui, tailwindcss, gts}` — are **multi-package
-upstream monorepos** consumed in-tree (via `just sync-packages`). Publishing
-them whole isn't a single safe operation: each would need every internal
-sub-package rescoped to `@aphrody-code/*`. They are intentionally **not**
-published individually here; treat them as vendored build inputs.
+`build:sass` falls back to `sass-embedded` when the `bun-rs` FFI lib is absent,
+so CI needs no Rust toolchain.
 
-## Prerequisites — one-time auth
-
-GitHub Packages publish needs a token with **`write:packages`**. The default
-`gh` token (`gist read:org repo workflow`) lacks it. Add it:
-
-```sh
-gh auth refresh -s write:packages,read:packages
-export GITHUB_TOKEN="$(gh auth token)"
-```
-
-(or create a classic PAT with `write:packages` and `export GITHUB_TOKEN=…`).
-
-## Publish
+## Release
 
 ```sh
-# 1. Validate (no auth needed) — packs each tarball and prints contents:
-bun scripts/publish-github-packages.ts
-
-# 2. Publish for real (needs $GITHUB_TOKEN with write:packages):
-bun scripts/publish-github-packages.ts --publish
-
-# Publish a single package:
-bun scripts/publish-github-packages.ts --publish --only material-web
+# 1. Bump versions in the relevant packages/*/package.json (npm rejects
+#    re-publishing an existing version).
+# 2. Commit, then tag and push:
+git tag m3-v<version>
+git push github m3-v<version>
 ```
 
-`scripts/publish-github-packages.ts` builds (`npm run build` for material-web),
-rewrites the package name to its `@aphrody-code/*` published form in a temp copy
-of `package.json`, publishes, then restores the original manifest — so a publish
-never leaves the tree renamed. Defaults to **dry-run**; `--publish` is required
-to publish.
+The push of an `m3-v*` tag triggers `release-m3-packages.yml`. The workflow can
+also be run manually via `workflow_dispatch`.
 
-## Versioning
+### CI secrets
 
-Bump the `version` in the package's `package.json` before publishing (GitHub
-Packages, like npm, rejects re-publishing an existing version). Per
-`CLAUDE.md` §0.1 the **first** `v*` tag/publish is human-gated — a maintainer
-runs the `--publish` step.
+- **`NPM_TOKEN`** — automation token owning the `@aphrody` npm org; used for
+  `//registry.npmjs.org/:_authToken=…`.
+- **`GH_PACKAGES_TOKEN`** — only needed at *install* time, so any remaining
+  private GitHub-Packages transitive dep (e.g. the showcase's optional
+  `@aphrody/bxc`) resolves during `bun install`.
 
 ## Consuming
 
 ```sh
-# consumer .npmrc
-@aphrody-code:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}   # read:packages token
+npm i @aphrody/material-web @aphrody/m3-react @aphrody/m3-tokens
 ```
-```sh
-npm i @aphrody-code/material-web @aphrody-code/m3-react
-```
+
+No registry override or auth is needed — the `@aphrody` scope is public on
+`registry.npmjs.org`.

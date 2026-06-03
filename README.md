@@ -31,7 +31,7 @@ Linux/Windows/wasm. Autour gravitent deux surfaces de première classe :
 | Surface | Emplacement | Toolchain | Rôle |
 |---|---|---|---|
 | **Rust** (primaire) | `crates/*` (~70 crates) | `rust-toolchain.toml` | CLI, systems, FFI, MCP, A2A |
-| **Bun / TypeScript** | `packages/*`, `apps/*`, `examples/*` | `mise.toml` | UI Material Design 3 (`@aphrody-code/*`), client web |
+| **Bun / TypeScript** | `packages/*`, `apps/*`, `examples/*` | `mise.toml` | UI Material Design 3 (`@aphrody/*`), client web |
 | **Python** | `py/` | `.python-version` (uv) | ML / data / bridges |
 
 > Le **cœur Rust ne dépend d'aucune autre toolchain au runtime.** Bun et
@@ -202,20 +202,20 @@ même invariant que Turborepo : si ces fichiers changent, le cache aval est bust
 ## Frontend — Material Design 3 (monorepo TypeScript)
 
 Bun + Turborepo workspace (la surface UI du dépôt, séparée du cœur Rust). Les
-bibliothèques sont publiées sur **GitHub Packages** sous le scope
-`@aphrody-code/*` (tag `m3-v*` → `.github/workflows/release-m3-packages.yml`).
+bibliothèques sont publiées sur **npm** (`registry.npmjs.org`) sous le scope
+`@aphrody/*` (tag `m3-v*` → `.github/workflows/release-m3-packages.yml`).
 
 ```
 packages/
-  material-web/     @aphrody-code/material-web    # lib Lit (web components <md-*>), self-contained sur --md-sys-*
-  react/            @aphrody-code/m3-react         # wrappers React (@lit/react), 1 par <md-*>
-  m3-tokens/        @aphrody-code/m3-tokens        # tokens M3 + Material You runtime (dynamic-color)
-  m3-motion/        @aphrody-code/m3-motion        # transitions / motion M3 (React)
-  m3-theme/         @aphrody-code/m3-theme         # tokens « fusion » M3 + shadcn/ui + Tailwind v4
-  m3-design/        @aphrody-code/m3-design        # design compiler : brief NL → scaffold React M3
-  eslint-plugin-m3/ @aphrody-code/eslint-plugin-m3 # règles lint M3 (oxlint + ESLint)
-  doc-ai/           @aphrody-code/doc-ai           # CLI doc/traduction
-  bun-rs/           @aphrody-code/bun-rs           # FFI native Rust (Sass, HCT) via bun:ffi (hors workspace Cargo)
+  material-web/     @aphrody/material-web    # lib Lit (web components <md-*>), self-contained sur --md-sys-*
+  react/            @aphrody/m3-react         # wrappers React (@lit/react), 1 par <md-*>
+  m3-tokens/        @aphrody/m3-tokens        # tokens M3 + Material You runtime (dynamic-color)
+  m3-motion/        @aphrody/m3-motion        # transitions / motion M3 (React)
+  m3-theme/         @aphrody/m3-theme         # tokens « fusion » M3 + shadcn/ui + Tailwind v4
+  m3-design/        @aphrody/m3-design        # design compiler : brief NL → scaffold React M3
+  eslint-plugin-m3/ @aphrody/eslint-plugin-m3 # règles lint M3 (oxlint + ESLint)
+  doc-ai/           @aphrody/doc-ai           # CLI doc/traduction
+  bun-rs/           @aphrody/bun-rs           # FFI native Rust (Sass, HCT) via bun:ffi (hors workspace Cargo)
 apps/
   web/              # client GRAND PUBLIC : chat/RAG, React + m3-react + TanStack, Bun-natif
 examples/
@@ -224,7 +224,7 @@ examples/
 
 ```bash
 bun install          # racine — lie le workspace, applique les patches (MCU 0.4.0, @webgpu/types)
-bun run build        # turbo : build des @aphrody-code/*
+bun run build        # turbo : build des @aphrody/*
 bun run typecheck    # turbo tsc
 cd apps/web && bun run dev   # client public (Bun.serve + HMR)
 ```

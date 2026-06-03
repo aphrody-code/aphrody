@@ -1,52 +1,54 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Release Automation and Workflow Guide
 
-This document describes the automated release process for the `aphrody-ts` packages (`skills` and `design`) and their compiled standalone binaries.
+This document describes the automated release process for aphrody's Material
+Design 3 packages (the `@aphrody/*` family) published to the public npm
+registry.
 
-## Automated Release Script
+> Superseded the obsolete `aphrody-ts` extracted-repo + GitHub-Packages flow
+> (`scripts/release.ts` / `scripts/publish-github-packages.ts`, both removed) on
+> 2026-06-04. npm (`registry.npmjs.org`, scope `@aphrody`) is now canonical.
 
-The script [release.ts](file:///c:/src/aphrody-ts/scripts/release.ts) automates the entire end-to-end release pipeline.
+## Automated Release Workflow
+
+[`.github/workflows/release-m3-packages.yml`](../.github/workflows/release-m3-packages.yml)
+automates the end-to-end publish pipeline. It fires on an **`m3-v*`** tag
+(decoupled from the core `release.yml`, which fires on `v*`) and can also be run
+manually via `workflow_dispatch`.
 
 ### Pipeline Steps
 
-1. **Auth Check**: Automatically extracts and loads the GITHUB_TOKEN from `C:\Users\<user>\vps-mirror\.npmrc` if not already present in the environment variables.
-2. **Version Bump**: Updates the `version` field in `packages/skills/package.json` and `apps/design/package.json` with the new target version.
-3. **Compile Standalone Binaries**: Builds the optimized standalone executables `bin/skills.exe` and `bin/design.exe` using `bun build --compile`.
-4. **Environment PATH update**: Automatically adds `bin/` to the user's system PATH via PowerShell if not already registered.
-5. **Git Push Sub-repositories**: Commits and pushes changes in `packages/skills` to its respective repository (`aphrody-code/skills`).
-6. **Git Push Root**: Commits and pushes all changes in `aphrody-ts` to its main repository (`aphrody-code/aphrody-ts`).
-7. **NPM Scoped Packages Publication**: Triggers [publish-github-packages.ts](file:///c:/src/aphrody-ts/scripts/publish-github-packages.ts) to publish the `@aphrody-code/skills` and `@aphrody-code/design` packages to the GitHub Packages registry.
-8. **Git Tagging**: Tags the commit with `v<version>` and pushes it.
-9. **GitHub Release & Upload**: Creates a GitHub Release, attaches the compiled standalone binaries as assets, and publishes the release live.
-
----
+1. **Checkout + Bun**: `actions/checkout` then `oven-sh/setup-bun` (canary).
+2. **Install**: `bun install --frozen-lockfile` (`GH_PACKAGES_TOKEN` lets any
+   remaining private GitHub-Packages transitive dep — e.g. the showcase's
+   optional `@aphrody/bxc` — resolve at install time).
+3. **Build**: `bunx turbo run build --filter='./packages/*'` — builds only the
+   publishable packages (turbo pulls in their workspace deps; `examples/*` are
+   excluded). `build:sass` falls back to `sass-embedded`, so no Rust toolchain
+   is required in CI.
+4. **npm auth**: writes `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` to
+   `~/.npmrc` (`NPM_TOKEN` = automation token owning the `@aphrody` org).
+5. **Publish**: for each package in dependency order
+   (`m3-tokens → material-web → react → m3-motion → m3-theme → m3-design →
+   eslint-plugin-m3 → doc-ai → bun-rs`), runs
+   `bun publish --access public --registry https://registry.npmjs.org`.
+   `bun publish` inlines every `workspace:*` dependency with its resolved
+   version; an already-published version is skipped, not failed.
 
 ## How to Execute a Release
 
-To run a release, execute the following command from the repository root:
-
 ```sh
-# 1. First, always run a dry-run to verify the pipeline steps:
-bun scripts/release.ts --version 1.5.9 --dry-run
-
-# 2. Run the actual release:
-bun scripts/release.ts --version 1.5.9
+# 1. Bump versions in the relevant packages/*/package.json.
+# 2. Commit, then tag and push the m3-v* tag:
+git tag m3-v<version>
+git push github m3-v<version>
 ```
 
----
+The tag push triggers the workflow. There is no local publish script — the
+GitHub Actions workflow is the single source of truth.
 
-## Technical Details
+## CI secrets
 
-### Binary Compilation
-The script builds the standalone executables under the `bin/` folder using:
-- **skills.exe**: `bun build --compile ./packages/skills/src/cli.ts --outfile ./bin/skills.exe`
-- **design.exe**: `bun build --compile ./apps/design/src/server.ts --outfile ./bin/design.exe`
-
-### PATH Environment Variable Registration
-The script executes a PowerShell instruction to permanently register the binary path in the Current User environment registry key:
-```powershell
-[System.Environment]::SetEnvironmentVariable("PATH", $currentPath + ";" + $binPath, "User")
-```
-
-### GitHub Packages Scope Resolution
-GitHub Packages registry requires NPM packages to be published under the org namespace matching the repository owner (`@aphrody-code`). The publishing script rewrites `package.json` dynamically at publish-time and automatically cleans it up afterwards so local source directories remain clean.
+- **`NPM_TOKEN`** — automation token, owner of the `@aphrody` npm org.
+- **`GH_PACKAGES_TOKEN`** — install-time only, for private GitHub-Packages
+  transitive deps.
