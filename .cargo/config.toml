@@ -46,9 +46,15 @@ rustflags = [
     # "-Z", "threads=8",
     "-Z", "share-generics=y",
     "-C", "symbol-mangling-version=v0",
+    # Remap build-host roots so the binary is byte-identical regardless of where
+    # it was compiled. CI runners + the real dev/deploy hosts (this VPS lives at
+    # /home/ubuntu, the Windows dev host at C:\src). Entries that don't match the
+    # current host are simply inert, so listing several is harmless.
     "--remap-path-prefix=/home/runner=.",
     "--remap-path-prefix=/Users/runner=.",
     "--remap-path-prefix=C:\\Users\\runner=.",
+    "--remap-path-prefix=/home/ubuntu=.",
+    "--remap-path-prefix=C:\\src=.",
 ]
 
 # ----------------------------------------------------------------------------
