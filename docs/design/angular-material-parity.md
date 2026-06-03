@@ -83,4 +83,4 @@ textarea autosize.
 ## Source de vérité
 Clone de référence : `C:\src\_refs\angular-components` (sparse :
 `src/material`, `src/cdk`, `src/material-experimental`). Re-cloner pour
-rafraîchir. Notre bundle : [`packages/material-web/APHRODY-M3.md`](../../packages/material-web/APHRODY-M3.md).
+rafraîchir. Notre bundle : [`packages/material-web/APHRODY-M3.md`](../../packages/material-web/docs/material-web/APHRODY-M3.md).

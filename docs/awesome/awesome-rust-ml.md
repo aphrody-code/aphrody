@@ -106,7 +106,7 @@ Examples:
 - evcxr-jupyter-integration [https://plotters-rs.github.io/plotters-doc-data/evcxr-jupyter-integration.html](https://plotters-rs.github.io/plotters-doc-data/evcxr-jupyter-integration.html)
 - Rust for Data Science: Tutorial 1 - DEV Community [https://dev.to/davidedelpapa/rust-for-data-science-tutorial-1-4g5j](https://dev.to/davidedelpapa/rust-for-data-science-tutorial-1-4g5j)
 - Preface | Data Crayon [https://datacrayon.com/posts/programming/rust-notebooks/preface/](https://datacrayon.com/posts/programming/rust-notebooks/preface/)
-- Drawing SVG Graphs with Rust [https://cetra3.github.io/blog/drawing-svg-graphs-rust/](Drawing SVG Graphs with Rust https://cetra3.github.io/blog/drawing-svg-graphs-rust/)
+- Drawing SVG Graphs with Rust [Drawing SVG Graphs with Rust](https://cetra3.github.io/blog/drawing-svg-graphs-rust/)
 
 
 ## Vector
