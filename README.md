@@ -47,18 +47,19 @@ $ aphrody --version
 aphrody 1.0.0-canary
 
 $ mrx scan --root .
-# writes path.json + monorepo-map.json, then exits
+# writes <root>/path.json + <root>/monorepo-map.json, then exits
 
-$ jq '.stats' monorepo-map.json
+$ jq '.stats' monorepo-map.json     # real run on this repo, 2026-06-04
 {
-  "total_files":      119,
-  "total_workspaces":   6,
-  "scan_duration_ms":  14,        // walk parallèle (rayon + ignore)
+  "total_files":     1513,
+  "total_workspaces":  12,
+  "scan_duration_ms":  47,          // walk parallèle (rayon + ignore)
+  "bytes_scanned": 8435119,
   "languages": {
-    "TypeScript": { "files": 30, "bytes":  81554 },
-    "JSON":       { "files": 16, "bytes":  11297 },
-    "Markdown":   { "files":  5, "bytes":   7460 },
-    "CSS":        { "files":  1, "bytes":   3519 }
+    "CSS":        { "files": 695, "bytes": 2326717 },
+    "TypeScript": { "files": 673, "bytes": 2446884 },
+    "Markdown":   { "files":  88, "bytes": 1185790 },
+    "JSON":       { "files":  21, "bytes":  108686 }
   }
 }
 
