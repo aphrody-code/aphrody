@@ -9,6 +9,37 @@ SPDX-FileCopyrightText: 2026 aphrody-code contributors
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`.cargo/config.toml` no longer forces a Windows MSVC default target.** It
+  hardcoded `[build] target = "x86_64-pc-windows-msvc"`, so a fresh Linux/macOS
+  clone running the README's `cargo build -p aphrody` silently cross-compiled to
+  Windows (needing the MSVC linker hardcoded to one machine) and failed building
+  `ring`. Cargo now builds for the host triple. Verified: `cargo check -p
+  aphrody --target x86_64-unknown-linux-gnu` exit 0.
+- **`scripts/x-yoyo-autopilot.sh`** — resolved `bun: command not found` in
+  cron/headless runs (`~/.bashrc` early-returns for non-interactive shells, so
+  bun's PATH was never loaded). Now resolves bun deterministically
+  (PATH → `~/.bun/bin` → `$BUN_INSTALL/bin` → `/usr/local/bin`) and exits 127
+  with a clear message if genuinely absent.
+
+### Changed (docs — README↔code realignment)
+
+- **README** rewritten to claim only what the code does: removed the internal
+  "100% Rust vs Bun monorepo" contradiction (the repo is a polyglot Rust+Bun+
+  Python monorepo), replaced the dead `packaging/install.sh` install one-liner
+  with the real from-source path, and repointed/removed ~18 dead links.
+- **SOURCE_OF_TRUTH.md, ARCHITECTURE.md, UI-ARCHITECTURE.md, PLAN-MOONSHOT.md,
+  GOOGLE.md, UI-GOOGLE-APP-DESKTOP.md** — aligned with the polyglot pivot;
+  removed claims referencing deleted crates (`gui`, `google_os`, `bun_ffi`,
+  `aphrody-wasm`, most `aphrody-terminal-*`) as current; fixed the workspace
+  member count (~70).
+- **Doc link integrity** — fixed/de-linked broken relative links across the
+  docs tree: **zero broken relative links** now remain in README + all root
+  `*.md` + all `docs/*.md` (was 39).
+
 ## [0.8.1] - 2026-06-03
 
 ### Added
