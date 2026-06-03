@@ -18,6 +18,7 @@ members = [
     "crates/a2a",
     "crates/a2a-client",
     "crates/a2a-server",
+    "crates/a2a-coord",
     "crates/a2a-grpc",
     "crates/a2a-pb",
     # mrx — Monorepo Real-time X-platform mapper (unified from mrx-{core,detect,audit,watch,cli})
@@ -462,6 +463,7 @@ aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
 a2a                = { package = "a2a-lf",        path = "crates/a2a",        version = "0.3" }
 a2a-client         = { package = "a2a-client-lf", path = "crates/a2a-client", version = "0.1", default-features = false }
 a2a-server         = { package = "a2a-server-lf", path = "crates/a2a-server", version = "0.3",  default-features = false }
+a2a-coord          = { path = "crates/a2a-coord" }
 a2a-pb             = { package = "a2a-pb",        path = "crates/a2a-pb",     version = "0.1" }
 a2a-grpc           = { package = "a2a-grpc",      path = "crates/a2a-grpc",   version = "0.2" }
 a2a-slimrpc        = { package = "a2a-slimrpc",   path = "crates/a2a-slimrpc", version = "0.1" }

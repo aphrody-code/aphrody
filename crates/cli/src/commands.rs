@@ -221,49 +221,78 @@ impl AuthCommand {
     }
 }
 
-pub(crate) struct A2aCommand {
-    pub prompt: String,
-}
+pub(crate) async fn dispatch_a2a(
+    action: crate::A2aAction,
+    _ctx: &GoogleContext,
+) -> miette::Result<()> {
+    use a2a_coord::{
+        ListenerConfig, PeerId, PeerInvoker,
+        listener::{self, TickOptions},
+    };
+    use std::net::SocketAddr;
 
-#[async_trait]
-impl TerminalCommand for A2aCommand {
-    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        println!("🤖 Initialisation du client natif Rust A2A...");
+    let (manifest, repo_root) = a2a_coord::AiManifest::load_repo_default()
+        .map_err(|e| miette::miette!("{e}"))?;
 
-        println!("🔑 Extraction sécurisée du token Gemini CLI...");
-        let home_dir = platform::home_dir().map(|p| p.display().to_string()).unwrap_or_default();
-        let creds_path = PathBuf::from(&home_dir).join(".gemini").join("oauth_creds.json");
-        let token = if let Ok(content) = std::fs::read_to_string(&creds_path) {
-            if let Some(start) = content.find("\"access_token\": \"") {
-                let start = start + 17;
-                if let Some(end) = content[start..].find("\"") {
-                    content[start..start + end].to_string()
-                } else {
-                    String::new()
-                }
-            } else {
-                String::new()
-            }
-        } else {
-            String::new()
-        };
-        if token.is_empty() {
+    match action {
+        crate::A2aAction::Serve { bind } => {
+            let addr: SocketAddr = bind
+                .parse()
+                .map_err(|e| miette::miette!("invalid --bind: {e}"))?;
+            let cfg = ListenerConfig {
+                bind: addr,
+                manifest,
+                repo_root,
+                dry_run: false,
+            };
             println!(
-                "⚠️ Aucun token Gemini CLI trouvé (êtes-vous authentifié via `bun run start -- \
-                 login` ?)"
+                "A2A coord on http://{addr} — agent card, /ping, /msg, JSON-RPC, HTTP+REST"
             );
-        } else {
-            println!("✅ Token Gemini CLI récupéré ({}...)", &token[..10]);
-        }
-
-        println!("🌐 Routage de la requête A2A vers le moteur natif Gemini CLI...");
-        println!("📤 Envoi du prompt: \"{}\"", self.prompt);
-
-        // Delegate to the bundled single-file gemini-cli binary (built via bun --compile).
-        GeminiCommand { args: vec!["--prompt".to_string(), self.prompt.clone()] }
-            .execute(_ctx)
-            .await
+            listener::serve(cfg)
+                .await
+                .map_err(|e| miette::miette!("a2a serve failed: {e}"))?;
+        },
+        crate::A2aAction::Tick {
+            iteration,
+            side,
+            peer,
+            subject,
+            body,
+            kind,
+        } => {
+            let opts = TickOptions {
+                iteration,
+                side,
+                peer: Some(peer),
+                subject,
+                body,
+                kind: Some(kind),
+            };
+            let env = listener::run_tick(&manifest, &repo_root, &opts)
+                .map_err(|e| miette::miette!("a2a tick: {e}"))?;
+            println!("{}", serde_json::to_string_pretty(&env).unwrap_or_default());
+        },
+        crate::A2aAction::Invoke { prompt, peer, dry_run } => {
+            let peer_id = PeerId::parse(&peer)
+                .ok_or_else(|| miette::miette!("unknown peer {peer:?}; use grok|agy|claude|bxc"))?;
+            let invoker = PeerInvoker::new(&repo_root).with_dry_run(dry_run);
+            let result = invoker
+                .invoke_prompt(peer_id, &prompt)
+                .map_err(|e| miette::miette!("peer invoke: {e}"))?;
+            if !result.stderr.is_empty() {
+                eprintln!("{}", result.stderr);
+            }
+            print!("{}", result.stdout);
+            if result.exit_code != Some(0) {
+                return Err(miette::miette!(
+                    "peer {} exited {:?}",
+                    peer_id.short(),
+                    result.exit_code
+                ));
+            }
+        },
     }
+    Ok(())
 }
 
 pub(crate) struct CrosCommand {
