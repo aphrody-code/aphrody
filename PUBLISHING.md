@@ -2,8 +2,11 @@
 # Publishing aphrody packages to GitHub Packages
 
 aphrody's npm packages publish to **GitHub Packages** (registry
-`npm.pkg.github.com`, org `aphrody-code`). Scope is wired in the root
-[`.npmrc`](.npmrc); a single script handles build + scope-rewrite + publish.
+`npm.pkg.github.com`, org `aphrody-code`). The `@aphrody-code` scope registry
+is set per-package via `publishConfig.registry` in each `package.json`; the
+release workflow (`.github/workflows/release-m3-packages.yml`) generates the
+auth `.npmrc` at CI time (`//npm.pkg.github.com/:_authToken=…`) and `bun publish`
+inlines `workspace:*` deps in dependency order.
 
 ## Publishable packages
 
