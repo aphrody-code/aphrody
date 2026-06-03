@@ -45,7 +45,7 @@ interface Target {
 // with the env-only bun-types/Timeout type warnings.
 const MW_BUILD =
   "node_modules/.bin/sass --style=compressed --load-path=node_modules --load-path=node_modules/sass-true/sass $(ls -d */ | grep -vE 'node_modules|catalog') " +
-  "&& (find . \\( -path ./.wireit -o -path ./node_modules -o -path ./catalog \\) -prune -o -name '*.css' -print | xargs -L1 node scripts/css-to-ts.js --suffix=.cssresult) " +
+  '&& bun scripts/css-to-ts.ts ' +
   '&& node_modules/.bin/tsc --pretty; true';
 
 const TARGETS: Target[] = [

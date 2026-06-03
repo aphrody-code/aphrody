@@ -24,7 +24,7 @@ function toModule(cssPath: string, css: string): string {
 
 let count = 0;
 for await (const rel of new Bun.Glob("**/*.css").scan({ cwd: PKG })) {
-  if (rel.includes("node_modules")) continue;
+  if (/(^|\/)(node_modules|\.wireit|catalog)\//.test(rel)) continue;
   const cssPath = resolve(PKG, rel);
   const out = cssPath.replace(/\.css$/, `${SUFFIX}.ts`);
   await Bun.write(out, toModule(`./${rel}`, await Bun.file(cssPath).text()));
