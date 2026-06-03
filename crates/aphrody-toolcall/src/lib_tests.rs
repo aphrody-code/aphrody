@@ -184,6 +184,24 @@ fn gemini_declaration_has_expected_shape() {
 }
 
 #[test]
+fn gemini_declaration_strips_additional_properties() {
+    use std::collections::BTreeMap;
+
+    use crate::{AdditionalProperties, JsonSchema, ToolDefinition};
+
+    let mut properties = BTreeMap::new();
+    properties.insert("x".to_string(), JsonSchema::string(None));
+    let schema = JsonSchema::object(
+        properties,
+        Some(vec!["x".to_string()]),
+        Some(AdditionalProperties::Boolean(false)),
+    );
+    let tool = ToolDefinition::new("t", "d", schema);
+    let decl = tool.to_gemini_declaration();
+    assert!(decl["parameters"].get("additionalProperties").is_none());
+}
+
+#[test]
 fn openai_function_has_expected_shape() {
     let tool = EchoTool::new("echo", ToolExposure::Direct);
     let func = tool.definition().to_openai_function();

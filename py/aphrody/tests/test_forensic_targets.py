@@ -28,6 +28,15 @@ def test_resolve_named_target():
     assert "Antigravity IDE" in str(p)
 
 
+def test_resolve_agy_target_linux():
+    import os
+
+    if os.name == "nt":
+        pytest.skip("Linux-specific agy home path")
+    p = targets.resolve_target("agy")
+    assert "antigravity-cli" in str(p).replace("\\", "/")
+
+
 def test_default_targets_returns_existing(tmp_path, monkeypatch):
     # Point one known target at an existing dir to assert filtering works.
     monkeypatch.setitem(targets._TARGETS, "install", str(tmp_path))

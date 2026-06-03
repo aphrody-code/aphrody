@@ -103,20 +103,17 @@ impl TerminalCommand for AuthCommand {
         // (`agy`, installed at %LOCALAPPDATA%\agy\bin per the official
         // install.ps1), and `@google/gemini-cli/bundle/gemini.js` no longer
         // exists. We no longer shell out to it. Instead, extract the Google
-        // OAuth token directly from the Windows Credential Manager entry
-        // `gemini:antigravity` that agy writes, then fall back to an on-disk
-        // token.
-        #[cfg(target_os = "windows")]
+        // OAuth token from the Antigravity CLI (agy): Windows Credential Manager
+        // `gemini:antigravity`, or on Unix `~/.gemini/antigravity-cli/antigravity-oauth-token`.
         if let Some(tok) = read_antigravity_oauth() {
             if let Some(access) = tok.pointer("/token/access_token").and_then(|v| v.as_str()) {
                 Self::persist_god_mode_token("antigravity", access)?;
                 println!(
-                    "🔓 Token Google extrait directement depuis l'Antigravity CLI (agy) — \
-                     Credential Manager `gemini:antigravity`."
+                    "🔓 Token Google extrait depuis l'Antigravity CLI (agy)."
                 );
                 return Ok(());
             }
-            println!("⚠️ Credential `gemini:antigravity` présent mais sans `token.access_token`.");
+            println!("⚠️ Credential agy présent mais sans `token.access_token`.");
         }
 
         // Last resort: reuse an existing on-disk token (gemini/agy shared store).
@@ -127,7 +124,7 @@ impl TerminalCommand for AuthCommand {
 
         Err(miette::miette!(
             "Aucune source d'authentification disponible. Connectez-vous via l'Antigravity CLI \
-             (`agy`, %LOCALAPPDATA%\\agy\\bin\\agy.exe) puis relancez `aphrody auth`. \
+             (`agy` ou `aphrody antigravity login`) puis relancez `aphrody auth`. \
              gemini-cli n'est plus utilisé."
         ))
     }
@@ -140,8 +137,35 @@ fn read_gemini_oauth() -> Option<serde_json::Value> {
     serde_json::from_str(&content).ok()
 }
 
-#[cfg(target_os = "windows")]
+/// Read the agy / Antigravity OAuth envelope (`{"token": {…}}`).
 fn read_antigravity_oauth() -> Option<serde_json::Value> {
+    #[cfg(unix)]
+    {
+        if let Some(home) = platform::home_dir().ok() {
+            for rel in [
+                [".config", "aphrody", "antigravity-token.json"],
+                [".gemini", "antigravity-cli", "antigravity-oauth-token"],
+            ] {
+                let path = rel.iter().fold(home.clone(), |p, seg| p.join(seg));
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(v) = serde_json::from_str(&content) {
+                        return Some(v);
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return read_antigravity_oauth_windows();
+    }
+
+    None
+}
+
+#[cfg(target_os = "windows")]
+fn read_antigravity_oauth_windows() -> Option<serde_json::Value> {
     use windows_sys::Win32::Security::Credentials::{
         CRED_TYPE_GENERIC, CredFree, CredReadW, CREDENTIALW,
     };

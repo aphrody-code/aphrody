@@ -299,6 +299,15 @@ impl JsonSchema {
         serde_json::to_value(self).unwrap_or(JsonValue::Null)
     }
 
+    /// Serialize for Gemini `function_declarations[].parameters`.
+    ///
+    /// Applies [`compact`] for the per-tool budget, then strips JSON Schema
+    /// keywords the Gemini API rejects (e.g. `additionalProperties`).
+    #[must_use]
+    pub fn to_gemini_value(&self, budget_bytes: usize) -> JsonValue {
+        sanitize_gemini_json_schema(self.compact(budget_bytes).to_value())
+    }
+
     /// Byte length of the compact JSON serialization of this schema.
     #[must_use]
     fn serialized_len(&self) -> usize {
@@ -460,6 +469,30 @@ fn is_local_definition_ref(schema_ref: &str) -> bool {
     schema_ref.starts_with("#/$defs/") || schema_ref.starts_with("#/definitions/")
 }
 
+/// Strip JSON Schema keywords that Gemini `function_declarations` reject.
+///
+/// Recurses through objects and arrays. Known unsupported keys today:
+/// `additionalProperties` (Gemini returns HTTP 400 "Cannot find field").
+#[must_use]
+pub fn sanitize_gemini_json_schema(value: JsonValue) -> JsonValue {
+    match value {
+        JsonValue::Object(mut map) => {
+            map.remove("additionalProperties");
+            for v in map.values_mut() {
+                *v = sanitize_gemini_json_schema(std::mem::take(v));
+            }
+            JsonValue::Object(map)
+        }
+        JsonValue::Array(items) => JsonValue::Array(
+            items
+                .into_iter()
+                .map(sanitize_gemini_json_schema)
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Tool definition
 // ---------------------------------------------------------------------------
@@ -520,7 +553,7 @@ impl ToolDefinition {
         json!({
             "name": self.name,
             "description": self.description,
-            "parameters": self.input_schema.compact(GEMINI_SCHEMA_BUDGET_BYTES).to_value(),
+            "parameters": self.input_schema.to_gemini_value(GEMINI_SCHEMA_BUDGET_BYTES),
         })
     }
 

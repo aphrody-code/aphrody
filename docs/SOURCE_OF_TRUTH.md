@@ -216,6 +216,8 @@ cargo check -p aphrody --target wasm32-unknown-unknown --locked     # bloquant
 | pty cross-platform | `portable-pty` (ConPTY Windows / openpty Unix) dans `aphrody-terminal-backend`. Pas de `node-pty`. |
 | `aphrody chat` + token agy expiré | `classify_agy_error` dans `crates/cli/src/agy_backend.rs` intercepte `SdkError::OAuthServer{401|403}` et retourne un message court actionnable (re-auth `aphrody antigravity login`, ou `--web` / `--stub`) au lieu de dumper le JSON Google. Commit : `e5a932da2`. |
 | `aphrody antigravity refresh` cassé | Google retourne `400 client_secret is missing` : le client OAuth public Antigravity ne fournit pas de `client_secret` pour le refresh grant. Workaround : relancer `agy` en arriere-plan (re-mint le token). Re-auth : `aphrody antigravity login`. |
+| Token `agy` sur Linux | Fichier canonique : `~/.gemini/antigravity-cli/antigravity-oauth-token` (pas WinCred). `antigravity-sdk::token_from_credential_manager` lit aussi `~/.config/aphrody/antigravity-token.json`. Doc : `docs/agy-cli/README.md` §4. |
+| Build VPS / rustc 1.97 | `rustup default nightly` ; `CARGO_TARGET_DIR=~/aphrody/target/linux-gnu` ; `unset RUSTC_WRAPPER` si sccache absent. Snippet : `awesome-grok-build/scripts/rust-nightly-env.sh`. |
 
 ## 9. Roadmap (post-pivot)
 

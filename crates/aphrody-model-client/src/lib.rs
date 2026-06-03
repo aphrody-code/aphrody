@@ -24,6 +24,7 @@
 
 use std::pin::Pin;
 
+use aphrody_toolcall::sanitize_gemini_json_schema;
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use serde_json::{Value, json};
@@ -219,7 +220,7 @@ pub fn build_request_body(turn: &ChatTurn) -> Value {
                 json!({
                     "name": t.name,
                     "description": t.description,
-                    "parameters": t.parameters,
+                    "parameters": sanitize_gemini_json_schema(t.parameters.clone()),
                 })
             })
             .collect();
