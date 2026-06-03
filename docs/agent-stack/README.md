@@ -51,6 +51,14 @@ Do **not** commit tokens into `mcp.json`; prefer env at spawn time.
 
 Auth for Grok Build (not in committed docs): `~/.grok/auth.json` after `grok login`. Optional metered API: `XAI_API_KEY` in `~/.bash_secrets`.
 
+### Headless `grok -p` (verified)
+
+```bash
+grok -p "task" --always-approve --permission-mode bypassPermissions --max-turns 80
+```
+
+Models: `grok-build` (default), `grok-composer-2.5-fast` (`-m`). **Do not** pass `--effort` or `--reasoning-effort` with `grok-build` (HTTP 400). Full notes: [`~/awesome-grok-build/docs/grok-headless.md`](file:///home/ubuntu/awesome-grok-build/docs/grok-headless.md).
+
 ### Other MCP entrypoints
 
 | Consumer | Config location |
