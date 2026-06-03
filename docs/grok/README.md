@@ -9,6 +9,9 @@ This tree documents **xAI** (Grok API + Grok Build CLI) as used with aphrody and
 
 | Doc | Contents |
 | --- | --- |
+| [../../DEPLOY.md](../../DEPLOY.md) | VPS deploy (Rust CLI, MCP, A2A) |
+| [`~/awesome-grok-build/docs/aphrody-grok-setup.md`](../../../awesome-grok-build/docs/aphrody-grok-setup.md) | Grok plugin + MCP + `rust-nightly-env.sh` |
+| [`~/awesome-grok-build/docs/VPS_AI_UNIFY.md`](../../../awesome-grok-build/docs/VPS_AI_UNIFY.md) | Shared VPS memory |
 | [api-endpoints.md](api-endpoints.md) | OpenAI-compatible `https://api.x.ai/v1` routes |
 | [models.md](models.md) | Model ids from RAGFlow vendor config + Grok CLI |
 | [bxc-and-grok.md](bxc-and-grok.md) | What bxc does *not* cover; MCP layout on VPS |

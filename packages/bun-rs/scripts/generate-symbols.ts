@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const root = "/home/ubuntu/material-web";
 const jsonPath = join(root, "migration/codemods/data/material-symbols-names.json");

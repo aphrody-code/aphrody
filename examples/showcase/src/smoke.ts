@@ -2,7 +2,7 @@
 // the bundled client module, assert they resolve. Uses only Bun.serve + the
 // standard fetch/Response Web APIs.
 import index from "./index.html";
-import { join } from "path";
+import { join } from "node:path";
 
 const server = Bun.serve({
   port: 0, // ephemeral

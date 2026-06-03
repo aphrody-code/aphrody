@@ -4,6 +4,10 @@
 Référence distillée (Google I/O 2026, 19 mai 2026) servant de base au plugin
 `extensions/aphrody-agy/`. Sources en bas de page.
 
+**Mémoire globale VPS (agy)** : `~/.gemini/antigravity-cli/MEMORY.md` · layout agent
+`~/.aphrody` : [`../dot-aphrody/README.md`](../dot-aphrody/README.md) · deploy
+[`../../DEPLOY.md`](../../DEPLOY.md).
+
 ## 1. Antigravity 2.0
 
 Plateforme de développement **agent-first** autonome (anciennement IDE unique,

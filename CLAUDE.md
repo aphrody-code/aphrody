@@ -137,7 +137,14 @@ Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 - **Gemini** : crate Rust `gemini-runtime` (`gemini_runtime::resolve_bin()` résout `$APHRODY_GEMINI_BIN` > sibling de `current_exe()` > PATH).
 
 ### Déploiement
-`cargo build --release -p aphrody --locked` → `target/release/aphrody.exe`. **Ce build ne met PAS à jour `~/.local/bin/aphrody.exe`** : déployer via `scripts/deploy.{ps1,sh}` (copie le binaire post-build).
+
+**Canonical : [`DEPLOY.md`](DEPLOY.md)** (VPS Linux, MCP, A2A, Python systemd `:8082`, bxc pair [`../bxc/DEPLOY.md`](../bxc/DEPLOY.md)).
+
+- Linux : `CARGO_CONFIG=.cargo/config.linux-vps.toml` + `cargo build --release --target x86_64-unknown-linux-gnu -p aphrody -p google_mcp` → install depuis `target/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/release/`.
+- Copie agents : `scripts/deploy.sh` ou `bash scripts/vps-deploy-bxc-aphrody.sh` + `scripts/vps-sync-agent-stack.sh`.
+- Mémoire VPS : `~/.aphrody/workspace/MEMORY.md` · doc layout `docs/dot-aphrody/README.md` · Claude project memory `~/.claude/projects/-home-ubuntu-aphrody/memory/MEMORY.md`.
+- **Ne pas confondre** Rust CLI `aphrody` et service Python `aphrody.service` (`/opt/aphrody`, port 8082).
+- Un seul `cargo build --release` à la fois (LTO) ; tuer les builds dupliqués avant `cargo clean`.
 
 ### Hors workspace / Archivés
 - Hors workspace : `coreutils`, `util-linux`, `vendor/bun/`, `vendor/electron-prebuilt/`.

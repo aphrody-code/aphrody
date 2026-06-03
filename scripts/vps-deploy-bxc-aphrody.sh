@@ -38,10 +38,16 @@ export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$APHRODY_ROOT/target/x86_64-unknown
 if command -v cargo &>/dev/null; then
   cargo build --release --target x86_64-unknown-linux-gnu -p google_mcp -p aphrody 2>/dev/null || \
     echo "    warn: aphrody cargo build skipped (check rustc >= 1.97)"
-  for bin in aphrody aphrody-mcp; do
-    if [[ -f "$CARGO_BUILD_TARGET_DIR/release/$bin" ]]; then
-      install -m 755 "$CARGO_BUILD_TARGET_DIR/release/$bin" "$LOCAL_BIN/$bin"
-    fi
+  release_dir="$CARGO_TARGET_DIR/release"
+  [[ -d "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release" ]] && \
+    release_dir="$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release"
+  for bin in aphrody aphrody-mcp google_mcp; do
+    src="$release_dir/$bin"
+    [[ -f "$src" ]] || continue
+    dest="$LOCAL_BIN/$bin"
+    [[ "$bin" == "google_mcp" ]] && dest="$LOCAL_BIN/aphrody-mcp"
+    install -m 755 "$src" "$dest"
+    echo "    installed $dest"
   done
 fi
 

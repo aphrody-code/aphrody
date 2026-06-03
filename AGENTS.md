@@ -10,7 +10,10 @@ Read in order:
 
 1. `CLAUDE.md` — operator-facing spec: platform targets, language policy,
    validation commands, architecture, supply-chain rules, known pitfalls.
-2. `AGENTS.md` (this file) — agent conventions, coordination protocol,
+2. `DEPLOY.md` — VPS/Linux deploy: Rust CLI, `aphrody-mcp`, A2A, scripts, systemd
+   (Python `:8082` is separate). Pair with `../bxc/DEPLOY.md`.
+3. `docs/agent-stack/DEPLOY.md` — fast stop/clean/smoke for the shared agent host.
+4. `AGENTS.md` (this file) — agent conventions, coordination protocol,
    grind loop patterns, and stop conditions.
 
 `CLAUDE.md` answers *what* the project requires. `AGENTS.md` answers *how*

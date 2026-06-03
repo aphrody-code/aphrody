@@ -472,7 +472,15 @@ impl TerminalCommand for AutoCommand {
             // natural language prompt.
             let prompt = self.args.join(" ");
             println!("✨ [Auto] Détection de langage naturel, bascule vers l'agent A2A...");
-            return A2aCommand { prompt }.execute(_ctx).await;
+            return dispatch_a2a(
+                crate::A2aAction::Invoke {
+                    prompt,
+                    peer: "grok".to_string(),
+                    dry_run: false,
+                },
+                _ctx,
+            )
+            .await;
         }
 
         if is_run_script && self.args.len() > 1 && self.args[1].ends_with(".py") {

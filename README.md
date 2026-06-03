@@ -64,6 +64,8 @@ the same binary runs in **1.4 s warm** — full numbers + comparisons in
 
 ### Agent stack on this VPS (Claude · Grok · Gemini · bxc · aphrody)
 
+**Deploy:** [`DEPLOY.md`](DEPLOY.md) (Rust CLI, MCP, A2A, Python `:8082`) · bxc [`../bxc/DEPLOY.md`](../bxc/DEPLOY.md) · quick memory [`docs/agent-stack/DEPLOY.md`](docs/agent-stack/DEPLOY.md).
+
 Shared MCP: `~/.config/aphrody/mcp.json` (`aphrody-mcp`, `bxc-mcp`). Grok: `~/.grok/config.toml` + [`docs/grok/README.md`](docs/grok/README.md). Full matrix: [`docs/agent-stack/README.md`](docs/agent-stack/README.md). X Pro decks + Radar: [`docs/x/README.md`](docs/x/README.md), bxc [`packages/x/docs/X_PRO.md`](../bxc/packages/x/docs/X_PRO.md) (sibling repo).
 
 ---
@@ -316,6 +318,8 @@ cargo install wasm-bindgen-cli wasm-pack
 ```
 
 ## Build & Deploy
+
+Canonical VPS guide: **[`DEPLOY.md`](DEPLOY.md)** (`vps-deploy-bxc-aphrody.sh`, Linux `config.linux-vps.toml`, A2A, systemd). Unified sync: `bash scripts/vps-sync-agent-stack.sh`.
 
 ### Quick Release Build + Install (all platforms)
 

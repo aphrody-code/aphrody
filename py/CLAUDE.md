@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # CLAUDE.md
 
+VPS deploy (Python wheel + `aphrody.service` on `:8082`): [`../DEPLOY.md`](../DEPLOY.md) §3.
+
 Guide opérationnel et de configuration pour les agents d'IA (Claude Code, Gemini CLI, sub-agents) sur le dépôt **aphrody-py**.
 
 **Rôle assigné** : **Autonomous Python Systems & API Engineer**

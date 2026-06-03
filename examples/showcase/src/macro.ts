@@ -14,7 +14,7 @@ export function getBuildMetadata() {
   let commitHash = "dev";
   let commitDate = "n/a";
   try {
-    const { execSync } = require("child_process");
+    const { execSync } = require("node:child_process");
     commitHash = execSync("git rev-parse --short HEAD").toString().trim();
     commitDate = execSync("git log -1 --format=%cd").toString().trim();
   } catch {

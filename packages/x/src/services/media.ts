@@ -82,7 +82,7 @@ async function mediaInit(client: XClient, totalBytes: number, kind: MediaKind): 
     },
   });
 
-  const json = await res.json();
+  const json = (await res.json()) as any;
   checkErrors(json, res.status);
   const mediaId = json.media_id_string || (json.media_id ? String(json.media_id) : "");
   if (!mediaId) {
@@ -161,7 +161,7 @@ async function awaitProcessing(client: XClient, mediaId: string, finalizeJson: a
     // Check status
     const url = `${UPLOAD_URL}?command=STATUS&media_id=${mediaId}`;
     const res = await client.request(url, { method: "GET" });
-    const json = await res.json();
+    const json = (await res.json()) as any;
     checkErrors(json, res.status);
     pi = json.processing_info;
   }
