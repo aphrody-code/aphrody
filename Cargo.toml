@@ -875,7 +875,7 @@ nursery                        = { level = "allow", priority = -1 }
 suspicious                     = { level = "allow", priority = -1 }
 style                          = { level = "allow", priority = -1 }
 complexity                     = { level = "allow", priority = -1 }
-correctness                    = { level = "allow", priority = -1 }
+correctness                    = { level = "warn",  priority = -1 }
 perf                           = { level = "warn",  priority = -1 }
 # `cargo` group: muted workspace-wide (publish=false crates lack keywords/categories).
 # Enable per-crate once publish=true. Wildcard deps already denied by cargo-deny.
