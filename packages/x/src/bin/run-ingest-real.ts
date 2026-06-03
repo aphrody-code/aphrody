@@ -2,8 +2,8 @@
 import { ingestBeybladeData } from "../db/ingest";
 import { Store } from "../db/store";
 
-import { join } from "path";
-import { existsSync, readdirSync } from "fs";
+import { join } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
 
 function findBeybladeData(): string {
   const home = Bun.env.HOME || "/home/ubuntu";

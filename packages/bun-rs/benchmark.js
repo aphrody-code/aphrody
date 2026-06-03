@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { dlopen, ptr } from "bun:ffi";
-import { join } from "path";
+import { join } from "node:path";
 
 // Locate the compiled .so library
 const libPath = join(import.meta.dir, "./target/release/libbun_rs.so");

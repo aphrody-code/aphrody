@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { dlopen, CString } from "bun:ffi";
-import { join } from "path";
+import { join } from "node:path";
 
 const libSuffix =
   process.platform === "win32" ? "dll" : process.platform === "darwin" ? "dylib" : "so";

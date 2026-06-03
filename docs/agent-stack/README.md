@@ -92,6 +92,20 @@ Refresh: `bash ~/aphrody/scripts/fetch-ai-llms.sh`
 | [`anthropic-llms.txt`](anthropic-llms.txt) | https://docs.anthropic.com/llms.txt |
 | [`claude-code-llms.txt`](claude-code-llms.txt) | https://code.claude.com/docs/llms.txt |
 
+## Agent state (`~/.aphrody`)
+
+Layout, workspaces, secrets policy: [`../dot-aphrody/README.md`](../dot-aphrody/README.md).  
+Curated memory: `~/.aphrody/workspace/MEMORY.md`.
+
+## Deploy (VPS)
+
+| Doc | Contents |
+| --- | --- |
+| [`DEPLOY.md`](DEPLOY.md) | Fast stop/start, clean, A2A smoke |
+| [`../../DEPLOY.md`](../../DEPLOY.md) | Full aphrody deploy |
+| [`../../../bxc/DEPLOY.md`](../../../bxc/DEPLOY.md) | Full bxc deploy |
+| [`../../../awesome-grok-build/docs/VPS_AI_UNIFY.md`](../../../awesome-grok-build/docs/VPS_AI_UNIFY.md) | Grok global memory |
+
 ## Related trees
 
 | Topic | Path |

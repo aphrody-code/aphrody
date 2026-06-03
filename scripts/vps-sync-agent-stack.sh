@@ -27,12 +27,27 @@ if command -v cargo &>/dev/null; then
 fi
 
 echo "==> [3/6] aphrody MCP binary"
-if [[ -x "$APHRODY_ROOT/target/release/aphrody-mcp" ]]; then
-  install -m 755 "$APHRODY_ROOT/target/release/aphrody-mcp" "$LOCAL_BIN/aphrody-mcp"
+APHRODY_RELEASE=""
+for d in \
+  "$APHRODY_ROOT/target/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/release" \
+  "$APHRODY_ROOT/target/x86_64-unknown-linux-gnu/release" \
+  "$APHRODY_ROOT/target/linux-gnu/x86_64-unknown-linux-gnu/release" \
+  "$APHRODY_ROOT/target/linux-gnu/release" \
+  "$APHRODY_ROOT/target/release"; do
+  [[ -d "$d" ]] && APHRODY_RELEASE="$d" && break
+done
+if [[ -n "$APHRODY_RELEASE" ]]; then
+  for bin in aphrody-mcp google_mcp aphrody; do
+    [[ -f "$APHRODY_RELEASE/$bin" ]] || continue
+    dest="$LOCAL_BIN/$bin"
+    [[ "$bin" == "google_mcp" ]] && dest="$LOCAL_BIN/aphrody-mcp"
+    install -m 755 "$APHRODY_RELEASE/$bin" "$dest"
+    echo "    installed $dest"
+  done
 elif command -v aphrody-mcp &>/dev/null; then
   echo "    aphrody-mcp already in PATH"
 else
-  echo "    skip: build aphrody-mcp with: cd $APHRODY_ROOT && cargo build -p aphrody-mcp --release"
+  echo "    skip: build with: cd $APHRODY_ROOT && CARGO_CONFIG=$APHRODY_ROOT/.cargo/config.linux-vps.toml cargo build --release --target x86_64-unknown-linux-gnu -p google_mcp -p aphrody"
 fi
 
 echo "==> [4/6] Ensure MCP config"
