@@ -3,11 +3,18 @@
 """Read and persist the Antigravity OAuth token across platforms.
 
 On Windows the source of truth is the **Windows Credential Manager** generic
-credential ``gemini:antigravity`` written by the Antigravity CLI. On other
-platforms (Linux is cible #1) — and as a refresh cache / fallback everywhere —
-aphrody uses a private file ``antigravity-token.json`` inside its secrets
-directory (``<repo>/var/secrets`` in-repo, else ``~/.aphrody``), with
-owner-only permissions.
+credential ``gemini:antigravity`` written by the Antigravity CLI (``agy``).
+
+On Linux/macOS the canonical store is the **agy CLI OAuth file** (verified
+2026-06, [Antigravity CLI reference](https://antigravity.google/docs/cli-reference))::
+
+    ~/.gemini/antigravity-cli/antigravity-oauth-token
+
+Envelope: ``{"token": {"access_token", "refresh_token", "expiry"}, "auth_method": "consumer"}``.
+
+Fallbacks (in order): ``APHRODY_AGY_OAUTH_FILE``, ``~/.config/aphrody/antigravity-token.json``
+(``aphrody antigravity login``), then aphrody's private cache
+(``antigravity-token.json`` under :func:`cache_path`).
 
 No secret is ever logged. The blob is read, parsed, and — for the Win32 path —
 copied out of the LSASS allocation before it is freed.
@@ -34,6 +41,36 @@ from aphrody.errors import (
 CRED_TARGET = "gemini:antigravity"
 
 _IS_WINDOWS = sys.platform.startswith("win")
+
+
+def agy_oauth_path() -> Path:
+    """Return the agy CLI OAuth file path (Linux/macOS canonical store).
+
+    Honors ``APHRODY_AGY_OAUTH_FILE`` when set.
+    """
+    override = os.environ.get("APHRODY_AGY_OAUTH_FILE")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".gemini" / "antigravity-cli" / "antigravity-oauth-token"
+
+
+def aphrody_login_token_path() -> Path:
+    """Path written by ``aphrody antigravity login`` (Rust SDK parity)."""
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    base = Path(xdg).expanduser() if xdg else Path.home() / ".config"
+    return base / "aphrody" / "antigravity-token.json"
+
+
+def token_search_paths() -> list[Path]:
+    """Ordered token file locations for non-Windows platforms (no duplicates)."""
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for candidate in (agy_oauth_path(), aphrody_login_token_path(), cache_path()):
+        resolved = candidate.expanduser()
+        if resolved not in seen:
+            seen.add(resolved)
+            out.append(resolved)
+    return out
 
 
 def cache_path() -> Path:
@@ -161,6 +198,29 @@ if _IS_WINDOWS:  # pragma: no cover - platform specific
 # ---------------------------------------------------------------------------
 
 
+def read_file_token(path: Path) -> OAuthToken | None:
+    """Parse a token envelope from ``path`` if the file exists.
+
+    Returns:
+        The parsed token, or ``None`` if the file is missing or unreadable.
+    """
+    if not path.is_file():
+        return None
+    try:
+        return OAuthToken.from_blob(path.read_bytes())
+    except (json.JSONDecodeError, KeyError, OSError):
+        return None
+
+
+def read_token_from_paths(paths: list[Path] | None = None) -> OAuthToken | None:
+    """Try each path in order and return the first valid token."""
+    for path in paths or token_search_paths():
+        token = read_file_token(path)
+        if token is not None:
+            return token
+    return None
+
+
 def read_cache() -> OAuthToken | None:
     """Read the refreshed-token cache, if present.
 
@@ -168,13 +228,7 @@ def read_cache() -> OAuthToken | None:
         The cached :class:`OAuthToken`, or ``None`` if the cache is absent or
         unreadable.
     """
-    path = cache_path()
-    if not path.exists():
-        return None
-    try:
-        return OAuthToken.from_blob(path.read_bytes())
-    except (json.JSONDecodeError, KeyError, OSError):
-        return None
+    return read_file_token(cache_path())
 
 
 def enforce_private_permissions(path: Path) -> None:
@@ -295,12 +349,12 @@ def read_token() -> OAuthToken:
                 "credential blob is not a valid token envelope"
             ) from exc
 
-    cached = read_cache()
-    if cached is None:
+    token = read_token_from_paths()
+    if token is None:
+        searched = ", ".join(str(p) for p in token_search_paths())
         raise UnsupportedPlatformError(
-            "no Antigravity token found: expected the Windows Credential "
-            f"Manager entry {CRED_TARGET!r} (Windows) or a cache at "
-            f"{cache_path()} (other platforms). Run 'aphrody auth login' or "
-            "sign in with the Antigravity client first."
+            "no Antigravity token found: sign in with the agy CLI "
+            f"({agy_oauth_path()}) or run 'aphrody antigravity login'. "
+            f"Searched: {searched}"
         )
-    return cached
+    return token

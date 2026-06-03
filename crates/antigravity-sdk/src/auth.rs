@@ -72,14 +72,12 @@ pub struct OAuthToken {
 // ---------------------------------------------------------------------------
 
 /// Outer envelope: `{"token": <InnerToken>}`.
-#[cfg(any(target_os = "windows", test))]
 #[derive(Deserialize)]
 struct TokenEnvelope {
     token: InnerToken,
 }
 
 /// Inner token fields as stored by agy / as returned by the refresh endpoint.
-#[cfg(any(target_os = "windows", test))]
 #[derive(Deserialize)]
 struct InnerToken {
     access_token: String,
@@ -91,7 +89,6 @@ struct InnerToken {
     expiry: Option<String>,
 }
 
-#[cfg(any(target_os = "windows", test))]
 impl From<InnerToken> for OAuthToken {
     fn from(inner: InnerToken) -> Self {
         OAuthToken {
@@ -106,26 +103,93 @@ impl From<InnerToken> for OAuthToken {
 // Credential Manager extraction (Windows only)
 // ---------------------------------------------------------------------------
 
-/// Read the Antigravity OAuth token from the Windows Credential Manager.
+/// Read the Antigravity OAuth token from the platform credential store.
 ///
-/// Reads the generic credential `gemini:antigravity`, decodes its blob as
-/// UTF-8 JSON `{"token": {…}}`, and returns an [`OAuthToken`].
+/// Resolution order:
+///
+/// * **Unix (Linux/macOS)** — first existing file among:
+///   1. `~/.config/aphrody/antigravity-token.json` (`aphrody antigravity login`)
+///   2. `~/.gemini/antigravity-cli/antigravity-oauth-token` (official `agy` CLI,
+///      libsecret / file store per [Antigravity CLI docs](https://antigravity.google/docs/cli-reference))
+/// * **Windows** — Credential Manager generic credential `gemini:antigravity`
+///   (same JSON envelope as the Unix files).
 ///
 /// # Errors
 ///
-/// * [`SdkError::Unsupported`] — not running on Windows.
-/// * [`SdkError::CredentialManager`] — Win32 `CredReadW` returned an error
-///   (including "credential not found").
-/// * [`SdkError::EmptyCredential`] — the blob was present but zero-length.
-/// * [`SdkError::TokenParse`] — the blob is not valid JSON / missing fields.
+/// * [`SdkError::Unsupported`] — no store on this platform, or no token file.
+/// * [`SdkError::CredentialManager`] — Win32 `CredReadW` failed (Windows).
+/// * [`SdkError::EmptyCredential`] — blob present but zero-length (Windows).
+/// * [`SdkError::TokenParse`] — blob is not valid JSON / missing fields.
+/// * [`SdkError::Io`] — Unix token file could not be read.
 pub fn token_from_credential_manager() -> Result<OAuthToken, SdkError> {
-    #[cfg(target_os = "windows")]
-    return windows_impl::read_credential();
+    #[cfg(unix)]
+    {
+        if let Some(token) = unix_impl::read_token_file()? {
+            return Ok(token);
+        }
+    }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "windows")]
+    {
+        return windows_impl::read_credential();
+    }
+
     Err(SdkError::Unsupported(
-        "Windows Credential Manager is only available on Windows",
+        "no Antigravity OAuth token found; run `agy` or `aphrody antigravity login`",
     ))
+}
+
+#[cfg(unix)]
+mod unix_impl {
+    use std::fs;
+    use std::path::PathBuf;
+
+    use super::{OAuthToken, TokenEnvelope};
+    use crate::error::SdkError;
+
+    /// Candidate token files, highest precedence first.
+    fn token_paths() -> Result<Vec<PathBuf>, SdkError> {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let mut paths = Vec::new();
+
+        let config_base = std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| home.as_ref().map(|h| h.join(".config")));
+        if let Some(base) = config_base {
+            paths.push(base.join("aphrody").join("antigravity-token.json"));
+        }
+
+        if let Some(home) = home {
+            paths.push(
+                home.join(".gemini")
+                    .join("antigravity-cli")
+                    .join("antigravity-oauth-token"),
+            );
+        }
+
+        Ok(paths)
+    }
+
+    fn parse_envelope_bytes(blob: &[u8]) -> Result<OAuthToken, SdkError> {
+        let envelope: TokenEnvelope = serde_json::from_slice(blob)?;
+        Ok(OAuthToken::from(envelope.token))
+    }
+
+    /// Return the first parseable token from the candidate paths, or `Ok(None)`
+    /// when none exist.
+    pub(super) fn read_token_file() -> Result<Option<OAuthToken>, SdkError> {
+        for path in token_paths()? {
+            if !path.is_file() {
+                continue;
+            }
+            let blob = fs::read(&path)?;
+            if blob.is_empty() {
+                return Err(SdkError::EmptyCredential);
+            }
+            return parse_envelope_bytes(&blob).map(Some);
+        }
+        Ok(None)
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -322,14 +386,15 @@ mod tests {
         );
     }
 
-    /// On all non-Windows platforms `token_from_credential_manager` must
-    /// return `SdkError::Unsupported` without panicking.
+    /// On Unix without a token file, `token_from_credential_manager` returns
+    /// `SdkError::Unsupported`. When `~/.gemini/antigravity-cli/antigravity-oauth-token`
+    /// or `~/.config/aphrody/antigravity-token.json` exists (agy / login), it succeeds.
     #[cfg(not(target_os = "windows"))]
     #[test]
-    fn credential_manager_unsupported_on_non_windows() {
+    fn credential_manager_unix_without_panic() {
         match token_from_credential_manager() {
-            Err(SdkError::Unsupported(_)) => {}
-            other => panic!("expected Unsupported, got {other:?}"),
+            Ok(_) | Err(SdkError::Unsupported(_)) => {}
+            Err(e) => panic!("unexpected error variant: {e:?}"),
         }
     }
 

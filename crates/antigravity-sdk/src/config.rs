@@ -145,14 +145,38 @@ impl GeminiConfig {
     /// Load and parse the config from the default `~/.gemini/config/config.json`
     /// location.
     ///
+    /// When the file is missing, writes a minimal default config (permissions +
+    /// browser policy aligned with the Antigravity desktop client) and returns
+    /// it so `aphrody antigravity config` works on fresh Linux installs.
+    ///
     /// # Errors
     ///
     /// Returns [`ConfigError::Unsupported`] if the path cannot be resolved,
-    /// [`ConfigError::Io`] if the file cannot be read, or
+    /// [`ConfigError::Io`] if the file cannot be read or written, or
     /// [`ConfigError::Json`] if the contents are not valid JSON.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn load() -> Result<Self, ConfigError> {
-        Self::load_from(&config_path()?)
+        let path = config_path()?;
+        if path.is_file() {
+            return Self::load_from(&path);
+        }
+        let default = Self::default_desktop();
+        default.save(&path)?;
+        Ok(default)
+    }
+
+    /// Default `config.json` shape observed on Antigravity / agy installs.
+    #[must_use]
+    pub fn default_desktop() -> Self {
+        Self {
+            permissions: vec![
+                "command(*)".to_owned(),
+                "unsandboxed(*)".to_owned(),
+                "mcp(*)".to_owned(),
+            ],
+            browser_js_execution_policy: Some("TURBO".to_owned()),
+            extra: serde_json::Map::new(),
+        }
     }
 
     /// Load and parse the config from an explicit path.

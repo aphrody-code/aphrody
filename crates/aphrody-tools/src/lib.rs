@@ -510,7 +510,7 @@ impl ToolRegistry {
         Ok(json!({
             "name": tool.name,
             "description": tool.description,
-            "parameters": tool.input_schema,
+            "parameters": sanitize_gemini_parameters(&tool.input_schema),
         }))
     }
 
@@ -675,6 +675,25 @@ fn json_type_matches(v: &Value, expected: &str) -> bool {
         "object" => v.is_object(),
         "null" => v.is_null(),
         _ => true, // unknown type token → don't reject (forward-compat)
+    }
+}
+
+/// Strip JSON Schema keys Gemini `function_declarations` reject (e.g.
+/// `additionalProperties`).
+fn sanitize_gemini_parameters(schema: &Value) -> Value {
+    match schema {
+        Value::Object(map) => {
+            let mut out = map.clone();
+            out.remove("additionalProperties");
+            for v in out.values_mut() {
+                *v = sanitize_gemini_parameters(v);
+            }
+            Value::Object(out)
+        }
+        Value::Array(items) => Value::Array(
+            items.iter().map(sanitize_gemini_parameters).collect(),
+        ),
+        other => other.clone(),
     }
 }
 

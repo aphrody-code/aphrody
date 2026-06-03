@@ -15,6 +15,7 @@ description            = "Provider abstraction for the aphrody agent engine: the
 workspace = true
 
 [dependencies]
+aphrody-toolcall = { path = "../aphrody-toolcall" }
 async-trait = { workspace = true }
 futures     = { workspace = true }
 reqwest     = { workspace = true }

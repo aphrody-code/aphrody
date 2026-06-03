@@ -159,10 +159,16 @@ fn tool_decls(tools: &ToolRegistry) -> Vec<ToolDecl> {
     tools
         .model_visible_definitions()
         .into_iter()
-        .map(|definition| ToolDecl {
-            name: definition.name.clone(),
-            description: definition.description.clone(),
-            parameters: definition.input_schema.to_value(),
+        .map(|definition| {
+            let decl = definition.to_gemini_declaration();
+            ToolDecl {
+                name: definition.name.clone(),
+                description: definition.description.clone(),
+                parameters: decl
+                    .get("parameters")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null),
+            }
         })
         .collect()
 }

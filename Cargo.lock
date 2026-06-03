@@ -792,6 +792,7 @@ dependencies = [
 name = "aphrody-model-client"
 version = "1.0.0-canary"
 dependencies = [
+ "aphrody-toolcall",
  "async-trait",
  "bytes",
  "futures",

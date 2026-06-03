@@ -6,11 +6,15 @@ Code, Vertex AI, image generation and a local voice loop** —
 that authenticates with the credentials already present on the machine.
 **No API key is ever required.**
 
-aphrody reads the Antigravity desktop client's `gemini:antigravity` token from
-the Windows Credential Manager (or a token file on other platforms), keeps it
-fresh by re-reading the store the Antigravity app maintains, and uses it as a
-Bearer credential for Vertex AI (`google-genai`) and the Cloud Code `v1internal`
-API.
+aphrody reads the Antigravity / agy OAuth token from the platform store:
+
+- **Linux**: `~/.gemini/antigravity-cli/antigravity-oauth-token` (agy CLI; set `APHRODY_AGY_OAUTH_FILE` to override)
+- **Windows**: Credential Manager `gemini:antigravity`
+- **Fallback**: `~/.config/aphrody/antigravity-token.json` or aphrody's private cache
+
+The token is kept fresh by re-reading the store (and pull-through refresh when
+Google rejects the refresh grant). It is used as a Bearer credential for Vertex
+AI (`google-genai`) and the Cloud Code `v1internal` API.
 
 The OAuth client id and endpoints are public; the user's tokens
 are read at runtime, stored only under the git-ignored secrets dir

@@ -24,8 +24,12 @@ _TARGETS: dict[str, str] = {
     "appdata": r"%APPDATA%\Antigravity IDE",
     # The dotted variant some builds use.
     "dotdir": r"%APPDATA%\.antigravity-ide",
-    # The agent's local cache / credentials (``agy``).
-    "agy": r"%LOCALAPPDATA%\agy",
+    # agy CLI home: OAuth + brain on Linux; %LOCALAPPDATA%\\agy on Windows.
+    "agy": (
+        r"%LOCALAPPDATA%\agy"
+        if os.name == "nt"
+        else "~/.gemini/antigravity-cli"
+    ),
     # The Gemini CLI / sidecar home (~/.gemini).
     "gemini": r"~\.gemini",
 }
