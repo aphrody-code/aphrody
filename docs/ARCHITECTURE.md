@@ -7,9 +7,8 @@ section 8.
 
 ## 1. Bird's-eye view
 
-`aphrody` is a Rust workspace of **57 active members** (out of **71 crates
-present on disk** — 14 heavy UI/web crates are excluded from the default
-build, see section 7) producing one primary binary (`aphrody`, in
+`aphrody` is a Rust workspace of **~70 active members** (71 crate directories
+present on disk) producing one primary binary (`aphrody`, in
 `crates/cli`), a parallel WebAssembly artefact (`aphrody-wasm`), and
 domain-specific crates for design, messaging, LLM infrastructure, skills,
 terminal, voice, memory, and monorepo mapping. All distributed code sits on
