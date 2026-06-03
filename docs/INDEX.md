@@ -28,6 +28,7 @@ This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line descrip
 - [`libc.md`](libc.md) — libc / FFI reference notes
 - [`notebooklm-d68c5204-report.md`](notebooklm-d68c5204-report.md) — Research report on NotebookLM Boq RPC surface
 - [`peer-a2a-mcp-csharp.md`](peer-a2a-mcp-csharp.md) — Peer A2A coordination via C# MCP bridge
+- [`nextjs-canary-reference.md`](nextjs-canary-reference.md) — Next.js `16.3.0-canary.39` reference: agent/AI surface, Rust/SWC/Turbopack stack vs aphrody, `@next/playwright` API + bxc port plan
 
 ---
 
