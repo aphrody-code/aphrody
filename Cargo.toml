@@ -621,7 +621,10 @@ webbrowser         = "1.0.6"
 testing            = "22.0.0"
 
 # --- MCP -----------------------------------------------------------------
-rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", features = ["server", "transport-io", "macros", "schemars"] }
+# Pinned to the locked rev so `cargo update` can't silently advance rmcp to a
+# new upstream HEAD (the git default branch is otherwise unpinned). Bump
+# deliberately when intended. Matches Cargo.lock.
+rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "cc66e3091e1584f48ee1e0058a2a1201a1d35c81", features = ["server", "transport-io", "macros", "schemars"] }
 
 # --- Terminal emulation ---------------------------------------------------
 vte                = { version = "0.15" }
