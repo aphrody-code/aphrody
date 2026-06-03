@@ -57,8 +57,11 @@
     "test:browser": "turbo run test:browser --filter=@aphrody-code/material-web",
     "dev": "turbo run dev",
     "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "fmt": "oxfmt apps/ packages/",
-    "fmt:check": "oxfmt --check apps/ packages/"
+    "fmt:check": "oxfmt --check apps/ packages/",
+    "docs:check-links": "python3 scripts/scan-doc-links.py",
+    "scan": "bash scripts/scan-repo.sh"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0",
