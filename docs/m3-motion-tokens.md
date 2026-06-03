@@ -64,7 +64,7 @@ Note : les `y` > 1.0 des courbes spatial (ex. 1.67, 1.29) encodent l'overshoot.
 
 ## 4. Mapping vers aphrody (`animate` + crates motion)
 
-`animate` (cf. [`animate-tui-motion.md`](animate-tui-motion.md)) expose des
+`animate` (cf. [`animate-tui-motion.md`](research/animate-tui-motion.md)) expose des
 springs `stiffness`/`damping` -> branchement **1:1** sur les valeurs §2.
 Plan d'implémentation :
 
