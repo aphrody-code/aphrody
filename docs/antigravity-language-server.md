@@ -39,13 +39,13 @@ HTTPS bound to `127.0.0.1`**, on an **OS-assigned port** chosen at launch.
   the regex `listening on \w+ port at (\d+) for HTTP(S)?` (case-insensitive).
   Source: shipped `languageServer.js` `PORT_PATTERN`
   (`var/data/antigravity-extract/src/app/dist/languageServer.js:106-107`),
-  reproduced in [`crates/antigravity-sdk/src/local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs)
+  reproduced in [`crates/antigravity-sdk/src/local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs)
   (`read_port`, regex at the `DEFAULT_PORT_TIMEOUT` site).
 - **Certificate**: self-signed, so WebPKI chain validation cannot apply. The
   client pins the certificate's `SubjectPublicKeyInfo` SHA-256 (Chromium HPKP
   `sha256/<base64>` form). The public pin recovered from Antigravity 2.0.1
   `constants.js` is the constant `PINNED_SPKI_SHA256_B64` in
-  [`local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs) — a public
+  [`local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs) — a public
   fingerprint, **not** a secret.
 - **CSRF**: a per-launch CSRF token is supplied via `--csrf_token` and echoed on
   every gRPC call in the `x-csrf-token` header.
@@ -56,7 +56,7 @@ Recovered verbatim from the shipped launcher
 `var/data/antigravity-extract/src/app/dist/languageServer.js` (function
 `startLanguageServer`, lines ~187-210; the flag set was confirmed by listing all
 `--*` tokens in that file). aphrody reproduces it exactly in
-[`local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs) (`LanguageServer::launch`).
+[`local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs) (`LanguageServer::launch`).
 
 ```text
 language_server --standalone
@@ -81,7 +81,7 @@ Full set of flags observed in `languageServer.js`: `--standalone`,
 runs `execFile(LS_BINARY, ['--stamp'], ...)`).
 
 Defaults baked into the Rust bridge
-([`local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs)):
+([`local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs)):
 
 | Flag | Default constant | Value |
 |---|---|---|
@@ -92,7 +92,7 @@ Defaults baked into the Rust bridge
 
 ### Binary resolution order
 
-`LanguageServer::resolve_binary` ([`local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs)):
+`LanguageServer::resolve_binary` ([`local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs)):
 
 1. `$ANTIGRAVITY_HARNESS_PATH` (file, or directory + known binary name
    `language_server[.exe]` / `localharness[.exe]`).
@@ -108,7 +108,7 @@ The full RPC name set was recovered by RE of the shipped `languageServer.js`
 launcher and the Go binary's embedded symbols (`codeium_common_go_proto`).
 Recovered RPCs on `exa.language_server_pb.LanguageServerService`
 (`var/data/antigravity-extract/REPORT.md` §3; proto header comment in
-[`crates/antigravity-sdk/proto/exa_language_server.proto`](../../crates/antigravity-sdk/proto/exa_language_server.proto)):
+[`crates/antigravity-sdk/proto/exa_language_server.proto`](../crates/antigravity-sdk/proto/exa_language_server.proto)):
 
 - `FetchUserInfo`
 - `GetAuthStatus`
@@ -132,7 +132,7 @@ GoReSym is documented as optional / not-done; see the proto header comment and
 `var/data/antigravity-extract/REPORT.md` §Completion → "NON_FAIT: deep Go-binary
 protobuf descriptor extraction").
 
-Declared in [`exa_language_server.proto`](../../crates/antigravity-sdk/proto/exa_language_server.proto):
+Declared in [`exa_language_server.proto`](../crates/antigravity-sdk/proto/exa_language_server.proto):
 
 | RPC | Request | Response | Purpose |
 |---|---|---|---|
@@ -151,12 +151,12 @@ reverse-engineered.
 
 ## 5. The Rust bridge (`local_ls.rs`)
 
-[`crates/antigravity-sdk/src/local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs)
+[`crates/antigravity-sdk/src/local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs)
 reproduces the launch contract and speaks gRPC to the Go server directly,
 without the proprietary Electron shell.
 
 - **Feature-gated, host-only**: behind the non-default `local-ls` cargo feature
-  ([`crates/antigravity-sdk/Cargo.toml`](../../crates/antigravity-sdk/Cargo.toml),
+  ([`crates/antigravity-sdk/Cargo.toml`](../crates/antigravity-sdk/Cargo.toml),
   feature `local-ls` pulls `dep:prost`, `dep:tonic`, `dep:tonic-prost`,
   `dep:tonic-prost-build`). Never compiled in the default build, CI, or `wasm32`.
 - **Codegen**: `build.rs` compiles the `.proto` into `OUT_DIR`; the module
@@ -184,7 +184,7 @@ without the proprietary Electron shell.
    `:fetchAvailableModels`, `:onboardUser`) with `Authorization: Bearer …`.
    Needs no proprietary binary; this is the crate's primary surface
    (`AntigravityClient`). See
-   [`docs/research/antigravity-sdk-analysis.md`](../research/antigravity-sdk-analysis.md) §0.0.
+   [`docs/research/antigravity-sdk-analysis.md`](research/antigravity-sdk-analysis.md) §0.0.
 2. **Local gRPC LS (this module)**: spawn the Go `language_server.exe`, discover
    its port, pin its cert, send CSRF, call `exa.language_server_pb` — full agent
    surface (Cascade / MCP / worktrees) but requires the proprietary binary.
@@ -193,16 +193,16 @@ Auth note (anti-hallucination): the live OAuth client_ids, scopes, and token
 live in the **desktop app** (Windows Credential Manager target
 `gemini:antigravity`), **not** in the Go binary's wire surface and **not** in
 the `google-antigravity` Python SDK. No token/cookie values are reproduced here.
-See [`docs/research/antigravity-sdk-analysis.md`](../research/antigravity-sdk-analysis.md) §2.
+See [`docs/research/antigravity-sdk-analysis.md`](research/antigravity-sdk-analysis.md) §2.
 
 ## Sources
 
-- In-repo: [`crates/antigravity-sdk/proto/exa_language_server.proto`](../../crates/antigravity-sdk/proto/exa_language_server.proto),
-  [`crates/antigravity-sdk/src/local_ls.rs`](../../crates/antigravity-sdk/src/local_ls.rs),
-  [`crates/antigravity-sdk/Cargo.toml`](../../crates/antigravity-sdk/Cargo.toml),
-  [`docs/research/antigravity-sdk-analysis.md`](../research/antigravity-sdk-analysis.md),
-  [`docs/research/vscode-fork-re-intel.md`](../research/vscode-fork-re-intel.md),
-  [`docs/research/electron-re-intel.md`](../research/electron-re-intel.md).
+- In-repo: [`crates/antigravity-sdk/proto/exa_language_server.proto`](../crates/antigravity-sdk/proto/exa_language_server.proto),
+  [`crates/antigravity-sdk/src/local_ls.rs`](../crates/antigravity-sdk/src/local_ls.rs),
+  [`crates/antigravity-sdk/Cargo.toml`](../crates/antigravity-sdk/Cargo.toml),
+  [`docs/research/antigravity-sdk-analysis.md`](research/antigravity-sdk-analysis.md),
+  [`docs/research/vscode-fork-re-intel.md`](research/vscode-fork-re-intel.md),
+  [`docs/research/electron-re-intel.md`](research/electron-re-intel.md).
   Local (gitignored): `var/data/antigravity-extract/REPORT.md`,
   `var/data/antigravity-extract/src/app/dist/languageServer.js`.
 - External: <https://github.com/Exafunction/codeium/issues/285>,
