@@ -1,0 +1,8 @@
+# VPS / Linux CI override — source via:
+#   export CARGO_CONFIG="$APHRODY_REPO/.cargo/config.linux-vps.toml"
+# or: cargo --config-path .cargo/config.linux-vps.toml build ...
+[build]
+target = "x86_64-unknown-linux-gnu"
+
+[term]
+color = "always"
