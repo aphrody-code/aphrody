@@ -124,6 +124,8 @@ cargo audit-machete        # unused deps detector
 ```
 *Note* : Machete false-positives contournés via `[package.metadata.cargo-machete]` ignored. `docs/SUMMARY.md` est auto-généré via `cargo run -p aphrody-summary` (ne pas éditer à la main).
 
+**Scan repo** : `python3 scripts/scan-doc-links.py` (gate liens markdown cassés, `--all`/`--json`, exit 1 si cassé) · `scripts/scan-repo.sh` (santé/inventaire : membres, liens, réfs crates supprimés, stubs, chemins hardcodés ; `FAIL_ON_LINKS=1` = gate).
+
 ## 4. Architecture
 
 Dépôt **monorepo polyglotte** (cf. §2) : Rust primaire (`crates/*`, le gros du workspace) + surfaces in-tree Bun/TS (`apps/*`, `examples/*`, `packages/*` — dont les 9 libs Material Design 3 `@aphrody-code/*` fusionnées le 2026-06-01, + `native/x/beyblade`) et Python (`py/`). L'extraction du 2026-05-23 vers des dépôts frères a été **réunifiée le 2026-05-27** ; la surface Go a été **supprimée le 2026-05-31** ; le monorepo `material-web` a été **fusionné le 2026-06-01**.
@@ -180,6 +182,7 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 
 ## 7. Pièges connus (mémoire institutionnelle)
 
+- **Build local Linux (hors `scripts/deploy.sh`)** : `.cargo/config.toml` impose `build.rustc-wrapper = "sccache"` (tuné host Windows). Sans sccache → tout `cargo` échoue (`could not execute process \`sccache\``). `unset RUSTC_WRAPPER` **ne suffit pas** (le config gagne) ; passer `cargo <cmd> --config "build.rustc-wrapper=''"`. `--offline` échoue aussi (cache sparse incomplet : crossterm_winapi, android_system_properties…) → builder online. Cible native explicite : `--target x86_64-unknown-linux-gnu`.
 - **aphrody doctor nécessite ai.json** : Bien que le transport file-based soit historiquement obsolète au profit de gRPC, la commande `doctor` exige la présence de `ai.json` et `.well-known/ai.json` à la racine du dépôt pour réussir. Sans eux, elle retourne un verdict `UNHEALTHY` (exit code 1).
 - **aws-lc-sys** : MSVC require NASM prebuilt + Ninja via `.cargo/config.toml`. Linux require `libssl-dev`.
 - **rustls 0.23 CryptoProvider** : appeler `rustls::crypto::ring::default_provider().install_default()` avant premier `reqwest::Client`.
