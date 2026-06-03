@@ -572,6 +572,26 @@ Politique : §2 CLAUDE.md "WASM Rust natif", memory `project_terminal_integratio
 | CVE ignorés (justifiés) | 5 (4 stale retirés 2026-05-26, cf. `docs/audits/2026-05-26-supply-chain-hygiene.md`) | < 5 (après upstream alignment) |
 | Cibles cross-platform bloquantes | 3 (Linux/Win/wasm) | 3 |
 
+## 5. Roadmap tooling — intégration bxc / n2b dans aphrody (2026-06-04)
+
+Objectif : faire de `aphrody` le hub de tooling unifié (CLI + plugin + MCP) au-dessus
+des outils frères `bxc` (crawler/web Bun+Rust) et `n2b` (Node→Bun). Pré-requis :
+analyses profondes `docs/audits/2026-06-04-{n2b,bxc}-analysis.md` (en cours).
+
+| # | Item | Surface | Statut |
+|---|---|---|---|
+| T1 | Sous-commande CLI `aphrody bxc …` (façade vers le binaire/daemon bxc) | `crates/cli` | ⏳ |
+| T2 | Sous-commande CLI `aphrody n2b …` (façade scan/fix Node→Bun) | `crates/cli` | ⏳ |
+| T3 | Skill plugin `n2b` (migration Node→Bun guidée) | `.claude/plugins/aphrody/skills/` | ⏳ |
+| T4 | Skill plugin `bxc` (crawl/recon/scrape web) | `.claude/plugins/aphrody/skills/` | ⏳ |
+| T5 | Tool MCP `n2b` complet (`aphrody-mcp` : scan + fix + rapport JSON) | `crates/google_mcp` | ⏳ |
+| T6 | Agent md `lint-workflow` (oxc + n2b + bun + turbo + clippy/ruff) | `.claude/plugins/aphrody/agents/` | ✅ **2026-06-04** |
+| T7 | Agent md `test-runner` (bun test + docs + bxc web full suite + nextest) | `.claude/plugins/aphrody/agents/` | ✅ **2026-06-04** |
+
+T1-T5 dépendent des analyses bxc/n2b + impl Rust ; T6/T7 livrés (agents markdown).
+Convention : façades CLI = spawn du binaire externe optionnel (cf. `aphrody n2b`
+historique, CLAUDE.md §0.5), jamais de re-vendoring de la logique Bun.
+
 ---
 
 *Pour la vue d'ensemble exécutive, lire [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md).*
