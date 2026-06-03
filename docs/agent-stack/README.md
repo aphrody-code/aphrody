@@ -75,10 +75,14 @@ xAI env: `XAI_API_KEY` (metered fallback). See [`../grok/env-and-auth.md`](../gr
 
 ## Documentation mirrors (`llms.txt`)
 
+Refresh: `bash ~/aphrody/scripts/fetch-ai-llms.sh`
+
 | File | Source |
 | --- | --- |
 | [`x-ai-llms.txt`](x-ai-llms.txt) | https://docs.x.ai/llms.txt |
 | [`bun-llms.txt`](bun-llms.txt) | https://bun.com/docs/llms.txt |
+| [`anthropic-llms.txt`](anthropic-llms.txt) | https://docs.anthropic.com/llms.txt |
+| [`claude-code-llms.txt`](claude-code-llms.txt) | https://code.claude.com/docs/llms.txt |
 
 ## Related trees
 

@@ -1,4 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+# Changelog
+
+## 0.8.1 - 2026-06-03
+
+### Added
+
+- VPS agent-stack docs sync; `bxc_xpro_deck` MCP (bxc 0.6.1); X Pro + Radar via `@aphrody-code/x` 1.0.6.
+
 # Changelog — aphrody plugin
 
 All notable changes to the `.claude/plugins/aphrody/` plugin. Format:

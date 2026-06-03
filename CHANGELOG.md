@@ -9,11 +9,12 @@ SPDX-FileCopyrightText: 2026 aphrody-code contributors
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.1] - 2026-06-03
 
 ### Added
 
-- **`docs/agent-stack/`** — Unified VPS agent config: CLI `--help` snapshots (agy, grok, claude, bxc, aphrody), `llms.txt` mirrors (xAI, Bun), MCP/env/session matrix, [X Pro integration](docs/agent-stack/x-pro-integration.md).
+- **`scripts/fetch-ai-llms.sh`** — Refresh `docs/agent-stack/*-llms.txt` (xAI, Bun, Anthropic, Claude Code) and CLI `--help` snapshots.
+- **`docs/agent-stack/`** — Unified VPS agent config: CLI `--help` snapshots (agy, grok, claude, bxc, aphrody), `llms.txt` mirrors (xAI, Bun, Anthropic, Claude Code), MCP/env/session matrix, [X Pro integration](docs/agent-stack/x-pro-integration.md).
 - **X / Twitter stack** — `@aphrody-code/x` 1.0.6 (Gryphon decks + Radar), bxc 0.6.1 (`bxc_xpro_deck` MCP), `x-cli xpro` Rust subcommand, yoyo `@yoyo/x-pro` hub API.
 - **`scripts/vps-sync-agent-stack.sh`** — One-shot: rebuild bxc-mcp/aphrody-mcp, sync MCP JSON to Claude/Grok, verify services.
 
