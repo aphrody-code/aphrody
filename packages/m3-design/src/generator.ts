@@ -367,7 +367,7 @@ export class DesignCompiler {
         const words = "Streaming real-time results from design engine...".split(" ");
         for (const word of words) {
           if (!active) break;
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await Bun.sleep(150);
           yield word + " ";
         }
       }
