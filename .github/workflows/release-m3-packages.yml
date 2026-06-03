@@ -11,7 +11,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  BUN_VERSION: "1.4.0-canary.1"
+  BUN_VERSION: "canary"
 
 permissions:
   contents: read
