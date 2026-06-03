@@ -46,7 +46,7 @@ function runCmd(cmd: string[], cwd: string = ROOT): boolean {
 // 1. Resolve and Load GitHub Token
 let token = process.env['GITHUB_TOKEN'];
 if (!token) {
-  const vpsMirrorNpmrc = 'C:\\Users\\yohan\\vps-mirror\\.npmrc';
+  const vpsMirrorNpmrc = 'C:\\Users\\<user>\\vps-mirror\\.npmrc';
   if (existsSync(vpsMirrorNpmrc)) {
     const npmrcContent = readFileSync(vpsMirrorNpmrc, 'utf8');
     const match = npmrcContent.match(/\/\/npm\.pkg\.github\.com\/:_authToken=(ghp_[A-Za-z0-9]+)/);

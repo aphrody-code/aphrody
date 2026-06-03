@@ -1,6 +1,6 @@
 # Antigravity IDE — Reverse-engineering approfondi
 
-Cible : `C:\Users\yohan\AppData\Local\Programs\Antigravity IDE`
+Cible : `C:\Users\<user>\AppData\Local\Programs\Antigravity IDE`
 Analyse : read-only, machine perso (logiciel installé par le user, analyse autorisée).
 Date : 2026-05-22. Artefacts bruts : `var/data/antigravity-ide-re/`.
 

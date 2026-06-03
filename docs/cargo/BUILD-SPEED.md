@@ -118,7 +118,7 @@ Aim for >70 % hit rate on a fully warm workspace.
 ## sccache cache state (2026-05-18 after first fill)
 
 ```
-Cache location: Local disk C:UsersyohanAppDataLocalMozillasccachecache
+Cache location: Local disk C:Users<user>AppDataLocalMozillasccachecache
 Cache size: 7 GiB (of 10 GiB max)
 Compile requests: 668  |  executed: 465  |  misses: 465  |  hit rate: 0% (first fill)
 Avg compiler time: 1.3 s/crate

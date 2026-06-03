@@ -14,10 +14,10 @@ Greps executed (case-sensitive, ASCII):
 | Pattern | Files | Notes |
 |---|---|---|
 | `C:\\src\\aphrody` | 5 | 1 doc cast, 1 Rust test (none), JSON manifests |
-| `C:\\Users\\yohan` | 7 | `.well-known/ai.json`, 2 xtask Rust sources, 2 pwsh scripts, doc tables |
+| `C:\\Users\\<user>` | 7 | `.well-known/ai.json`, 2 xtask Rust sources, 2 pwsh scripts, doc tables |
 | `C:\\winclean` | 8 | A2A peer paths (legit) — already cfg-gated and overridable |
 | `/c/src/aphrody` | 0 | clean |
-| `/c/Users/yohan` | 0 | clean (only `/c/Users/user` in vendored gemini-cli test, OOS) |
+| `/c/Users/<user>` | 0 | clean (only `/c/Users/user` in vendored gemini-cli test, OOS) |
 | `/mnt/c/` | 1 (2 lines) | already gated and intentional in `commands.rs:1194,1245` (WSL fallback) |
 | `~/.local/bin/aphrody...` | 6 | install docs (legit per `project_aphrody_install_convention`) |
 | `target/x86_64-pc-windows-msvc/release/aphrody.exe` | 3 | 1 in `.claude/settings.json` (legit cargo-bin allowlist), 2 in plugin install docs |
@@ -30,8 +30,8 @@ Table format: *severity / file:line / category / proposed fix*.
 
 | Sev | File:line | Category | Fix |
 |---|---|---|---|
-| Critical | `crates/aphrody-design-agents/src/spawn.rs:557` | Test path: `Path::new("C:/Users/yohan/.local/bin/claude.exe")` | Replaced with portable generic path `Path::new("C:/bin/claude.exe")` — the test only measures the byte-length of the argv quote, the actual path is irrelevant. **APPLIED** |
-| Critical | `crates/aphrody-xtask/src/mirror_m3_material.rs:489` | `spawn_bxc_daemon` candidates contained `r"C:\Users\yohan\.local\bin\bxc.exe"` | Replaced with portable lookup: `BXC_BIN` env override → `bxc{,.exe}` on `$PATH` → `~/.local/bin/bxc{,.exe}` resolved via `USERPROFILE`/`HOME`. **APPLIED** |
+| Critical | `crates/aphrody-design-agents/src/spawn.rs:557` | Test path: `Path::new("C:/Users/<user>/.local/bin/claude.exe")` | Replaced with portable generic path `Path::new("C:/bin/claude.exe")` — the test only measures the byte-length of the argv quote, the actual path is irrelevant. **APPLIED** |
+| Critical | `crates/aphrody-xtask/src/mirror_m3_material.rs:489` | `spawn_bxc_daemon` candidates contained `r"C:\Users\<user>\.local\bin\bxc.exe"` | Replaced with portable lookup: `BXC_BIN` env override → `bxc{,.exe}` on `$PATH` → `~/.local/bin/bxc{,.exe}` resolved via `USERPROFILE`/`HOME`. **APPLIED** |
 | Critical | `crates/aphrody-xtask/src/mirror_google_design.rs:303` | Same as above (sister file) | Same fix. **APPLIED** |
 | Critical | `crates/aphrody-terminal-llm/src/mcp.rs:618,638` | `default_server_specs()` had hardcoded `C:/src/aphrody/var/data/bxc-memory.sqlite` and `C:/worktree/bxc/packages/bxc-extension/server.ts` strings as fallbacks (with only a partial `APHRODY_ROOT` override for the DB path). | Extracted two new helpers `resolve_aphrody_root()` and `resolve_bxc_extension_server()`. Root lookup: `APHRODY_ROOT` env → walk from `env!("CARGO_MANIFEST_DIR")/../..` and check `Cargo.toml` exists → last-resort `C:/src/aphrody` (documented dev-machine snapshot per `feedback_clone_path_c_src`). Bxc server lookup: `BXC_EXTENSION_SERVER` env → `<APHRODY_ROOT>/packages/bxc/packages/bxc-extension/server.ts` (in-tree mirror per CLAUDE.md §0.3) → last-resort `C:/worktree/bxc/...`. **APPLIED** |
 
@@ -41,12 +41,12 @@ Table format: *severity / file:line / category / proposed fix*.
 |---|---|---|---|
 | Medium | `.claude/plugins/aphrody/skills/monorepo/task.json:16` | `"docs_path": "C:\\src\\aphrody\\docs\\monorepo"` | Already replaced with `${CLAUDE_PLUGIN_ROOT}/../../../docs/monorepo` (plugin-dev convention, cf. plugin CHANGELOG 0.3.1). **PRE-APPLIED** |
 | Medium | `opencode.json:154` | `mcp.google.command: ["bun", "run", "C:\\src\\aphrody\\packages\\google-mcp\\src\\index.ts"]` | Already replaced with workspace-relative `"./packages/google-mcp/src/index.ts"`. **PRE-APPLIED** |
-| Medium | `scripts/setup-dev-env.ps1:35,77` | `'BUN_RUNTIME_TRANSPILER_CACHE_PATH' = 'C:\Users\yohan\.bun-transpile-cache'` repeated in env table + cache-dir mkdir loop | Compute `$userHome = $env:USERPROFILE ?? $HOME` once at top, use `Join-Path $userHome '.bun-transpile-cache'` in both places. **APPLIED** |
-| Medium | `scripts/ievr-poll.ps1:1` | `$f = 'C:\Users\yohan\AppData\Local\Temp\ievr-strings.txt'` | Resolve `$tempDir = $env:TEMP ?? [System.IO.Path]::GetTempPath()` and `Join-Path $tempDir 'ievr-strings.txt'`. Added SPDX header + explanatory comment. **APPLIED** |
+| Medium | `scripts/setup-dev-env.ps1:35,77` | `'BUN_RUNTIME_TRANSPILER_CACHE_PATH' = 'C:\Users\<user>\.bun-transpile-cache'` repeated in env table + cache-dir mkdir loop | Compute `$userHome = $env:USERPROFILE ?? $HOME` once at top, use `Join-Path $userHome '.bun-transpile-cache'` in both places. **APPLIED** |
+| Medium | `scripts/ievr-poll.ps1:1` | `$f = 'C:\Users\<user>\AppData\Local\Temp\ievr-strings.txt'` | Resolve `$tempDir = $env:TEMP ?? [System.IO.Path]::GetTempPath()` and `Join-Path $tempDir 'ievr-strings.txt'`. Added SPDX header + explanatory comment. **APPLIED** |
 | Medium | `scripts/move-mdi-residual.ps1:4` | `$src = 'C:\src\aphrody\packages\material-design-icons'` | Resolve `$repoRoot = (git -C $scriptDir rev-parse --show-toplevel).Trim()` from `$PSCommandPath`; `$src = Join-Path $repoRoot 'packages\material-design-icons'`. Added SPDX header. **APPLIED** |
 | Medium | `scripts/archive-google-os.ps1:4` | `$src = 'C:\src\aphrody\crates\google_os'` | Same `git rev-parse --show-toplevel` pattern as above. Archive destination `C:\google-os-archive\` left as-is (documented machine-wide archive root per CLAUDE.md §4 "Archivé hors repo"). **APPLIED** |
-| Medium | `.well-known/ai.json:25-28` | `additional_roots: ["C:/Users/yohan/.cargo", …]` user-specific snapshot | Replaced with env-substitution placeholders `${CARGO_HOME:-${HOME}/.cargo}` etc., and added `additional_roots_note` documenting the intent. No Rust code consumes this field at runtime (confirmed via grep across `crates/`). **APPLIED** |
-| Medium | `docs/cargo/DEV-ENV.md:37` | Table cell shows expected value as user-specific `C:\Users\yohan\.bun-transpile-cache` | Replaced with `%USERPROFILE%\.bun-transpile-cache` (PowerShell-friendly env var syntax) + note that the value is resolved per-user by the setup script. **APPLIED** |
+| Medium | `.well-known/ai.json:25-28` | `additional_roots: ["C:/Users/<user>/.cargo", …]` user-specific snapshot | Replaced with env-substitution placeholders `${CARGO_HOME:-${HOME}/.cargo}` etc., and added `additional_roots_note` documenting the intent. No Rust code consumes this field at runtime (confirmed via grep across `crates/`). **APPLIED** |
+| Medium | `docs/cargo/DEV-ENV.md:37` | Table cell shows expected value as user-specific `C:\Users\<user>\.bun-transpile-cache` | Replaced with `%USERPROFILE%\.bun-transpile-cache` (PowerShell-friendly env var syntax) + note that the value is resolved per-user by the setup script. **APPLIED** |
 | Medium | `.claude/plugins/aphrody/README.md:19` + `agents/aphrody-cli.md:42` | Install snippets pin `target/x86_64-pc-windows-msvc/release/aphrody.exe` | Both already document the Linux variant on the next line. Cosmetic — left as-is (the Windows triple is correct for the maintainer's primary host; Linux variant is shown adjacent). Future polish: rewrap as a single `$(uname -s)` shell branch. **DEFERRED** |
 
 ### 2.3. Cosmetic / documentation
@@ -72,7 +72,7 @@ Table format: *severity / file:line / category / proposed fix*.
 - `ai/peers/*.ai.json` — snapshots of peer manifests, peer-owned paths are external truth.
 - `Cargo.lock` — no manual edits.
 - `.claude/plugins/aphrody/CHANGELOG.md` — historical; preserves the prior bug+fix narrative for the `C:/src/aphrody/...` plugin path in 0.3.0 / 0.3.1.
-- Memory files in `C:\Users\yohan\.claude\projects\C--src-aphrody\memory\` — out of repo.
+- Memory files in `C:\Users\<user>\.claude\projects\C--src-aphrody\memory\` — out of repo.
 - `CLAUDE.md` mentions of `C:\winclean\.coord\` — peer reference, valid context.
 - `crates/cli/src/commands.rs:1184,1245` — already implements cross-platform translation `C:/` → `/c/` → `/mnt/c/` for WSL; correct pattern for the few legitimate Windows-canonical peer paths.
 - `docs/PLAN.md`, `docs/posts/2026-05-ai-json.md`, `docs/ARCHITECTURE.md`, `docs/adr/0002-a2a-file-based.md`, `docs/audits/*.md`, `docs/terminal/GEMINI_CLI.md`, `docs/pwsh/README.md`, `docs/google-os-plan/ntdll_bypass.md`, `docs/audits/skills-hot-reload.md`, `docs/audits/aphrody-completeness.md`, `docs/cargo/SKILLS.md`, `crates/a2a-lf/ARCHIVED.md` — prose narrative referencing canonical paths or historical audits; rewriting would erase intent.
@@ -113,10 +113,10 @@ pwsh -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseF
 node -e "JSON.parse(require('fs').readFileSync('.well-known/ai.json'))"   # OK
 
 # Re-grep to confirm patterns are gone (excluding intentional ones):
-rg -n 'C:[\\/]+Users[\\/]+yohan' crates/    # only fixture strings in tests/it.rs + doc-fallback in mcp.rs
+rg -n 'C:[\\/]+Users[\\/]+<user>' crates/    # only fixture strings in tests/it.rs + doc-fallback in mcp.rs
 rg -n 'C:[\\/]+src[\\/]+aphrody' .claude/plugins/aphrody/skills/    # 0 hits
 rg -n '"C:\\\\src\\\\aphrody' opencode.json    # 0 hits
-rg -n 'C:[\\/]+Users[\\/]+yohan' scripts/    # only the explanatory comment in ievr-poll.ps1:4
+rg -n 'C:[\\/]+Users[\\/]+<user>' scripts/    # only the explanatory comment in ievr-poll.ps1:4
 ```
 
 ## 6. Results summary

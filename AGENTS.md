@@ -23,8 +23,10 @@ an AI assistant should behave inside it.
 
 - **No AI co-author trailers in commits.** Never add `Co-Authored-By: Claude`
   or any AI fingerprint. Use `aphrody-code` + `noreply@aphrody-code.dev`.
-- **No personal name leaks.** The strings `yohan`, `pierre`, and `yoyo` must
-  never appear in source, docs, commits, or issues.
+- **No personal name leaks.** The repo owner's real first/last name and personal
+  handles must never appear in source, docs, commits, or issues — anonymise to
+  the default agent identity. (`scripts/scan-repo.sh` greps for hardcoded
+  user/home paths; keep it clean.)
 - **Apache-2.0 SPDX header** on every new source file where the format
   supports comments. Root-level markdown files are exempt.
 - **Conventional Commits**: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`,

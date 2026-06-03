@@ -22,13 +22,13 @@ et reproductible (CLAUDE.md §0.1).
 |-------|--------|
 | Project ID | `aphrody` |
 | Project number | `468000409790` |
-| Compte propriétaire | `contact@aphrody-code.dev` (`roles/owner`) |
+| Compte propriétaire | `owner@example.com` (`roles/owner`) |
 | Billing | actif — `billingAccounts/01C99E-70AD11-2A7C91` |
 | Région par défaut | `us-central1` (Vertex AI ; `global` requis pour `gemini-3-pro-image-preview`) |
 
 ```bash
 gcloud config set project aphrody
-gcloud config get-value account     # doit rester contact@aphrody-code.dev
+gcloud config get-value account     # doit rester owner@example.com
 ```
 
 ---
@@ -237,7 +237,7 @@ claude mcp get gcloud
 | `API key not valid` | clé restreinte / mauvaise API | vérifier `api-keys describe`, ou recréer non restreinte |
 | `invalid_grant` ADC | clé SA expirée/supprimée | `pwsh scripts/gcp-sa-setup.ps1 -Rotate` |
 | `SU_MAX_BATCH_SIZE_EXCEEDED` | > 20 services par `enable` | lots de 20 (déjà géré par les scripts) |
-| compte gcloud changé après script | activation SA | `gcloud config set account contact@aphrody-code.dev` (le script restaure auto) |
+| compte gcloud changé après script | activation SA | `gcloud config set account owner@example.com` (le script restaure auto) |
 
 ---
 

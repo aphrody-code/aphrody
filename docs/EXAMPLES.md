@@ -256,7 +256,7 @@ Every variant prints JSON on stdout, so it pipes straight into `jq`:
 ```bash
 # Who am I? (Google OpenID userinfo: email + name)
 aphrody antigravity whoami --json | jq '.email'
-# "yohan@example.com"
+# "user@example.com"
 
 # Models available to the signed-in account / tier
 # (v1internal:fetchAvailableModels)
