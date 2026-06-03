@@ -197,6 +197,10 @@ An implementation claiming "compatible with aphrody a2a v1" MUST satisfy:
 - This repository: <https://github.com/aphrody-code/aphrody>
 - Live transport crates: `a2a-pb` / `a2a` / `a2a-client` / `a2a-server`
   (see [`docs/cargo/CRATES.md`](./cargo/CRATES.md)).
+- [`api-unified-pattern.md`](./api-unified-pattern.md) — the **application** HTTP
+  contract (REST/GraphQL/`Bun.serve`/cron) for the downstream bots. A2A (this
+  doc) is the **agent-to-agent** wire and is explicitly exempt from the REST
+  envelope there: it keeps its JSON-RPC 2.0 shape.
 - The former manifest schema (`schemas/ai.json/v1.json`), reference manifest
   (`ai.json`), dev-journal post (`docs/posts/2026-05-ai-json.md`) and extension
   index (`docs/extensions/index.md`) were **removed** with the file-based

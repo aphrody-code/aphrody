@@ -22,6 +22,8 @@ This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line descrip
 - [`MCP_SETUP.md`](MCP_SETUP.md) — Native `aphrody-mcp` server setup
 - [`MIGRATION.md`](MIGRATION.md) — Moving from competing tools to aphrody
 - [`PROTOCOL.md`](PROTOCOL.md) — Normative A2A protocol plus aphrody extensions
+- [`api-unified-pattern.md`](api-unified-pattern.md) — Canonical cross-repo HTTP contract (REST/GraphQL/`Bun.serve`/cron) the downstream bots conform to
+- [`rag-unified-pattern.md`](rag-unified-pattern.md) — Canonical cross-repo RAG/retrieval contract
 - [`ROADMAP.md`](ROADMAP.md) — Project milestones and roadmap
 - [`libc.md`](libc.md) — libc / FFI reference notes
 - [`notebooklm-d68c5204-report.md`](notebooklm-d68c5204-report.md) — Research report on NotebookLM Boq RPC surface
