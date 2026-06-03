@@ -61,7 +61,7 @@ GitHub) :
 | Langage | Emplacement (in-tree) | Workspace / manifeste | Toolchain |
 |---------|-----------------------|-----------------------|-----------|
 | **Rust** (primaire) | racine `crates/*` | `Cargo.toml` | `rust-toolchain.toml` |
-| **Bun** (TS/JS) | `ts/` (`ts/apps/*`) | `ts/package.json` + `ts/bunfig.toml` + `ts/.oxlintrc.json` | `ts/mise.toml` |
+| **Bun** (TS/JS) | racine (`apps/*`, `packages/*`, `examples/*`) | `package.json` + `.oxlintrc.json` | `mise.toml` |
 | **Python** | `py/` | `py/pyproject.toml` (uv) | `py/.python-version` |
 
 > **Suppression Go (2026-05-31)** : la surface Go (`go/` — `gogcli` +
