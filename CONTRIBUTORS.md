@@ -40,9 +40,8 @@ ARE recognised here as a transparency and acknowledgement mechanism.
 
 ## 6. Security researchers
 
-Security researchers who responsibly disclose are listed in
-[`SECURITY-HALL-OF-FAME.md`](SECURITY-HALL-OF-FAME.md) instead — that is the
-dedicated thank-you file for security work.
+Security researchers who responsibly disclose are credited per the process in
+[`SECURITY.md`](SECURITY.md) — see its acknowledgement policy for security work.
 
 ## 7. License
 

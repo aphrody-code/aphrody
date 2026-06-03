@@ -19,7 +19,7 @@ NVMe SSD), Windows 11 Insider Canary, Rust nightly 1.97 release profile
 - AES-256-GCM decrypt of a 1 KiB Chromium-format payload: **< 50 µs**.
 - A2A `file_jsonl` inbox poll with 100 envelopes (~50 KB): **< 5 ms**.
 - WASM bundle (`aphrody-wasm` release, `wasm-pack --target web`): **~91 KB**
-  gzip-compressed.
+  gzip-compressed *(historical — crate extracted to `aphrody-ts` 2026-05-23, see §6).*
 
 These are floors and ceilings the team verifies in CI, not marketing wins.
 
@@ -107,7 +107,14 @@ SSH round-trip plus disk fsync.
 
 ## 6. WASM bundle
 
-`wasm-pack build --target web --release crates/aphrody-wasm` produces:
+> **Note (2026-06-04).** The `aphrody-wasm` crate was **extracted to the
+> `aphrody-ts` repository on 2026-05-23** and no longer lives in this tree, so
+> the bundle below is **not reproducible from this repo**. The numbers are
+> retained as a historical reference for the extracted crate. For WASM targets
+> still in-tree, see the matrix in the README (`base`/`mrx`/`aphrody` stub on
+> `wasm32-unknown-unknown` + `wasm32-wasip1`).
+
+Historical: `wasm-pack build --target web --release <aphrody-wasm>` produced:
 
 | Artifact | Size | Role |
 |---|---:|---|
@@ -115,11 +122,10 @@ SSH round-trip plus disk fsync.
 | `aphrody_wasm.js` | ~10 KB | wasm-bindgen JS glue |
 | `aphrody_wasm.d.ts` | ~3 KB | TypeScript types |
 
-Optimisations are pinned in
-[`crates/aphrody-wasm/Cargo.toml`](../crates/aphrody-wasm/Cargo.toml) under
-`[package.metadata.wasm-pack.profile.release]`: `wasm-opt` is enabled with
-SIMD and bulk-memory flags. As a sanity check, a no-opt build of the same
-crate is ~1.2 MB uncompressed — roughly 10× worse than the release artifact.
+Optimisations were pinned in the crate's `Cargo.toml` under
+`[package.metadata.wasm-pack.profile.release]`: `wasm-opt` enabled with SIMD
+and bulk-memory flags. A no-opt build of the same crate was ~1.2 MB
+uncompressed — roughly 10× worse than the release artifact.
 
 ## 7. Memory footprint
 

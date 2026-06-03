@@ -55,9 +55,10 @@ Required top-level fields:
 - `coord` (object): the channels this agent exposes (referenced through
   `exposed_channels`) and any peer pointers under `peers`.
 
-The full JSON Schema (draft 2020-12) is at
-[`schemas/ai.json/v1.json`](../schemas/ai.json/v1.json). Implementations MUST
-validate their published manifest against that schema before serving it.
+The full JSON Schema (draft 2020-12) formerly lived at
+`schemas/ai.json/v1.json` (removed with the file-based transport — see
+section 9). The reference manifest (`ai.json`) and its discovery copy
+(`.well-known/ai.json`) remain at the repo root.
 
 ## 3. Envelope (`*.jsonl`)
 
@@ -74,8 +75,8 @@ Required fields:
 - `type` (string): one of `"ping"`, `"ask"`, `"fact"`, `"ack"`.
 - `subject` (string): short label, at most 200 characters.
 - `body` (string OR object): free text (markdown allowed) or a structured
-  JSON object. See [`schemas/ai.json/v1.json`](../schemas/ai.json/v1.json)
-  `$defs.envelope` for the canonical shape.
+  JSON object. (The former `schemas/ai.json/v1.json` `$defs.envelope` defined
+  the canonical shape — schema removed, see section 9.)
 
 Optional fields:
 
