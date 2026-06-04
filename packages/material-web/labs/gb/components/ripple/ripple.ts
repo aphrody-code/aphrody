@@ -99,7 +99,7 @@ export function setupRipple(ripple: HTMLElement, opts?: { signal?: AbortSignal }
     clearTimeout(minimumPressTimeoutId);
     minimumPressTimeoutId = setTimeout(() => {
       ripple.classList.remove(RIPPLE_CLASSES.active);
-    }, MINIMUM_PRESS_MS);
+    }, MINIMUM_PRESS_MS) as any;
   };
 
   // Return true if the ripple is disabled, or if the ripple class has been

@@ -17,6 +17,15 @@ import {
 } from "./api/mock-data.ts";
 import type { Chat, ChatListItem, CompletionRequest } from "./api/types.ts";
 import { ACCOUNT, META, runMock } from "./aphrody/server-mock.ts";
+import {
+  getSemanticCache,
+  setSemanticCache,
+  searchShenron,
+  searchRpbey,
+  performServerlessScrape,
+  getSystemInstruction,
+  streamGeminiChat,
+} from "./api/rag-engine.ts";
 
 const PORT = Number(process.env.PORT ?? 3210);
 
@@ -36,8 +45,8 @@ function listItems(): ChatListItem[] {
     .map((c) => ({ id: c.id, title: c.title, pinned: c.pinned, updated_at: c.updated_at }));
 }
 
-/** Stream a canned reply as OpenAI-style SSE deltas. */
-function completionStream(body: CompletionRequest): Response {
+/** Helper to format standard OpenAI-compatible mock reply stream. */
+function fallbackMockStream(body: CompletionRequest): Response {
   const lastUser = body.messages.toReversed().find((m) => m.role === "user");
   const text = fakeReply(lastUser?.content ?? "", body.model);
   const tokens = text.match(/\s+|\S+/g) ?? [text];
@@ -72,6 +81,117 @@ function completionStream(body: CompletionRequest): Response {
     },
   });
 }
+
+/** Stream a real RAG-enhanced Gemini or local model reply. */
+function completionStream(body: CompletionRequest): Response {
+  const lastUser = body.messages.toReversed().find((m) => m.role === "user");
+  const query = lastUser?.content ?? "";
+
+  // If no Gemini API key, or empty query, default immediately to the mock fallback.
+  if (!query || (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY)) {
+    return fallbackMockStream(body);
+  }
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const enc = new TextEncoder();
+      const send = (obj: unknown) =>
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
+
+      try {
+        // 1. Check Redis semantic cache
+        const cachedAnswer = await getSemanticCache(query, body.model);
+        if (cachedAnswer) {
+          const tokens = cachedAnswer.match(/\s+|\S+/g) ?? [cachedAnswer];
+          for (const tok of tokens) {
+            send({ choices: [{ delta: { content: tok } }] });
+            await Bun.sleep(10);
+          }
+          send({ choices: [{ delta: {}, finish_reason: "stop" }] });
+          controller.enqueue(enc.encode("data: [DONE]\n\n"));
+          controller.close();
+          return;
+        }
+
+        let contextMd = "";
+
+        // 2. Perform Serverless Scraping via bxc if URLs are in the query
+        const urlRegex = /https?:\/\/[^\s]+/gi;
+        const urls = query.match(urlRegex);
+        if (urls && urls.length > 0) {
+          for (const url of urls) {
+            const scrapedText = await performServerlessScrape(url);
+            contextMd += `### Webpage Content: ${url}\n${scrapedText}\n\n`;
+          }
+        }
+
+        // 3. Perform Vector/Hybrid RAG search based on model
+        let sources: { title: string; url: string }[] = [];
+        if (body.model === "shenron") {
+          const hits = await searchShenron(query, 5);
+          for (const hit of hits) {
+            contextMd += `### Document: ${hit.title} (Type: ${hit.kind})\n${hit.content ?? hit.snippet}\n\n`;
+            sources.push({ title: hit.title, url: hit.url });
+          }
+        } else if (body.model === "rpbey") {
+          const hits = await searchRpbey(query, 5);
+          for (const hit of hits) {
+            contextMd += `### Document: ${hit.title} (Type: ${hit.kind})\n${hit.content ?? hit.snippet}\n\n`;
+            sources.push({ title: hit.title, url: hit.url });
+          }
+        }
+
+        // 4. Generate system instruction
+        const systemInstruction = getSystemInstruction(body.model, contextMd);
+
+        // 5. Query and stream Gemini
+        let fullAnswer = "";
+        await streamGeminiChat(systemInstruction, body.messages, (chunk) => {
+          fullAnswer += chunk;
+          send({ choices: [{ delta: { content: chunk } }] });
+        });
+
+        // Add source citations to output if sources exist
+        if (sources.length > 0) {
+          const citationHeader = "\n\n**Sources :**\n" + sources.map((s, idx) => `* [${s.title}](${s.url})`).join("\n");
+          send({ choices: [{ delta: { content: citationHeader } }] });
+          fullAnswer += citationHeader;
+        }
+
+        // 6. Cache the generated answer
+        await setSemanticCache(query, fullAnswer, body.model);
+
+        send({ choices: [{ delta: {}, finish_reason: "stop" }] });
+      } catch (err) {
+        console.error("[RAG ENGINE] Error during stream processing, falling back to mock:", err);
+        // On error, write the error details as an assistant bubble
+        const errMsg = `\n\n_[RAG System Error: ${(err as Error).message}. Falling back to mock.]_\n\n`;
+        send({ choices: [{ delta: { content: errMsg } }] });
+        
+        // Fallback streaming
+        const mockText = fakeReply(query, body.model);
+        const tokens = mockText.match(/\s+|\S+/g) ?? [mockText];
+        for (const tok of tokens) {
+          send({ choices: [{ delta: { content: tok } }] });
+          await Bun.sleep(10);
+        }
+        send({ choices: [{ delta: {}, finish_reason: "stop" }] });
+      } finally {
+        controller.enqueue(enc.encode("data: [DONE]\n\n"));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      connection: "keep-alive",
+    },
+  });
+}
+
 
 const server = Bun.serve({
   port: PORT,
@@ -152,7 +272,22 @@ const server = Bun.serve({
     "/api/run": {
       POST: async (req) => {
         const { args } = (await req.json().catch(() => ({ args: [] }))) as { args?: string[] };
-        return json(runMock(Array.isArray(args) ? args : []));
+        if (!Array.isArray(args)) return json({ code: 1, stdout: "", stderr: "Invalid args" }, 400);
+
+        try {
+          const binPath = "/home/ubuntu/.local/bin/aphrody";
+          const proc = Bun.spawn([binPath, ...args], {
+            stdout: "pipe",
+            stderr: "pipe",
+          });
+          const stdout = await new Response(proc.stdout).text();
+          const stderr = await new Response(proc.stderr).text();
+          const code = await proc.exited;
+          return json({ code, stdout, stderr });
+        } catch (err) {
+          console.error("Failed to run real aphrody binary, falling back to mock:", err);
+          return json(runMock(args));
+        }
       },
     },
     "/api/meta": () => json(META),

@@ -34,6 +34,6 @@
     "typescript": "catalog:"
   },
   "optionalDependencies": {
-    "@aphrody/bxc": "^0.6.4"
+    "@aphrody/bxc": "^0.6.6"
   }
 }

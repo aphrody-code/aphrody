@@ -152,9 +152,9 @@ export function setupDispatchHooks(element: Element, ...eventTypes: [string, ...
         const composedPath = event.composedPath();
         let lastNodeForEvent: EventTarget;
         if (event.composed && event.bubbles) {
-          lastNodeForEvent = composedPath[composedPath.length - 1];
+          lastNodeForEvent = composedPath[composedPath.length - 1] as EventTarget;
         } else if (!event.bubbles) {
-          lastNodeForEvent = composedPath[0];
+          lastNodeForEvent = composedPath[0] as EventTarget;
         } else {
           lastNodeForEvent = (composedPath[0] as Element).getRootNode();
         }

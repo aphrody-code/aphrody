@@ -947,7 +947,7 @@ export abstract class Menu extends LitElement {
   }
 
   private readonly onWindowPointerdown = (event: PointerEvent) => {
-    this.pointerPath = event.composedPath();
+    this.pointerPath = event.composedPath() as EventTarget[];
   };
 
   /**

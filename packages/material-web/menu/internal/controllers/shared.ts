@@ -267,7 +267,7 @@ export function isElementInSubtree(target: EventTarget, container: EventTarget) 
   const focusEv = new Event("md-contains", { bubbles: true, composed: true });
   let composedPath: EventTarget[] = [];
   const listener = (ev: Event) => {
-    composedPath = ev.composedPath();
+    composedPath = ev.composedPath() as EventTarget[];
   };
 
   container.addEventListener("md-contains", listener);
