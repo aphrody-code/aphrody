@@ -20,7 +20,8 @@
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "firebase": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

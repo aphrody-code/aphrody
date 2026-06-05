@@ -46,7 +46,8 @@
       "sass-true": "^10.1.0",
       "@typescript/native-preview": "^7.0.0-dev.20260527.2",
       "@ai-sdk/google": "^3.0.80",
-      "ai": "^6.0.193"
+      "ai": "^6.0.193",
+      "firebase": "^10.13.0"
     }
   },
   "type": "module",
