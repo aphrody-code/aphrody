@@ -93,7 +93,7 @@ export function Mcp() {
     setTools(
       allTools
         .slice()
-        .sort((a, b) => a.server.localeCompare(b.server) || a.name.localeCompare(b.name)),
+        .toSorted((a, b) => a.server.localeCompare(b.server) || a.name.localeCompare(b.name)),
     );
     setLoading(false);
   }, []);

@@ -64,7 +64,7 @@ function parseSkillsTable(raw: string): Skill[] {
       description: line.slice(descAt).replace(/…$/, "").trim(),
     });
   }
-  return skills.sort((a, b) => a.name.localeCompare(b.name));
+  return skills.toSorted((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Fallback parser for "  <name>   <description>" bullet lines. */
@@ -75,7 +75,7 @@ function parseLooseList(lines: string[]): Skill[] {
     if (!m) continue;
     skills.push({ name: m[1], source: "", mode: "", loc: 0, description: m[2].trim() });
   }
-  return skills.sort((a, b) => a.name.localeCompare(b.name));
+  return skills.toSorted((a, b) => a.name.localeCompare(b.name));
 }
 
 export function Skills() {

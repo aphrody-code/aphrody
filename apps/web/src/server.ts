@@ -154,7 +154,7 @@ function completionStream(body: CompletionRequest): Response {
 
         // Add source citations to output if sources exist
         if (sources.length > 0) {
-          const citationHeader = "\n\n**Sources :**\n" + sources.map((s, idx) => `* [${s.title}](${s.url})`).join("\n");
+          const citationHeader = "\n\n**Sources :**\n" + sources.map((s) => `* [${s.title}](${s.url})`).join("\n");
           send({ choices: [{ delta: { content: citationHeader } }] });
           fullAnswer += citationHeader;
         }
@@ -230,7 +230,7 @@ async function isAuthorized(req: Request): Promise<boolean> {
     try {
       const decoded = await admin.auth().verifyIdToken(token);
       return !!decoded;
-    } catch (err) {
+    } catch {
       // Token verification failed or not a firebase token
     }
   }
@@ -396,12 +396,12 @@ const server = Bun.serve({
         let serviceAccount: any = {};
         try {
           serviceAccount = await Bun.file("/home/ubuntu/aphrody/secrets/aphrody-bot.json").json();
-        } catch (e) {}
+        } catch {}
 
         let clientSecret: any = {};
         try {
           clientSecret = await Bun.file("/home/ubuntu/aphrody/secrets/client_secret_468000409790-oubhlpdp9rfb569vre9l1ikpdq4lc3ru.apps.googleusercontent.com.json").json();
-        } catch (e) {}
+        } catch {}
 
         const mixedData = {
           connected: true,

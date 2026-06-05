@@ -2,7 +2,7 @@
 // the fly), then asserts the HTML shell, the bundled JS, the mock API, and the SSE
 // completion stream. No browser. Exits non-zero on any failure.
 
-export {};
+
 
 const PORT = "3219";
 const BASE = `http://localhost:${PORT}`;

@@ -190,7 +190,7 @@ export function CloudFirebaseTab() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
         <MdElevatedCard style={{ padding: 20 }}>
           <div className="owui-row" style={{ gap: 12 }}>
-            <MdIcon style={{ fontSize: 36, color: "#EA4335" }}>cloud</MdIcon>
+            <MdIcon style={{ fontSize: 36, color: "var(--google-dot-red)" }}>cloud</MdIcon>
             <div>
               <h3 style={{ margin: 0 }}>Google Cloud Platform</h3>
               <p className="owui-muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
@@ -207,7 +207,7 @@ export function CloudFirebaseTab() {
 
         <MdElevatedCard style={{ padding: 20 }}>
           <div className="owui-row" style={{ gap: 12 }}>
-            <MdIcon style={{ fontSize: 36, color: "#FFCA28" }}>local_fire_department</MdIcon>
+            <MdIcon style={{ fontSize: 36, color: "var(--firebase-brand-yellow)" }}>local_fire_department</MdIcon>
             <div>
               <h3 style={{ margin: 0 }}>Firebase Integration</h3>
               <p className="owui-muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
@@ -284,7 +284,7 @@ export function CloudFirebaseTab() {
         {/* Firestore logs */}
         <MdOutlinedCard style={{ padding: 20 }}>
           <h3 style={{ margin: "0 0 16px" }} className="owui-row">
-            <MdIcon style={{ marginRight: 8, color: "#FFCA28" }}>sync</MdIcon>
+            <MdIcon style={{ marginRight: 8, color: "var(--firebase-brand-yellow)" }}>sync</MdIcon>
             Synchronisation Temps Réel (Cloud Firestore)
           </h3>
           
@@ -337,7 +337,7 @@ export function CloudFirebaseTab() {
         {/* Cloud Storage */}
         <MdOutlinedCard style={{ padding: 20 }}>
           <h3 style={{ margin: "0 0 16px" }} className="owui-row">
-            <MdIcon style={{ marginRight: 8, color: "#4285F4" }}>folder_open</MdIcon>
+            <MdIcon style={{ marginRight: 8, color: "var(--google-dot-blue)" }}>folder_open</MdIcon>
             Stockage Cloud Multimodal (Cloud Storage)
           </h3>
 
@@ -431,7 +431,7 @@ export function CloudFirebaseTab() {
       {/* Google Genkit AI Flow Tester */}
       <MdOutlinedCard style={{ padding: 20 }}>
         <h3 style={{ margin: "0 0 16px" }} className="owui-row">
-          <MdIcon style={{ marginRight: 8, color: "#EA4335" }}>bolt</MdIcon>
+          <MdIcon style={{ marginRight: 8, color: "var(--google-dot-red)" }}>bolt</MdIcon>
           Test de Flux d'Agent (Google Genkit Flow)
         </h3>
         

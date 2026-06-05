@@ -151,8 +151,8 @@ export function ChannelsTab() {
   }
 
   function value(f: Field): string {
-    const edit = edits[f.key];
-    if (edit !== undefined) return edit;
+    const editVal = edits[f.key];
+    if (editVal !== undefined) return editVal;
     if (f.secret) return "";
     return state?.values[f.key] ?? "";
   }

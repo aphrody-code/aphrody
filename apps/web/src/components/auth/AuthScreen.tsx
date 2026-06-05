@@ -34,7 +34,7 @@ export function AuthScreen() {
       const user = await api.getSession();
       session.signIn({ ...user, token });
       void navigate({ to: "/", replace: true });
-    } catch (e) {
+    } catch {
       auth.clear();
       setError("Token invalide ou serveur injoignable.");
     } finally {
@@ -61,7 +61,7 @@ export function AuthScreen() {
       } else {
         throw new Error("Données de connexion invalides");
       }
-    } catch (e) {
+    } catch {
       auth.clear();
       setError("Connexion Google échouée ou serveur injoignable.");
     } finally {

@@ -142,7 +142,7 @@ function entropyValue(entropy: number): number {
 
 const LEVEL_COLOR: Record<EntropyLevel, string> = {
   high: "var(--md-sys-color-error)",
-  med: "#c9920a",
+  med: "var(--aph-color-secret)",
   low: "var(--md-sys-color-primary)",
 };
 

@@ -2,7 +2,7 @@
 // empty-state prompt suggestions, and the composer. The heart of open-webui.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MdAssistChip, MdIcon, MdMenuItem, MdCarousel, MdCarouselItem } from "@aphrody/m3-react";
+import { MdIcon, MdMenuItem, MdCarousel, MdCarouselItem } from "@aphrody/m3-react";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { MessageBubble } from "./MessageBubble.tsx";
 import { Composer } from "./Composer.tsx";

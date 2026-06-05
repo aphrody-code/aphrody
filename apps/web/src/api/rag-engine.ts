@@ -13,7 +13,6 @@
 import { Database } from "bun:sqlite";
 import { redis } from "bun";
 import { createHash } from "node:crypto";
-import type { ChatMessage } from "./types.ts";
 
 const SHENRON_DB_PATH = "/home/ubuntu/shenron/apps/bot/data/bot.db";
 const EMBED_URL = process.env.EMBED_URL ?? "http://127.0.0.1:5007";
@@ -162,7 +161,7 @@ function cosineTopK(c: VectorCache, q: Float32Array, k: number): { rowid: number
     }
     scored.push({ rowid: rowids[i], score: dot });
   }
-  return scored.sort((a, b) => b.score - a.score).slice(0, k);
+  return scored.toSorted((a, b) => b.score - a.score).slice(0, k);
 }
 
 /** Executes native Shenron hybrid search. */
@@ -206,7 +205,7 @@ export async function searchShenron(query: string, limit = 5): Promise<RagHit[]>
     });
 
     const orderedIds = [...fused.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .toSorted((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([rowid]) => rowid);
 
@@ -242,7 +241,7 @@ export async function searchShenron(query: string, limit = 5): Promise<RagHit[]>
       if (scores && scores.length === candidates.length) {
         candidates = candidates
           .map((cand, i) => ({ cand, score: scores[i] }))
-          .sort((a, b) => b.score - a.score)
+          .toSorted((a, b) => b.score - a.score)
           .map((x) => x.cand);
       }
     }
@@ -316,7 +315,6 @@ export async function getSemanticCache(query: string, model: string): Promise<st
     const qv = await getEmbedding(query);
     if (!qv) return null;
 
-    const hash = md5(query);
     const lruKey = `dbz:scache:${model}:lru`;
 
     const hashes = (await redis.zrange(lruKey, -100, -1)) as string[];

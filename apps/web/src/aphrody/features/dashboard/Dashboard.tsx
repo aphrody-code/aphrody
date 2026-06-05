@@ -2,7 +2,7 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { MdFilledTonalButton, MdIcon } from "@aphrody/m3-react";
-import { execJson, execText, useAccount, useExec, useMeta } from "../../client.ts";
+import { execText, useAccount, useExec, useMeta } from "../../client.ts";
 import { PageHead, Panel, StatTile } from "../../ui.tsx";
 
 interface QuickAction {
@@ -19,8 +19,8 @@ const QUICK_ACTIONS: QuickAction[] = [
   { label: "Paramètres", icon: "settings", seg: "settings" },
 ];
 
-const OK_TONE = "#34a853";
-const WARN_TONE = "#fbbc04";
+const OK_TONE = "var(--aph-color-ok)";
+const WARN_TONE = "var(--aph-color-warning)";
 
 /** Best-effort count of MCP tools from the `mcp list` NDJSON payload. */
 function mcpToolCount(text: string): number | null {

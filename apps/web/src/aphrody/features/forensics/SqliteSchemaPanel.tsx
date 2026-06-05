@@ -40,10 +40,10 @@ interface ObjectGroup {
 const KIND_ORDER = ["table", "view", "index", "trigger"] as const;
 
 const KIND_COLOR: Record<string, string> = {
-  table: "color-mix(in srgb, #4285f4 22%, transparent)",
-  view: "color-mix(in srgb, #34a853 22%, transparent)",
-  index: "color-mix(in srgb, #fbbc04 28%, transparent)",
-  trigger: "color-mix(in srgb, #ea4335 22%, transparent)",
+  table: "color-mix(in srgb, var(--google-dot-blue) 22%, transparent)",
+  view: "color-mix(in srgb, var(--google-dot-green) 22%, transparent)",
+  index: "color-mix(in srgb, var(--google-dot-yellow) 28%, transparent)",
+  trigger: "color-mix(in srgb, var(--google-dot-red) 22%, transparent)",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -100,7 +100,7 @@ function groupObjects(objs: SqliteObject[]): ObjectGroup[] {
       byKind.delete(k);
     }
   }
-  for (const k of [...byKind.keys()].sort((a, b) => a.localeCompare(b))) {
+  for (const k of [...byKind.keys()].toSorted((a, b) => a.localeCompare(b))) {
     ordered.push(makeGroup(k, byKind.get(k) as SqliteObject[]));
   }
   return ordered;

@@ -36,8 +36,8 @@ interface FsTile {
 
 const TONE_COLOR: Record<FsTile["tone"], string | undefined> = {
   default: "var(--md-sys-color-primary)",
-  ok: "#34a853",
-  secret: "#c9920a",
+  ok: "var(--aph-color-ok)",
+  secret: "var(--aph-color-secret)",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -11,6 +11,20 @@
   --owui-sidebar-width: 300px;
   --owui-composer-max: 820px;
   --owui-radius: 16px;
+
+  /* Google Dot Brand Colors */
+  --google-dot-blue: #4285F4;
+  --google-dot-red: #EA4335;
+  --google-dot-yellow: #FBBC04;
+  --google-dot-green: #34A853;
+
+  /* Firebase Brand Colors */
+  --firebase-brand-yellow: #FFCA28;
+
+  /* Status Colors */
+  --aph-color-ok: #34a853;
+  --aph-color-warning: #fbbc04;
+  --aph-color-secret: #c9920a;
 }
 
 html,
