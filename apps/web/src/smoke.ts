@@ -13,11 +13,14 @@ const proc = Bun.spawn(["bun", "src/server.ts"], {
   stderr: "pipe",
 });
 
+const TOKEN = process.env.WEB_APP_TOKEN ?? "m7K2p9Q4x1R8w5Z3";
+const headers = { "authorization": `Bearer ${TOKEN}` };
+
 async function waitReady(timeoutMs = 20_000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const r = await fetch(`${BASE}/api/config`);
+      const r = await fetch(`${BASE}/api/config`, { headers });
       if (r.ok) return;
     } catch {
       /* not up yet */
@@ -51,18 +54,18 @@ try {
   console.log("ok  React/TanStack/m3-react bundle compiled");
 
   // 3. Mock API surface
-  const config = (await (await fetch(`${BASE}/api/config`)).json()) as { name: string };
+  const config = (await (await fetch(`${BASE}/api/config`, { headers })).json()) as { name: string };
   assert(config.name, "config endpoint returns a name");
-  const chats = (await (await fetch(`${BASE}/api/chats`)).json()) as unknown[];
+  const chats = (await (await fetch(`${BASE}/api/chats`, { headers })).json()) as unknown[];
   assert(Array.isArray(chats) && chats.length > 0, "chats endpoint returns seeded list");
-  const models = (await (await fetch(`${BASE}/api/models`)).json()) as unknown[];
+  const models = (await (await fetch(`${BASE}/api/models`, { headers })).json()) as unknown[];
   assert(Array.isArray(models) && models.length > 0, "models endpoint returns list");
   console.log("ok  mock API (config / chats / models)");
 
   // 4. SSE chat completion streams deltas
   const res = await fetch(`${BASE}/api/chat/completions`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify({
       model: "shenron",
       messages: [{ role: "user", content: "hi" }],
