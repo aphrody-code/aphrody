@@ -101,6 +101,58 @@ Comparaison des performances de Gemini Embedding 2 face à d'autres modèles d'e
 
 ---
 
+## Guide d'installation et de configuration (Setup Complet)
+
+Pour exécuter Gemini Embedding 2 dans votre environnement de développement local ou de production, suivez ces étapes de configuration pas à pas.
+
+### 1. Activer les APIs Google Cloud
+Assurez-vous que les APIs Google Cloud nécessaires sont activées sur votre projet GCP. Vous pouvez exécuter le script idempotent de provisionnement fourni dans le repo :
+```bash
+# Provisionne le projet GCP, active les APIs de l'IA Générative et configure les credentials
+scripts/gcp-sa-setup.sh
+```
+Ce script active notamment :
+- L'API Vertex AI (`aiplatform.googleapis.com`)
+- L'API Generative Language (`generativelanguage.googleapis.com`)
+
+### 2. Configuration des Variables d'Environnement
+Configurez votre fichier `.env` ou exportez les variables nécessaires dans votre shell. 
+> [!IMPORTANT]
+> Gemini Embedding 2 n'est pas déployé sur les endpoints régionaux standard comme `us-central1`. Vous devez impérativement cibler un endpoint multirégional comme `us` ou `eu`. Sinon, l'API renverra une erreur `404 NOT_FOUND`.
+
+Exemple de variables d'environnement à ajouter dans votre `.env` :
+```env
+# Chemin absolu vers votre fichier de clé de compte de service
+GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/aphrody/secrets/aphrody-bot.json
+GOOGLE_CLOUD_PROJECT=aphrody
+# Spécifiez "us" ou "eu" pour le routage multirégional
+GOOGLE_CLOUD_LOCATION=us
+```
+
+### 3. Installation des Dépendances Python
+Installez le SDK officiel `google-genai` et la bibliothèque `numpy` (optionnelle pour la validation) dans votre environnement virtuel :
+```bash
+# Avec le gestionnaire de paquets uv
+uv pip install google-genai numpy
+
+# Ou avec le pip standard
+pip install google-genai numpy
+```
+
+### 4. Validation avec le script de test
+Le dépôt inclut un script de test automatisé [test-gemini-embedding-2.py](file:///home/ubuntu/aphrody/scripts/test-gemini-embedding-2.py) pour valider l'ensemble du pipeline. Pour le lancer avec le venv du projet :
+```bash
+GOOGLE_CLOUD_LOCATION=us py/.venv/bin/python scripts/test-gemini-embedding-2.py
+```
+
+Ce script effectue les actions suivantes :
+1. Détection des variables d'environnement et initialisation du client `genai.Client`.
+2. Génération d'un embedding de test en dimension 3072.
+3. Génération d'un embedding réduit en dimension 128 via Matryoshka (MRL).
+4. Calcul et affichage des dimensions et des normes L2 pour valider l'exactitude de l'intégration.
+
+---
+
 ## Exemples d'intégration et d'usage
 
 ### Exemple Python (SDK Google GenAI)
