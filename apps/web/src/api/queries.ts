@@ -1,9 +1,13 @@
-// TanStack Query hooks — the single source of truth for server state
-// (config, models, chat list, individual chats). Mutations invalidate keys.
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client.ts";
-import type { Chat } from "./types.ts";
+import type {
+  Chat,
+  WorkspaceModel,
+  KnowledgeCollection,
+  Prompt,
+  Tool,
+  AdminUser,
+} from "./types.ts";
 
 export const qk = {
   config: ["config"] as const,
@@ -58,5 +62,85 @@ export function useDeleteChat() {
   return useMutation({
     mutationFn: (id: string) => api.deleteChat(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: qk.chats }),
+  });
+}
+
+export function useCreateWorkspaceModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<WorkspaceModel>) => api.createWorkspaceModel(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.wsModels }),
+  });
+}
+
+export function useDeleteWorkspaceModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteWorkspaceModel(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.wsModels }),
+  });
+}
+
+export function useCreateKnowledge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<KnowledgeCollection>) => api.createKnowledge(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.knowledge }),
+  });
+}
+
+export function useDeleteKnowledge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteKnowledge(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.knowledge }),
+  });
+}
+
+export function useCreatePrompt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<Prompt>) => api.createPrompt(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.prompts }),
+  });
+}
+
+export function useDeletePrompt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deletePrompt(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.prompts }),
+  });
+}
+
+export function useCreateTool() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<Tool>) => api.createTool(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.tools }),
+  });
+}
+
+export function useDeleteTool() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteTool(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.tools }),
+  });
+}
+
+export function useCreateAdminUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; email: string; role: string }) => api.createAdminUser(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.adminUsers }),
+  });
+}
+
+export function useDeleteAdminUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteAdminUser(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.adminUsers }),
   });
 }

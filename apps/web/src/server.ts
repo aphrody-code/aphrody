@@ -30,8 +30,13 @@ import {
 
 const PORT = Number(process.env.PORT ?? 3210);
 
-// Mutable in-memory chat store, seeded from mock data.
+// Mutable in-memory collections, seeded from mock data.
 const chats = new Map<string, Chat>(CHATS.map((c) => [c.id, c]));
+const adminUsers = [...ADMIN_USERS];
+const workspaceModels = [...WORKSPACE_MODELS];
+const knowledge = [...KNOWLEDGE];
+const prompts = [...PROMPTS];
+const tools = [...TOOLS];
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -331,11 +336,139 @@ const server = Bun.serve({
       }),
     },
 
-    "/api/users": withAuth(() => json(ADMIN_USERS)),
-    "/api/workspace/models": withAuth(() => json(WORKSPACE_MODELS)),
-    "/api/workspace/knowledge": withAuth(() => json(KNOWLEDGE)),
-    "/api/workspace/prompts": withAuth(() => json(PROMPTS)),
-    "/api/workspace/tools": withAuth(() => json(TOOLS)),
+    "/api/users": withAuth(() => json(adminUsers)),
+    "/api/users/new": {
+      POST: withAuth(async (req) => {
+        const body = (await req.json()) as { name: string; email: string; role: any };
+        const user = {
+          id: `u-${Bun.randomUUIDv7()}`,
+          name: body.name || "Nouveau",
+          email: body.email || "new@example.com",
+          role: body.role || "user",
+          last_active_at: Date.now(),
+          created_at: Date.now(),
+        };
+        adminUsers.push(user);
+        return json(user);
+      }),
+    },
+    "/api/users/:id": {
+      DELETE: withAuth((req) => {
+        const idx = adminUsers.findIndex((u) => u.id === req.params.id);
+        if (idx !== -1) {
+          adminUsers.splice(idx, 1);
+          return json({ ok: true });
+        }
+        return json({ detail: "Not found" }, 404);
+      }),
+    },
+
+    "/api/workspace/models": withAuth(() => json(workspaceModels)),
+    "/api/workspace/models/new": {
+      POST: withAuth(async (req) => {
+        const body = (await req.json()) as Partial<WorkspaceModel>;
+        const model: WorkspaceModel = {
+          id: `wm-${Bun.randomUUIDv7()}`,
+          name: body.name || "Nouveau modèle",
+          description: body.description || "",
+          base_model_id: body.base_model_id || "gpt-4o",
+          tags: body.tags || [],
+          visibility: body.visibility || "public",
+          created_at: Date.now(),
+        };
+        workspaceModels.push(model);
+        return json(model);
+      }),
+    },
+    "/api/workspace/models/:id": {
+      DELETE: withAuth((req) => {
+        const idx = workspaceModels.findIndex((m) => m.id === req.params.id);
+        if (idx !== -1) {
+          workspaceModels.splice(idx, 1);
+          return json({ ok: true });
+        }
+        return json({ detail: "Not found" }, 404);
+      }),
+    },
+
+    "/api/workspace/knowledge": withAuth(() => json(knowledge)),
+    "/api/workspace/knowledge/new": {
+      POST: withAuth(async (req) => {
+        const body = (await req.json()) as Partial<KnowledgeCollection>;
+        const collection: KnowledgeCollection = {
+          id: `k-${Bun.randomUUIDv7()}`,
+          name: body.name || "Nouvelle collection",
+          description: body.description || "",
+          file_count: body.file_count || 0,
+          created_at: Date.now(),
+        };
+        knowledge.push(collection);
+        return json(collection);
+      }),
+    },
+    "/api/workspace/knowledge/:id": {
+      DELETE: withAuth((req) => {
+        const idx = knowledge.findIndex((k) => k.id === req.params.id);
+        if (idx !== -1) {
+          knowledge.splice(idx, 1);
+          return json({ ok: true });
+        }
+        return json({ detail: "Not found" }, 404);
+      }),
+    },
+
+    "/api/workspace/prompts": withAuth(() => json(prompts)),
+    "/api/workspace/prompts/new": {
+      POST: withAuth(async (req) => {
+        const body = (await req.json()) as Partial<Prompt>;
+        const prompt: Prompt = {
+          id: `p-${Bun.randomUUIDv7()}`,
+          command: body.command || "/new",
+          title: body.title || "Nouveau prompt",
+          content: body.content || "",
+          tags: body.tags || [],
+          created_at: Date.now(),
+        };
+        prompts.push(prompt);
+        return json(prompt);
+      }),
+    },
+    "/api/workspace/prompts/:id": {
+      DELETE: withAuth((req) => {
+        const idx = prompts.findIndex((p) => p.id === req.params.id);
+        if (idx !== -1) {
+          prompts.splice(idx, 1);
+          return json({ ok: true });
+        }
+        return json({ detail: "Not found" }, 404);
+      }),
+    },
+
+    "/api/workspace/tools": withAuth(() => json(tools)),
+    "/api/workspace/tools/new": {
+      POST: withAuth(async (req) => {
+        const body = (await req.json()) as Partial<Tool>;
+        const tool: Tool = {
+          id: `t-${Bun.randomUUIDv7()}`,
+          name: body.name || "Nouvel outil",
+          description: body.description || "",
+          type: body.type || "custom",
+          created_at: Date.now(),
+        };
+        tools.push(tool);
+        return json(tool);
+      }),
+    },
+    "/api/workspace/tools/:id": {
+      DELETE: withAuth((req) => {
+        const idx = tools.findIndex((t) => t.id === req.params.id);
+        if (idx !== -1) {
+          tools.splice(idx, 1);
+          return json({ ok: true });
+        }
+        return json({ detail: "Not found" }, 404);
+      }),
+    },
 
     // aphrody desktop port: CLI bridge + host metadata + linked account.
     "/api/run": {

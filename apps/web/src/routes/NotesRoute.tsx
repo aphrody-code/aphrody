@@ -22,19 +22,46 @@ const SEED: Note[] = [
 ];
 
 export function NotesRoute() {
-  const [notes, setNotes] = useState<Note[]>(SEED);
-  const [activeId, setActiveId] = useState<string>(SEED[0].id);
+  const [notes, setNotes] = useState<Note[]>(() => {
+    const saved = localStorage.getItem("owui-notes");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return SEED;
+  });
+
+  const [activeId, setActiveId] = useState<string>(() => {
+    const saved = localStorage.getItem("owui-notes");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0].id;
+      } catch {}
+    }
+    return SEED[0].id;
+  });
+
   const active = notes.find((n) => n.id === activeId);
+
+  const saveNotes = (updated: Note[]) => {
+    setNotes(updated);
+    localStorage.setItem("owui-notes", JSON.stringify(updated));
+  };
 
   const addNote = () => {
     const id = `n-${notes.length + 1}-${Date.now()}`;
     const note: Note = { id, title: "Sans titre", body: "" };
-    setNotes((prev) => [note, ...prev]);
+    saveNotes([note, ...notes]);
     setActiveId(id);
   };
 
-  const patch = (p: Partial<Note>) =>
-    setNotes((prev) => prev.map((n) => (n.id === activeId ? { ...n, ...p } : n)));
+  const patch = (p: Partial<Note>) => {
+    const updated = notes.map((n) => (n.id === activeId ? { ...n, ...p } : n));
+    saveNotes(updated);
+  };
 
   return (
     <div className="owui-page">
@@ -90,9 +117,13 @@ export function NotesRoute() {
               <MdIconButton
                 aria-label="Delete note"
                 onClick={() => {
-                  setNotes((prev) => prev.filter((n) => n.id !== active.id));
                   const rest = notes.filter((n) => n.id !== active.id);
-                  if (rest[0]) setActiveId(rest[0].id);
+                  saveNotes(rest);
+                  if (rest[0]) {
+                    setActiveId(rest[0].id);
+                  } else {
+                    setActiveId("");
+                  }
                 }}
               >
                 <MdIcon>delete</MdIcon>

@@ -70,8 +70,32 @@ export const api = {
   deleteChat: (id: string) => http<{ ok: boolean }>(`/api/chats/${id}`, { method: "DELETE" }),
 
   getAdminUsers: () => http<AdminUser[]>("/api/users"),
+  createAdminUser: (data: { name: string; email: string; role: string }) =>
+    http<AdminUser>("/api/users/new", { method: "POST", body: JSON.stringify(data) }),
+  deleteAdminUser: (id: string) =>
+    http<{ ok: boolean }>(`/api/users/${id}`, { method: "DELETE" }),
+
   getWorkspaceModels: () => http<WorkspaceModel[]>("/api/workspace/models"),
+  createWorkspaceModel: (data: Partial<WorkspaceModel>) =>
+    http<WorkspaceModel>("/api/workspace/models/new", { method: "POST", body: JSON.stringify(data) }),
+  deleteWorkspaceModel: (id: string) =>
+    http<{ ok: boolean }>(`/api/workspace/models/${id}`, { method: "DELETE" }),
+
   getKnowledge: () => http<KnowledgeCollection[]>("/api/workspace/knowledge"),
+  createKnowledge: (data: Partial<KnowledgeCollection>) =>
+    http<KnowledgeCollection>("/api/workspace/knowledge/new", { method: "POST", body: JSON.stringify(data) }),
+  deleteKnowledge: (id: string) =>
+    http<{ ok: boolean }>(`/api/workspace/knowledge/${id}`, { method: "DELETE" }),
+
   getPrompts: () => http<Prompt[]>("/api/workspace/prompts"),
+  createPrompt: (data: Partial<Prompt>) =>
+    http<Prompt>("/api/workspace/prompts/new", { method: "POST", body: JSON.stringify(data) }),
+  deletePrompt: (id: string) =>
+    http<{ ok: boolean }>(`/api/workspace/prompts/${id}`, { method: "DELETE" }),
+
   getTools: () => http<Tool[]>("/api/workspace/tools"),
+  createTool: (data: Partial<Tool>) =>
+    http<Tool>("/api/workspace/tools/new", { method: "POST", body: JSON.stringify(data) }),
+  deleteTool: (id: string) =>
+    http<{ ok: boolean }>(`/api/workspace/tools/${id}`, { method: "DELETE" }),
 };

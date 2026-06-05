@@ -17,7 +17,7 @@ import {
   MdTabs,
   MdTextButton,
 } from "@aphrody/m3-react";
-import { useAdminUsers } from "../api/queries.ts";
+import { useAdminUsers, useCreateAdminUser, useDeleteAdminUser } from "../api/queries.ts";
 
 const COLUMNS = [
   { key: "name", label: "Nom", sortable: true, filter: "text" as const },
@@ -37,7 +37,18 @@ function ago(ts: number): string {
 
 function UsersTab() {
   const { data: users = [] } = useAdminUsers();
+  const createUser = useCreateAdminUser();
+  const deleteUser = useDeleteAdminUser();
+
   const [adding, setAdding] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+
+  // Form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("user");
+
   const rows = useMemo<Record<string, unknown>[]>(
     () =>
       users.map((u) => ({
@@ -50,27 +61,88 @@ function UsersTab() {
     [users],
   );
 
+  const handleCreate = async () => {
+    if (!name.trim() || !email.trim()) return;
+    try {
+      await createUser.mutateAsync({ name, email, role });
+      setName("");
+      setEmail("");
+      setRole("user");
+      setAdding(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setDeletingBusy(true);
+    try {
+      await Promise.all(selectedIds.map((id) => deleteUser.mutateAsync(String(id))));
+      setSelectedIds([]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingBusy(false);
+    }
+  };
+
   return (
     <>
       <div className="owui-spread" style={{ margin: "12px 0" }}>
         <span className="owui-muted">{users.length} utilisateurs</span>
-        <MdFilledButton onClick={() => setAdding(true)}>
-          <MdIcon slot="icon">person_add</MdIcon>
-          Ajouter un utilisateur
-        </MdFilledButton>
+        <div className="owui-row" style={{ gap: 8 }}>
+          {selectedIds.length > 0 && (
+            <MdFilledButton
+              style={{ "--md-sys-color-primary": "var(--md-sys-color-error)", "--md-sys-color-on-primary": "var(--md-sys-color-on-error)" }}
+              onClick={handleDeleteSelected}
+              disabled={deletingBusy}
+            >
+              <MdIcon slot="icon">delete</MdIcon>
+              Supprimer ({selectedIds.length})
+            </MdFilledButton>
+          )}
+          <MdFilledButton onClick={() => setAdding(true)}>
+            <MdIcon slot="icon">person_add</MdIcon>
+            Ajouter un utilisateur
+          </MdFilledButton>
+        </div>
       </div>
 
       <div className="owui-scrollx">
-        <MdTable columns={COLUMNS} rows={rows} filterable paginated pageSize={10} />
+        <MdTable
+          columns={COLUMNS}
+          rows={rows}
+          filterable
+          paginated
+          pageSize={10}
+          selectable
+          onSelectionChange={(e: any) => {
+            const detail = e.detail || {};
+            setSelectedIds(detail.selectedIds || []);
+          }}
+        />
       </div>
 
       <MdDialog open={adding} onClosed={() => setAdding(false)}>
         <div slot="headline">Ajouter un utilisateur</div>
-        <form slot="content" method="dialog" className="owui-stack">
-          <MdOutlinedTextField label="Nom" />
-          <MdOutlinedTextField label="Email" type="email" />
-          <MdOutlinedTextField label="Mot de passe" type="password" />
-          <MdOutlinedSelect label="Rôle" value="user">
+        <form slot="content" method="dialog" className="owui-stack" style={{ minWidth: 320 }}>
+          <MdOutlinedTextField
+            label="Nom"
+            value={name}
+            onInput={(e) => setName((e.target as HTMLInputElement).value)}
+          />
+          <MdOutlinedTextField
+            label="Email"
+            type="email"
+            value={email}
+            onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
+          />
+          <MdOutlinedSelect
+            label="Rôle"
+            value={role}
+            onChange={(e) => setRole((e.target as HTMLSelectElement).value)}
+          >
             <MdSelectOption value="user">
               <span slot="headline">Utilisateur</span>
             </MdSelectOption>
@@ -84,7 +156,9 @@ function UsersTab() {
         </form>
         <div slot="actions">
           <MdTextButton onClick={() => setAdding(false)}>Annuler</MdTextButton>
-          <MdFilledButton onClick={() => setAdding(false)}>Créer</MdFilledButton>
+          <MdFilledButton onClick={handleCreate} disabled={!name.trim() || !email.trim()}>
+            Créer
+          </MdFilledButton>
         </div>
       </MdDialog>
     </>
