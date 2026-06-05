@@ -95,6 +95,8 @@ function SettingsTab() {
   const items = [
     { icon: "lan", label: "API Ollama", value: "http://localhost:11434" },
     { icon: "key", label: "API OpenAI", value: "configurée" },
+    { icon: "cloud", label: "Google Cloud / Vertex AI", value: "activée" },
+    { icon: "local_fire_department", label: "Firebase Database", value: "connectée (temps réel)" },
     { icon: "travel_explore", label: "Recherche Web", value: "activée" },
     { icon: "image", label: "Génération d'images", value: "activée" },
   ];
@@ -128,7 +130,9 @@ function SettingsTab() {
 function EvaluationsTab() {
   const board = [
     { model: "GPT-4o", score: 1284 },
+    { model: "Shenron (RAG)", score: 1242 },
     { model: "Llama 3.2", score: 1187 },
+    { model: "RPBey (RAG)", score: 1152 },
     { model: "Mistral Nemo", score: 1102 },
     { model: "Qwen2.5 Coder", score: 1064 },
   ];
