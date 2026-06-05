@@ -2,10 +2,26 @@
 
 import { dlopen, CString } from "bun:ffi";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 
 const libSuffix =
   process.platform === "win32" ? "dll" : process.platform === "darwin" ? "dylib" : "so";
-const libPath = join(import.meta.dir, `../target/release/libbun_rs.${libSuffix}`);
+
+const candidates = [
+  join(import.meta.dir, `../target/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/linux-gnu/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/x86_64-unknown-linux-gnu/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/x86_64-pc-windows-msvc/release/libbun_rs.${libSuffix}`),
+];
+
+let libPath = candidates[0];
+for (const cand of candidates) {
+  if (existsSync(cand)) {
+    libPath = cand;
+    break;
+  }
+}
 
 const { symbols: lib } = dlopen(libPath, {
   bun_rs_version: {

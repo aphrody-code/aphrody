@@ -83,7 +83,7 @@ mod real_impl {
     use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
     use super::*;
-    use crate::stt::{SttOptions, TranscriptFormat};
+    use crate::stt::SttOptions;
 
     // ── Conversion WAV → f32 PCM ──────────────────────────────────────────────
 
@@ -195,7 +195,7 @@ mod real_impl {
                 let mono_i16: Vec<i16> = if num_channels == 2 {
                     i16_samples
                         .chunks_exact(2)
-                        .map(|s| (((s[0] as i32 + s[1] as i32) / 2) as i16))
+                        .map(|s| ((s[0] as i32 + s[1] as i32) / 2) as i16)
                         .collect()
                 } else {
                     i16_samples
@@ -233,7 +233,7 @@ mod real_impl {
 
     /// Tente d'interpréter `audio` comme du f32 LE brut (chemin de dernier
     /// recours quand la signature WAV est absente).
-    fn as_raw_f32(audio: &[u8]) -> Option<Vec<f32>> {
+    pub(super) fn as_raw_f32(audio: &[u8]) -> Option<Vec<f32>> {
         if audio.len() % 4 != 0 || audio.is_empty() {
             return None;
         }
