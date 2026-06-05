@@ -17,14 +17,17 @@
     "@aphrody/m3-react": "workspace:*",
     "@aphrody/m3-tokens": "workspace:*",
     "@aphrody/material-web": "workspace:*",
+    "@genkit-ai/google-genai": "catalog:",
+    "@remotion/media": "^4.0.473",
+    "@remotion/player": "^4.0.473",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "firebase": "catalog:",
     "firebase-admin": "catalog:",
     "genkit": "catalog:",
-    "@genkit-ai/google-genai": "catalog:"
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "remotion": "^4.0.473"
   },
   "devDependencies": {
     "@types/react": "catalog:",

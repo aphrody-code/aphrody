@@ -13,6 +13,8 @@ import {
   MdOutlinedCard,
   MdAssistChip,
 } from "@aphrody/m3-react";
+import { Player, PlayerRef } from "@remotion/player";
+import { MascotVideo } from "./video/MascotVideo.tsx";
 import { PageHead, Panel } from "../../ui.tsx";
 import { run } from "../../client.ts";
 
@@ -46,31 +48,51 @@ export function Studio() {
   const [renderLogs, setRenderLogs] = useState<string[]>([]);
   const [history, setHistory] = useState<RenderHistory[]>([]);
 
-  const intervalRef = useRef<number | null>(null);
+  const playerRef = useRef<PlayerRef>(null);
 
-  // Handle timeline play loop
+  // Sync player events with local state
   useEffect(() => {
-    if (playing) {
-      const intervalMs = 1000 / fps;
-      intervalRef.current = setInterval(() => {
-        setCurrentFrame((prev) => (prev + 1) % totalFrames);
-      }, intervalMs) as unknown as number;
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [playing, fps, totalFrames]);
+    const { current } = playerRef;
+    if (!current) return;
 
-  // Determine current asset frame for Mascot Template
-  const frameIndex = currentFrame % 8;
-  const currentMascotUrl = `/assets/aphrody_body_r${frameIndex}.webp`;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onFrameUpdate = () => {
+      setCurrentFrame(current.getCurrentFrame());
+    };
+
+    current.addEventListener("play", onPlay);
+    current.addEventListener("pause", onPause);
+    current.addEventListener("frameupdate", onFrameUpdate);
+
+    return () => {
+      current.removeEventListener("play", onPlay);
+      current.removeEventListener("pause", onPause);
+      current.removeEventListener("frameupdate", onFrameUpdate);
+    };
+  }, [playerRef]);
+
+
+  const handlePlayPause = () => {
+    if (!playerRef.current) return;
+    if (playerRef.current.isPlaying()) {
+      playerRef.current.pause();
+    } else {
+      playerRef.current.play();
+    }
+  };
+
+  const handleReplay = () => {
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(0);
+  };
+
+  const handleSliderChange = (e: any) => {
+    if (!playerRef.current) return;
+    const frame = Number(e.target.value);
+    playerRef.current.seekTo(frame);
+    setCurrentFrame(frame);
+  };
 
   // Render trigger
   const triggerRender = async () => {
@@ -304,143 +326,43 @@ export function Studio() {
                 width: "100%",
                 aspectRatio: "16 / 9",
                 borderRadius: 16,
-                background: currentThemeGradient,
                 position: "relative",
                 overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "inset 0 0 80px rgba(0,0,0,0.4)",
-                transition: "background 0.5s ease",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.3)",
               }}
             >
-              {/* Animated Mascot Frame */}
-              {template === "mascot" && (
-                <img
-                  src={currentMascotUrl}
-                  alt="Mascot Preview"
-                  style={{
-                    height: "80%",
-                    objectFit: "contain",
-                    pointerEvents: "none",
-                    filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.5))",
-                  }}
-                />
-              )}
-
-              {/* Technical Code Showcase Mock */}
-              {template === "showcase" && (
-                <div
-                  className="aph-output"
-                  style={{
-                    width: "85%",
-                    height: "75%",
-                    background: "rgba(0, 0, 0, 0.72)",
-                    backdropFilter: "blur(12px)",
-                    borderRadius: 12,
-                    fontSize: 10,
-                    padding: 10,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <pre style={{ margin: 0, color: "#a8ffb2" }}>
-                    {`$ mrx scan --root .\n`}
-                    {currentFrame > 10 && `total_files: 1513\n`}
-                    {currentFrame > 20 && `scan_duration_ms: 47ms\n`}
-                    {currentFrame > 30 && `languages:\n  CSS: 695 files\n  TypeScript: 673 files\n`}
-                    {currentFrame > 40 && `[Frame Animation Step: ${currentFrame}]\n`}
-                    {currentFrame > 50 && `mrx check ok.`}
-                  </pre>
-                </div>
-              )}
-
-              {/* AI Waveform Spectrum Mock */}
-              {template === "presentation" && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-                  <svg width="200" height="60" viewBox="0 0 200 60">
-                    {[...Array(15)].map((_, i) => {
-                      const waveHeight = playing
-                        ? 10 + Math.abs(Math.sin((currentFrame * 0.2) + i)) * 40
-                        : 8;
-                      return (
-                        <rect
-                          key={i}
-                          x={20 + i * 11}
-                          y={30 - waveHeight / 2}
-                          width="6"
-                          height={waveHeight}
-                          rx="3"
-                          fill="var(--md-sys-color-on-primary)"
-                          style={{ opacity: 0.85, transition: "height 0.1s ease, y 0.1s ease" }}
-                        />
-                      );
-                    })}
-                  </svg>
-                  {playing && (
-                    <div
-                      style={{
-                        background: "rgba(0,0,0,0.6)",
-                        padding: "4px 12px",
-                        borderRadius: 16,
-                        color: "#fff",
-                        fontSize: 12,
-                        maxWidth: "80%",
-                        textAlign: "center",
-                      }}
-                    >
-                      {speechText}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Video Title Text Overlays */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 16,
-                  left: 16,
-                  color: "#fff",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.8)",
-                  pointerEvents: "none",
+              <Player
+                ref={playerRef}
+                component={MascotVideo}
+                inputProps={{
+                  template,
+                  title,
+                  subtitle,
+                  theme,
+                  speechText,
                 }}
-              >
-                <div style={{ fontSize: 16, fontWeight: "bold" }}>{title}</div>
-                <div style={{ fontSize: 11, opacity: 0.8 }}>{subtitle}</div>
-              </div>
-
-              {/* Top Right Logo Watermark */}
-              <span
+                durationInFrames={totalFrames}
+                fps={fps}
+                compositionWidth={1280}
+                compositionHeight={720}
                 style={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: 11,
-                  fontWeight: "bold",
-                  color: "rgba(255,255,255,0.7)",
-                  background: "rgba(0,0,0,0.3)",
-                  padding: "4px 8px",
-                  borderRadius: 12,
-                  backdropFilter: "blur(4px)",
+                  width: "100%",
+                  height: "100%",
                 }}
-              >
-                <MdIcon style={{ fontSize: 12 }}>auto_awesome</MdIcon>
-                aphrody studio
-              </span>
+                loop
+                clickToPlay={false}
+                controls={false}
+              />
             </div>
 
             {/* Timeline Control Interface */}
             <div style={{ marginTop: 12 }}>
               <div className="owui-spread" style={{ alignItems: "center" }}>
                 <div className="owui-row" style={{ gap: 4 }}>
-                  <MdIconButton onClick={() => setPlaying(!playing)}>
+                  <MdIconButton onClick={handlePlayPause}>
                     <MdIcon>{playing ? "pause" : "play_arrow"}</MdIcon>
                   </MdIconButton>
-                  <MdIconButton onClick={() => setCurrentFrame(0)}>
+                  <MdIconButton onClick={handleReplay}>
                     <MdIcon>replay</MdIcon>
                   </MdIconButton>
                 </div>
@@ -450,7 +372,7 @@ export function Studio() {
                     min={0}
                     max={totalFrames - 1}
                     value={currentFrame}
-                    onChange={(e: any) => setCurrentFrame(Number(e.target.value))}
+                    onChange={handleSliderChange}
                     style={{ width: "100%" }}
                   />
                 </div>
