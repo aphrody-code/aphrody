@@ -5,13 +5,13 @@ import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAi4UFBVSstkMGYQVQdYJTtJ_mVYQgKOIk",
-  authDomain: "aphrody.firebaseapp.com",
-  projectId: "aphrody",
-  storageBucket: "aphrody.firebasestorage.app",
-  messagingSenderId: "468000409790",
-  appId: "1:468000409790:web:d179b857bda9ede592b6ef",
-  measurementId: "G-RM8TMT18F3"
+  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyAi4UFBVSstkMGYQVQdYJTtJ_mVYQgKOIk",
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "aphrody.firebaseapp.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || "aphrody",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "aphrody.firebasestorage.app",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "468000409790",
+  appId: process.env.FIREBASE_APP_ID || "1:468000409790:web:d179b857bda9ede592b6ef",
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-RM8TMT18F3"
 };
 
 // Initialize Firebase
