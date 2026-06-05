@@ -17,8 +17,8 @@ interface Note {
 }
 
 const SEED: Note[] = [
-  { id: "n-1", title: "Meeting notes", body: "Ship the M3 rebuild. Bun + TanStack only." },
-  { id: "n-2", title: "Ideas", body: "Add shared-axis transitions between routes." },
+  { id: "n-1", title: "Notes de réunion", body: "Livrer la reconstruction M3. Bun + TanStack uniquement." },
+  { id: "n-2", title: "Idées", body: "Ajouter des transitions d'axe partagé entre les routes." },
 ];
 
 export function NotesRoute() {
@@ -28,7 +28,7 @@ export function NotesRoute() {
 
   const addNote = () => {
     const id = `n-${notes.length + 1}-${Date.now()}`;
-    const note: Note = { id, title: "Untitled", body: "" };
+    const note: Note = { id, title: "Sans titre", body: "" };
     setNotes((prev) => [note, ...prev]);
     setActiveId(id);
   };
@@ -46,7 +46,7 @@ export function NotesRoute() {
           <div className="owui-spread" style={{ marginBottom: 8 }}>
             <h2 style={{ margin: 0 }}>Notes</h2>
             <MdFilledTonalButton onClick={addNote}>
-              <MdIcon slot="icon">add</MdIcon>New
+              <MdIcon slot="icon">add</MdIcon>Nouveau
             </MdFilledTonalButton>
           </div>
           <div className="owui-stack">
@@ -60,7 +60,7 @@ export function NotesRoute() {
                   outline: n.id === activeId ? "2px solid var(--md-sys-color-primary)" : "none",
                 }}
               >
-                <strong>{n.title || "Untitled"}</strong>
+                <strong>{n.title || "Sans titre"}</strong>
                 <p
                   className="owui-muted"
                   style={{
@@ -71,7 +71,7 @@ export function NotesRoute() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {n.body || "Empty note"}
+                  {n.body || "Note vide"}
                 </p>
               </MdOutlinedCard>
             ))}
@@ -82,7 +82,7 @@ export function NotesRoute() {
           <div className="owui-stack">
             <div className="owui-spread">
               <MdOutlinedTextField
-                label="Title"
+                label="Titre"
                 value={active.title}
                 onInput={(e) => patch({ title: (e.target as HTMLInputElement).value })}
                 style={{ flex: 1 }}

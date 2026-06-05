@@ -73,7 +73,7 @@ export function MessageBubble({
                     setDraft(message.content);
                   }}
                 >
-                  Cancel
+                  Annuler
                 </MdTextButton>
                 <MdTextButton
                   onClick={() => {
@@ -81,7 +81,7 @@ export function MessageBubble({
                     onEdit(draft);
                   }}
                 >
-                  Save &amp; submit
+                  Enregistrer et envoyer
                 </MdTextButton>
               </div>
             </div>

@@ -18,15 +18,15 @@ const DAY = 86_400_000;
 
 function bucket(ts: number): string {
   const age = Date.now() - ts;
-  if (age < DAY) return "Today";
-  if (age < 2 * DAY) return "Yesterday";
-  if (age < 7 * DAY) return "Previous 7 days";
-  return "Older";
+  if (age < DAY) return "Aujourd'hui";
+  if (age < 2 * DAY) return "Hier";
+  if (age < 7 * DAY) return "7 derniers jours";
+  return "Plus anciens";
 }
 
 const NAV = [
   { to: "/", icon: "chat", label: "Chats" },
-  { to: "/workspace", icon: "workspaces", label: "Workspace" },
+  { to: "/workspace", icon: "workspaces", label: "Espace de travail" },
   { to: "/notes", icon: "edit_note", label: "Notes" },
   { to: "/admin", icon: "admin_panel_settings", label: "Admin" },
 ] as const;
@@ -41,7 +41,7 @@ export function Sidebar() {
 
   const groups = useMemo(() => {
     const filtered = chats.filter((c) => c.title.toLowerCase().includes(query.toLowerCase()));
-    const order = ["Today", "Yesterday", "Previous 7 days", "Older"];
+    const order = ["Aujourd'hui", "Hier", "7 derniers jours", "Plus anciens"];
     const map = new Map<string, ChatListItem[]>();
     for (const c of filtered) {
       const k = bucket(c.updated_at);
@@ -51,7 +51,7 @@ export function Sidebar() {
   }, [chats, query]);
 
   const onNewChat = async () => {
-    const chat = await createChat.mutateAsync({ title: "New Chat" });
+    const chat = await createChat.mutateAsync({ title: "Nouveau chat" });
     void navigate({ to: "/c/$chatId", params: { chatId: chat.id } });
   };
 
@@ -65,7 +65,7 @@ export function Sidebar() {
       <div style={{ padding: "12px 12px 4px" }}>
         <MdFilledTonalButton style={{ width: "100%" }} onClick={() => void onNewChat()}>
           <MdIcon slot="icon">add</MdIcon>
-          New chat
+          Nouveau chat
         </MdFilledTonalButton>
       </div>
 
@@ -89,7 +89,7 @@ export function Sidebar() {
       <div style={{ padding: "4px 12px 8px" }}>
         <MdSearchBar
           value={query}
-          placeholder="Search chats"
+          placeholder="Rechercher"
           onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
         />
       </div>
@@ -97,7 +97,7 @@ export function Sidebar() {
       <nav className="owui-sidebar__list">
         {groups.length === 0 && (
           <p className="owui-muted" style={{ padding: "8px 12px" }}>
-            No chats yet.
+            Aucun chat pour le moment.
           </p>
         )}
         {groups.map(([label, items]) => (
@@ -134,7 +134,7 @@ export function Sidebar() {
                     </span>
                     <MdIconButton
                       slot="end"
-                      aria-label="Delete chat"
+                      aria-label="Supprimer le chat"
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         void onDelete(c.id);

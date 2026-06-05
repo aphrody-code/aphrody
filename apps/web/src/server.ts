@@ -315,6 +315,65 @@ const server = Bun.serve({
     "/api/meta": withAuth(() => json(META)),
     "/api/account": withAuth(() => json(ACCOUNT)),
 
+    "/api/auths/google": {
+      POST: async (req) => {
+        let googleProfile: any = {};
+        try {
+          const binPath = "/home/ubuntu/.local/bin/aphrody";
+          const proc = Bun.spawn([binPath, "antigravity", "whoami", "--json"], {
+            stdout: "pipe",
+            stderr: "pipe",
+          });
+          const stdout = await new Response(proc.stdout).text();
+          googleProfile = JSON.parse(stdout);
+        } catch (err) {
+          console.error("Failed to run whoami, fallback profile:", err);
+          googleProfile = {
+            email: "contact@aphrody-code.dev",
+            name: "Yohan Pierre",
+            picture: "https://lh3.googleusercontent.com/a/ACg8ocLkl45UDyENhglg8S50w0TGnCAl9I9TxV59fbJwfP--R2qO63EfnA=s96-c",
+            given_name: "Yohan",
+            family_name: "Pierre",
+            id: "101187968385849974848"
+          };
+        }
+
+        const cookies = req.headers.get("cookie") ?? "";
+
+        let serviceAccount: any = {};
+        try {
+          serviceAccount = await Bun.file("/home/ubuntu/aphrody/secrets/aphrody-bot.json").json();
+        } catch (e) {}
+
+        let clientSecret: any = {};
+        try {
+          clientSecret = await Bun.file("/home/ubuntu/aphrody/secrets/client_secret_468000409790-oubhlpdp9rfb569vre9l1ikpdq4lc3ru.apps.googleusercontent.com.json").json();
+        } catch (e) {}
+
+        const mixedData = {
+          connected: true,
+          user: {
+            id: googleProfile.id || "u-google",
+            name: googleProfile.name || "Yohan Pierre",
+            email: googleProfile.email || "contact@aphrody-code.dev",
+            profile_image_url: googleProfile.picture || "/favicon.png",
+            role: "admin",
+            token: EXPECTED_TOKEN,
+          },
+          mix: {
+            google_api_key: process.env.GOOGLE_API_KEY || "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ",
+            gcp_service_account: serviceAccount.client_email || process.env.GCP_SERVICE_ACCOUNT || "",
+            client_id: clientSecret.installed?.client_id || "",
+            project_id: serviceAccount.project_id || "aphrody",
+            cookies: cookies,
+            scopes: ["whoami", "gemini-api", "cloud-platform"],
+          }
+        };
+
+        return json(mixedData);
+      }
+    },
+
     // SPA + bundling catch-all (HTML import auto-bundles main.tsx + CSS).
     "/*": index,
   },

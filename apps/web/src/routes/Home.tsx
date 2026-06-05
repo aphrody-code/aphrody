@@ -15,7 +15,7 @@ export function Home() {
     if (started.current) return;
     started.current = true;
     void createChat
-      .mutateAsync({ title: "New Chat" })
+      .mutateAsync({ title: "Nouveau chat" })
       .then((chat) => navigate({ to: "/c/$chatId", params: { chatId: chat.id }, replace: true }));
   }, []);
 

@@ -8,6 +8,7 @@ import {
   MdElevatedCard,
   MdFilledButton,
   MdIcon,
+  MdOutlinedButton,
   MdOutlinedTextField,
 } from "@aphrody/m3-react";
 import { api, auth } from "../../api/client.ts";
@@ -36,6 +37,33 @@ export function AuthScreen() {
     } catch (e) {
       auth.clear();
       setError("Token invalide ou serveur injoignable.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auths/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error("Erreur de connexion Google");
+      }
+      const data = await res.json();
+      if (data.user && data.user.token) {
+        auth.set(data.user.token);
+        session.signIn(data.user);
+        void navigate({ to: "/", replace: true });
+      } else {
+        throw new Error("Données de connexion invalides");
+      }
+    } catch (e) {
+      auth.clear();
+      setError("Connexion Google échouée ou serveur injoignable.");
     } finally {
       setBusy(false);
     }
@@ -70,14 +98,21 @@ export function AuthScreen() {
           <p style={{ color: "var(--md-sys-color-error)", margin: 0, fontSize: 13 }}>{error}</p>
         )}
 
-        <MdFilledButton onClick={() => void submit()} disabled={busy}>
-          {busy ? (
-            <MdCircularProgress indeterminate slot="icon" />
-          ) : (
-            <MdIcon slot="icon">vpn_key</MdIcon>
-          )}
-          Se connecter
-        </MdFilledButton>
+        <div className="owui-stack" style={{ gap: 8 }}>
+          <MdFilledButton onClick={() => void submit()} disabled={busy}>
+            {busy ? (
+              <MdCircularProgress indeterminate slot="icon" />
+            ) : (
+              <MdIcon slot="icon">vpn_key</MdIcon>
+            )}
+            Se connecter
+          </MdFilledButton>
+
+          <MdOutlinedButton onClick={() => void loginWithGoogle()} disabled={busy}>
+            <MdIcon slot="icon">account_circle</MdIcon>
+            Se connecter avec Google
+          </MdOutlinedButton>
+        </div>
       </MdElevatedCard>
     </div>
   );

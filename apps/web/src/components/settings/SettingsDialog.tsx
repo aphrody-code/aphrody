@@ -47,7 +47,7 @@ export function SettingsDialog() {
       onClosed={close}
       style={{ "--md-dialog-container-max-inline-size": "560px" } as React.CSSProperties}
     >
-      <div slot="headline">Settings</div>
+      <div slot="headline">Paramètres</div>
       <form slot="content" method="dialog" style={{ minHeight: 320 }}>
         <MdTabs
           activeTabIndex={tab}
@@ -55,15 +55,15 @@ export function SettingsDialog() {
             setTab((e.target as unknown as { activeTabIndex: number }).activeTabIndex)
           }
         >
-          <MdPrimaryTab>General</MdPrimaryTab>
+          <MdPrimaryTab>Général</MdPrimaryTab>
           <MdPrimaryTab>Interface</MdPrimaryTab>
-          <MdPrimaryTab>Account</MdPrimaryTab>
-          <MdPrimaryTab>About</MdPrimaryTab>
+          <MdPrimaryTab>Compte</MdPrimaryTab>
+          <MdPrimaryTab>À propos</MdPrimaryTab>
         </MdTabs>
 
         {tab === 0 && (
           <div>
-            <Row label="Theme">
+            <Row label="Thème">
               <MdOutlinedSelect
                 value={themeMode}
                 onChange={(e) =>
@@ -71,17 +71,17 @@ export function SettingsDialog() {
                 }
               >
                 <MdSelectOption value="system">
-                  <span slot="headline">System</span>
+                  <span slot="headline">Système</span>
                 </MdSelectOption>
                 <MdSelectOption value="light">
-                  <span slot="headline">Light</span>
+                  <span slot="headline">Clair</span>
                 </MdSelectOption>
                 <MdSelectOption value="dark">
-                  <span slot="headline">Dark</span>
+                  <span slot="headline">Sombre</span>
                 </MdSelectOption>
               </MdOutlinedSelect>
             </Row>
-            <Row label="Accent (Material You seed)">
+            <Row label="Accent (Couleur Material You)">
               <input
                 type="color"
                 value={seed}
@@ -89,8 +89,8 @@ export function SettingsDialog() {
                 style={{ width: 44, height: 32, border: "none", background: "none" }}
               />
             </Row>
-            <Row label="Language">
-              <MdOutlinedSelect value="en">
+            <Row label="Langue">
+              <MdOutlinedSelect value="fr">
                 <MdSelectOption value="en">
                   <span slot="headline">English</span>
                 </MdSelectOption>
@@ -100,12 +100,12 @@ export function SettingsDialog() {
               </MdOutlinedSelect>
             </Row>
             <div style={{ paddingTop: 12 }}>
-              <p style={{ margin: "0 0 4px" }}>System prompt</p>
+              <p style={{ margin: "0 0 4px" }}>Prompt système</p>
               <MdOutlinedTextField
                 type="textarea"
                 rows={3}
                 value={system}
-                placeholder="You are a helpful assistant…"
+                placeholder="Vous êtes un assistant utile…"
                 onInput={(e) => setSystem((e.target as HTMLInputElement).value)}
                 style={{ width: "100%" }}
               />
@@ -115,7 +115,7 @@ export function SettingsDialog() {
 
         {tab === 1 && (
           <div>
-            <Row label="Auto-generate chat titles">
+            <Row label="Générer automatiquement les titres">
               <MdSwitch
                 selected={autoTitle}
                 onChange={(e) =>
@@ -123,7 +123,7 @@ export function SettingsDialog() {
                 }
               />
             </Row>
-            <Row label="Chat bubbles">
+            <Row label="Bulles de discussion">
               <MdSwitch
                 selected={bubbles}
                 onChange={(e) =>
@@ -132,7 +132,7 @@ export function SettingsDialog() {
               />
             </Row>
             <div style={{ paddingTop: 12 }}>
-              <p style={{ margin: "0 0 4px" }}>Text scale — {textScale}%</p>
+              <p style={{ margin: "0 0 4px" }}>Taille du texte — {textScale}%</p>
               <MdSlider
                 min={80}
                 max={140}
@@ -147,9 +147,9 @@ export function SettingsDialog() {
 
         {tab === 2 && (
           <div className="owui-stack" style={{ paddingTop: 12 }}>
-            <MdOutlinedTextField label="Name" value={user?.name ?? ""} />
+            <MdOutlinedTextField label="Nom" value={user?.name ?? ""} />
             <MdOutlinedTextField label="Email" value={user?.email ?? ""} />
-            <Row label="Role">
+            <Row label="Rôle">
               <span className="owui-muted">{user?.role}</span>
             </Row>
           </div>
@@ -163,7 +163,7 @@ export function SettingsDialog() {
             <p className="owui-muted">
               Version {config?.version} · Material Design 3 · Bun + TanStack
             </p>
-            <p className="owui-muted">A full M3 React rebuild of Open WebUI.</p>
+            <p className="owui-muted">Une réécriture complète en React M3 de Open WebUI.</p>
           </div>
         )}
       </form>
@@ -174,7 +174,7 @@ export function SettingsDialog() {
             close();
           }}
         >
-          Close
+          Fermer
         </MdTextButton>
       </div>
     </MdDialog>

@@ -80,15 +80,15 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
         >
           <MdMenuItem>
             <MdIcon slot="start">share</MdIcon>
-            <span slot="headline">Share</span>
+            <span slot="headline">Partager</span>
           </MdMenuItem>
           <MdMenuItem>
             <MdIcon slot="start">archive</MdIcon>
-            <span slot="headline">Archive</span>
+            <span slot="headline">Archiver</span>
           </MdMenuItem>
           <MdMenuItem>
             <MdIcon slot="start">download</MdIcon>
-            <span slot="headline">Download</span>
+            <span slot="headline">Télécharger</span>
           </MdMenuItem>
         </Menu>
       </div>
@@ -102,9 +102,9 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
               forum
             </MdIcon>
             <div>
-              <h2 style={{ margin: 0 }}>How can I help today?</h2>
+              <h2 style={{ margin: 0 }}>Comment puis-je vous aider aujourd'hui ?</h2>
               <p className="owui-muted" style={{ margin: "4px 0 0" }}>
-                Pick a prompt or type your own. Replies stream from the Bun mock backend.
+                Choisissez une suggestion ou saisissez votre propre message.
               </p>
             </div>
             <div className="owui-suggestions">

@@ -20,19 +20,19 @@ import {
 import { useAdminUsers } from "../api/queries.ts";
 
 const COLUMNS = [
-  { key: "name", label: "Name", sortable: true, filter: "text" as const },
+  { key: "name", label: "Nom", sortable: true, filter: "text" as const },
   { key: "email", label: "Email", sortable: true, filter: "text" as const },
-  { key: "role", label: "Role", sortable: true, filter: "text" as const },
-  { key: "last_active", label: "Last active", sortable: true },
+  { key: "role", label: "Rôle", sortable: true, filter: "text" as const },
+  { key: "last_active", label: "Dernière activité", sortable: true },
 ];
 
 function ago(ts: number): string {
   const m = Math.floor((Date.now() - ts) / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return "à l'instant";
+  if (m < 60) return `il y a ${m}m`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return `il y a ${h}h`;
+  return `il y a ${Math.floor(h / 24)}j`;
 }
 
 function UsersTab() {
@@ -53,10 +53,10 @@ function UsersTab() {
   return (
     <>
       <div className="owui-spread" style={{ margin: "12px 0" }}>
-        <span className="owui-muted">{users.length} users</span>
+        <span className="owui-muted">{users.length} utilisateurs</span>
         <MdFilledButton onClick={() => setAdding(true)}>
           <MdIcon slot="icon">person_add</MdIcon>
-          Add user
+          Ajouter un utilisateur
         </MdFilledButton>
       </div>
 
@@ -65,26 +65,26 @@ function UsersTab() {
       </div>
 
       <MdDialog open={adding} onClosed={() => setAdding(false)}>
-        <div slot="headline">Add user</div>
+        <div slot="headline">Ajouter un utilisateur</div>
         <form slot="content" method="dialog" className="owui-stack">
-          <MdOutlinedTextField label="Name" />
+          <MdOutlinedTextField label="Nom" />
           <MdOutlinedTextField label="Email" type="email" />
-          <MdOutlinedTextField label="Password" type="password" />
-          <MdOutlinedSelect label="Role" value="user">
+          <MdOutlinedTextField label="Mot de passe" type="password" />
+          <MdOutlinedSelect label="Rôle" value="user">
             <MdSelectOption value="user">
-              <span slot="headline">User</span>
+              <span slot="headline">Utilisateur</span>
             </MdSelectOption>
             <MdSelectOption value="admin">
-              <span slot="headline">Admin</span>
+              <span slot="headline">Administrateur</span>
             </MdSelectOption>
             <MdSelectOption value="pending">
-              <span slot="headline">Pending</span>
+              <span slot="headline">En attente</span>
             </MdSelectOption>
           </MdOutlinedSelect>
         </form>
         <div slot="actions">
-          <MdTextButton onClick={() => setAdding(false)}>Cancel</MdTextButton>
-          <MdFilledButton onClick={() => setAdding(false)}>Create</MdFilledButton>
+          <MdTextButton onClick={() => setAdding(false)}>Annuler</MdTextButton>
+          <MdFilledButton onClick={() => setAdding(false)}>Créer</MdFilledButton>
         </div>
       </MdDialog>
     </>
@@ -93,10 +93,10 @@ function UsersTab() {
 
 function SettingsTab() {
   const items = [
-    { icon: "lan", label: "Ollama API", value: "http://localhost:11434" },
-    { icon: "key", label: "OpenAI API", value: "configured" },
-    { icon: "travel_explore", label: "Web search", value: "enabled" },
-    { icon: "image", label: "Image generation", value: "enabled" },
+    { icon: "lan", label: "API Ollama", value: "http://localhost:11434" },
+    { icon: "key", label: "API OpenAI", value: "configurée" },
+    { icon: "travel_explore", label: "Recherche Web", value: "activée" },
+    { icon: "image", label: "Génération d'images", value: "activée" },
   ];
   return (
     <div style={{ paddingTop: 8 }}>
@@ -154,7 +154,7 @@ export function AdminRoute() {
   return (
     <div className="owui-page">
       <div className="owui-page__inner">
-        <h1 style={{ marginTop: 0 }}>Admin Panel</h1>
+        <h1 style={{ marginTop: 0 }}>Administration</h1>
         <MdTabs
           activeTabIndex={tab}
           onChange={(e) =>
@@ -162,13 +162,13 @@ export function AdminRoute() {
           }
         >
           <MdPrimaryTab>
-            <MdIcon slot="icon">group</MdIcon>Users
+            <MdIcon slot="icon">group</MdIcon>Utilisateurs
           </MdPrimaryTab>
           <MdPrimaryTab>
-            <MdIcon slot="icon">settings</MdIcon>Settings
+            <MdIcon slot="icon">settings</MdIcon>Paramètres
           </MdPrimaryTab>
           <MdPrimaryTab>
-            <MdIcon slot="icon">leaderboard</MdIcon>Evaluations
+            <MdIcon slot="icon">leaderboard</MdIcon>Évaluations
           </MdPrimaryTab>
         </MdTabs>
         {tab === 0 && <UsersTab />}

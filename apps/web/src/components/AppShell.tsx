@@ -10,7 +10,7 @@ import { getState, session, setState, useUi } from "../store.ts";
 
 function titleFor(path: string): string {
   if (path === "/" || path.startsWith("/c/")) return "Chat";
-  if (path.startsWith("/workspace")) return "Workspace";
+  if (path.startsWith("/workspace")) return "Espace de travail";
   if (path.startsWith("/admin")) return "Admin";
   if (path.startsWith("/notes")) return "Notes";
   return "Open WebUI";
@@ -64,23 +64,23 @@ export function AppShell() {
           <span slot="trailing">
             <Menu
               trigger={({ toggle }) => (
-                <MdIconButton aria-label="Account" onClick={toggle}>
+                <MdIconButton aria-label="Compte" onClick={toggle}>
                   <MdIcon>account_circle</MdIcon>
                 </MdIconButton>
               )}
             >
               <MdMenuItem disabled>
-                <span slot="headline">{user?.name ?? "Account"}</span>
+                <span slot="headline">{user?.name ?? "Compte"}</span>
                 <span slot="supporting-text">{user?.email}</span>
               </MdMenuItem>
               <MdMenuItem onClick={() => setState({ settingsOpen: true })}>
                 <MdIcon slot="start">tune</MdIcon>
-                <span slot="headline">Settings</span>
+                <span slot="headline">Paramètres</span>
               </MdMenuItem>
               {config?.features.enable_admin_panel && (
                 <MdMenuItem onClick={() => void navigate({ to: "/admin" })}>
                   <MdIcon slot="start">admin_panel_settings</MdIcon>
-                  <span slot="headline">Admin Panel</span>
+                  <span slot="headline">Administration</span>
                 </MdMenuItem>
               )}
               <MdMenuItem
@@ -90,7 +90,7 @@ export function AppShell() {
                 }}
               >
                 <MdIcon slot="start">logout</MdIcon>
-                <span slot="headline">Sign out</span>
+                <span slot="headline">Déconnexion</span>
               </MdMenuItem>
             </Menu>
           </span>

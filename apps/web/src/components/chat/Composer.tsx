@@ -56,7 +56,7 @@ export function Composer({
         )}
 
         <div className="owui-composer__row">
-          <MdIconButton aria-label="Attach file" onClick={() => fileRef.current?.click()}>
+          <MdIconButton aria-label="Joindre un fichier" onClick={() => fileRef.current?.click()}>
             <MdIcon>attach_file</MdIcon>
           </MdIconButton>
           <input
@@ -73,18 +73,18 @@ export function Composer({
             className="owui-composer__field"
             type="textarea"
             rows={1}
-            placeholder="Send a message…"
+            placeholder="Envoyer un message…"
             value={value}
             onInput={(e) => onValue((e.target as HTMLInputElement).value)}
             onKeyDown={handleKey}
           />
 
           {streaming ? (
-            <MdIconButton aria-label="Stop" onClick={onStop}>
+            <MdIconButton aria-label="Arrêter" onClick={onStop}>
               <MdIcon>stop_circle</MdIcon>
             </MdIconButton>
           ) : (
-            <MdIconButton aria-label="Send" disabled={!canSend} onClick={onSend}>
+            <MdIconButton aria-label="Envoyer" disabled={!canSend} onClick={onSend}>
               <MdIcon>send</MdIcon>
             </MdIconButton>
           )}
@@ -93,7 +93,7 @@ export function Composer({
         <div className="owui-row" style={{ flexWrap: "wrap" }}>
           {config?.features.enable_web_search && (
             <MdFilterChip
-              label="Web search"
+              label="Recherche Web"
               selected={webSearch}
               onClick={() => setWebSearch((v) => !v)}
             />

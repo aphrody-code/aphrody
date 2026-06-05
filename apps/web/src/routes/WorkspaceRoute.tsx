@@ -38,7 +38,7 @@ function CardGrid({ cards, createLabel }: { cards: Card[]; createLabel: string }
         <div style={{ flex: "1 1 320px", maxWidth: 360 }}>
           <MdSearchBar
             value={q}
-            placeholder="Search"
+            placeholder="Rechercher"
             onInput={(e) => setQ((e.target as HTMLInputElement).value)}
           />
         </div>
@@ -65,15 +65,15 @@ function CardGrid({ cards, createLabel }: { cards: Card[]; createLabel: string }
               >
                 <MdMenuItem>
                   <MdIcon slot="start">edit</MdIcon>
-                  <span slot="headline">Edit</span>
+                  <span slot="headline">Modifier</span>
                 </MdMenuItem>
                 <MdMenuItem>
                   <MdIcon slot="start">content_copy</MdIcon>
-                  <span slot="headline">Clone</span>
+                  <span slot="headline">Cloner</span>
                 </MdMenuItem>
                 <MdMenuItem>
                   <MdIcon slot="start">delete</MdIcon>
-                  <span slot="headline">Delete</span>
+                  <span slot="headline">Supprimer</span>
                 </MdMenuItem>
               </Menu>
             </div>
@@ -103,7 +103,7 @@ export function WorkspaceRoute() {
   return (
     <div className="owui-page">
       <div className="owui-page__inner">
-        <h1 style={{ marginTop: 0 }}>Workspace</h1>
+        <h1 style={{ marginTop: 0 }}>Espace de travail</h1>
         <MdTabs
           activeTabIndex={tab}
           onChange={(e) =>
@@ -111,22 +111,22 @@ export function WorkspaceRoute() {
           }
         >
           <MdPrimaryTab>
-            <MdIcon slot="icon">deployed_code</MdIcon>Models
+            <MdIcon slot="icon">deployed_code</MdIcon>Modèles
           </MdPrimaryTab>
           <MdPrimaryTab>
-            <MdIcon slot="icon">menu_book</MdIcon>Knowledge
+            <MdIcon slot="icon">menu_book</MdIcon>Documents
           </MdPrimaryTab>
           <MdPrimaryTab>
             <MdIcon slot="icon">terminal</MdIcon>Prompts
           </MdPrimaryTab>
           <MdPrimaryTab>
-            <MdIcon slot="icon">build</MdIcon>Tools
+            <MdIcon slot="icon">build</MdIcon>Outils
           </MdPrimaryTab>
         </MdTabs>
 
         {tab === 0 && (
           <CardGrid
-            createLabel="Create model"
+            createLabel="Créer un modèle"
             cards={models.map((m) => ({
               id: m.id,
               title: m.name,
@@ -139,19 +139,19 @@ export function WorkspaceRoute() {
         )}
         {tab === 1 && (
           <CardGrid
-            createLabel="Create knowledge"
+            createLabel="Créer un document"
             cards={knowledge.map((k) => ({
               id: k.id,
               title: k.name,
               subtitle: k.description,
               icon: "menu_book",
-              badge: `${k.file_count} files`,
+              badge: `${k.file_count} fichiers`,
             }))}
           />
         )}
         {tab === 2 && (
           <CardGrid
-            createLabel="Create prompt"
+            createLabel="Créer un prompt"
             cards={prompts.map((p) => ({
               id: p.id,
               title: p.title,
@@ -164,7 +164,7 @@ export function WorkspaceRoute() {
         )}
         {tab === 3 && (
           <CardGrid
-            createLabel="Create tool"
+            createLabel="Créer un outil"
             cards={tools.map((t) => ({
               id: t.id,
               title: t.name,

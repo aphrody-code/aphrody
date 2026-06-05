@@ -19,7 +19,7 @@ export function ModelSelector({
     <Menu
       trigger={({ toggle }) => (
         <MdTextButton onClick={toggle} trailingIcon>
-          {active?.name ?? value ?? "Select model"}
+          {active?.name ?? value ?? "Sélectionner un modèle"}
           <MdIcon slot="icon">expand_more</MdIcon>
         </MdTextButton>
       )}
