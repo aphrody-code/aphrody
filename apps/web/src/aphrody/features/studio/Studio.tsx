@@ -197,6 +197,7 @@ export function Studio() {
                 <MdSelectOption value="mascot">Mascotte Turntable 360°</MdSelectOption>
                 <MdSelectOption value="showcase">Démo Technique avec code</MdSelectOption>
                 <MdSelectOption value="presentation">Présentation IA & Voix</MdSelectOption>
+                <MdSelectOption value="webgpu">Rendu Shader WebGPU Natif</MdSelectOption>
               </MdOutlinedSelect>
 
               <MdFilledTextField

@@ -6,6 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { WebGpuVideo } from "./WebGpuVideo.tsx";
 
 export interface MascotVideoProps {
   template: string;
@@ -78,7 +79,7 @@ export function MascotVideo({ template, title, subtitle, theme, speechText }: Ma
   return (
     <AbsoluteFill
       style={{
-        background: currentThemeGradient,
+        background: template === "webgpu" ? "#000" : currentThemeGradient,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -89,6 +90,20 @@ export function MascotVideo({ template, title, subtitle, theme, speechText }: Ma
         padding: 40,
       }}
     >
+      {template === "webgpu" && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 0,
+          }}
+        >
+          <WebGpuVideo />
+        </div>
+      )}
       {/* Dynamic Header */}
       <div
         style={{
