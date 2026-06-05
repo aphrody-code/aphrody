@@ -28,9 +28,9 @@ A faithful slice of Open WebUI's surface, re-expressed in M3:
 | Model picker | `components/chat/ModelSelector` | `md-menu` + `md-text-button` |
 | Auth (sign in/up + OAuth) | `components/auth/AuthScreen` | `md-elevated-card`, `md-filled-button`, `md-outlined-button` |
 | Settings modal | `components/settings/SettingsDialog` | `md-dialog`, `md-tabs`, `md-switch`, `md-slider`, `md-outlined-select` |
-| Admin (users / settings / evals) | `routes/AdminRoute` | **`md-table`** (sort + filter + pagination), `md-dialog`, `md-switch` |
-| Workspace (models/knowledge/prompts/tools) | `routes/WorkspaceRoute` | `md-tabs`, `md-outlined-card` grid, `md-search-bar` |
-| Notes | `routes/NotesRoute` | `md-outlined-card`, `md-outlined-text-field` |
+| Admin (users / settings / evals) | `routes/AdminRoute` | **`md-table`** (sort + filter + pagination), `md-dialog`, `md-switch`, **user creation, and bulk deletion** |
+| Workspace (models/knowledge/prompts/tools) | `routes/WorkspaceRoute` | `md-tabs`, `md-outlined-card` grid, `md-search-bar`, **creation dialogs, and item deletion** |
+| Notes | `routes/NotesRoute` | `md-outlined-card`, `md-outlined-text-field`, **persistent storage via localStorage** |
 
 **Material You**: the whole app re-themes live from a seed colour (Settings → Accent) via `@aphrody/m3-tokens/dynamic-color`, with light / dark / system modes.
 
@@ -65,6 +65,7 @@ Sign-in accepts any credentials (the backend is a mock). The seeded user is `ada
 
 ## Notes / limitations
 
-- The backend is an **in-memory mock** — no real Ollama/OpenAI calls, no DB. Replies are canned and streamed so the M3 chat UX (bubbles, typing indicator, auto-scroll, token counts) is fully exercised.
+- The backend implements **mutable in-memory CRUD endpoints** for models, knowledge collections, prompts, tools, and users, while replies are canned and streamed so the M3 chat UX is fully exercised.
+- Notes are persistently stored client-side in the browser's `localStorage`.
 - Markdown is a deliberately small renderer (the Bun + TanStack rule forbids pulling a markdown dependency); it covers fenced code, headings, lists, blockquotes, and inline bold/italic/code/links.
 - Premium MUI-X-only surfaces from upstream (pivot, recurrence) are out of scope, matching the monorepo's coverage policy.
