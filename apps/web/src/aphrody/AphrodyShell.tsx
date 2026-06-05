@@ -15,6 +15,7 @@ interface NavItem {
 const MAIN: NavItem[] = [
   { seg: "assistant", icon: "chat_bubble", label: "Assistant" },
   { seg: "dashboard", icon: "dashboard", label: "Accueil" },
+  { seg: "studio", icon: "movie", label: "Studio" },
   { seg: "skills", icon: "extension", label: "Skills" },
   { seg: "mcp", icon: "hub", label: "MCP" },
   { seg: "commands", icon: "apps", label: "Commandes" },

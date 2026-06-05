@@ -345,10 +345,16 @@ const server = Bun.serve({
 
         try {
           const binPath = "/home/ubuntu/.local/bin/aphrody";
-          const proc = Bun.spawn([binPath, ...args], {
-            stdout: "pipe",
-            stderr: "pipe",
-          });
+          const isPythonCmd = args[0] === "image" || args[0] === "blender";
+          const proc = isPythonCmd
+            ? Bun.spawn(["uv", "--directory", "py", "run", "aphrody", ...args], {
+                stdout: "pipe",
+                stderr: "pipe",
+              })
+            : Bun.spawn([binPath, ...args], {
+                stdout: "pipe",
+                stderr: "pipe",
+              });
           const stdout = await new Response(proc.stdout).text();
           const stderr = await new Response(proc.stderr).text();
           const code = await proc.exited;
@@ -418,6 +424,17 @@ const server = Bun.serve({
         };
 
         return json(mixedData);
+      }
+    },
+
+    "/assets/*": {
+      GET: async (req) => {
+        const path = (req.params as any)["*"];
+        const file = Bun.file(`/home/ubuntu/aphrody/assets/${path}`);
+        if (await file.exists()) {
+          return new Response(file);
+        }
+        return new Response("Not found", { status: 404 });
       }
     },
 

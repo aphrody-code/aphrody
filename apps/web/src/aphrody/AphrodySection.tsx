@@ -14,6 +14,7 @@ import { Network } from "./features/network/Network.tsx";
 import { Diagnostic } from "./features/diagnostic/Diagnostic.tsx";
 import { Settings } from "./features/settings/Settings.tsx";
 import { About } from "./features/about/About.tsx";
+import { Studio } from "./features/studio/Studio.tsx";
 
 export function AphrodySection() {
   const { section } = useParams({ from: "/_aphrody/a/$section" });
@@ -23,6 +24,8 @@ export function AphrodySection() {
       return <Assistant />;
     case "dashboard":
       return <Dashboard />;
+    case "studio":
+      return <Studio />;
     case "skills":
       return <Skills />;
     case "mcp":
