@@ -30,12 +30,16 @@ fn vs_main(@builtin(vertex_index) VertexIndex : u32) -> VertexOutput {
   return output;
 }
 
-@group(0) @binding(0) var<uniform> frame : f32;
-@group(0) @binding(1) var<uniform> resolution : vec2f;
+struct FrameUniforms {
+  frame : f32,
+  resolution : vec2f,
+};
+
+@group(0) @binding(0) var<uniform> uniforms : FrameUniforms;
 
 @fragment
 fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
-  let t = frame * 0.02;
+  let t = uniforms.frame * 0.02;
   let p = uv * 2.0 - vec2f(1.0);
   let d = length(p);
   
@@ -61,7 +65,7 @@ export function WebGpuVideo() {
   
   const [device, setDevice] = useState<any>(null);
   const [pipeline, setPipeline] = useState<any>(null);
-  const [uniformBufferFrame, setUniformBufferFrame] = useState<any>(null);
+  const [uniformBuffer, setUniformBuffer] = useState<any>(null);
   const [bindGroup, setBindGroup] = useState<any>(null);
   const [context, setContext] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -118,23 +122,20 @@ export function WebGpuVideo() {
         });
         setPipeline(renderPipeline);
 
-        const frameBuffer = gpuDevice.createBuffer({
-          size: 4,
+        // Packed Uniform Buffer of size 16:
+        // offset 0: frame (f32, 4 bytes)
+        // offset 4: padding (4 bytes)
+        // offset 8: resolution (vec2f, 8 bytes)
+        const uBuffer = gpuDevice.createBuffer({
+          size: 16,
           usage: 0x0040 | 0x0008, // GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
-        setUniformBufferFrame(frameBuffer);
-
-        const resBuffer = gpuDevice.createBuffer({
-          size: 8,
-          usage: 0x0040 | 0x0008, // GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-        gpuDevice.queue.writeBuffer(resBuffer, 0, new Float32Array([width, height]));
+        setUniformBuffer(uBuffer);
 
         const group = gpuDevice.createBindGroup({
           layout: renderPipeline.getBindGroupLayout(0),
           entries: [
-            { binding: 0, resource: { buffer: frameBuffer } },
-            { binding: 1, resource: { buffer: resBuffer } },
+            { binding: 0, resource: { buffer: uBuffer } },
           ],
         });
         setBindGroup(group);
@@ -147,10 +148,12 @@ export function WebGpuVideo() {
   }, [width, height]);
 
   useEffect(() => {
-    if (!device || !pipeline || !uniformBufferFrame || !bindGroup || !context) return;
+    if (!device || !pipeline || !uniformBuffer || !bindGroup || !context) return;
 
     try {
-      device.queue.writeBuffer(uniformBufferFrame, 0, new Float32Array([frame]));
+      // Pack CPU uniforms into a single array block and write to the GPU in a single call
+      const uniformData = new Float32Array([frame, 0.0, width, height]);
+      device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
       const commandEncoder = device.createCommandEncoder();
       const textureView = context.getCurrentTexture().createView();
@@ -173,7 +176,7 @@ export function WebGpuVideo() {
     } catch (err) {
       console.error("WebGPU render error", err);
     }
-  }, [frame, device, pipeline, uniformBufferFrame, bindGroup, context]);
+  }, [frame, device, pipeline, uniformBuffer, bindGroup, context, width, height]);
 
   if (errorMsg) {
     return (
