@@ -1,7 +1,7 @@
 // Bun-native server: bundles + serves the React app via an HTML import (HMR in dev),
 // and exposes an OpenAI-compatible mock API — including an SSE chat-completions stream.
 // No Next, no Vite, no Express. Just Bun.serve.
-
+import * as admin from "firebase-admin";
 import index from "./index.html";
 import {
   ADMIN_USERS,
@@ -195,20 +195,53 @@ function completionStream(body: CompletionRequest): Response {
 
 const EXPECTED_TOKEN = process.env.WEB_APP_TOKEN ?? "m7K2p9Q4x1R8w5Z3";
 
-function isAuthorized(req: Request): boolean {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    return authHeader.substring(7) === EXPECTED_TOKEN;
+let firebaseAdminInitialized = false;
+try {
+  const serviceAccountPath = "/home/ubuntu/aphrody/secrets/aphrody-bot.json";
+  const file = Bun.file(serviceAccountPath);
+  if (await file.exists()) {
+    const serviceAccount = await file.json();
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    firebaseAdminInitialized = true;
+    console.log("Firebase Admin initialized successfully.");
   }
-  const url = new URL(req.url);
-  return url.searchParams.get("token") === EXPECTED_TOKEN;
+} catch (err) {
+  console.error("Failed to initialize Firebase Admin:", err);
+}
+
+async function isAuthorized(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("authorization");
+  let token = "";
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.substring(7);
+  } else {
+    const url = new URL(req.url);
+    token = url.searchParams.get("token") || "";
+  }
+
+  if (token === EXPECTED_TOKEN) {
+    return true;
+  }
+
+  if (token && firebaseAdminInitialized) {
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      return !!decoded;
+    } catch (err) {
+      // Token verification failed or not a firebase token
+    }
+  }
+
+  return false;
 }
 
 type Handler = (req: any) => Response | Promise<Response>;
 
 function withAuth(handler: Handler): Handler {
-  return (req) => {
-    if (!isAuthorized(req)) {
+  return async (req) => {
+    if (!(await isAuthorized(req))) {
       return json({ detail: "Unauthorized" }, 401);
     }
     return handler(req);

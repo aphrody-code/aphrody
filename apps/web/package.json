@@ -21,7 +21,8 @@
     "@tanstack/react-router": "^1.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "firebase": "catalog:"
+    "firebase": "catalog:",
+    "firebase-admin": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
