@@ -22,10 +22,24 @@ const QUICK_ACTIONS: QuickAction[] = [
 const OK_TONE = "#34a853";
 const WARN_TONE = "#fbbc04";
 
-/** Best-effort count of MCP tools from the `mcp list --json` payload. */
+/** Best-effort count of MCP tools from the `mcp list` NDJSON payload. */
 function mcpToolCount(text: string): number | null {
-  const j = execJson<{ tools?: unknown[] }>({ code: 0, stdout: text, stderr: "" });
-  return Array.isArray(j?.tools) ? j.tools.length : null;
+  let count = 0;
+  let hasValidServer = false;
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("{")) continue;
+    try {
+      const obj = JSON.parse(trimmed) as { tools?: unknown[] };
+      if (Array.isArray(obj.tools)) {
+        count += obj.tools.length;
+        hasValidServer = true;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return hasValidServer ? count : null;
 }
 
 export function Dashboard() {
@@ -37,7 +51,7 @@ export function Dashboard() {
 
   const doctor = useExec(["doctor"], ["doctor"]);
   const version = useExec(["version"], ["version"]);
-  const mcp = useExec(["mcp", "list"], ["mcp", "list", "--json"]);
+  const mcp = useExec(["mcp", "list"], ["mcp", "list"]);
 
   const doctorText = execText(doctor.data).trim();
   const doctorOk = doctor.data?.code === 0;
