@@ -2,6 +2,7 @@
 // and exposes an OpenAI-compatible mock API — including an SSE chat-completions stream.
 // No Next, no Vite, no Express. Just Bun.serve.
 import * as admin from "firebase-admin";
+import { aphrodyFlow } from "./api/genkit-flow.ts";
 import index from "./index.html";
 import {
   ADMIN_USERS,
@@ -314,6 +315,19 @@ const server = Bun.serve({
       POST: withAuth(async (req) => {
         const body = (await req.json()) as CompletionRequest;
         return completionStream(body);
+      }),
+    },
+
+    "/api/genkit": {
+      POST: withAuth(async (req) => {
+        try {
+          const body = (await req.json()) as { prompt: string };
+          const result = await aphrodyFlow({ prompt: body.prompt });
+          return json(result);
+        } catch (err: any) {
+          console.error("Genkit flow run failed:", err);
+          return json({ error: err.message || "Failed to execute Genkit flow" }, 500);
+        }
       }),
     },
 

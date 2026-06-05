@@ -16,7 +16,7 @@ import { auth, db, storage } from "../../firebase.ts";
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, limit, doc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, listAll } from "firebase/storage";
-import { session } from "../../store.ts";
+import { session, getState } from "../../store.ts";
 
 export function CloudFirebaseTab() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -30,6 +30,34 @@ export function CloudFirebaseTab() {
   const [files, setFiles] = useState<{ name: string; url: string; size?: number }[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const [genkitPrompt, setGenkitPrompt] = useState("");
+  const [genkitResult, setGenkitResult] = useState<any>(null);
+  const [genkitBusy, setGenkitBusy] = useState(false);
+
+  const handleRunGenkitFlow = async () => {
+    setGenkitBusy(true);
+    setGenkitResult(null);
+    try {
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : getState().user?.token;
+      const res = await fetch("/api/genkit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token || ""}`,
+        },
+        body: JSON.stringify({ prompt: genkitPrompt }),
+      });
+      if (!res.ok) throw new Error("Genkit execution failed");
+      const data = await res.json();
+      setGenkitResult(data);
+    } catch (err: any) {
+      console.error(err);
+      setGenkitResult({ error: err.message || "Failed to run Genkit flow" });
+    } finally {
+      setGenkitBusy(false);
+    }
+  };
 
   // 1. Auth Listener
   useEffect(() => {
@@ -383,6 +411,49 @@ export function CloudFirebaseTab() {
           </div>
         </MdOutlinedCard>
       </div>
+
+      {/* Google Genkit AI Flow Tester */}
+      <MdOutlinedCard style={{ padding: 20 }}>
+        <h3 style={{ margin: "0 0 16px" }} className="owui-row">
+          <MdIcon style={{ marginRight: 8, color: "#EA4335" }}>bolt</MdIcon>
+          Test de Flux d'Agent (Google Genkit Flow)
+        </h3>
+        
+        <p className="owui-muted" style={{ marginTop: 0 }}>
+          Exécutez un flux d'agent structuré alimenté par le framework open-source Google Genkit. Ce flux combine le SDK Vertex/Google AI avec la validation de schéma Zod en arrière-plan.
+        </p>
+
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <MdOutlinedTextField
+              label="Prompt pour le flux Genkit (ex: Raconte une blague sur les serveurs)"
+              value={genkitPrompt}
+              onInput={(e) => setGenkitPrompt((e.target as HTMLInputElement).value)}
+              style={{ width: "100%" }}
+            />
+          </div>
+          <MdFilledButton onClick={handleRunGenkitFlow} disabled={genkitBusy || !genkitPrompt.trim()}>
+            {genkitBusy ? "Exécution..." : "Lancer le flux"}
+          </MdFilledButton>
+        </div>
+
+        {genkitResult && (
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 8,
+              background: "var(--md-sys-color-surface-container-high)",
+              border: "1px solid var(--md-sys-color-outline-variant)",
+              whiteSpace: "pre-wrap",
+              fontSize: 14,
+              fontFamily: "monospace"
+            }}
+          >
+            <strong>Résultat du flux (JSON) :</strong>
+            <div style={{ marginTop: 8 }}>{JSON.stringify(genkitResult, null, 2)}</div>
+          </div>
+        )}
+      </MdOutlinedCard>
     </div>
   );
 }

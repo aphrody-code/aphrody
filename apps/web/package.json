@@ -22,7 +22,9 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "firebase": "catalog:",
-    "firebase-admin": "catalog:"
+    "firebase-admin": "catalog:",
+    "genkit": "catalog:",
+    "@genkit-ai/google-genai": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

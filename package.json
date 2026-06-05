@@ -48,7 +48,9 @@
       "@ai-sdk/google": "^3.0.80",
       "ai": "^6.0.193",
       "firebase": "^10.13.0",
-      "firebase-admin": "^12.4.0"
+      "firebase-admin": "^12.4.0",
+      "genkit": "^1.36.0",
+      "@genkit-ai/google-genai": "^1.36.0"
     }
   },
   "type": "module",
