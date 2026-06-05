@@ -15,6 +15,7 @@ import {
 import { Menu } from "../components/ui/Menu.tsx";
 import { MdMenuItem } from "@aphrody/m3-react";
 import { useKnowledge, usePrompts, useTools, useWorkspaceModels } from "../api/queries.ts";
+import { CloudFirebaseTab } from "../components/workspace/CloudFirebaseTab.tsx";
 
 interface Card {
   id: string;
@@ -122,6 +123,9 @@ export function WorkspaceRoute() {
           <MdPrimaryTab>
             <MdIcon slot="icon">build</MdIcon>Outils
           </MdPrimaryTab>
+          <MdPrimaryTab>
+            <MdIcon slot="icon">cloud</MdIcon>Cloud & Firebase
+          </MdPrimaryTab>
         </MdTabs>
 
         {tab === 0 && (
@@ -174,6 +178,7 @@ export function WorkspaceRoute() {
             }))}
           />
         )}
+        {tab === 4 && <CloudFirebaseTab />}
       </div>
     </div>
   );
