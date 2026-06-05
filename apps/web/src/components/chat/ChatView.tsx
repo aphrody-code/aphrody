@@ -2,7 +2,7 @@
 // empty-state prompt suggestions, and the composer. The heart of open-webui.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MdAssistChip, MdIcon, MdMenuItem } from "@aphrody/m3-react";
+import { MdAssistChip, MdIcon, MdMenuItem, MdCarousel, MdCarouselItem } from "@aphrody/m3-react";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { MessageBubble } from "./MessageBubble.tsx";
 import { Composer } from "./Composer.tsx";
@@ -107,14 +107,34 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
                 Choisissez une suggestion ou saisissez votre propre message.
               </p>
             </div>
-            <div className="owui-suggestions">
-              {(config?.default_prompt_suggestions ?? []).map((s, i) => (
-                <MdAssistChip
-                  key={i}
-                  label={`${s.title[0]} — ${s.title[1]}`}
-                  onClick={() => submit(s.content)}
-                />
-              ))}
+            <div style={{ maxWidth: "600px", width: "100%", marginTop: 20 }}>
+              <MdCarousel layout="multi-browse" showArrows={true}>
+                {(config?.default_prompt_suggestions ?? []).map((s, i) => (
+                  <MdCarouselItem key={i} size="medium" style={{ width: "200px", height: "100px", cursor: "pointer" }} onClick={() => submit(s.content)}>
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 16,
+                        background: "var(--md-sys-color-surface-container-high)",
+                        border: "1px solid var(--md-sys-color-outline-variant)",
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        boxSizing: "border-box",
+                        userSelect: "none"
+                      }}
+                    >
+                      <div style={{ fontWeight: "bold", fontSize: 13, color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.title[0]}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--md-sys-color-on-surface-variant)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {s.title[1]}
+                      </div>
+                    </div>
+                  </MdCarouselItem>
+                ))}
+              </MdCarousel>
             </div>
           </div>
         ) : (

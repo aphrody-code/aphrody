@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   MdAssistChip,
-  MdCircularProgress,
+  MdLoadingIndicator,
   MdElevatedCard,
   MdFilledButton,
   MdFilledTonalButton,
@@ -11,6 +11,7 @@ import {
   MdOutlinedButton,
   MdOutlinedCard,
   MdOutlinedTextField,
+  Md3dGlobe,
 } from "@aphrody/m3-react";
 import { auth, db, storage } from "../../firebase.ts";
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from "firebase/auth";
@@ -220,6 +221,21 @@ export function CloudFirebaseTab() {
             <MdAssistChip label="Cloud Storage" />
           </div>
         </MdElevatedCard>
+
+        <MdElevatedCard style={{ padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div className="owui-row" style={{ gap: 12, alignItems: "center" }}>
+            <MdIcon style={{ fontSize: 36, color: "var(--md-sys-color-primary)" }}>language</MdIcon>
+            <div>
+              <h3 style={{ margin: 0 }}>Réseau Global 3D</h3>
+              <p className="owui-muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                Visualisation WebGPU / Particle Globe
+              </p>
+            </div>
+          </div>
+          <div style={{ width: "100%", height: 110, position: "relative", marginTop: 12, borderRadius: 8, overflow: "hidden", background: "var(--md-sys-color-surface-container-low)" }}>
+            <Md3dGlobe particleCount={1500} speed={0.8} autoRotate={true} />
+          </div>
+        </MdElevatedCard>
       </div>
 
       {/* Authentication */}
@@ -289,7 +305,7 @@ export function CloudFirebaseTab() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto" }}>
             {syncDocs === undefined ? (
               <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
-                <MdCircularProgress indeterminate />
+                <MdLoadingIndicator />
               </div>
             ) : syncDocs.length === 0 ? (
               <p className="owui-muted" style={{ margin: 0, textAlign: "center" }}>Aucun document synchronisé. Envoyez-en un !</p>
@@ -365,7 +381,7 @@ export function CloudFirebaseTab() {
 
             {uploadProgress !== null && (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <MdCircularProgress value={uploadProgress / 100} />
+                <MdLoadingIndicator value={uploadProgress / 100} />
                 <span style={{ fontSize: 13 }}>Téléversement: {Math.round(uploadProgress)}%</span>
               </div>
             )}
