@@ -6,7 +6,6 @@ import type {
   KnowledgeCollection,
   Prompt,
   Tool,
-  AdminUser,
 } from "./types.ts";
 
 export const qk = {
