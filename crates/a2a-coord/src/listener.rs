@@ -41,7 +41,6 @@ pub struct ListenerConfig {
 #[derive(Clone)]
 struct AppState {
     mailbox: Mailbox,
-    manifest_id: String,
 }
 
 /// Combined HTTP surface: coord (`/ping`, `/msg`, `/coord`) + A2A JSON-RPC + agent card.
@@ -70,7 +69,6 @@ pub fn router(cfg: &ListenerConfig) -> Router {
 
     let state = AppState {
         mailbox,
-        manifest_id: cfg.manifest.id.clone(),
     };
 
     let coord = Router::new()

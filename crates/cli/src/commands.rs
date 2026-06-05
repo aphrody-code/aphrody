@@ -726,6 +726,138 @@ impl TerminalCommand for AgyCommand {
     }
 }
 
+/// Resolve the `bxc` binary, first match wins:
+/// 1. `$BXC_BIN` (must exist).
+/// 2. `%LOCALAPPDATA%\bxc\bin\bxc.exe` on Windows.
+/// 3. `$HOME/bxc/bin/bxc` / `$HOME/.local/bin/bxc` on Unix.
+/// 4. `which("bxc")` — PATH lookup.
+pub(crate) fn resolve_bxc_bin() -> Option<std::path::PathBuf> {
+    if let Ok(explicit) = std::env::var("BXC_BIN") {
+        let p = std::path::PathBuf::from(explicit.trim());
+        if !explicit.trim().is_empty() && p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let p = std::path::Path::new(&local).join("bxc").join("bin").join("bxc.exe");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    if let Some(home) = std::env::var_os("HOME") {
+        for rel in [["bxc", "bin", "bxc"], [".local", "bin", "bxc"], [".local", "share/bxc", "bin/bxc"]] {
+            let mut p = std::path::PathBuf::from(&home);
+            for seg in rel {
+                p.push(seg);
+            }
+            if p.exists() {
+                return Some(p);
+            }
+        }
+    }
+
+    which::which("bxc").ok()
+}
+
+/// Implementation of `aphrody bxc <args…>` — a thin, scriptable forwarder to Bxc.
+pub(crate) struct BxcCommand {
+    pub args: Vec<String>,
+}
+
+#[async_trait]
+impl TerminalCommand for BxcCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        let bin_path = resolve_bxc_bin().ok_or_else(|| {
+            miette::miette!(
+                "Bxc engine (`bxc`) introuvable.\n\n\
+                 Résolution tentée : $BXC_BIN > $HOME/.local/bin/bxc > PATH.\n\
+                 • Installer Bxc, puis re-run, ou\n\
+                 • Override : `BXC_BIN=/abs/path aphrody bxc …`."
+            )
+        })?;
+
+        let status = std::process::Command::new(&bin_path)
+            .args(&self.args)
+            .status()
+            .map_err(|e| miette::miette!("Échec du spawn `{}`: {e}", bin_path.display()))?;
+
+        if !status.success() {
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
+        }
+        Ok(())
+    }
+}
+
+/// Resolve the `n2b` binary, first match wins:
+/// 1. `$N2B_BIN` (must exist).
+/// 2. `%LOCALAPPDATA%\n2b\bin\n2b.exe` on Windows.
+/// 3. `$HOME/n2b/bin/n2b` / `$HOME/.local/bin/n2b` on Unix.
+/// 4. `which("n2b")` — PATH lookup.
+pub(crate) fn resolve_n2b_bin() -> Option<std::path::PathBuf> {
+    if let Ok(explicit) = std::env::var("N2B_BIN") {
+        let p = std::path::PathBuf::from(explicit.trim());
+        if !explicit.trim().is_empty() && p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let p = std::path::Path::new(&local).join("n2b").join("bin").join("n2b.exe");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    if let Some(home) = std::env::var_os("HOME") {
+        for rel in [["n2b", "bin", "n2b"], [".local", "bin", "n2b"], [".local", "share/n2b", "bin/n2b"]] {
+            let mut p = std::path::PathBuf::from(&home);
+            for seg in rel {
+                p.push(seg);
+            }
+            if p.exists() {
+                return Some(p);
+            }
+        }
+    }
+
+    which::which("n2b").ok()
+}
+
+/// Implementation of `aphrody n2b <args…>` — a thin, scriptable forwarder to n2b.
+pub(crate) struct N2bCommand {
+    pub args: Vec<String>,
+}
+
+#[async_trait]
+impl TerminalCommand for N2bCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        let bin_path = resolve_n2b_bin().ok_or_else(|| {
+            miette::miette!(
+                "n2b tool (`n2b`) introuvable.\n\n\
+                 Résolution tentée : $N2B_BIN > $HOME/.local/bin/n2b > PATH.\n\
+                 • Installer n2b, puis re-run, ou\n\
+                 • Override : `N2B_BIN=/abs/path aphrody n2b …`."
+            )
+        })?;
+
+        let status = std::process::Command::new(&bin_path)
+            .args(&self.args)
+            .status()
+            .map_err(|e| miette::miette!("Échec du spawn `{}`: {e}", bin_path.display()))?;
+
+        if !status.success() {
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
+        }
+        Ok(())
+    }
+}
+
 pub(crate) struct SearchCommand {
     pub query: Vec<String>,
 }

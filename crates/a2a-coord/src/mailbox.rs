@@ -2,7 +2,7 @@
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Write},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use crate::envelope::Envelope;

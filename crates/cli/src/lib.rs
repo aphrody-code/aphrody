@@ -167,6 +167,20 @@ enum Commands {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
+    /// Forward vers le binaire natif Bxc (`bxc`).
+    ///
+    /// Résolution : $BXC_BIN > $HOME/.local/bin/bxc > PATH.
+    Bxc {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+    /// Forward vers le binaire natif n2b (`n2b`).
+    ///
+    /// Résolution : $N2B_BIN > $HOME/.local/bin/n2b > PATH.
+    N2b {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
     /// Boucle de codage autonome pour le CLI Antigravity (`agy`) via son hook
     /// `AfterAgent`. Câblé par le plugin aphrody-agy ; `start`/`stop`/`status`
     /// pilotent la boucle, `hook` est le driver invoqué par agy.
@@ -1059,6 +1073,12 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         Some(Commands::Agy { args }) => {
             commands::AgyCommand { args }.execute(ctx).await?;
         },
+        Some(Commands::Bxc { args }) => {
+            commands::BxcCommand { args }.execute(ctx).await?;
+        },
+        Some(Commands::N2b { args }) => {
+            commands::N2bCommand { args }.execute(ctx).await?;
+        },
         Some(Commands::Term { addr, shell, cwd }) => {
             commands::TermCommand { addr, shell, cwd }.execute(ctx).await?;
         },
@@ -1615,6 +1635,8 @@ pub fn run_wasm() {
                 Commands::Search { .. } => "search",
                 Commands::Gemini { .. } => "gemini",
                 Commands::Agy { .. } => "agy",
+                Commands::Bxc { .. } => "bxc",
+                Commands::N2b { .. } => "n2b",
                 Commands::Doctor { .. } => "doctor",
                 Commands::Term { .. } => "term",
                 Commands::Notify { .. } => "notify",

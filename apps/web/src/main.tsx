@@ -24,6 +24,16 @@ const queryClient = new QueryClient({
 
 // Restore session from a persisted token (store.user isn't persisted).
 async function boot() {
+  // Extract token from URL query string if present
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get("token");
+  if (urlToken && urlToken.length === 16) {
+    auth.set(urlToken);
+    // Remove token from URL for security
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
   if (auth.token) {
     try {
       const user = await api.getSession();

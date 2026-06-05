@@ -239,6 +239,16 @@ pub struct AphrodyMcpCallRequest {
     pub config: Option<String>,
 }
 
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct N2bRequest {
+    #[schemars(description = "Path to the directory or file to scan, fix, or migrate (default: current directory).")]
+    pub path: Option<String>,
+    #[schemars(description = "Execution mode: 'scan' (default, read-only analysis), \
+                              'fix' (apply safe automatic refactorings), or \
+                              'migrate' (full migration including environment and lockfile changes).")]
+    pub mode: Option<String>,
+}
+
 // ---------------------------------------------------------------------------
 // context7 HTTP helper — helper for the public
 // Context7 docs API (https://context7.com/api/v1/{search,<libraryId>}).
@@ -1616,6 +1626,65 @@ impl GoogleMcpServer {
                 e.to_string().replace('"', "'")
             )
         })
+    }
+
+    // -----------------------------------------------------------------------
+    // n2b — run the n2b migration tool on the given path.
+    // -----------------------------------------------------------------------
+    #[tool(description = "Scan and migrate a Node.js codebase to Bun using n2b. \
+                          Detects Node-specific patterns, shims, polyfills, package configurations, \
+                          and automatically migrates or fixes them.")]
+    async fn n2b(
+        &self,
+        Parameters(N2bRequest { path, mode }): Parameters<N2bRequest>,
+    ) -> String {
+        let n2b_path = std::env::var("N2B_BIN")
+            .ok()
+            .map(std::path::PathBuf::from)
+            .filter(|p| p.is_file())
+            .or_else(|| which::which("n2b").ok())
+            .unwrap_or_else(|| std::path::PathBuf::from("n2b"));
+
+        let mut cmd = std::process::Command::new(&n2b_path);
+        
+        let target_path = path.unwrap_or_else(|| ".".to_string());
+        cmd.arg(&target_path);
+
+        let m = mode.unwrap_or_else(|| "scan".to_string());
+        match m.as_str() {
+            "fix" => {
+                cmd.arg("--fix");
+            }
+            "migrate" => {
+                cmd.arg("--migrate");
+            }
+            _ => {}
+        }
+        cmd.arg("--report").arg("json");
+        cmd.arg("--agent"); // Emit pure JSON without colors / stderr pollution on stdout
+
+        match cmd.output() {
+            Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                if output.status.success() {
+                    stdout
+                } else {
+                    serde_json::to_string_pretty(&json!({
+                        "error": "N2B_EXECUTION",
+                        "code": output.status.code(),
+                        "stdout": stdout,
+                        "stderr": stderr,
+                    }))
+                    .unwrap_or_else(|_| "Failed to format JSON error".to_string())
+                }
+            }
+            Err(e) => serde_json::to_string_pretty(&json!({
+                "error": "N2B_SPAWN",
+                "reason": e.to_string(),
+            }))
+            .unwrap_or_else(|_| "Failed to format JSON error".to_string()),
+        }
     }
 }
 

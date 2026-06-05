@@ -5645,6 +5645,7 @@ dependencies = [
  "tokio-tungstenite",
  "tracing",
  "tracing-subscriber",
+ "which 8.0.2",
  "windows",
 ]
 

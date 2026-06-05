@@ -193,35 +193,57 @@ function completionStream(body: CompletionRequest): Response {
 }
 
 
+const EXPECTED_TOKEN = process.env.WEB_APP_TOKEN ?? "m7K2p9Q4x1R8w5Z3";
+
+function isAuthorized(req: Request): boolean {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7) === EXPECTED_TOKEN;
+  }
+  const url = new URL(req.url);
+  return url.searchParams.get("token") === EXPECTED_TOKEN;
+}
+
+type Handler = (req: any) => Response | Promise<Response>;
+
+function withAuth(handler: Handler): Handler {
+  return (req) => {
+    if (!isAuthorized(req)) {
+      return json({ detail: "Unauthorized" }, 401);
+    }
+    return handler(req);
+  };
+}
+
 const server = Bun.serve({
   port: PORT,
   development: process.env.NODE_ENV !== "production",
   routes: {
-    "/api/config": () => json(CONFIG),
+    "/api/config": withAuth(() => json(CONFIG)),
 
     "/api/auths/signin": {
-      POST: async (req) => {
+      POST: withAuth(async (req) => {
         const { email } = (await req.json().catch(() => ({}))) as { email?: string };
         return json({ ...SESSION_USER, email: email || SESSION_USER.email });
-      },
+      }),
     },
     "/api/auths/signup": {
-      POST: async (req) => {
+      POST: withAuth(async (req) => {
         const body = (await req.json().catch(() => ({}))) as { name?: string; email?: string };
         return json({
           ...SESSION_USER,
           name: body.name || SESSION_USER.name,
           email: body.email || SESSION_USER.email,
         });
-      },
+      }),
     },
-    "/api/auths": () => json(SESSION_USER),
+    "/api/auths": withAuth(() => json(SESSION_USER)),
 
-    "/api/models": () => json(MODELS),
+    "/api/models": withAuth(() => json(MODELS)),
 
-    "/api/chats": () => json(listItems()),
+    "/api/chats": withAuth(() => json(listItems())),
     "/api/chats/new": {
-      POST: async (req) => {
+      POST: withAuth(async (req) => {
         const incoming = (await req.json().catch(() => ({}))) as Partial<Chat>;
         const id = incoming.id ?? `c-${Bun.randomUUIDv7()}`;
         const chat: Chat = {
@@ -234,43 +256,43 @@ const server = Bun.serve({
         };
         chats.set(id, chat);
         return json(chat);
-      },
+      }),
     },
     "/api/chats/:id": {
-      GET: (req) => {
+      GET: withAuth((req) => {
         const chat = chats.get(req.params.id);
         return chat ? json(chat) : json({ detail: "Not found" }, 404);
-      },
-      POST: async (req) => {
+      }),
+      POST: withAuth(async (req) => {
         const patch = (await req.json().catch(() => ({}))) as Partial<Chat>;
         const existing = chats.get(req.params.id);
         if (!existing) return json({ detail: "Not found" }, 404);
         const updated: Chat = { ...existing, ...patch, id: existing.id, updated_at: Date.now() };
         chats.set(existing.id, updated);
         return json(updated);
-      },
-      DELETE: (req) => {
+      }),
+      DELETE: withAuth((req) => {
         chats.delete(req.params.id);
         return json({ ok: true });
-      },
+      }),
     },
 
     "/api/chat/completions": {
-      POST: async (req) => {
+      POST: withAuth(async (req) => {
         const body = (await req.json()) as CompletionRequest;
         return completionStream(body);
-      },
+      }),
     },
 
-    "/api/users": () => json(ADMIN_USERS),
-    "/api/workspace/models": () => json(WORKSPACE_MODELS),
-    "/api/workspace/knowledge": () => json(KNOWLEDGE),
-    "/api/workspace/prompts": () => json(PROMPTS),
-    "/api/workspace/tools": () => json(TOOLS),
+    "/api/users": withAuth(() => json(ADMIN_USERS)),
+    "/api/workspace/models": withAuth(() => json(WORKSPACE_MODELS)),
+    "/api/workspace/knowledge": withAuth(() => json(KNOWLEDGE)),
+    "/api/workspace/prompts": withAuth(() => json(PROMPTS)),
+    "/api/workspace/tools": withAuth(() => json(TOOLS)),
 
     // aphrody desktop port: CLI bridge + host metadata + linked account.
     "/api/run": {
-      POST: async (req) => {
+      POST: withAuth(async (req) => {
         const { args } = (await req.json().catch(() => ({ args: [] }))) as { args?: string[] };
         if (!Array.isArray(args)) return json({ code: 1, stdout: "", stderr: "Invalid args" }, 400);
 
@@ -288,10 +310,10 @@ const server = Bun.serve({
           console.error("Failed to run real aphrody binary, falling back to mock:", err);
           return json(runMock(args));
         }
-      },
+      }),
     },
-    "/api/meta": () => json(META),
-    "/api/account": () => json(ACCOUNT),
+    "/api/meta": withAuth(() => json(META)),
+    "/api/account": withAuth(() => json(ACCOUNT)),
 
     // SPA + bundling catch-all (HTML import auto-bundles main.tsx + CSS).
     "/*": index,
@@ -299,3 +321,4 @@ const server = Bun.serve({
 });
 
 console.log(`Open WebUI · M3  →  http://localhost:${server.port}`);
+

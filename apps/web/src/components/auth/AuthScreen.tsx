@@ -8,42 +8,38 @@ import {
   MdElevatedCard,
   MdFilledButton,
   MdIcon,
-  MdOutlinedButton,
   MdOutlinedTextField,
-  MdTextButton,
 } from "@aphrody/m3-react";
-import { api } from "../../api/client.ts";
+import { api, auth } from "../../api/client.ts";
 import { useConfig } from "../../api/queries.ts";
 import { session } from "../../store.ts";
 
 export function AuthScreen() {
   const { data: config } = useConfig();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("ada@example.com");
-  const [password, setPassword] = useState("password");
+  const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const submit = async () => {
+    if (token.length !== 16) {
+      setError("Le token doit faire exactement 16 caracteres.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const user =
-        mode === "signin"
-          ? await api.signIn(email, password)
-          : await api.signUp(name || "New User", email, password);
-      session.signIn(user);
+      auth.set(token);
+      const user = await api.getSession();
+      session.signIn({ ...user, token });
       void navigate({ to: "/", replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Authentication failed");
+      auth.clear();
+      setError("Token invalide ou serveur injoignable.");
     } finally {
       setBusy(false);
     }
   };
-
-  const providers = Object.entries(config?.oauth.providers ?? {});
 
   return (
     <div className="owui-auth">
@@ -52,33 +48,21 @@ export function AuthScreen() {
           <MdIcon
             style={{ fontSize: 40, color: "var(--md-sys-color-primary)" } as React.CSSProperties}
           >
-            forum
+            lock
           </MdIcon>
           <h1 style={{ margin: "6px 0 0", fontSize: 24 }}>{config?.name ?? "Open WebUI"}</h1>
           <p className="owui-muted" style={{ margin: "2px 0 0" }}>
-            {mode === "signin" ? "Welcome back" : "Create your account"}
+            Veuillez entrer votre token d'acces a 16 caracteres
           </p>
         </div>
 
         <div className="owui-stack">
-          {mode === "signup" && (
-            <MdOutlinedTextField
-              label="Name"
-              value={name}
-              onInput={(e) => setName((e.target as HTMLInputElement).value)}
-            />
-          )}
           <MdOutlinedTextField
-            label="Email"
-            type="email"
-            value={email}
-            onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
-          />
-          <MdOutlinedTextField
-            label="Password"
+            label="Token d'Acces"
             type="password"
-            value={password}
-            onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
+            value={token}
+            onInput={(e) => setToken((e.target as HTMLInputElement).value)}
+            maxLength={16}
           />
         </div>
 
@@ -90,36 +74,10 @@ export function AuthScreen() {
           {busy ? (
             <MdCircularProgress indeterminate slot="icon" />
           ) : (
-            <MdIcon slot="icon">login</MdIcon>
+            <MdIcon slot="icon">vpn_key</MdIcon>
           )}
-          {mode === "signin" ? "Sign in" : "Sign up"}
+          Se connecter
         </MdFilledButton>
-
-        {providers.length > 0 && (
-          <>
-            <div className="owui-row" style={{ justifyContent: "center" }}>
-              <span className="owui-muted" style={{ fontSize: 12 }}>
-                or continue with
-              </span>
-            </div>
-            <div className="owui-stack">
-              {providers.map(([key, label]) => (
-                <MdOutlinedButton key={key} onClick={() => void submit()}>
-                  <MdIcon slot="icon">account_circle</MdIcon>
-                  {label}
-                </MdOutlinedButton>
-              ))}
-            </div>
-          </>
-        )}
-
-        {config?.features.enable_signup && (
-          <div style={{ textAlign: "center" }}>
-            <MdTextButton onClick={() => setMode((m) => (m === "signin" ? "signup" : "signin"))}>
-              {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
-            </MdTextButton>
-          </div>
-        )}
       </MdElevatedCard>
     </div>
   );

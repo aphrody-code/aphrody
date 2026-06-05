@@ -53,6 +53,7 @@ gemini-runtime     = { path = "../gemini-runtime" }
 aphrody-firefly    = { path = "../aphrody-firefly" }
 # Native screen/window capture — backs the screen_capture MCP tool.
 aphrody-capture    = { path = "../aphrody-capture" }
+which              = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Voice MCP tool wiring (voice_synthesize + voice_transcribe). The voice_tools

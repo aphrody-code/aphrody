@@ -219,6 +219,8 @@ pub async fn login_with_timeout(timeout_secs: u64) -> Result<OAuthToken, SdkErro
 
     // Best-effort browser launch; if it fails the user can paste the URL.
     open_in_browser(&url);
+    eprintln!("Ouvrez cette URL dans votre navigateur pour vous connecter :\n\n  {}\n", url);
+    eprintln!("Note : Si vous utilisez un serveur distant (VPS), configurez d'abord un tunnel SSH pour rediriger le port 9109 :\n  ssh -L 9109:127.0.0.1:9109 <votre-serveur>\n");
     tracing::info!("Opened Google sign-in in your browser. Complete the consent screen.");
 
     let callback = timeout(Duration::from_secs(timeout_secs), accept_callback(&listener))

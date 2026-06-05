@@ -53,6 +53,8 @@ Allowed siblings (all optional):
 | [`start`](../../.claude/plugins/aphrody/skills/start/SKILL.md)                 | `/start`, "lance", "go"            | Continuous autonomous execution mode (drives PLAN.md)    |
 | [`vps-commander`](../../.claude/plugins/aphrody/skills/vps-commander/SKILL.md) | "start the tunnel"                 | OVH VPS SSH-tunnel operator (chrome/postgres/bun/SOCKS5) |
 | [`google-design`](../../.claude/plugins/aphrody/skills/google-design/SKILL.md) | `/google-design`, any M3 / Gemini / Google Sans / token / color / shape / motion / adaptive question | Canonical Google/Material 3 authority — grounds answers in `docs/design/` + `crates/m3-tokens` + `mui-rs`; reading list = [`notebook-google-design-corpus.md`](../design/notebook-google-design-corpus.md) |
+| [`n2b`](../../.claude/plugins/aphrody/skills/n2b/SKILL.md)                     | `/n2b`, "n2b", "Node to Bun"       | Scan and migrate Node.js codebase to Bun using n2b.       |
+| [`bxc`](../../.claude/plugins/aphrody/skills/bxc/SKILL.md)                     | `/bxc`, "bxc", "crawler"           | Bxc stealth browser and scraping engine.                  |
 
 ### 3.2 Project agents (`/.claude/agents/`)
 

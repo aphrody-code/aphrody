@@ -89,7 +89,7 @@ pub fn new_id(prefix: &str) -> String {
 }
 
 mod hex {
-    pub fn encode(bytes: [u8; 4]) -> String {
+    pub(super) fn encode(bytes: [u8; 4]) -> String {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
 }
