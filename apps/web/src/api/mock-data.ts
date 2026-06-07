@@ -29,6 +29,13 @@ export const SESSION_USER: SessionUser = {
 // not third-party hosted models. The admin/ops tooling lives in the private app.
 export const MODELS: Model[] = [
   {
+    id: "gemini-web",
+    name: "Gemini (Web)",
+    description: "Google Gemini, branche en natif via la session web aphrody (reponses reelles).",
+    owned_by: "aphrody",
+    capabilities: { vision: true, web_search: true },
+  },
+  {
     id: "shenron",
     name: "Shenron",
     description: "Custom Dragon Ball RAG assistant (in-house LLM + knowledge base).",
@@ -61,7 +68,7 @@ export const MODELS: Model[] = [
 export const CONFIG: BackendConfig = {
   name: "aphrody",
   version: "0.1.0",
-  default_models: ["shenron"],
+  default_models: ["gemini-web"],
   default_prompt_suggestions: [
     {
       title: ["Explain a concept", "like I'm five"],

@@ -17,7 +17,7 @@ export interface Model {
   id: string;
   name: string;
   description?: string;
-  owned_by: "ollama" | "openai" | "arena";
+  owned_by: "ollama" | "openai" | "arena" | "aphrody";
   capabilities?: {
     vision?: boolean;
     web_search?: boolean;
@@ -145,6 +145,8 @@ export interface CompletionRequest {
   messages: { role: Role; content: string }[];
   stream: true;
   temperature?: number;
+  /** Optional chat id — lets the server keep one Gemini thread per conversation. */
+  chat_id?: string;
 }
 
 /** Parsed SSE delta, mirrors open-webui's TextStreamUpdate. */

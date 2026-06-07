@@ -2,12 +2,13 @@
 // empty-state prompt suggestions, and the composer. The heart of open-webui.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MdIcon, MdMenuItem, MdCarousel, MdCarouselItem } from "@aphrody/m3-react";
+import { MdIcon, MdIconButton, MdMenuItem, MdCarousel, MdCarouselItem } from "@aphrody/m3-react";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { MessageBubble } from "./MessageBubble.tsx";
 import { Composer } from "./Composer.tsx";
 import { Menu } from "../ui/Menu.tsx";
 import { useChatSession } from "./useChatSession.ts";
+import { useTts } from "./useTts.ts";
 import { useConfig, useModels } from "../../api/queries.ts";
 import type { Chat } from "../../api/types.ts";
 
@@ -16,11 +17,13 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
   const { data: models = [] } = useModels();
   const session = useChatSession(chat);
   const { messages, streaming } = session;
+  const tts = useTts();
 
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  const spokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     const fallback = chat?.models?.[0] ?? config?.default_models?.[0] ?? models[0]?.id ?? "";
@@ -38,6 +41,16 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
     if (!el) return;
     stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
+
+  // Read each freshly-finished assistant message aloud (when TTS is enabled).
+  useEffect(() => {
+    if (streaming) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !last.done || !last.content) return;
+    if (last.id === spokenRef.current) return;
+    spokenRef.current = last.id;
+    tts.speak(last.content);
+  }, [streaming, messages, tts]);
 
   const submit = (text: string) => {
     stick.current = true;
@@ -61,6 +74,16 @@ export function ChatView({ chat }: { chat: Chat | undefined }) {
         >
           {chat?.title}
         </span>
+        {tts.supported && (
+          <MdIconButton
+            onClick={tts.toggle}
+            aria-label={tts.enabled ? "Couper la lecture vocale" : "Activer la lecture vocale"}
+            title={tts.enabled ? "Lecture vocale : activee" : "Lecture vocale : coupee"}
+            aria-pressed={tts.enabled}
+          >
+            <MdIcon>{tts.enabled ? "volume_up" : "volume_off"}</MdIcon>
+          </MdIconButton>
+        )}
         <Menu
           trigger={({ toggle }) => (
             <button

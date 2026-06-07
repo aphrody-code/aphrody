@@ -66,7 +66,7 @@ export function useChatSession(chat: Chat | undefined): ChatSession {
       let usage: ChatMessage["usage"];
       try {
         for await (const upd of streamCompletion(
-          { model, messages: path, stream: true },
+          { model, messages: path, stream: true, chat_id: chat?.id },
           controller.signal,
         )) {
           if (upd.usage) usage = upd.usage;

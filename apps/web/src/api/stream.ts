@@ -2,6 +2,7 @@
 // reads the fetch ReadableStream, splits on blank-line SSE frames, yields deltas.
 
 import type { CompletionRequest, StreamUpdate } from "./types.ts";
+import { auth } from "./client.ts";
 
 interface OpenAIChunk {
   choices?: { delta?: { content?: string }; finish_reason?: string | null }[];
@@ -14,7 +15,10 @@ export async function* streamCompletion(
 ): AsyncGenerator<StreamUpdate> {
   const res = await fetch("/api/chat/completions", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(auth.token ? { authorization: `Bearer ${auth.token}` } : {}),
+    },
     body: JSON.stringify(body),
     signal,
   });
