@@ -1,7 +1,7 @@
 // "/auth" — full-screen M3 sign-in / sign-up with OAuth buttons sourced from
 // the backend config. Authenticates against the mock backend, then enters the app.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   MdCircularProgress,
@@ -21,6 +21,21 @@ export function AuthScreen() {
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // Surface OAuth callback failures (the server redirects back with ?error=...).
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get("error");
+    if (!reason) return;
+    const messages: Record<string, string> = {
+      oauth_state: "Session de connexion expiree, reessaie.",
+      oauth_token: "Echange de jeton Google echoue.",
+      not_allowed: "Ce compte Google n'est pas autorise.",
+    };
+    setError(messages[reason] ?? "Connexion Google echouee.");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("error");
+    window.history.replaceState({}, "", url.toString());
+  }, []);
 
   const submit = async () => {
     if (token.length !== 16) {
@@ -42,31 +57,12 @@ export function AuthScreen() {
     }
   };
 
-  const loginWithGoogle = async () => {
+  // Real Google OAuth: a full-page navigation to the server's authorize endpoint,
+  // which redirects to Google's consent screen. After consent the server callback
+  // verifies the identity and sends us back signed in.
+  const loginWithGoogle = () => {
     setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auths/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        throw new Error("Erreur de connexion Google");
-      }
-      const data = await res.json();
-      if (data.user && data.user.token) {
-        auth.set(data.user.token);
-        session.signIn(data.user);
-        void navigate({ to: "/", replace: true });
-      } else {
-        throw new Error("Données de connexion invalides");
-      }
-    } catch {
-      auth.clear();
-      setError("Connexion Google échouée ou serveur injoignable.");
-    } finally {
-      setBusy(false);
-    }
+    window.location.href = "/api/auths/google";
   };
 
   return (

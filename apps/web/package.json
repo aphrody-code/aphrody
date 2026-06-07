@@ -11,7 +11,8 @@
     "start": "bun src/server.ts",
     "build": "bun build ./src/index.html --outdir dist --minify --target browser",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "smoke": "bun src/smoke.ts"
+    "smoke": "bun src/smoke.ts",
+    "postinstall": "bun scripts/link-bxc.ts"
   },
   "dependencies": {
     "@aphrody/m3-react": "workspace:*",

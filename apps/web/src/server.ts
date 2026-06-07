@@ -17,6 +17,7 @@ import {
   WORKSPACE_MODELS,
 } from "./api/mock-data.ts";
 import type { Chat, ChatListItem, CompletionRequest } from "./api/types.ts";
+import { GEMINI_WEB_MODEL_ID, geminiWebStream } from "./api/gemini-web-bridge.ts";
 import { ACCOUNT, META, runMock } from "./aphrody/server-mock.ts";
 import {
   getSemanticCache,
@@ -254,6 +255,86 @@ function withAuth(handler: Handler): Handler {
   };
 }
 
+// --- Real Google OAuth 2.0 (Authorization Code + PKCE) ---------------------
+// Replaces the previous fake endpoint, which leaked the API key / service account
+// / client secret / cookies to the browser and handed out the app token with no
+// authentication at all. This flow verifies a real Google identity, restricted to
+// the owner's account; on success the browser is sent back to the app carrying the
+// app token that main.tsx consumes, so the existing session model keeps working.
+//
+// NOTE: the configured Google client is a "Desktop" client, so Google only
+// accepts loopback redirect URIs (http://localhost[:port]/...). Reach aphrody via
+// http://localhost:8082 for the button to work, or set GOOGLE_OAUTH_REDIRECT_URI
+// to a redirect URI registered on the OAuth client.
+interface GoogleOAuthClient {
+  clientId: string;
+  clientSecret: string;
+  authUri: string;
+  tokenUri: string;
+}
+
+const GOOGLE_OAUTH_CLIENT: GoogleOAuthClient | null = await (async () => {
+  const path =
+    process.env.GOOGLE_OAUTH_CLIENT_FILE ??
+    "/home/ubuntu/aphrody/secrets/client_secret_468000409790-oubhlpdp9rfb569vre9l1ikpdq4lc3ru.apps.googleusercontent.com.json";
+  try {
+    const raw = (await Bun.file(path).json()) as {
+      installed?: Record<string, string>;
+      web?: Record<string, string>;
+    };
+    const c = raw.installed ?? raw.web;
+    if (!c?.client_id || !c?.client_secret) return null;
+    return {
+      clientId: c.client_id,
+      clientSecret: c.client_secret,
+      // The client file ships the legacy v1 authorize URL; always use the current
+      // v2 endpoint (Google's documented endpoint for the installed-app + PKCE flow).
+      authUri: "https://accounts.google.com/o/oauth2/v2/auth",
+      tokenUri: c.token_uri ?? "https://oauth2.googleapis.com/token",
+    };
+  } catch {
+    return null;
+  }
+})();
+
+const GOOGLE_ALLOWED_EMAIL = (
+  process.env.GOOGLE_ALLOWED_EMAIL ?? "contact@aphrody-code.dev"
+).toLowerCase();
+
+// Short-lived PKCE/state store (single user; entries expire after 10 minutes).
+const oauthFlows = new Map<string, { verifier: string; created: number }>();
+
+function base64url(bytes: Uint8Array): string {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function pkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64url(new Uint8Array(digest)) };
+}
+
+// The browser-facing origin. Behind the aphrody reverse proxy the request host is
+// the backend (127.0.0.1:3210), so honour X-Forwarded-Host/Proto to reconstruct
+// the origin the user actually used (e.g. http://localhost:8082).
+function publicOrigin(req: Request): string {
+  const url = new URL(req.url);
+  const host = req.headers.get("x-forwarded-host") || url.host;
+  const proto = req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+  return `${proto}://${host}`;
+}
+
+function googleRedirectUri(req: Request): string {
+  if (process.env.GOOGLE_OAUTH_REDIRECT_URI) return process.env.GOOGLE_OAUTH_REDIRECT_URI;
+  return `${publicOrigin(req)}/api/auths/google/callback`;
+}
+
+function authErrorRedirect(req: Request, reason: string): Response {
+  return Response.redirect(`${publicOrigin(req)}/auth?error=${encodeURIComponent(reason)}`, 302);
+}
+
 const server = Bun.serve({
   port: PORT,
   development: process.env.NODE_ENV !== "production",
@@ -319,6 +400,10 @@ const server = Bun.serve({
     "/api/chat/completions": {
       POST: withAuth(async (req) => {
         const body = (await req.json()) as CompletionRequest;
+        // Native Gemini (web) model → real Gemini answer; everything else → mock/RAG.
+        if (body.model === GEMINI_WEB_MODEL_ID) {
+          return geminiWebStream(body);
+        }
         return completionStream(body);
       }),
     },
@@ -501,63 +586,74 @@ const server = Bun.serve({
     "/api/meta": withAuth(() => json(META)),
     "/api/account": withAuth(() => json(ACCOUNT)),
 
+    // Step 1: build the Google consent URL (PKCE + state) and redirect there.
     "/api/auths/google": {
-      POST: async (req) => {
-        let googleProfile: any = {};
-        try {
-          const binPath = "/home/ubuntu/.local/bin/aphrody";
-          const proc = Bun.spawn([binPath, "antigravity", "whoami", "--json"], {
-            stdout: "pipe",
-            stderr: "pipe",
-          });
-          const stdout = await new Response(proc.stdout).text();
-          googleProfile = JSON.parse(stdout);
-        } catch (err) {
-          console.error("Failed to run whoami, fallback profile:", err);
-          googleProfile = {
-            email: "contact@aphrody-code.dev",
-            name: "Yohan Pierre",
-            picture: "https://lh3.googleusercontent.com/a/ACg8ocLkl45UDyENhglg8S50w0TGnCAl9I9TxV59fbJwfP--R2qO63EfnA=s96-c",
-            given_name: "Yohan",
-            family_name: "Pierre",
-            id: "101187968385849974848"
-          };
+      GET: async (req) => {
+        if (!GOOGLE_OAUTH_CLIENT) return json({ detail: "Google OAuth not configured" }, 500);
+        const now = Date.now();
+        for (const [k, v] of oauthFlows) if (now - v.created > 600_000) oauthFlows.delete(k);
+        const state = crypto.randomUUID();
+        const { verifier, challenge } = await pkcePair();
+        oauthFlows.set(state, { verifier, created: now });
+        const u = new URL(GOOGLE_OAUTH_CLIENT.authUri);
+        u.searchParams.set("client_id", GOOGLE_OAUTH_CLIENT.clientId);
+        u.searchParams.set("redirect_uri", googleRedirectUri(req));
+        u.searchParams.set("response_type", "code");
+        u.searchParams.set("scope", "openid email profile");
+        u.searchParams.set("state", state);
+        u.searchParams.set("code_challenge", challenge);
+        u.searchParams.set("code_challenge_method", "S256");
+        u.searchParams.set("prompt", "select_account");
+        return Response.redirect(u.toString(), 302);
+      },
+    },
+
+    // Step 2: Google redirects here with a code; exchange it, verify the identity
+    // is the allowed owner, then send the browser back to the app signed in.
+    "/api/auths/google/callback": {
+      GET: async (req) => {
+        if (!GOOGLE_OAUTH_CLIENT) return json({ detail: "Google OAuth not configured" }, 500);
+        const url = new URL(req.url);
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        const flow = state ? oauthFlows.get(state) : null;
+        if (!code || !flow) return authErrorRedirect(req, "oauth_state");
+        oauthFlows.delete(state!);
+
+        const tokenRes = await fetch(GOOGLE_OAUTH_CLIENT.tokenUri, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            code,
+            client_id: GOOGLE_OAUTH_CLIENT.clientId,
+            client_secret: GOOGLE_OAUTH_CLIENT.clientSecret,
+            redirect_uri: googleRedirectUri(req),
+            grant_type: "authorization_code",
+            code_verifier: flow.verifier,
+          }),
+        });
+        if (!tokenRes.ok) {
+          console.error("[oauth] token exchange failed:", tokenRes.status, await tokenRes.text());
+          return authErrorRedirect(req, "oauth_token");
+        }
+        const tok = (await tokenRes.json()) as { access_token?: string };
+        if (!tok.access_token) return authErrorRedirect(req, "oauth_token");
+
+        const profile = (await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+          headers: { authorization: `Bearer ${tok.access_token}` },
+        }).then((r) => r.json())) as { email?: string };
+
+        if (!profile.email || profile.email.toLowerCase() !== GOOGLE_ALLOWED_EMAIL) {
+          console.warn("[oauth] rejected non-allowed account:", profile.email);
+          return authErrorRedirect(req, "not_allowed");
         }
 
-        const cookies = req.headers.get("cookie") ?? "";
-
-        let serviceAccount: any = {};
-        try {
-          serviceAccount = await Bun.file("/home/ubuntu/aphrody/secrets/aphrody-bot.json").json();
-        } catch {}
-
-        let clientSecret: any = {};
-        try {
-          clientSecret = await Bun.file("/home/ubuntu/aphrody/secrets/client_secret_468000409790-oubhlpdp9rfb569vre9l1ikpdq4lc3ru.apps.googleusercontent.com.json").json();
-        } catch {}
-
-        const mixedData = {
-          connected: true,
-          user: {
-            id: googleProfile.id || "u-google",
-            name: googleProfile.name || "Yohan Pierre",
-            email: googleProfile.email || "contact@aphrody-code.dev",
-            profile_image_url: googleProfile.picture || "/favicon.png",
-            role: "admin",
-            token: EXPECTED_TOKEN,
-          },
-          mix: {
-            google_api_key: process.env.GOOGLE_API_KEY || "AIzaSyCDn0U6iX_J6bF0mGarEYvYx2dKrQ_XRrQ",
-            gcp_service_account: serviceAccount.client_email || process.env.GCP_SERVICE_ACCOUNT || "",
-            client_id: clientSecret.installed?.client_id || "",
-            project_id: serviceAccount.project_id || "aphrody",
-            cookies: cookies,
-            scopes: ["whoami", "gemini-api", "cloud-platform"],
-          }
-        };
-
-        return json(mixedData);
-      }
+        // Real Google identity verified -> grant the app session (token consumed
+        // by main.tsx) and drop the user on the home page signed in.
+        const dest = new URL("/", publicOrigin(req));
+        dest.searchParams.set("token", EXPECTED_TOKEN);
+        return Response.redirect(dest.toString(), 302);
+      },
     },
 
     "/assets/*": {

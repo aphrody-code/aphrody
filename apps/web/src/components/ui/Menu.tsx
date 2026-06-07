@@ -1,6 +1,9 @@
-// Reusable anchored M3 menu. Wires md-menu's anchorElement + light-dismiss
-// (the native `closed` event) back into React state via a ref, so it stays in
-// sync no matter how the menu is dismissed.
+// Reusable anchored M3 menu. Renders md-menu in the top layer (positioning
+// "popover") so it never clips, mis-positions, or hides behind the app bar
+// regardless of ancestor stacking/transform/overflow contexts, and keeps React
+// state in sync with native dismiss. The trigger lives inside the anchor element,
+// which makes md-menu's outside-click dismiss ignore trigger clicks so the toggle
+// opens AND closes cleanly (no light-dismiss vs toggle race).
 
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { MdMenu } from "@aphrody/m3-react";
@@ -19,16 +22,18 @@ export function Menu({
   useEffect(() => {
     const menu = menuRef.current;
     if (menu && anchorRef.current) menu.anchorElement = anchorRef.current;
-    if (!menu) return;
-    const onClosed = () => setOpen(false);
-    menu.addEventListener("closed", onClosed);
-    return () => menu.removeEventListener("closed", onClosed);
   }, []);
 
   return (
-    <span ref={anchorRef} style={{ position: "relative", display: "inline-flex" }}>
+    <span ref={anchorRef} style={{ display: "inline-flex" }}>
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
-      <MdMenu ref={menuRef} open={open} onClosed={() => setOpen(false)} positioning="fixed">
+      <MdMenu
+        ref={menuRef}
+        open={open}
+        positioning="popover"
+        onOpened={() => setOpen(true)}
+        onClosed={() => setOpen(false)}
+      >
         {children}
       </MdMenu>
     </span>
