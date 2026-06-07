@@ -55,6 +55,23 @@ _HOP_BY_HOP = frozenset(
 )
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Disable redirect following for the reverse proxy.
+
+    A reverse proxy must *relay* 3xx responses (status + ``Location``) to the
+    client, not transparently follow them itself. Following them server-side
+    breaks flows like OAuth, where a ``302 -> accounts.google.com`` must reach
+    the browser so it navigates to Google on Google's own origin.
+    """
+
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+
+#: Opener that keeps the default transport handlers but never follows redirects.
+_PROXY_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 def _preload(root: Path) -> dict[str, bytes]:
     """Read every file under *root* into a memory cache (RAM exploitation)."""
     cache: dict[str, bytes] = {}
@@ -192,7 +209,7 @@ def make_server(
                 backend + self.path, data=body, method=self.command, headers=fwd
             )
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
+                with _PROXY_OPENER.open(req, timeout=60) as resp:
                     self._relay(resp.status, resp.headers, resp.read())
             except urllib.error.HTTPError as exc:  # backend 4xx/5xx — relay it
                 self._relay(exc.code, exc.headers, exc.read())
