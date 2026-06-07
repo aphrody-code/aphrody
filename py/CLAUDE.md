@@ -60,3 +60,11 @@ uv run pytest langextract/tests/test_live_api.py
 Lorsque vous définissez ou invoquez des sub-agents dans ce workspace :
 1. Équipez-les de la directive d'**Autonomie Totale** (ne pas s'arrêter pour demander des retours, résoudre les lints et bugs de build de manière autonome).
 2. Fournissez-leur le chemin vers ce fichier `CLAUDE.md` et instruisez-les à valider systématiquement leur travail avec `uv run ruff check` et `uv run pytest -m "not live_api"`.
+
+---
+
+## Pièges
+
+- **Reverse-proxy `aphrody serve --proxy` (`aphrody.service` :8082, `aphrody/aphrody/serve.py`)** : ne suit **PLUS** les 3xx. L'opener urllib custom `_NoRedirect` (`build_opener`) **relaie** status + `Location` au navigateur au lieu de les suivre côté serveur. Un reverse-proxy DOIT relayer les 3xx : sinon l'OAuth (`302 -> accounts.google.com`) est fetché côté serveur, le navigateur ne quitte jamais notre origine et le callback casse aussi.
+- **redirect_uri / origine publique** : le backend (`127.0.0.1:3210`) reconstruit l'origine via `X-Forwarded-Host` / `X-Forwarded-Proto` que ce proxy injecte.
+- **venv = WHEEL, pas editable** : `/opt/aphrody/venv/lib/python3.14/site-packages/aphrody/serve.py` est installé depuis un wheel (cf. `direct_url.json`). Après édition de la source `py/aphrody/aphrody/serve.py`, recopier sur le venv (`sudo cp`) puis `systemctl restart aphrody.service`.
