@@ -1,28 +1,115 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: bxc
-description: Crawler and web scraping engine with advanced stealth and browser automation capabilities.
+description: Crawler and web scraping engine with advanced stealth, browser automation, and platform scrapers.
 when_to_use: User asks to crawl, recon, or scrape a webpage, search Google, automate browser tasks, extract data, or interact with platforms like x.com/Grok/WorldBeyblade.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Bxc — Bun-Native Stealth Browser & Scraping Engine
 
-Bxc is a high-performance browser engine optimized for VPS and Google-grade stealth, combining in-process V8 bindings with a native Rust Chromium driver.
+`bxc` is a high-performance web browser, crawling, and scraping engine. It is optimized for server environments and Google-grade stealth, fushing in-process V8 bindings with a native Rust Chromium driver.
 
-## Key Subcommands
+---
 
-1. **Reconnaissance & Scraping:**
-   - `aphrody bxc recon <url>`: One-shot URL to Markdown report.
-   - `aphrody bxc detect <url>`: framework, library, and bot-protection detection.
-   - `aphrody bxc scrape <url> --selector <selector>`: Extract content from matching CSS selectors.
-   - `aphrody bxc search <query>`: Get clean, Markdown-formatted web search results.
+## 1. Core Subcommands
 
-2. **Stealth & Browser Automation:**
-   - `aphrody bxc serve`: Starts a stealth Chrome DevTools Protocol (CDP) server.
-   - `aphrody bxc mirror <url>`: Mirror/download a full site locally.
-   - `aphrody bxc cookies`: Manage cookie jars for authenticated sessions.
+### Reconnaissance & Detection
+* **Page Reconnaissance (HTML to Markdown):**
+  Convert any public URL to clean, LLM-optimized Markdown:
+  ```bash
+  aphrody bxc recon https://example.com
+  ```
+* **Bot-Protection & Framework Detection:**
+  Detect anti-bot systems (Cloudflare, DataDome) and frontend frameworks (React, Angular, Wiz):
+  ```bash
+  aphrody bxc detect https://example.com --json
+  ```
 
-3. **Platform Automation:**
-   - `aphrody bxc xcom <handle>`: Scrape X.com profile data.
-   - `aphrody bxc x`: Interactive native client/auditor for X/Twitter.
-   - `aphrody bxc grok`: Query xAI Grok (TTS, STT, and Chat).
+### Data Scraping & Web Search
+* **CSS Selector Extraction:**
+  Scrape text content from specific HTML elements matching CSS selectors:
+  ```bash
+  aphrody bxc scrape https://example.com --selector "article h2"
+  ```
+* **Stealth Search Integration:**
+  Perform Google searches and retrieve clean, markdown-formatted results:
+  ```bash
+  aphrody bxc search "rust async closures"
+  ```
+
+---
+
+## 2. Browser Automation & Stealth Server
+
+* **Start the Stealth CDP Server:**
+  Runs a Chrome DevTools Protocol (CDP) server that Playwright, Puppeteer, or Bxc client scripts can connect to. This server bypasses advanced bot detection systems:
+  ```bash
+  aphrody bxc serve --cdp-port 9222
+  ```
+* **Site Mirroring:**
+  Mirror a full website (downloading HTML, CSS, JS, and asset files locally):
+  ```bash
+  aphrody bxc mirror https://example.com
+  ```
+* **Cookie Management:**
+  Manage cookie jars for authenticated browser sessions:
+  ```bash
+  aphrody bxc cookies --domain example.com
+  ```
+
+---
+
+## 3. Platform Scrapers & Integrations
+
+`bxc` includes specialized modules for crawling and automating interactions with various platforms:
+
+* **x.com (Twitter) & xAI Grok:**
+  - Scrape profiles: `aphrody bxc xcom <handle>`
+  - Interact with Twitter / rank feed: `aphrody bxc x`
+  - Query Grok (TTS, STT, Chat): `aphrody bxc grok "your query"`
+* **World Beyblade Association:**
+  Scrape and automate profiles, threads, PMs, and WBO rankings:
+  ```bash
+  aphrody bxc worldbeyblade --rankings
+  ```
+* **Challonge:**
+  Extract brackets, match history, and standings from tournament pages:
+  ```bash
+  aphrody bxc challonge https://challonge.com/tournament_id
+  ```
+* **FIFA Ultimate Team (FUT):**
+  Scrape player stats, market prices, and trends from FUTGG/FUTBin:
+  ```bash
+  aphrody bxc fut --player "Messi"
+  ```
+* **VoirAnime:**
+  Search and resolve direct streaming catalog entries:
+  ```bash
+  aphrody bxc voiranime search "Inazuma Eleven"
+  ```
+
+---
+
+## 4. Crawling Workers & Actors
+
+For large-scale or persistent crawling tasks:
+* **Run Crawler Actor:**
+  Execute a pre-configured scraper actor script:
+  ```bash
+  aphrody bxc actor run <actor_name>
+  ```
+* **Persistent Crawling Daemon:**
+  Run the background recursive crawler worker daemon:
+  ```bash
+  aphrody bxc crawl-worker --daemon
+  ```
+
+---
+
+## 5. Global Options
+
+* `--proxy <url>`: Route all traffic through an HTTP/SOCKS5 proxy.
+* `--insecure` / `-k`: Skip TLS/SSL certificate validation.
+* `--json`: Format command outputs in raw JSON.
+* `--timeout <ms>`: Adjust the global network timeout.

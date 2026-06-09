@@ -580,11 +580,11 @@ analyses profondes `docs/audits/2026-06-04-{n2b,bxc}-analysis.md` (en cours).
 
 | # | Item | Surface | Statut |
 |---|---|---|---|
-| T1 | Sous-commande CLI `aphrody bxc …` (façade vers le binaire/daemon bxc) | `crates/cli` | ⏳ |
-| T2 | Sous-commande CLI `aphrody n2b …` (façade scan/fix Node→Bun) | `crates/cli` | ⏳ |
-| T3 | Skill plugin `n2b` (migration Node→Bun guidée) | `.claude/plugins/aphrody/skills/` | ⏳ |
-| T4 | Skill plugin `bxc` (crawl/recon/scrape web) | `.claude/plugins/aphrody/skills/` | ⏳ |
-| T5 | Tool MCP `n2b` complet (`aphrody-mcp` : scan + fix + rapport JSON) | `crates/google_mcp` | ⏳ |
+| T1 | Sous-commande CLI `aphrody bxc …` (façade vers le binaire/daemon bxc) | `crates/cli` | ✅ **2026-06-06** |
+| T2 | Sous-commande CLI `aphrody n2b …` (façade scan/fix Node→Bun) | `crates/cli` | ✅ **2026-06-06** |
+| T3 | Skill plugin `n2b` (migration Node→Bun guidée) | `.claude/plugins/aphrody/skills/` | ✅ **2026-06-06** |
+| T4 | Skill plugin `bxc` (crawl/recon/scrape web) | `.claude/plugins/aphrody/skills/` | ✅ **2026-06-06** |
+| T5 | Tool MCP `n2b` complet (`aphrody-mcp` : scan + fix + rapport JSON) | `crates/google_mcp` | ✅ **2026-06-06** |
 | T6 | Agent md `lint-workflow` (oxc + n2b + bun + turbo + clippy/ruff) | `.claude/plugins/aphrody/agents/` | ✅ **2026-06-04** |
 | T7 | Agent md `test-runner` (bun test + docs + bxc web full suite + nextest) | `.claude/plugins/aphrody/agents/` | ✅ **2026-06-04** |
 
