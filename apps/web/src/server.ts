@@ -16,7 +16,7 @@ import {
   TOOLS,
   WORKSPACE_MODELS,
 } from "./api/mock-data.ts";
-import type { Chat, ChatListItem, CompletionRequest } from "./api/types.ts";
+import type { Chat, ChatListItem, CompletionRequest, WorkspaceModel, KnowledgeCollection, Prompt, Tool } from "./api/types.ts";
 import { GEMINI_WEB_MODEL_ID, geminiWebStream } from "./api/gemini-web-bridge.ts";
 import { ACCOUNT, META, runMock } from "./aphrody/server-mock.ts";
 import {

@@ -94,7 +94,7 @@ function UsersTab() {
         <div className="owui-row" style={{ gap: 8 }}>
           {selectedIds.length > 0 && (
             <MdFilledButton
-              style={{ "--md-sys-color-primary": "var(--md-sys-color-error)", "--md-sys-color-on-primary": "var(--md-sys-color-on-error)" }}
+              style={{ "--md-sys-color-primary": "var(--md-sys-color-error)", "--md-sys-color-on-primary": "var(--md-sys-color-on-error)" } as React.CSSProperties}
               onClick={handleDeleteSelected}
               disabled={deletingBusy}
             >
