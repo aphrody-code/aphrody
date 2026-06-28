@@ -40,6 +40,39 @@ Linux/Windows/wasm. Autour gravitent deux surfaces de première classe :
 
 ---
 
+## aphrody local — IA open-weight, agentique, francophone (JARVIS)
+
+aphrody n'est pas qu'un CLI : c'est un **agent autonome, local et privé**, conçu
+pour faire tourner des modèles **open-weight** entièrement sur ta machine —
+**zéro cloud, zéro clé API** pour la boucle centrale. Cap : **JARVIS**
+(*Just A Rather Very Intelligent System*) — voir [`docs/JARVIS.md`](docs/JARVIS.md).
+
+```bash
+# Serveur OpenAI-compatible local (relaie Ollama / llama.cpp / vLLM)
+aphrody serve                                  # → http://127.0.0.1:8080/v1
+
+# Agent local agentique (modèle open-weight, persona française, outils sous garde)
+aphrody agent --local "liste les fichiers puis résume le projet"
+
+# Auto-connaissance : aphrody indexe et interroge son PROPRE code source
+aphrody memory index                                   # vectorise le dépôt
+aphrody memory recall "comment marche le serveur /v1 ?"
+
+# Mémoire vivante : il retient ses erreurs + les feedbacks et les rappelle
+# automatiquement avant chaque tour d'agent (recall-before-think)
+aphrody memory remember --kind feedback "Toujours répondre en français"
+```
+
+- **Cerveau** : moteur agentique streaming (`aphrody-engine`) branché sur tout
+  endpoint OpenAI-compatible local via `--base-url` (Ollama par défaut, `:11434`).
+- **Voix française immuable** : les agents parlent français par défaut (CLAUDE.md §0.2).
+- **Mémoire** : auto-connaissance du code + leçons (erreurs / feedbacks), embeddings locaux.
+- Détails : [`docs/local-llm.md`](docs/local-llm.md) · modèles
+  [`docs/local-llm-models.md`](docs/local-llm-models.md) · moteurs
+  [`docs/local-llm-backends.md`](docs/local-llm-backends.md).
+
+---
+
 ## Demo — `mrx scan` on this repo (real run, no edit)
 
 ```console
@@ -231,6 +264,7 @@ cd apps/web && bun run dev   # client public (Bun.serve + HMR)
 
 ## Roadmap 2026
 
+- **JARVIS — IA locale** : boucle voix→LLM local→voix, mémoire augmentée, daemon ambiant. Plan en phases : [`docs/JARVIS.md`](docs/JARVIS.md) (keystone local livré).
 - **Deployment distribution** : GitHub Releases (Linux x64/ARM64, Windows x64/ARM64, macOS x64/ARM64), Homebrew, Scoop, apt/deb — *en cours, voir [`docs/PLAN.md`](docs/PLAN.md)*.
 - **crates.io publication** : `aphrody` + SDK public une fois `base`/`backend` stabilisés.
 - **CI Linux-first** : validation primaire sur Ubuntu 26.04 (cible #1).
@@ -274,7 +308,11 @@ cargo build --release --locked -p mrx               # Monorepo scanner
 
 | Chemin | Rôle |
 |---|---|
-| `crates/cli` | **Binaire `aphrody`** — cross-platform pur |
+| `crates/cli` | **Binaire `aphrody`** — cross-platform pur (`serve`, `agent`, `memory`, …) |
+| `crates/aphrody-serve` | Serveur OpenAI-compatible local (`/v1/chat/completions` stream + embeddings) |
+| `crates/aphrody-model-client` | `ModelClient` (Gemini + `LocalOpenAiClient` open-weight) |
+| `crates/aphrody-engine` | Moteur agentique streaming (boucle de tour, outils, sessions) |
+| `crates/aphrody-memory` | Mémoire vectorielle (auto-connaissance + leçons) |
 | `crates/base` | Primitives no_std partagées |
 | `crates/backend` | Forensics + network (cross-platform) |
 | `crates/a2a*` | Protocole agent-to-agent |
@@ -313,6 +351,12 @@ cargo build --release --locked -p mrx               # Monorepo scanner
 - [MCP_SETUP.md](./docs/MCP_SETUP.md) — MCP server wiring
 - [UI-ARCHITECTURE.md](./docs/UI-ARCHITECTURE.md) — terminal & UI architecture
 - [STACK.md](./docs/STACK.md) — full toolchain stack
+
+### Local / open-weight (JARVIS)
+- [JARVIS.md](./docs/JARVIS.md) — l'étoile polaire : IA locale, agentique, multimodale, francophone
+- [local-llm.md](./docs/local-llm.md) — serveur open-weight local (`aphrody serve`) + endpoints
+- [local-llm-models.md](./docs/local-llm-models.md) — Qwen3 / Gemma4 / DeepSeek à 12 Go
+- [local-llm-backends.md](./docs/local-llm-backends.md) — Ollama / llama.cpp / vLLM (décision)
 
 ### Cargo / workspace
 - [docs/cargo/](./docs/cargo/) — workspace, FFI policy, cross-platform

@@ -177,6 +177,16 @@ jobs:
         run: ./target/release/aphrody --help
       - name: smoke — aphrody doctor
         run: ./target/release/aphrody doctor
+      # Garde la surface local/JARVIS (serve / agent --local / memory). `--help`
+      # est hors-ligne (parse clap) : aucun runtime Ollama/embeddings requis en CI.
+      - name: smoke — surface local/JARVIS (clap)
+        run: |
+          ./target/release/aphrody serve --help
+          ./target/release/aphrody agent --help
+          ./target/release/aphrody memory --help
+          ./target/release/aphrody memory index --help
+          ./target/release/aphrody memory recall --help
+          ./target/release/aphrody memory remember --help
       - name: sccache stats (non-fatal)
         if: always()
         run: sccache --show-stats || true
