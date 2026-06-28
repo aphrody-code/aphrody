@@ -81,7 +81,9 @@ pub mod types;
 
 pub use crate::error::ChatError;
 pub use crate::turn_loop::{ChatLoop, ChatLoopBuilder};
-pub use crate::types::{ChatConfig, Message, MessageRole, ToolInvocation, Turn};
+pub use crate::types::{
+    ChatConfig, DEFAULT_SYSTEM_PROMPT, Message, MessageRole, ToolInvocation, Turn,
+};
 
 /// Crate version pulled at build time. Surfaced through the CLI `aphrody chat
 /// --help` and by the `Doctor` / `Version` introspection subcommands.

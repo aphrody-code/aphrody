@@ -34,6 +34,7 @@ use aphrody_agent_proto::{EventMsg, Submission};
 use aphrody_agent_runtime::{
     AgentRuntime, AutonomyMode, ModelChoice, RuntimeConfig, ScriptedTurn, StubModelClient,
 };
+use aphrody_chat::DEFAULT_SYSTEM_PROMPT;
 use miette::IntoDiagnostic as _;
 
 /// Default model id used when `--model` is omitted. A fast, low-latency Gemini
@@ -48,6 +49,21 @@ const DEFAULT_LOCAL_MODEL: &str = "qwen3";
 /// Deterministic reply the `--stub` backend emits for its single scripted turn.
 /// Echoing the prompt keeps the offline smoke test observable end to end.
 const STUB_REPLY_PREFIX: &str = "stub agent: received prompt -> ";
+
+/// Short French-language directive (CLAUDE.md §0.2) appended to a caller-supplied
+/// `--system` so the immutable French voice holds even with a custom persona.
+const FRENCH_DIRECTIVE: &str =
+    "Réponds toujours en français, quelle que soit la langue de la requête.";
+
+/// Compose the per-turn system prompt. With no `--system`, use aphrody's canonical
+/// persona ([`DEFAULT_SYSTEM_PROMPT`]: autonomous, omniscient, always-on, in
+/// French); with one, keep the caller's persona but still enforce the French voice.
+fn french_voice(user_system: Option<&str>) -> String {
+    match user_system {
+        Some(s) if !s.trim().is_empty() => format!("{s}\n\n{FRENCH_DIRECTIVE}"),
+        _ => DEFAULT_SYSTEM_PROMPT.to_string(),
+    }
+}
 
 /// Parsed `aphrody agent` invocation, decoupled from clap so it can be
 /// unit-tested directly.
@@ -100,10 +116,9 @@ fn build_config(args: &AgentArgs) -> RuntimeConfig {
         }
         .to_string()
     });
-    let mut config = RuntimeConfig::new(model).with_autonomy(autonomy_for(args.gated));
-    if let Some(system) = &args.system {
-        config = config.with_system_prompt(system.clone());
-    }
+    let mut config = RuntimeConfig::new(model)
+        .with_autonomy(autonomy_for(args.gated))
+        .with_system_prompt(french_voice(args.system.as_deref()));
     if let Some(cwd) = &args.cwd {
         config = config.with_cwd(cwd.clone());
     }
@@ -340,7 +355,15 @@ mod tests {
         let config = build_config(&base_args());
         assert_eq!(config.model, DEFAULT_MODEL);
         assert_eq!(config.autonomy, AutonomyMode::FullAuto);
-        assert!(config.system_prompt.is_none());
+        // Even with no `--system`, the immutable French voice is injected.
+        assert!(
+            config
+                .system_prompt
+                .as_deref()
+                .unwrap_or_default()
+                .contains("français"),
+            "default agent voice must instruct French"
+        );
         assert!(config.cwd.is_none());
     }
 
@@ -356,7 +379,10 @@ mod tests {
         let config = build_config(&args);
         assert_eq!(config.model, "gemini-3-pro");
         assert_eq!(config.autonomy, AutonomyMode::Gated);
-        assert_eq!(config.system_prompt.as_deref(), Some("be terse"));
+        // The custom `--system` is preserved AND the French voice is still enforced.
+        let system = config.system_prompt.as_deref().unwrap_or_default();
+        assert!(system.contains("be terse"), "custom system prompt preserved");
+        assert!(system.contains("français"), "French voice still enforced");
         assert_eq!(config.cwd.as_deref(), Some(std::path::Path::new("/tmp/work")));
     }
 

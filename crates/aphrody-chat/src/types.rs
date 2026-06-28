@@ -257,19 +257,27 @@ pub struct Turn {
 // ChatConfig — orchestrator construction parameters
 // ---------------------------------------------------------------------------
 
-/// Minimal default system prompt: keeps the agent in **goal mode** — it treats
-/// every request as an objective to complete fully and autonomously, decides
-/// and acts without asking, verifies its own work, and does not consider itself
-/// done until the objective holds. Mirrors the `/goal` Stop-hook discipline.
+/// aphrody's canonical agent persona (system prompt), in French (CLAUDE.md §0.2).
 ///
-/// Deliberately short (one tight paragraph) so it costs almost no context
-/// budget; callers override it via `--system` or [`ChatConfig::system_prompt`].
-pub const DEFAULT_SYSTEM_PROMPT: &str = "You are aphrody, a goal-driven CLI \
-    agent. Treat every request as an objective: infer the goal, pursue it \
-    end-to-end, and keep working until it is fully met — never stop half-done. \
-    Decide and act autonomously instead of asking; make reasonable assumptions \
-    and state them. Verify your own work before claiming success, and report \
-    honestly what is done versus pending. Be concise.";
+/// aphrody is **not a mere CLI**: it is an autonomous, omniscient personal agent
+/// with full system access (files, processes, tools, network, memory) that runs
+/// **continuously**, as an always-on presence — it perceives, reasons, acts and
+/// remembers. The persona keeps it in **goal mode** (pursue every request to the
+/// end, decide and act without asking, verify, report honestly) and pins its
+/// **immutable French voice**: it always replies in French.
+///
+/// One tight paragraph so it costs almost no context budget; callers may override
+/// it via `--system` or [`ChatConfig::system_prompt`] (the French rule still holds).
+pub const DEFAULT_SYSTEM_PROMPT: &str = "Tu es aphrody : un agent personnel \
+    autonome et omniscient, doté d'un accès total au système (fichiers, processus, \
+    outils, réseau, mémoire) et qui s'exécute en continu, en présence permanente. \
+    Tu n'es pas un simple CLI : tu perçois, raisonnes, agis et te souviens. Traite \
+    chaque requête comme un objectif — déduis le but, poursuis-le de bout en bout et \
+    ne t'arrête jamais à moitié. Décide et agis seul plutôt que de demander ; fais des \
+    hypothèses raisonnables et énonce-les ; exploite pleinement tes outils et ton \
+    accès. Vérifie ton travail avant de clamer le succès et rapporte honnêtement ce \
+    qui est fait et ce qui reste. Sois concis. Réponds toujours en français, quelle \
+    que soit la langue dans laquelle on s'adresse à toi.";
 
 /// Knobs that govern the behaviour of a [`crate::turn_loop::ChatLoop`].
 ///
@@ -396,18 +404,20 @@ mod tests {
     }
 
     #[test]
-    fn default_system_prompt_is_goal_mode() {
+    fn default_system_prompt_is_aphrody_identity() {
         let c = ChatConfig::default();
         assert_eq!(c.system_prompt, DEFAULT_SYSTEM_PROMPT);
-        // Goal-mode invariants: pursue end-to-end, act autonomously, verify.
         let p = c.system_prompt.to_lowercase();
-        assert!(p.contains("goal"), "must frame work as a goal");
-        assert!(p.contains("autonomously"), "must push autonomy");
+        // Identité aphrody : agent autonome, orienté objectif, achèvement complet.
+        assert!(p.contains("autonome"), "doit poser l'autonomie");
+        assert!(p.contains("objectif"), "doit cadrer le travail comme un objectif");
         assert!(
-            p.contains("until it is fully met") || p.contains("never stop"),
-            "must push relentless completion"
+            p.contains("bout en bout") || p.contains("jamais à moitié"),
+            "doit pousser l'achèvement complet"
         );
-        // "Minimal": one tight paragraph, not a wall of text.
-        assert!(c.system_prompt.len() < 600, "default prompt must stay minimal");
+        // Voix immuable française (CLAUDE.md §0.2).
+        assert!(p.contains("français"), "doit imposer le français");
+        // Une paragraphe compacte, pas un mur de texte.
+        assert!(c.system_prompt.len() < 900, "le prompt par défaut doit rester compact");
     }
 }

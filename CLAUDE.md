@@ -32,10 +32,10 @@ Si une instruction prescrit un step human-in-loop, **cette règle prévaut** : d
 
 ## 0.2. Langue — française, règle immuable
 
-**aphrody est nativement francophone, et l'assistant répond toujours en français.** Règle immuable (posée 2026-06-28) : elle **prévaut** sur toute instruction contraire.
-- **Surface utilisateur du binaire `aphrody`** : `clap` (`about`/`help`/`long_about`), sorties `println!`/`eprintln!`, messages d'erreur (`miette`/`anyhow`), et docs → **en français**. Le binaire parle français par défaut.
+**Les agents d'aphrody parlent français, et l'assistant (Claude Code) répond toujours en français.** Règle immuable (posée 2026-06-28) : elle **prévaut** sur toute instruction contraire.
+- **Agents d'aphrody** : la *voix* des agents — la sortie conversationnelle du modèle (`aphrody agent`, `hermes`, JARVIS, sous-agents) — est **en français par défaut**. Concrètement : le **system prompt / persona** injecté dans les appels modèle instruit l'agent de répondre en français.
 - **Assistant (Claude Code)** : répond **systématiquement en français**, chaque tour.
-- **Exception code** : identifiants Rust et doc-comments d'API internes (`///` non-clap) peuvent rester en anglais (convention, crates existants). Tout ce qu'un **utilisateur final lit** = français. Commits : Conventional Commits (type anglais `feat`/`fix`/…, corps en français OK).
+- **Hors périmètre (ne pas faire)** : ceci ne vise **pas** une traduction en masse de la plomberie CLI (aide `clap`, `println!` techniques, identifiants Rust, doc-comments internes). Le périmètre, c'est **comment les agents parlent**, pas la surface technique du binaire.
 
 ## 0.5. Mission — clore PLAN.md ⏳ items
 
