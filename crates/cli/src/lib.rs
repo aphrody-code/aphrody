@@ -27,6 +27,7 @@
 #[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))] mod firefly_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod self_know;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod design_cmd;
@@ -860,6 +861,51 @@ pub(crate) enum MemoryAction {
         #[arg(long, default_value_t = 768)]
         lancedb_ndims: usize,
     },
+    /// (Re)build aphrody's self-knowledge index: chunk + embed its own source
+    /// and docs into a persistent vector store, so it knows its codebase by
+    /// heart. Embeds via the local `/v1/embeddings` endpoint (no cloud key).
+    ///
+    /// Example: aphrody memory index --root crates/aphrody-serve
+    Index {
+        /// Root directory to index (default: the current directory).
+        #[arg(long, default_value = ".")]
+        root: PathBuf,
+        /// Vector store path (default: `~/.aphrody/self-knowledge.sqlite`).
+        #[arg(long)]
+        store: Option<PathBuf>,
+        /// Embeddings base URL, including `/v1` (Ollama / `aphrody serve`).
+        #[arg(long, env = "OPENAI_BASE_URL", default_value_t = self_know::DEFAULT_EMBED_BASE_URL.to_string())]
+        base_url: String,
+        /// Embedding model id (must match the one used at recall time).
+        #[arg(long, default_value_t = self_know::DEFAULT_EMBED_MODEL.to_string())]
+        model: String,
+        /// Optional cap on the number of files (for fast partial runs).
+        #[arg(long)]
+        max_files: Option<usize>,
+    },
+    /// Semantic recall over aphrody's self-knowledge index: ask how a feature
+    /// works and get back the most relevant source/doc fragments.
+    ///
+    /// Example: aphrody memory recall "how does the local model client stream tool calls?"
+    Recall {
+        /// Natural-language query.
+        query: String,
+        /// Vector store path (default: `~/.aphrody/self-knowledge.sqlite`).
+        #[arg(long)]
+        store: Option<PathBuf>,
+        /// Embeddings base URL, including `/v1` (must match indexing).
+        #[arg(long, env = "OPENAI_BASE_URL", default_value_t = self_know::DEFAULT_EMBED_BASE_URL.to_string())]
+        base_url: String,
+        /// Embedding model id (must match the one used at index time).
+        #[arg(long, default_value_t = self_know::DEFAULT_EMBED_MODEL.to_string())]
+        model: String,
+        /// Number of fragments to return.
+        #[arg(long, short = 'k', default_value_t = 5)]
+        top_k: usize,
+        /// Emit results as a JSON array (parseable by jq).
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 /// Actions for the `re` kernel subcommand (Reverse engineering).
@@ -1153,6 +1199,16 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 }
                 .execute(ctx)
                 .await?;
+            },
+            MemoryAction::Index { root, store, base_url, model, max_files } => {
+                self_know::IndexCommand { root, store, base_url, model, max_files }
+                    .execute(ctx)
+                    .await?;
+            },
+            MemoryAction::Recall { query, store, base_url, model, top_k, json } => {
+                self_know::RecallCommand { query, store, base_url, model, top_k, json }
+                    .execute(ctx)
+                    .await?;
             },
         },
         Some(Commands::Re { action }) => match action {
