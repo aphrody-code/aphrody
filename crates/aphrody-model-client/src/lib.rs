@@ -29,6 +29,9 @@ use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use serde_json::{Value, json};
 
+pub mod openai;
+pub use openai::{DEFAULT_LOCAL_BASE_URL, LocalOpenAiClient, build_openai_request_body};
+
 /// Errors surfaced by a [`ModelClient`] or the pure wire helpers.
 #[derive(Debug, thiserror::Error)]
 pub enum ModelError {

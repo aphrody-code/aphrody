@@ -369,7 +369,15 @@ enum Commands {
         /// Deterministic offline backend (no network, no API key). For smoke / CI.
         #[arg(long)]
         stub: bool,
-        /// Model id (default: a fast Gemini flash tier).
+        /// Drive a local OpenAI-compatible backend (Ollama / llama.cpp / vLLM /
+        /// `aphrody serve`) instead of cloud Gemini — no API key required.
+        #[arg(long)]
+        local: bool,
+        /// Base URL for `--local` (includes `/v1`). Defaults to `OPENAI_BASE_URL`
+        /// then Ollama (`http://127.0.0.1:11434/v1`).
+        #[arg(long, env = "OPENAI_BASE_URL")]
+        base_url: Option<String>,
+        /// Model id (default: a fast Gemini flash tier; `qwen3` with `--local`).
         #[arg(long, short)]
         model: Option<String>,
         /// Override the system prompt prepended to every model request.
@@ -1347,9 +1355,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             agent_cmd::run(ch, voice, trigger, model, stub, simulate).await?;
         },
         #[cfg(not(target_arch = "wasm32"))]
-        Some(Commands::Agent { prompt, tui, stub, model, system, gated, cwd, verbose }) => {
+        Some(Commands::Agent { prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose }) => {
             agent_run::run(agent_run::AgentArgs {
-                prompt, tui, stub, model, system, gated, cwd, verbose,
+                prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose,
             }).await?;
         },
         Some(Commands::Completions { shell }) => {

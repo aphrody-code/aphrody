@@ -67,5 +67,9 @@ pub use tools::build_tool_registry;
 // without taking a separate dependency on `aphrody-engine`.
 pub use aphrody_engine::AutonomyMode;
 
+// Re-export the local-backend default base URL so CLI surfaces can resolve it
+// without taking a separate dependency on `aphrody-model-client`.
+pub use aphrody_model_client::DEFAULT_LOCAL_BASE_URL;
+
 #[cfg(test)]
 mod runtime_tests;

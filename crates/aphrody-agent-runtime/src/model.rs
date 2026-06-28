@@ -8,7 +8,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use aphrody_model_client::{
-    ChatTurn, GeminiClient, ModelClient, ModelError, ModelStream, ModelStreamEvent,
+    ChatTurn, GeminiClient, LocalOpenAiClient, ModelClient, ModelError, ModelStream,
+    ModelStreamEvent,
 };
 use futures::Stream;
 
@@ -21,6 +22,10 @@ use futures::Stream;
 pub enum ModelChoice {
     /// A live, streaming Gemini `generateContent` client.
     Gemini(Arc<GeminiClient>),
+    /// A local, streaming OpenAI-compatible client (Ollama / llama.cpp / vLLM /
+    /// `aphrody serve`) — the keystone of the local JARVIS loop
+    /// (`docs/JARVIS.md`). Needs no cloud key.
+    Local(Arc<LocalOpenAiClient>),
     /// An offline client that replays a fixed sequence of events.
     Stub(Arc<StubModelClient>),
 }
@@ -30,6 +35,10 @@ impl std::fmt::Debug for ModelChoice {
         match self {
             Self::Gemini(client) => f
                 .debug_tuple("Gemini")
+                .field(&client.model_id().to_string())
+                .finish(),
+            Self::Local(client) => f
+                .debug_tuple("Local")
                 .field(&client.model_id().to_string())
                 .finish(),
             Self::Stub(_) => f.write_str("Stub"),
@@ -50,6 +59,22 @@ impl ModelChoice {
         Self::Gemini(Arc::new(GeminiClient::new(api_key, model)))
     }
 
+    /// Build a local OpenAI-compatible client for `model` at `base_url`.
+    ///
+    /// `base_url` includes the `/v1` prefix (e.g. `http://127.0.0.1:11434/v1`
+    /// for Ollama); pass an empty `api_key` to omit the `Authorization` header.
+    /// Like [`ModelChoice::gemini`], this installs the ring crypto provider as
+    /// the process default on first use (CLAUDE.md §7).
+    #[must_use]
+    pub fn local(
+        base_url: impl Into<String>,
+        model: impl Into<String>,
+        api_key: impl Into<String>,
+    ) -> Self {
+        install_default_crypto_provider();
+        Self::Local(Arc::new(LocalOpenAiClient::new(base_url, model, api_key)))
+    }
+
     /// Build an offline stub client that replays `client`.
     #[must_use]
     pub fn stub(client: StubModelClient) -> Self {
@@ -61,6 +86,7 @@ impl ModelChoice {
     pub(crate) fn into_client(self) -> Arc<dyn ModelClient> {
         match self {
             Self::Gemini(client) => client,
+            Self::Local(client) => client,
             Self::Stub(client) => client,
         }
     }

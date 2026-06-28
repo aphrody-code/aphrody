@@ -40,6 +40,11 @@ use miette::IntoDiagnostic as _;
 /// flash tier, consistent with the project's latency objective.
 const DEFAULT_MODEL: &str = "gemini-2.5-flash";
 
+/// Default model id used with `--local` when `--model` is omitted. Qwen3 is the
+/// best agentic tool-caller that fits 12 GB (`docs/local-llm-models.md`); pull it
+/// with `ollama pull qwen3`, or pass `--model gemma4:12b` for the resident model.
+const DEFAULT_LOCAL_MODEL: &str = "qwen3";
+
 /// Deterministic reply the `--stub` backend emits for its single scripted turn.
 /// Echoing the prompt keeps the offline smoke test observable end to end.
 const STUB_REPLY_PREFIX: &str = "stub agent: received prompt -> ";
@@ -55,7 +60,14 @@ pub(crate) struct AgentArgs {
     pub tui: bool,
     /// Use the offline deterministic stub backend (no network, no API key).
     pub stub: bool,
-    /// Model id (defaults to [`DEFAULT_MODEL`]).
+    /// Drive a local OpenAI-compatible backend (Ollama / llama.cpp / vLLM /
+    /// `aphrody serve`) instead of cloud Gemini — no API key required.
+    pub local: bool,
+    /// Base URL for `--local` (includes `/v1`). Defaults to `OPENAI_BASE_URL`
+    /// then Ollama (`http://127.0.0.1:11434/v1`).
+    pub base_url: Option<String>,
+    /// Model id (defaults to [`DEFAULT_MODEL`], or [`DEFAULT_LOCAL_MODEL`] with
+    /// `--local`).
     pub model: Option<String>,
     /// Optional system prompt prepended to every model request.
     pub system: Option<String>,
@@ -80,10 +92,14 @@ fn autonomy_for(gated: bool) -> AutonomyMode {
 /// Build the [`RuntimeConfig`] for `args`, applying model / system / autonomy /
 /// cwd. Pure (no I/O), so it carries a unit test.
 fn build_config(args: &AgentArgs) -> RuntimeConfig {
-    let model = args
-        .model
-        .clone()
-        .unwrap_or_else(|| DEFAULT_MODEL.to_string());
+    let model = args.model.clone().unwrap_or_else(|| {
+        if args.local {
+            DEFAULT_LOCAL_MODEL
+        } else {
+            DEFAULT_MODEL
+        }
+        .to_string()
+    });
     let mut config = RuntimeConfig::new(model).with_autonomy(autonomy_for(args.gated));
     if let Some(system) = &args.system {
         config = config.with_system_prompt(system.clone());
@@ -108,12 +124,30 @@ fn gemini_api_key() -> Option<String> {
         })
 }
 
-/// Build the [`ModelChoice`] for `args`: an offline stub when `--stub`, else a
-/// live Gemini client authenticated from the environment.
+/// Resolve the local backend base URL for `--local`.
+///
+/// `--base-url` wins, then `OPENAI_BASE_URL`, then the Ollama default. The base
+/// URL includes the `/v1` prefix.
+fn local_base_url(args: &AgentArgs) -> String {
+    args.base_url
+        .clone()
+        .filter(|u| !u.trim().is_empty())
+        .or_else(|| {
+            std::env::var("OPENAI_BASE_URL")
+                .ok()
+                .filter(|u| !u.trim().is_empty())
+        })
+        .unwrap_or_else(|| aphrody_agent_runtime::DEFAULT_LOCAL_BASE_URL.to_string())
+}
+
+/// Build the [`ModelChoice`] for `args`: an offline stub when `--stub`, a local
+/// OpenAI-compatible backend when `--local`, else a live Gemini client
+/// authenticated from the environment.
 ///
 /// # Errors
-/// Returns a miette error when a live backend is requested but no API key is
-/// available in `GEMINI_API_KEY` / `GOOGLE_API_KEY`.
+/// Returns a miette error when the cloud Gemini backend is requested but no API
+/// key is available in `GEMINI_API_KEY` / `GOOGLE_API_KEY`. The `--stub` and
+/// `--local` backends never consult cloud credentials.
 fn build_model(args: &AgentArgs, model_id: &str) -> miette::Result<ModelChoice> {
     if args.stub {
         let reply = format!(
@@ -122,6 +156,17 @@ fn build_model(args: &AgentArgs, model_id: &str) -> miette::Result<ModelChoice> 
         );
         let stub = StubModelClient::new(model_id, vec![ScriptedTurn::text(reply)]);
         return Ok(ModelChoice::stub(stub));
+    }
+
+    if args.local {
+        let base = local_base_url(args);
+        // Local backends ignore the bearer token; Ollama's convention is the
+        // literal `ollama`. `OPENAI_API_KEY` overrides for guarded gateways.
+        let key = std::env::var("OPENAI_API_KEY")
+            .ok()
+            .filter(|k| !k.trim().is_empty())
+            .unwrap_or_else(|| "ollama".to_string());
+        return Ok(ModelChoice::local(base, model_id.to_string(), key));
     }
 
     let key = gemini_api_key().ok_or_else(|| {
@@ -274,6 +319,8 @@ mod tests {
             prompt: Some("ping".to_string()),
             tui: false,
             stub: true,
+            local: false,
+            base_url: None,
             model: None,
             system: None,
             gated: false,
@@ -318,6 +365,40 @@ mod tests {
         // The stub backend must never consult the environment.
         let choice = build_model(&base_args(), DEFAULT_MODEL);
         assert!(choice.is_ok(), "stub model should build offline");
+    }
+
+    #[test]
+    fn local_model_builds_without_cloud_key() {
+        // The local backend must build with no Gemini key in the environment.
+        let args = AgentArgs {
+            stub: false,
+            local: true,
+            ..base_args()
+        };
+        let choice = build_model(&args, DEFAULT_LOCAL_MODEL);
+        assert!(choice.is_ok(), "local model should build without a cloud key");
+        assert!(matches!(choice.unwrap(), ModelChoice::Local(_)));
+    }
+
+    #[test]
+    fn local_default_model_used_when_unset() {
+        let args = AgentArgs {
+            stub: false,
+            local: true,
+            model: None,
+            ..base_args()
+        };
+        assert_eq!(build_config(&args).model, DEFAULT_LOCAL_MODEL);
+    }
+
+    #[test]
+    fn local_base_url_prefers_flag_over_default() {
+        let args = AgentArgs {
+            local: true,
+            base_url: Some("http://127.0.0.1:8080/v1".to_string()),
+            ..base_args()
+        };
+        assert_eq!(local_base_url(&args), "http://127.0.0.1:8080/v1");
     }
 
     #[test]
