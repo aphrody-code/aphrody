@@ -94,6 +94,9 @@ pub(crate) struct AgentArgs {
     pub cwd: Option<PathBuf>,
     /// Echo streamed text / tool events on stderr in headless mode.
     pub verbose: bool,
+    /// Disable recall-before-think (skip injecting aphrody's self-knowledge +
+    /// past lessons into the turn). Memory recall is on by default.
+    pub no_memory: bool,
 }
 
 /// Resolve the autonomy mode from the `--gated` flag.
@@ -107,7 +110,7 @@ fn autonomy_for(gated: bool) -> AutonomyMode {
 
 /// Build the [`RuntimeConfig`] for `args`, applying model / system / autonomy /
 /// cwd. Pure (no I/O), so it carries a unit test.
-fn build_config(args: &AgentArgs) -> RuntimeConfig {
+fn build_config(args: &AgentArgs, recalled: Option<&str>) -> RuntimeConfig {
     let model = args.model.clone().unwrap_or_else(|| {
         if args.local {
             DEFAULT_LOCAL_MODEL
@@ -116,9 +119,16 @@ fn build_config(args: &AgentArgs) -> RuntimeConfig {
         }
         .to_string()
     });
+    let mut system = french_voice(args.system.as_deref());
+    if let Some(ctx) = recalled {
+        if !ctx.trim().is_empty() {
+            system.push_str("\n\n");
+            system.push_str(ctx);
+        }
+    }
     let mut config = RuntimeConfig::new(model)
         .with_autonomy(autonomy_for(args.gated))
-        .with_system_prompt(french_voice(args.system.as_deref()));
+        .with_system_prompt(system);
     if let Some(cwd) = &args.cwd {
         config = config.with_cwd(cwd.clone());
     }
@@ -238,36 +248,71 @@ fn echo_event(msg: &EventMsg) {
 /// Propagates configuration, backend-selection, engine, and I/O failures as
 /// miette diagnostics.
 pub(crate) async fn run(args: AgentArgs) -> miette::Result<()> {
-    let config = build_config(&args);
+    // TUI : surface interactive multi-tours, pas de rappel mono-prompt ici.
+    if args.tui {
+        let config = build_config(&args, None);
+        let model_id = config.model.clone();
+        let model = build_model(&args, &model_id)?;
+        let runtime = AgentRuntime::builder()
+            .config(config)
+            .model(model)
+            .build()
+            .map_err(|e| miette::miette!("agent: {e}"))?;
+        return run_tui(runtime).await;
+    }
+
+    // Headless : on résout le prompt, on rappelle la mémoire d'aphrody
+    // (recall-before-think, best-effort), on l'injecte dans la persona, puis on
+    // exécute le tour.
+    let prompt = match &args.prompt {
+        Some(p) => p.clone(),
+        None => read_prompt_from_stdin()?,
+    };
+    let recalled = recall_context(&args, &prompt).await;
+    let config = build_config(&args, recalled.as_deref());
     let model_id = config.model.clone();
     let model = build_model(&args, &model_id)?;
-
     let runtime = AgentRuntime::builder()
         .config(config)
         .model(model)
         .build()
         .map_err(|e| miette::miette!("agent: {e}"))?;
 
-    if args.tui {
-        return run_tui(runtime).await;
-    }
+    run_headless(runtime, prompt, args.verbose).await
+}
 
-    run_headless(runtime, args).await
+/// Recall-before-think (best-effort). Returns `None` with `--no-memory`,
+/// otherwise queries aphrody's memory; any failure (e.g. the local embeddings
+/// endpoint is down) is reported on stderr and skipped — it never breaks the turn.
+async fn recall_context(args: &AgentArgs, prompt: &str) -> Option<String> {
+    if args.no_memory {
+        return None;
+    }
+    match crate::self_know::recall_for_agent(prompt, 4).await {
+        Ok(Some(block)) => {
+            eprintln!("mémoire : contexte rappelé injecté dans le tour");
+            Some(block)
+        }
+        Ok(None) => None,
+        Err(e) => {
+            eprintln!("mémoire : rappel ignoré ({e})");
+            None
+        }
+    }
 }
 
 /// Headless mode: drive one full turn and print the final agent message.
-async fn run_headless(runtime: AgentRuntime, args: AgentArgs) -> miette::Result<()> {
-    let prompt = match args.prompt {
-        Some(prompt) => prompt,
-        None => read_prompt_from_stdin()?,
-    };
-
+async fn run_headless(
+    runtime: AgentRuntime,
+    prompt: String,
+    verbose: bool,
+) -> miette::Result<()> {
     let result = runtime
         .run_once(prompt)
         .await
         .map_err(|e| miette::miette!("agent: {e}"))?;
 
-    if args.verbose {
+    if verbose {
         for event in &result.events {
             echo_event(&event.msg);
         }
@@ -341,6 +386,7 @@ mod tests {
             gated: false,
             cwd: None,
             verbose: false,
+            no_memory: true,
         }
     }
 
@@ -352,7 +398,7 @@ mod tests {
 
     #[test]
     fn config_uses_default_model_when_unset() {
-        let config = build_config(&base_args());
+        let config = build_config(&base_args(), None);
         assert_eq!(config.model, DEFAULT_MODEL);
         assert_eq!(config.autonomy, AutonomyMode::FullAuto);
         // Even with no `--system`, the immutable French voice is injected.
@@ -376,7 +422,7 @@ mod tests {
             cwd: Some(PathBuf::from("/tmp/work")),
             ..base_args()
         };
-        let config = build_config(&args);
+        let config = build_config(&args, None);
         assert_eq!(config.model, "gemini-3-pro");
         assert_eq!(config.autonomy, AutonomyMode::Gated);
         // The custom `--system` is preserved AND the French voice is still enforced.
@@ -384,6 +430,16 @@ mod tests {
         assert!(system.contains("be terse"), "custom system prompt preserved");
         assert!(system.contains("français"), "French voice still enforced");
         assert_eq!(config.cwd.as_deref(), Some(std::path::Path::new("/tmp/work")));
+    }
+
+    #[test]
+    fn recalled_context_is_injected_into_system_prompt() {
+        // recall-before-think : le contexte rappelé s'ajoute à la persona, sans
+        // l'écraser (le français reste imposé).
+        let config = build_config(&base_args(), Some("RAPPEL: voici du code pertinent"));
+        let system = config.system_prompt.as_deref().unwrap_or_default();
+        assert!(system.contains("RAPPEL: voici du code pertinent"));
+        assert!(system.contains("français"));
     }
 
     #[test]
@@ -414,7 +470,7 @@ mod tests {
             model: None,
             ..base_args()
         };
-        assert_eq!(build_config(&args).model, DEFAULT_LOCAL_MODEL);
+        assert_eq!(build_config(&args, None).model, DEFAULT_LOCAL_MODEL);
     }
 
     #[test]
@@ -446,7 +502,7 @@ mod tests {
         // End-to-end offline: assemble the runtime with the stub backend and
         // drive one headless turn, asserting the scripted reply comes back.
         let args = base_args();
-        let config = build_config(&args);
+        let config = build_config(&args, None);
         let model_id = config.model.clone();
         let model = build_model(&args, &model_id).expect("stub model");
         let runtime = AgentRuntime::builder()

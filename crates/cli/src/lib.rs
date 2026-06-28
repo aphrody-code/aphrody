@@ -393,6 +393,10 @@ enum Commands {
         /// In headless mode, echo streamed text / tool events on stderr.
         #[arg(long, short)]
         verbose: bool,
+        /// Disable recall-before-think (skip injecting aphrody's self-knowledge
+        /// + past lessons into the turn). Memory recall is on by default.
+        #[arg(long)]
+        no_memory: bool,
     },
     /// Envoie un message via Slack / Telegram / Matrix.
     ///
@@ -805,6 +809,30 @@ pub(crate) enum McpAction {
 /// Currently ships a single action: `migrate` — copy records between any pair
 /// of Tier-1 providers (`mem0`, `honcho`, `sqlite-local`). Future actions
 /// (list, audit, gc) follow the same pattern.
+/// Nature of a lesson stored via `aphrody memory remember`.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum MemoryKind {
+    /// A mistake aphrody made, so it does not repeat it.
+    Mistake,
+    /// Feedback aphrody received and must honour.
+    Feedback,
+    /// A neutral note worth remembering.
+    Note,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl MemoryKind {
+    /// Wire string stored in the lesson's metadata.
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Mistake => "mistake",
+            Self::Feedback => "feedback",
+            Self::Note => "note",
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum MemoryAction {
@@ -905,6 +933,27 @@ pub(crate) enum MemoryAction {
         /// Emit results as a JSON array (parseable by jq).
         #[arg(long)]
         json: bool,
+    },
+    /// Record a lesson aphrody must remember — a mistake it made or feedback it
+    /// received — into its persistent memory, recalled automatically before
+    /// future agent turns (recall-before-think).
+    ///
+    /// Example: aphrody memory remember --kind feedback "Toujours répondre en français"
+    Remember {
+        /// Nature of the lesson (mistake / feedback / note).
+        #[arg(long, value_enum, default_value_t = MemoryKind::Note)]
+        kind: MemoryKind,
+        /// The lesson text to remember.
+        text: String,
+        /// Lessons store path (default: `~/.aphrody/lessons.sqlite`).
+        #[arg(long)]
+        store: Option<PathBuf>,
+        /// Embeddings base URL, including `/v1` (Ollama / `aphrody serve`).
+        #[arg(long, env = "OPENAI_BASE_URL", default_value_t = self_know::DEFAULT_EMBED_BASE_URL.to_string())]
+        base_url: String,
+        /// Embedding model id.
+        #[arg(long, default_value_t = self_know::DEFAULT_EMBED_MODEL.to_string())]
+        model: String,
     },
 }
 
@@ -1210,6 +1259,17 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     .execute(ctx)
                     .await?;
             },
+            MemoryAction::Remember { kind, text, store, base_url, model } => {
+                self_know::RememberCommand {
+                    kind: kind.as_str().to_string(),
+                    text,
+                    store,
+                    base_url,
+                    model,
+                }
+                .execute(ctx)
+                .await?;
+            },
         },
         Some(Commands::Re { action }) => match action {
             ReAction::Triage { path, pretty } => {
@@ -1411,9 +1471,9 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             agent_cmd::run(ch, voice, trigger, model, stub, simulate).await?;
         },
         #[cfg(not(target_arch = "wasm32"))]
-        Some(Commands::Agent { prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose }) => {
+        Some(Commands::Agent { prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose, no_memory }) => {
             agent_run::run(agent_run::AgentArgs {
-                prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose,
+                prompt, tui, stub, local, base_url, model, system, gated, cwd, verbose, no_memory,
             }).await?;
         },
         Some(Commands::Completions { shell }) => {

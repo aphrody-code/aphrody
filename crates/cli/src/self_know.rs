@@ -80,11 +80,28 @@ pub(crate) struct RecallCommand {
     pub json: bool,
 }
 
-/// Store par défaut : `$HOME/.aphrody/self-knowledge.sqlite`.
+/// Store par défaut du code (auto-connaissance) : `$HOME/.aphrody/self-knowledge.sqlite`.
 fn default_store_path() -> PathBuf {
     dirs::home_dir()
         .map(|h| h.join(".aphrody").join("self-knowledge.sqlite"))
         .unwrap_or_else(|| PathBuf::from("self-knowledge.sqlite"))
+}
+
+/// Store par défaut des leçons (erreurs / feedbacks) : `$HOME/.aphrody/lessons.sqlite`.
+fn default_lessons_path() -> PathBuf {
+    dirs::home_dir()
+        .map(|h| h.join(".aphrody").join("lessons.sqlite"))
+        .unwrap_or_else(|| PathBuf::from("lessons.sqlite"))
+}
+
+/// Tronque un fragment pour l'injection dans un prompt (lignes + caractères).
+fn trim_snippet(content: &str) -> String {
+    let mut out: String = content.lines().take(12).collect::<Vec<_>>().join("\n");
+    if out.len() > 700 {
+        out.truncate(700);
+        out.push('…');
+    }
+    out
 }
 
 /// Installe le provider crypto `ring` (rustls 0.23, cf. CLAUDE.md §7).
@@ -396,6 +413,148 @@ impl TerminalCommand for RecallCommand {
         }
         Ok(())
     }
+}
+
+/// `aphrody memory remember` — persiste une leçon (erreur / feedback / note) dans
+/// le store des leçons, vectorisée pour le rappel sémantique automatique.
+pub(crate) struct RememberCommand {
+    /// Nature de la leçon : `mistake`, `feedback` ou `note`.
+    pub kind: String,
+    /// Contenu de la leçon.
+    pub text: String,
+    /// Store des leçons (défaut : `~/.aphrody/lessons.sqlite`).
+    pub store: Option<PathBuf>,
+    /// URL de base du endpoint d'embeddings (avec `/v1`).
+    pub base_url: String,
+    /// Modèle d'embeddings.
+    pub model: String,
+}
+
+#[async_trait]
+impl TerminalCommand for RememberCommand {
+    async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
+        if self.text.trim().is_empty() {
+            return Err(miette::miette!("memory remember : le texte est vide"));
+        }
+        install_crypto_provider();
+        let store = self
+            .store
+            .clone()
+            .map_or_else(default_lessons_path, |p| p);
+        if let Some(parent) = store.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).into_diagnostic()?;
+            }
+        }
+
+        let http = reqwest::Client::new();
+        let emb = embed_batch(
+            &http,
+            &self.base_url,
+            &self.model,
+            std::slice::from_ref(&self.text),
+        )
+        .await?
+        .into_iter()
+        .next()
+        .ok_or_else(|| miette::miette!("la leçon n'a produit aucun vecteur"))?;
+
+        let mut backend = SqliteBackend::open(&store)
+            .await
+            .map_err(|e| miette::miette!("ouverture du store {}: {e}", store.display()))?;
+        let mut rec = MemoryRecord::new("lesson", self.text.clone()).with_embedding(emb);
+        rec.metadata.insert("kind".into(), json!(self.kind));
+        let key = format!("lesson/{}", rec.id);
+        backend
+            .put(&key, rec)
+            .await
+            .map_err(|e| miette::miette!("écriture de la leçon: {e}"))?;
+
+        println!(
+            "aphrody retient cette leçon [{}] : « {} »",
+            self.kind,
+            self.text.lines().next().unwrap_or(&self.text)
+        );
+        Ok(())
+    }
+}
+
+/// Rappel automatique avant un tour d'agent (« recall-before-think »).
+///
+/// Vectorise `query`, fouille **les deux** stores par défaut (code +
+/// leçons), fusionne par score décroissant, et rend un bloc texte prêt à
+/// injecter dans le system prompt. Best-effort : si aucun store n'existe rend
+/// `Ok(None)` ; les erreurs (embeddings indisponibles) remontent pour que
+/// l'appelant les ignore proprement sans casser le tour.
+pub(crate) async fn recall_for_agent(
+    query: &str,
+    top_k: usize,
+) -> miette::Result<Option<String>> {
+    install_crypto_provider();
+    let stores: Vec<(PathBuf, &str)> = [
+        (default_store_path(), "code"),
+        (default_lessons_path(), "leçon"),
+    ]
+    .into_iter()
+    .filter(|(p, _)| p.exists())
+    .collect();
+    if stores.is_empty() {
+        return Ok(None);
+    }
+
+    let http = reqwest::Client::new();
+    let qv = embed_batch(
+        &http,
+        DEFAULT_EMBED_BASE_URL,
+        DEFAULT_EMBED_MODEL,
+        std::slice::from_ref(&query.to_string()),
+    )
+    .await?
+    .into_iter()
+    .next()
+    .ok_or_else(|| miette::miette!("la requête n'a produit aucun vecteur"))?;
+
+    let mut hits: Vec<(f32, String)> = Vec::new();
+    for (store, origin) in &stores {
+        let backend = SqliteBackend::open(store)
+            .await
+            .map_err(|e| miette::miette!("ouverture du store {}: {e}", store.display()))?;
+        for (rec, score) in backend
+            .search(&qv, top_k)
+            .await
+            .map_err(|e| miette::miette!("recherche: {e}"))?
+        {
+            let label = match *origin {
+                "code" => {
+                    let path = rec.metadata.get("path").and_then(Value::as_str).unwrap_or("?");
+                    let start = rec.metadata.get("start_line").and_then(Value::as_u64).unwrap_or(0);
+                    let end = rec.metadata.get("end_line").and_then(Value::as_u64).unwrap_or(0);
+                    format!("code {path}:{start}-{end}")
+                }
+                _ => {
+                    let kind = rec.metadata.get("kind").and_then(Value::as_str).unwrap_or("note");
+                    format!("leçon [{kind}]")
+                }
+            };
+            hits.push((score, format!("({label})\n{}", trim_snippet(&rec.content))));
+        }
+    }
+
+    hits.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    hits.truncate(top_k);
+    if hits.is_empty() {
+        return Ok(None);
+    }
+
+    let body = hits
+        .iter()
+        .map(|(_, t)| format!("---\n{t}"))
+        .collect::<Vec<_>>()
+        .join("\n\n");
+    Ok(Some(format!(
+        "Contexte rappelé de ta mémoire (ton propre code source et tes leçons \
+         passées). Appuie-toi dessus si c'est pertinent, ignore-le sinon :\n\n{body}"
+    )))
 }
 
 #[cfg(test)]
