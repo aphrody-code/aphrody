@@ -231,6 +231,11 @@ members = [
     # identity}.ts, pushed past it via mmap / arc-swap / Send+Sync by construction.
     "crates/aphrody-agent-home",
 
+    # aphrody-serve — OpenAI-compatible HTTP server (/v1/chat/completions stream +
+    # /v1/models + /healthz) for local open-weight engines (Ollama / llama.cpp /
+    # vLLM) via aphrody-gateway's GatewayAdapter. The `aphrody serve` surface.
+    "crates/aphrody-serve",
+
     # Python/Rust PyO3 bindings for high-performance shared code in Python RAG
     "py/aphrody",
 

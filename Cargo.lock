@@ -992,6 +992,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-serve"
+version = "1.0.0-canary"
+dependencies = [
+ "anyhow",
+ "aphrody-gateway",
+ "axum",
+ "clap",
+ "futures",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "aphrody-session"
 version = "1.0.0-canary"
 dependencies = [
