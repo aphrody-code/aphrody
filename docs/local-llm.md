@@ -96,6 +96,10 @@ print(r.choices[0].message.content)
 | `POST /v1/completions`      |  ✅    | Legacy text completion (transparent relay).                   |
 | `POST /v1/embeddings`       |  ✅    | Embeddings (transparent relay; needs an embedding model — `ollama pull nomic-embed-text`). |
 
+> Upstream Ollama additionally serves `/v1/responses` (non-stateful) and
+> `/v1/models/{model}` that this proxy does not yet relay/map; the four routes
+> above are what `aphrody-serve` exposes today.
+
 ## Configuration
 
 `aphrody-serve` is 12-factor; every flag has an env fallback.
@@ -148,8 +152,10 @@ concurrent serving; **memory-hungry** — on a 12 GB card use a small or quantiz
 aphrody-serve --base-url http://127.0.0.1:8000 --api-key dummy
 ```
 
-**LMCache** (`~/vllm-env`, KV-cache offload to CPU/disk → faster TTFT for
-long-context/RAG/multi-turn) plugs into vLLM **V1** via its KV connector:
+**LMCache** (`~/vllm-env`, KV-cache offload across a tiered hierarchy — CPU RAM,
+local disk, or remote stores (Redis/S3/Mooncake/NIXL) → faster TTFT for
+long-context/RAG/multi-turn; official long-doc Q&A benchmark: 75 % lower mean
+TTFT, 757 ms → 185 ms) plugs into vLLM **V1** via its KV connector:
 
 ```bash
 LMCACHE_CHUNK_SIZE=256 LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=5 \
@@ -157,9 +163,15 @@ LMCACHE_CHUNK_SIZE=256 LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=5 \
   --kv-transfer-config '{"kv_connector":"LMCacheConnectorV1","kv_role":"kv_both"}'
 ```
 
-Confirm connector name / env keys against the LMCache docs
-(`https://docs.lmcache.ai/getting_started/quickstart.html`) — they track the
-installed vLLM version.
+Verified against the official LMCache quickstart and configuration reference: the
+connector name `LMCacheConnectorV1`, `kv_role` `kv_both`, and the `LMCACHE_*` env
+keys above (`LMCACHE_CHUNK_SIZE` default 256, `LMCACHE_LOCAL_CPU` default true,
+`LMCACHE_MAX_LOCAL_CPU_SIZE` in GB) are exact. The modern Multiprocess (MP)
+alternative is `--kv-transfer-config '{"kv_connector":"LMCacheMPConnector","kv_role":"kv_both"}'`
+(requires vLLM ≥ 0.20.0; our 0.23.0 qualifies). If `LMCACHE_CONFIG_FILE` is set,
+individual `LMCACHE_*` env vars are ignored.
+(`https://docs.lmcache.ai/getting_started/quickstart.html`,
+`https://docs.lmcache.ai/api_reference/configurations.html`)
 
 ### gemma — native JAX (research / fine-tuning)
 
@@ -211,7 +223,7 @@ Ungated GGUF mirrors (unsloth, bartowski) need no auth.
 NVIDIA RTX 4070 12 GB (Ada, sm_89) · Windows driver / CUDA 13.3 projected into
 WSL2 · `nvcc` 13.3. The 12 GB VRAM ceiling drives model-size choices: 7B-Q4 GGUF
 fits comfortably with room for context; 12B-Q4 (the `gemma4` family) fits via
-Ollama's offloading; for vLLM prefer ≤3–7B or AWQ-quantized.
+Ollama's offloading; for vLLM, prefer AWQ/GPTQ INT4 — ~7B fits comfortably and a ~13–14B-class model is feasible with a capped `--max-model-len` (no vLLM-imposed size cap, just VRAM).
 
 ## Roadmap
 
@@ -227,6 +239,6 @@ Ollama's offloading; for vLLM prefer ≤3–7B or AWQ-quantized.
 | M7 | local agent loop (tool-calling via Ollama) | `aphrody run` does a tool round-trip |
 | M8 | in-process engine (candle), host-only | serves with Ollama stopped |
 
-Community SDKs & tools that work against this server: [`local-llm-ecosystem.md`](./local-llm-ecosystem.md). Engine choice (Ollama / llama.cpp / vLLM): [`local-llm-backends.md`](./local-llm-backends.md).
+Community SDKs & tools that work against this server: [`local-llm-ecosystem.md`](./local-llm-ecosystem.md). Engine choice (Ollama / llama.cpp / vLLM): [`local-llm-backends.md`](./local-llm-backends.md). Model choice (Gemma / DeepSeek / Qwen): [`local-llm-models.md`](./local-llm-models.md).
 
 Full plan & rationale: [`PLAN.md`](./PLAN.md) · [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) · [`ARCHITECTURE.md`](./ARCHITECTURE.md) · project role in [`../CLAUDE.md`](../CLAUDE.md).
