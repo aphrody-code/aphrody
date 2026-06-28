@@ -139,6 +139,25 @@ enum Commands {
         json: bool,
     },
 
+    /// Sert les modèles open-weight locaux via une API OpenAI-compatible
+    /// (`/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`,
+    /// `/v1/models`). Backend par défaut : Ollama sur 127.0.0.1:11434.
+    #[cfg(not(target_arch = "wasm32"))]
+    Serve {
+        /// Adresse/IP d'écoute.
+        #[arg(long, default_value = "127.0.0.1")]
+        host: std::net::IpAddr,
+        /// Port d'écoute.
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+        /// URL racine du moteur OpenAI-compatible (Ollama / vLLM / llama.cpp).
+        #[arg(long, env = "OPENAI_BASE_URL")]
+        base_url: Option<String>,
+        /// Jeton bearer transmis au backend (ignoré par Ollama).
+        #[arg(long, env = "OPENAI_API_KEY", default_value = "ollama")]
+        api_key: String,
+    },
+
     /// A2A coordination (serve, tick, invoke peers)
     A2a {
         #[command(subcommand)]
@@ -1047,6 +1066,13 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Version { json }) => {
             VersionCommand { json }.execute(ctx).await?;
+        },
+        Some(Commands::Serve { host, port, base_url, api_key }) => {
+            use miette::IntoDiagnostic;
+            let addr = std::net::SocketAddr::new(host, port);
+            let base = base_url.unwrap_or_else(|| aphrody_serve::DEFAULT_BACKEND_URL.to_owned());
+            let state = aphrody_serve::local_state(base, api_key).into_diagnostic()?;
+            aphrody_serve::serve(addr, state).await.into_diagnostic()?;
         },
         Some(Commands::Doctor { json }) => {
             DoctorCommand { json_output: json }.execute(ctx).await?;

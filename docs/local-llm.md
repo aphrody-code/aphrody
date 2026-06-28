@@ -178,6 +178,22 @@ sampler = gm.text.ChatSampler(model=model, params=params, multi_turn=True)
 print(sampler.chat("Hello"))
 ```
 
+### Speech-to-text — whisper.cpp
+
+CUDA build at `~/whisper.cpp/build/bin` (sm_89), model `ggml-large-v3-turbo.bin`.
+Verified: transcribes `samples/jfk.wav` on GPU in <1 s. Ships `whisper-server`,
+an OpenAI-style transcription API.
+
+```bash
+~/whisper.cpp/build/bin/whisper-cli -m ~/whisper.cpp/models/ggml-large-v3-turbo.bin -f audio.wav
+# OpenAI-style STT server:
+~/whisper.cpp/build/bin/whisper-server -m ~/whisper.cpp/models/ggml-large-v3-turbo.bin --host 127.0.0.1 --port 8081
+```
+
+The local STT backend for the `aphrody-voice` crate and a future
+`/v1/audio/transcriptions` route on `aphrody-serve`. (TTS — Piper/Kokoro — would
+close the voice loop.)
+
 ## Getting models — Hugging Face CLI
 
 The `hf` CLI (1.21.0, uv-tool install) downloads weights into the shared cache.
@@ -211,6 +227,6 @@ Ollama's offloading; for vLLM prefer ≤3–7B or AWQ-quantized.
 | M7 | local agent loop (tool-calling via Ollama) | `aphrody run` does a tool round-trip |
 | M8 | in-process engine (candle), host-only | serves with Ollama stopped |
 
-Community SDKs & tools that work against this server: [`local-llm-ecosystem.md`](./local-llm-ecosystem.md).
+Community SDKs & tools that work against this server: [`local-llm-ecosystem.md`](./local-llm-ecosystem.md). Engine choice (Ollama / llama.cpp / vLLM): [`local-llm-backends.md`](./local-llm-backends.md).
 
 Full plan & rationale: [`PLAN.md`](./PLAN.md) · [`SOURCE_OF_TRUTH.md`](./SOURCE_OF_TRUTH.md) · [`ARCHITECTURE.md`](./ARCHITECTURE.md) · project role in [`../CLAUDE.md`](../CLAUDE.md).

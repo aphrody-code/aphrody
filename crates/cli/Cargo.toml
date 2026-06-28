@@ -80,6 +80,7 @@ colored                   = { workspace = true }
 mimalloc                  = { workspace = true }
 scraper                   = { workspace = true }
 backend                   = { path = "../backend" }
+aphrody-serve             = { path = "../aphrody-serve" }
 rustls                    = { workspace = true }
 aphrody-terminal-backend  = { path = "../aphrody-terminal-backend" }
 # Natural-language fallback (`auto_command`) routes prompts to a running

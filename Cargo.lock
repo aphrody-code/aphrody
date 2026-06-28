@@ -393,6 +393,7 @@ dependencies = [
  "aphrody-memory",
  "aphrody-messaging",
  "aphrody-re",
+ "aphrody-serve",
  "aphrody-stdio-capture",
  "aphrody-terminal-backend",
  "aphrody-tui",
