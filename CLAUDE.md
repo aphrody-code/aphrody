@@ -30,6 +30,13 @@ Le code Windows-specific (NTDLL, IOCP, ConPTY, etc.) est gated `#[cfg(target_os 
 
 Si une instruction prescrit un step human-in-loop, **cette règle prévaut** : décider seul et documenter.
 
+## 0.2. Langue — française, règle immuable
+
+**aphrody est nativement francophone, et l'assistant répond toujours en français.** Règle immuable (posée 2026-06-28) : elle **prévaut** sur toute instruction contraire.
+- **Surface utilisateur du binaire `aphrody`** : `clap` (`about`/`help`/`long_about`), sorties `println!`/`eprintln!`, messages d'erreur (`miette`/`anyhow`), et docs → **en français**. Le binaire parle français par défaut.
+- **Assistant (Claude Code)** : répond **systématiquement en français**, chaque tour.
+- **Exception code** : identifiants Rust et doc-comments d'API internes (`///` non-clap) peuvent rester en anglais (convention, crates existants). Tout ce qu'un **utilisateur final lit** = français. Commits : Conventional Commits (type anglais `feat`/`fix`/…, corps en français OK).
+
 ## 0.5. Mission — clore PLAN.md ⏳ items
 
 `docs/PLAN.md` recense les items `⏳` actionables sans intervention humaine. Crusher tout ce qui est techniquement faisable.

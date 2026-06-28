@@ -369,15 +369,15 @@ enum Commands {
         /// Deterministic offline backend (no network, no API key). For smoke / CI.
         #[arg(long)]
         stub: bool,
-        /// Drive a local OpenAI-compatible backend (Ollama / llama.cpp / vLLM /
-        /// `aphrody serve`) instead of cloud Gemini — no API key required.
+        /// Utilise un backend local compatible OpenAI (Ollama / llama.cpp / vLLM /
+        /// `aphrody serve`) au lieu de Gemini cloud — aucune clé API requise.
         #[arg(long)]
         local: bool,
-        /// Base URL for `--local` (includes `/v1`). Defaults to `OPENAI_BASE_URL`
-        /// then Ollama (`http://127.0.0.1:11434/v1`).
+        /// URL de base pour `--local` (avec le `/v1`). Par défaut `OPENAI_BASE_URL`
+        /// puis Ollama (`http://127.0.0.1:11434/v1`).
         #[arg(long, env = "OPENAI_BASE_URL")]
         base_url: Option<String>,
-        /// Model id (default: a fast Gemini flash tier; `qwen3` with `--local`).
+        /// Identifiant du modèle (défaut : un tier Gemini flash rapide ; `qwen3` avec `--local`).
         #[arg(long, short)]
         model: Option<String>,
         /// Override the system prompt prepended to every model request.
