@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/m3-tokens",
-  "version": "3.2.2",
+  "version": "3.2.4",
   "description": "Material 3 design tokens (--md-sys-*) for the @aphrody/material-web fork: MUI-theme → M3 token CSS generation and runtime Material You dynamic colour via material-color-utilities.",
   "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-tokens#readme",
   "bugs": {

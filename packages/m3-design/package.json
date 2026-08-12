@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/m3-design",
-  "version": "3.2.2",
+  "version": "3.2.5",
   "description": "Automated design engine for Material Design 3 and Google Design",
   "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-design#readme",
   "bugs": {
@@ -24,8 +24,8 @@
     "typecheck:fast": "tsgo --noEmit"
   },
   "dependencies": {
-    "@aphrody/bun-rs": "workspace:*",
-    "@aphrody/m3-react": "workspace:*"
+    "@aphrody/bun-rs": "^3.2.4",
+    "@aphrody/m3-react": "^3.2.4"
   },
   "devDependencies": {
     "@types/node": "catalog:",

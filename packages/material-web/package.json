@@ -1,6 +1,6 @@
 {
   "name": "@aphrody/material-web",
-  "version": "3.2.2",
+  "version": "3.2.4",
   "description": "Material Design 3 web components (Lit) — MUI + MUI X migration target",
   "keywords": [
     "components",
