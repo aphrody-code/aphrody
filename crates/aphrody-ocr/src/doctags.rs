@@ -130,10 +130,11 @@ impl Document {
         if looped {
             tracing::debug!(kept = trimmed.len(), "truncated a looping generation");
         }
-        if trimmed.is_empty() {
+        let cleaned = strip_watermarks(&trimmed);
+        if cleaned.is_empty() {
             return Self { blocks: Vec::new() };
         }
-        Self { blocks: vec![Block { tag: "text".to_owned(), text: trimmed }] }
+        Self { blocks: vec![Block { tag: "text".to_owned(), text: cleaned }] }
     }
 
     /// Parse only the `DocTags` blocks, without the plain-text fallback.
@@ -278,6 +279,45 @@ pub fn html_to_text(raw: &str) -> String {
         normalised.push_str(&trimmed);
     }
     normalised.trim().to_owned()
+}
+
+/// Drop lines that are nothing but a bare URL or domain.
+///
+/// Scans carry watermarks. A Dragon Ball databook plate came back with
+/// `capsulecommentary.com` sitting between two paragraphs of Japanese — read
+/// faithfully by the model, and pure noise in a transcription.
+///
+/// The rule is deliberately narrow: only a line whose ENTIRE content is one
+/// URL-shaped token goes. A domain mentioned inside a sentence stays, because
+/// there the model is transcribing the page rather than its watermark.
+#[must_use]
+pub fn strip_watermarks(text: &str) -> String {
+    let kept: Vec<&str> = text.lines().filter(|line| !is_bare_url(line.trim())).collect();
+    kept.join("\n").trim().to_owned()
+}
+
+/// Whether a whole line is a single URL or domain and nothing else.
+fn is_bare_url(line: &str) -> bool {
+    if line.is_empty() || line.split_whitespace().count() != 1 {
+        return false;
+    }
+    let token = line.trim_end_matches(['.', ',', ';', ':', '!', '?']);
+    if token.starts_with("http://") || token.starts_with("https://") || token.starts_with("www.") {
+        return true;
+    }
+
+    // A bare domain: at least one dot, a known-shaped TLD, and nothing that
+    // would make it a sentence or a file name.
+    let Some((host, tld)) = token.rsplit_once('.') else { return false };
+    if host.is_empty() || !(2..=24).contains(&tld.len()) {
+        return false;
+    }
+    let tld_is_alpha = tld.chars().all(|c| c.is_ascii_alphabetic());
+    let host_is_hostname = host
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.' || c == '_');
+    // `1-0001.jpg` and `12.5` must not qualify; `capsulecommentary.com` must.
+    tld_is_alpha && host_is_hostname && host.chars().any(|c| c.is_ascii_alphabetic())
 }
 
 /// How many consecutive repeats of the same token run count as a stuck loop.
@@ -609,6 +649,62 @@ mod tests {
         // The strict parser is what a DocTags-only caller wants.
         assert!(Document::parse_doctags("just prose").blocks.is_empty());
         assert!(!Document::parse("just prose").blocks.is_empty());
+    }
+
+    #[test]
+    fn a_watermark_line_is_dropped_from_a_transcription() {
+        // Exactly what came back from a databook plate: a watermark sitting
+        // between two paragraphs of Japanese.
+        let raw = "宿敵ベジータが\n悟空を認める!\n\ncapsulecommentary.com\n\nブウと闘う悟空を見て";
+        let cleaned = strip_watermarks(raw);
+        assert!(!cleaned.contains("capsulecommentary"), "{cleaned}");
+        assert!(cleaned.contains("宿敵ベジータが"), "{cleaned}");
+        assert!(cleaned.contains("ブウと闘う悟空を見て"), "{cleaned}");
+    }
+
+    #[test]
+    fn every_url_shape_is_recognised() {
+        for line in [
+            "capsulecommentary.com",
+            "https://example.com/page",
+            "http://example.org",
+            "www.shueisha.co.jp",
+            "sub.domain.example.net",
+            "example.com.",
+        ] {
+            assert!(is_bare_url(line), "{line}");
+        }
+    }
+
+    #[test]
+    fn text_that_merely_contains_a_domain_is_kept() {
+        // A page that cites a site in a sentence is transcribing content, not
+        // a watermark.
+        for line in [
+            "Voir capsulecommentary.com pour la suite",
+            "© 集英社",
+            "12.5",
+            "1-0001.jpg",
+            "Vol.42",
+            "",
+            "M. Satan",
+        ] {
+            assert!(!is_bare_url(line), "{line}");
+        }
+    }
+
+    #[test]
+    fn stripping_watermarks_never_empties_real_text() {
+        let text = "DRAGON BALL 大全集\n集英社 定価1800円";
+        assert_eq!(strip_watermarks(text), text);
+    }
+
+    #[test]
+    fn a_page_that_is_only_a_watermark_reads_as_textless() {
+        // Nothing but the watermark: there is no transcription to record.
+        let doc = Document::parse("capsulecommentary.com<|endofassistant|>");
+        assert!(!doc.has_text(), "{:#?}", doc.blocks);
+        assert_eq!(doc.to_markdown(), None);
     }
 
     #[test]

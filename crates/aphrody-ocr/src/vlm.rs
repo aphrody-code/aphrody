@@ -266,6 +266,10 @@ impl VlmRunner {
 /// Public because a caller that drives its own loop — one picking between the
 /// per-process and resident backends — needs the same file selection and the
 /// same order, or a resumed run would skip different pages than it recorded.
+///
+/// # Errors
+///
+/// [`OcrError::Io`] when the directory cannot be read.
 pub fn list_images_sorted(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut images = list_images(dir)?;
     images.sort();
