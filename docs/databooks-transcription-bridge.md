@@ -262,6 +262,20 @@ install -m 0755 "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/aphrody" ~/.
 Le `.cargo/config.toml` par défaut vise Windows MSVC : sans `CARGO_CONFIG`, le
 build échoue (cf. [`../DEPLOY.md`](../DEPLOY.md)).
 
+**Déployé et vérifié le 2026-08-22** — build release en 28 min, binaire de
+105 Mo installé dans `~/.local/bin/aphrody` (l'ancien conservé en `.prev`) :
+
+```
+$ aphrody model accel
+accelerators  cpu          # 12 threads, pas de CUDA — conforme au VPS
+$ aphrody ocr audit <lot avec un jeton de contrôle>   → exit 1, page nommée
+$ aphrody ocr audit <lot propre>                      → exit 0
+```
+
+Le VPS définit `APHRODY_HOME=/home/ubuntu`, donc le store vit dans
+`/home/ubuntu/models` et non `~/.aphrody/models` : c'est la racine d'état que
+`ModelStore::open` documente, et celle qu'`aphrody-embed` utilise déjà.
+
 ---
 
 ## 8. État au 2026-08-21
