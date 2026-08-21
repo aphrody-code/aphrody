@@ -14,10 +14,14 @@
  * Usage :
  *   bun scripts/databooks-transcribe.ts [--lots 1-29] [--travail <dir>]
  *                                       [--modele dots-ocr] [--simulation]
- *                                       [--garder-images]
+ *                                       [--garder-images] [--resident]
+ *
+ * ATTENTION : `--simulation` ne simule QUE le dépôt. Les planches sont bel et
+ * bien lues par le GPU — soit environ une heure par lot. Pour vérifier la
+ * chaîne rapidement, restreindre d'abord avec `--lots 1`.
  */
 
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { $ } from "bun";
 
@@ -31,6 +35,7 @@ interface Options {
 	modele: string;
 	simulation: boolean;
 	garderImages: boolean;
+	resident: boolean;
 	aphrody: string;
 }
 
@@ -82,6 +87,7 @@ function options(): Options {
 		modele: opt("modele") ?? "dots-ocr",
 		simulation: args.includes("--simulation"),
 		garderImages: args.includes("--garder-images"),
+		resident: args.includes("--resident"),
 		aphrody: opt("aphrody") ?? process.env.APHRODY_BIN ?? "aphrody",
 	};
 }
@@ -112,7 +118,10 @@ async function lis(lot: string, local: string, o: Options): Promise<string> {
 		return jsonl;
 	}
 	console.log(`  ${lot} : lecture de ${total - deja} planche(s) restantes…`);
-	await $`${o.aphrody} ocr batch ${images} --model ${o.modele} --out ${jsonl} --skip-done`;
+	// Le modèle résident évite de recharger plusieurs gigaoctets par planche ;
+	// le défaut reste le processus par planche, qui isole les pannes.
+	const extra = o.resident ? ["--server"] : [];
+	await $`${o.aphrody} ocr batch ${images} --model ${o.modele} --out ${jsonl} --skip-done ${extra}`;
 	return jsonl;
 }
 
@@ -140,8 +149,15 @@ async function main(): Promise<void> {
 	const o = options();
 	console.log(
 		`transcription databooks — ${o.lots.length} lot(s), modèle ${o.modele}` +
-			`${o.simulation ? " (simulation)" : ""}\ntravail : ${o.travail}\n`,
+			`${o.resident ? ", modèle résident" : ""}${o.simulation ? ", dépôt simulé" : ""}` +
+			`\ntravail : ${o.travail}`,
 	);
+	if (o.simulation) {
+		// « simulation » laisse croire que rien ne tourne ; la lecture, elle, a
+		// bien lieu — et c'est le poste qui coûte des heures.
+		console.log("note : --simulation ne simule que le dépôt, les planches sont lues normalement");
+	}
+	console.log("");
 
 	let faits = 0;
 	let echecs = 0;
