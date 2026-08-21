@@ -164,10 +164,21 @@ Mesuré sur ce poste (RTX 4070, `-ngl 99`) : **~9,3 s par planche** avec
 | un lot | 400 | ~1 h |
 | le corpus restant | 11 277 | **~29 h** |
 
-Un process par planche est délibéré pour ce premier jet : c'est du temps perdu
-au rechargement, mais une planche malformée ne peut pas emporter un lot de
-quatre cents. Passer à `llama-server` (modèle résident) est le levier évident si
-le débit devient prioritaire — le changement est contenu derrière `VlmRunner`.
+### Deux backends, deux compromis
+
+| Backend | Option | Compromis |
+|---|---|---|
+| processus par planche | *(défaut)* | recharge les poids à chaque page ; une planche qui plante ne coûte qu'elle-même |
+| modèle résident | `--server` | charge une fois ; un serveur qui meurt emporte le run |
+
+Le défaut reste le processus par planche : sur un lot de quatre cents, l'isolation
+vaut son prix. `--server` démarre un `llama-server` sur loopback, vérifie sa
+santé avant la première page, et le tue à la sortie — un batch interrompu ne
+laisse jamais plusieurs gigaoctets de VRAM occupés.
+
+Les deux backends partagent la même boucle et la même sélection de fichiers
+(`list_images_sorted`) : un ordre différent ferait sauter, à une reprise, des
+planches autres que celles enregistrées.
 
 C'est précisément la charge que le cap du projet vise : une tâche répétée,
 longue, sans humain dans la boucle, exécutée en tâche de fond.
