@@ -166,6 +166,33 @@ ssh dbfr 'cd ~/shenron/apps/site && \
 
 Ajouter `--simulation` au dépôt pour voir ce qui partirait sans rien envoyer.
 
+### Vérifier avant de déposer
+
+```bash
+aphrody ocr audit lot-001.jsonl          # exit != 0 sur un défaut bloquant
+```
+
+Un dépôt est difficile à défaire. `audit` cherche ce qu'un lot entier peut
+cacher : jeton de contrôle survivant, génération bloquée en boucle, balisage
+résiduel — tous bloquants — et les filigranes, signalés sans bloquer parce que
+c'est du bruit et non de la corruption. Chaque constat nomme sa page.
+
+La boucle autonome l'appelle entre la lecture et le dépôt : un lot refusé
+n'arrête pas les suivants.
+
+### Rattraper des résultats produits avant une règle
+
+```bash
+aphrody ocr batch … --raw                # conserve la sortie brute
+aphrody ocr clean lot-001.jsonl          # rejoue parsing et filtres
+```
+
+Quand une règle de nettoyage est ajoutée, relire les images coûterait des heures
+de GPU pour un changement qui ne touche que le post-traitement. `clean` rejoue
+le parsing sur la sortie brute conservée par `--raw`. Les lignes sans `raw`
+traversent intactes : une commande de maintenance ne doit pas faire disparaître
+des pages en silence.
+
 **Reprise.** `--skip-done` relit le JSONL et saute les planches déjà traitées.
 Chaque ligne est écrite ET flushée dès que la planche est finie, donc un
 processus tué ne coûte que la planche en cours. `--limit` compte les planches
@@ -209,7 +236,22 @@ longue, sans humain dans la boucle, exécutée en tâche de fond.
 
 ## 8. État au 2026-08-21
 
-- Pont **vérifié de bout en bout** : 11 planches lues, déposées, et visibles
-  publiquement (`GET /api/databooks/1` renvoie `pagesTranscrites: 5`).
-- Lot 001 (400 planches) en cours de traitement.
-- 28 lots restants.
+**Lot 001 terminé** : 400/400 planches lues, **zéro échec**, en 50 minutes
+(7,6 s/planche). **82 %** portaient du texte. **328 transcriptions déposées** et
+publiquement visibles :
+
+| Fiche | Transcrites |
+|---|---|
+| Daizenshuu 1 — Complete Illustrations | 5/233 |
+| Daizenshuu 2 — Story Guide | 210/267 |
+| Daizenshuu 4 — World Guide | 113/167 |
+
+Le Daizenshuu 1 reste à 5 : c'est un artbook, ses planches sont des
+illustrations pleine page. Le pipeline les a classées « sans texte » plutôt que
+de les décrire — le comportement voulu.
+
+**Audit de ce qui est en production** : 328 transcriptions, 0 jeton de contrôle,
+0 boucle résiduelle, 0 filigrane. Le seul texte très court (`体術技`) est
+légitime.
+
+Lot 002 en cours ; 27 lots ensuite.
