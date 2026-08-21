@@ -74,6 +74,28 @@ japonais imprimé de façon exploitable :
 2-0007  むかしむかし のこと 都から数千公里も 彼方のある山奥…
 ```
 
+### Exactitude mesurée contre une transcription humaine
+
+Le corpus contient quelques planches transcrites à la main avant ce pont. La
+fiche 288 (*WSJ 50th Anniversary — Best Scenes Top 10*), page 277, sert donc de
+référence. Passée au pipeline :
+
+| | Texte |
+|---|---|
+| référence humaine | `宿敵ベジータが悟空を認める！` … `ふたりのライバル関係が決着したといえるエピソード！` |
+| dots.ocr | **identique, caractère pour caractère** |
+
+Le modèle capture même ce que la référence avait omis : `JC42巻 其之五百十`
+(volume et numéro de chapitre) et le titre `「ベジータとカカロット」`. Il lit
+aussi le filigrane `capsulecommentary.com` incrusté dans l'image — fidèle, mais
+c'est du bruit qu'un nettoyage éditorial voudra retirer.
+
+**Attention au format attendu.** Ces transcriptions de référence sont
+**enrichies** : japonais, puis romaji, puis traduction française. Le pipeline ne
+produit que le premier étage — ce que le prompt demande explicitement
+(« ne traduis pas de toi-même : transcris »). Romaji et traduction restent une
+étape éditoriale distincte.
+
 **Ce que ni l'un ni l'autre ne fait** : lire le texte manuscrit vertical des
 bulles de manga. C'est hors domaine pour les deux — ce sont des modèles de
 document, pas de manga. Les planches de manga pur ressortent donc « sans
