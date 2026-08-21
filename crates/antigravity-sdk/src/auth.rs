@@ -129,14 +129,21 @@ pub fn token_from_credential_manager() -> Result<OAuthToken, SdkError> {
         }
     }
 
+    // On Windows the credential manager is the only source, so this returns
+    // directly; the fallback below is what every other target reaches. Gating
+    // the fallback too keeps it from being compiled as dead code behind that
+    // `return`, which is what `unreachable_expression` was flagging.
     #[cfg(target_os = "windows")]
     {
-        return windows_impl::read_credential();
+        windows_impl::read_credential()
     }
 
-    Err(SdkError::Unsupported(
-        "no Antigravity OAuth token found; run `agy` or `aphrody antigravity login`",
-    ))
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err(SdkError::Unsupported(
+            "no Antigravity OAuth token found; run `agy` or `aphrody antigravity login`",
+        ))
+    }
 }
 
 #[cfg(unix)]
