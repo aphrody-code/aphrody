@@ -32,6 +32,30 @@
 
 ## 1. Mission & non-mission
 
+### Cap actuel — 2026-08-21 : inférence et modèles locaux
+
+`aphrody` est un **client et une toolbox pour l'inférence et la gestion de
+modèles locaux**, orientés usages **programmatiques** : OCR, transcription
+visuelle, transcription audio, et exécution de tâches répétées **en tâche de
+fond**. Sans clé d'API, sans réseau au moment de l'inférence.
+
+Plan, état d'avancement et prochaines étapes :
+[`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md).
+Première application réelle, branchée de bout en bout :
+[`databooks-transcription-bridge.md`](databooks-transcription-bridge.md).
+
+| Couche | Crate | Rôle |
+|---|---|---|
+| poids | `aphrody-models` | références épinglées, catalogue vérifié, téléchargement repris et haché, inspection d'en-têtes, sonde GPU, store LRU |
+| exécution | `aphrody-infer` | ONNX Runtime (CUDA → `DirectML` → CPU) + découverte llama.cpp |
+| tâche | `aphrody-ocr` | image → markdown, ou verdict « sans texte » |
+
+Commandes : `aphrody model`, `aphrody infer`, `aphrody ocr`.
+
+Le cap précédent (« Apex Autonomous Agent », 2026-05-19) reste valide comme
+état des briques agent, mais n'est plus la priorité : elles deviennent des
+consommatrices de la toolbox locale.
+
 ### Mission
 
 Livrer **le CLI ultime cross-platform** :
