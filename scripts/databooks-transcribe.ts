@@ -61,6 +61,31 @@ export function nomLot(n: number): string {
 	return `lot-${String(n).padStart(3, "0")}`;
 }
 
+/** Nombre de lots par défaut si le VPS ne répond pas. */
+const LOTS_PAR_DEFAUT = 29;
+
+/**
+ * Combien de lots existent réellement sur le VPS.
+ *
+ * Le manifeste de chaque lot porte le total (`"lots": 29`). Le lire évite de
+ * figer un compte qui changera au prochain export : un nombre codé en dur ferait
+ * silencieusement sauter les lots ajoutés depuis.
+ */
+export function compteLotsDepuisManifeste(manifeste: string): number | null {
+	try {
+		const m = JSON.parse(manifeste) as { lots?: number };
+		return Number.isInteger(m.lots) && (m.lots as number) > 0 ? (m.lots as number) : null;
+	} catch {
+		return null;
+	}
+}
+
+async function detecteLots(): Promise<number> {
+	const r = await $`ssh ${HOTE} cat ${`${LOTS_DISTANTS}/lot-001/manifeste.json`}`.nothrow().quiet();
+	if (r.exitCode !== 0) return LOTS_PAR_DEFAUT;
+	return compteLotsDepuisManifeste(r.stdout.toString()) ?? LOTS_PAR_DEFAUT;
+}
+
 /** Combien de planches un dossier d'images contient. */
 function compteImages(dir: string): number {
 	if (!existsSync(dir)) return 0;
@@ -74,7 +99,7 @@ async function compteLignes(fichier: string): Promise<number> {
 	return texte.split("\n").filter((l) => l.trim().length > 0).length;
 }
 
-function options(): Options {
+function options(total: number): Options {
 	const args = Bun.argv.slice(2);
 	const opt = (nom: string): string | undefined => {
 		const i = args.indexOf(`--${nom}`);
@@ -82,7 +107,7 @@ function options(): Options {
 	};
 	const defautTravail = join(process.env.TEMP ?? "/tmp", "databooks");
 	return {
-		lots: analyseLots(opt("lots"), 29),
+		lots: analyseLots(opt("lots"), total),
 		travail: opt("travail") ?? defautTravail,
 		modele: opt("modele") ?? "dots-ocr",
 		simulation: args.includes("--simulation"),
@@ -164,7 +189,8 @@ async function depose(lot: string, jsonl: string, o: Options): Promise<void> {
 }
 
 async function main(): Promise<void> {
-	const o = options();
+	const total = await detecteLots();
+	const o = options(total);
 	console.log(
 		`transcription databooks — ${o.lots.length} lot(s), modèle ${o.modele}` +
 			`${o.resident ? ", modèle résident" : ""}${o.simulation ? ", dépôt simulé" : ""}` +
