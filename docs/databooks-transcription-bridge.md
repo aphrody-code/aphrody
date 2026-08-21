@@ -254,4 +254,18 @@ de les décrire — le comportement voulu.
 0 boucle résiduelle, 0 filigrane. Le seul texte très court (`体術技`) est
 légitime.
 
-Lot 002 en cours ; 27 lots ensuite.
+**Lot 002 terminé** : 400/400, zéro échec, **396 avec texte (99 %)** — un lot de
+guides, bien plus dense en texte que l'artbook du lot 001. Audité sans défaut
+puis déposé ; la fiche 4 (*Daizenshuu 3 — TV Animation Part 1*) passe de 0 à
+**310/313**.
+
+### Avancement du corpus
+
+| | |
+|---|---|
+| Corpus | 318 fiches, 11 775 planches |
+| Transcrites | **960 (8,2 %)** sur 18 fiches |
+| dont déposées par ce pont | 724 |
+| préexistantes | 236 |
+
+Lots 3 à 29 en cours de traitement par la boucle autonome.
