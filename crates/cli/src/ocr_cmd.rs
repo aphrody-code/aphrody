@@ -103,9 +103,14 @@ pub(crate) enum OcrAction {
         /// later without reading the images again.
         #[arg(long)]
         raw: bool,
-        /// Keep the model resident behind a llama-server instead of spawning
-        /// one process per page. Several times faster over a long batch, at
-        /// the cost of crash isolation: a server that dies takes the run.
+        /// EXPERIMENTAL — keep the model resident behind a llama-server
+        /// instead of spawning one process per page.
+        ///
+        /// Measured on this hardware with dots.ocr: the server starts and
+        /// answers /health in three seconds, then no page completes. The
+        /// per-process backend is what is known to work end to end, and stays
+        /// the default. Do not use this for a real batch until the stall is
+        /// understood.
         #[arg(long)]
         server: bool,
         /// Loopback port for --server.

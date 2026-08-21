@@ -156,12 +156,18 @@ fn read_antigravity_oauth() -> Option<serde_json::Value> {
         }
     }
 
+    // Windows reads the credential manager and stops there; every other target
+    // reaches the `None` below. Gating both keeps the fallback from being
+    // compiled as dead code behind that `return`.
     #[cfg(target_os = "windows")]
     {
-        return read_antigravity_oauth_windows();
+        read_antigravity_oauth_windows()
     }
 
-    None
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
 }
 
 #[cfg(target_os = "windows")]

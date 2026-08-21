@@ -18,7 +18,6 @@
 // The process is owned by `ServerRunner` and killed on drop, so an interrupted
 // batch does not leave a multi-gigabyte process holding the GPU.
 
-use std::io::Read as _;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -81,8 +80,17 @@ impl ServerRunner {
             // reloading the model, not batching concurrent requests.
             .arg("--parallel")
             .arg("1")
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped());
+            .stdout(Stdio::null());
+
+        // llama-server logs continuously on stderr. Piping it without ever
+        // reading the pipe deadlocks the server the moment the OS buffer fills
+        // (64 KiB on Windows) — it blocks on write and stops answering. So the
+        // log goes to a file: never blocks, and still readable when the server
+        // dies before becoming healthy.
+        let log_path = std::env::temp_dir().join(format!("aphrody-llama-server-{port}.log"));
+        let log = std::fs::File::create(&log_path)
+            .map_err(|source| OcrError::Io { path: log_path.clone(), source })?;
+        command.stderr(Stdio::from(log));
 
         let mut child = command
             .spawn()
@@ -98,7 +106,7 @@ impl ServerRunner {
                 stderr: e.to_string(),
             })?;
 
-        if let Err(e) = wait_healthy(&client, &endpoint, &mut child) {
+        if let Err(e) = wait_healthy(&client, &endpoint, &mut child, &log_path) {
             // Never leave a half-started server holding the GPU.
             let _ = child.kill();
             return Err(e);
@@ -193,6 +201,7 @@ fn wait_healthy(
     client: &reqwest::blocking::Client,
     endpoint: &str,
     child: &mut Child,
+    log_path: &Path,
 ) -> Result<()> {
     let deadline = Instant::now() + STARTUP_TIMEOUT;
     let health = format!("{endpoint}/health");
@@ -201,10 +210,7 @@ fn wait_healthy(
         // A server that exited will never become healthy: say so immediately
         // rather than burning the whole timeout.
         if let Ok(Some(status)) = child.try_wait() {
-            let mut stderr = String::new();
-            if let Some(pipe) = child.stderr.as_mut() {
-                let _ = pipe.read_to_string(&mut stderr);
-            }
+            let stderr = std::fs::read_to_string(log_path).unwrap_or_default();
             return Err(OcrError::Process {
                 command: "llama-server".to_owned(),
                 status: status.to_string(),
