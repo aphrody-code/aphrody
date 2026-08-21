@@ -27,6 +27,9 @@
 #[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))] mod firefly_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
+#[cfg(not(target_arch = "wasm32"))] pub(crate) mod model_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "infer"))] mod infer_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))] mod ocr_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
 #[cfg(not(target_arch = "wasm32"))] mod design_cmd;
@@ -266,6 +269,47 @@ enum Commands {
     Memory {
         #[command(subcommand)]
         action: MemoryAction,
+    },
+    /// Local model lifecycle — catalog, pull, inspect, verify, evict.
+    ///
+    /// The entry point of aphrody's local-inference toolbox: it puts weights
+    /// for OCR, visual transcription and speech-to-text under
+    /// `~/.aphrody/models`, digest-checked and resumable, and reclaims them
+    /// when disk runs short. Backed by the `aphrody-models` crate; every
+    /// subcommand takes `--json` for scripted / background use.
+    ///
+    /// Example: aphrody model pull whisper-base-en
+    #[cfg(not(target_arch = "wasm32"))]
+    Model {
+        #[command(subcommand)]
+        action: model_cmd::ModelAction,
+    },
+    /// Local ONNX inference backend — runtime discovery and provider probing.
+    ///
+    /// Built only with `--features infer` (links ONNX Runtime through
+    /// aphrody-infer, host-only). `runtime` reports which shared library will
+    /// be loaded and whether it is a GPU build; `probe` loads a model and
+    /// reports the execution provider it actually got, so a silent CPU
+    /// fallback cannot pass unnoticed.
+    ///
+    /// Example: aphrody infer probe ppocr-v5-mobile --role detector --require cuda
+    #[cfg(all(not(target_arch = "wasm32"), feature = "infer"))]
+    Infer {
+        #[command(subcommand)]
+        action: infer_cmd::InferAction,
+    },
+    /// Read images with a local vision-language model.
+    ///
+    /// Built only with `--features ocr`. `page` reads one image; `batch`
+    /// streams a whole directory as JSONL, one line per page, resumable with
+    /// `--skip-done`. A page with no readable text is reported as textless
+    /// rather than described — a description is not a transcription.
+    ///
+    /// Example: aphrody ocr batch ./lot-001/images --out lot-001.jsonl
+    #[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))]
+    Ocr {
+        #[command(subcommand)]
+        action: ocr_cmd::OcrAction,
     },
     /// Run the unified turn-loop chat agent (one-shot mode).
     ///
@@ -1296,6 +1340,18 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         #[cfg(feature = "index")]
         Some(Commands::Index { action }) => {
             index_cmd::run(action).await?;
+        },
+        #[cfg(not(target_arch = "wasm32"))]
+        Some(Commands::Model { action }) => {
+            model_cmd::run(action).await?;
+        },
+        #[cfg(all(not(target_arch = "wasm32"), feature = "infer"))]
+        Some(Commands::Infer { action }) => {
+            infer_cmd::run(action)?;
+        },
+        #[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))]
+        Some(Commands::Ocr { action }) => {
+            ocr_cmd::run(action)?;
         },
 
         #[cfg(feature = "firefly")]

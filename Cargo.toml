@@ -49,6 +49,17 @@ members = [
     # Opt-in `embeddings` feature, host-only. Produces the dense vectors that
     # aphrody-memory's HNSW/LanceDB vector stores consume (no external API).
     "crates/aphrody-embed",
+    # aphrody-models — local model lifecycle: pinned refs, curated catalog
+    # (OCR / visual transcription / STT / embeddings), resumable digest-checked
+    # downloader, GGUF/GGML/safetensors/ONNX header inspection, LRU store under
+    # ~/.aphrody/models. The foundation layer of the local-inference toolbox.
+    "crates/aphrody-models",
+    # aphrody-infer — local ONNX inference: runtime discovery, EP selection
+    # (CUDA / DirectML / CPU fallback), session loading from the catalog.
+    "crates/aphrody-infer",
+    # aphrody-ocr — image-to-text pipeline: drives a local vision-language
+    # model over images, parses DocTags into markdown, reports textless pages.
+    "crates/aphrody-ocr",
     # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
     "crates/aphrody-gateway",
     # aphrody-mcp — Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728/8414/7591/7636)
@@ -441,6 +452,70 @@ aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canar
 # --- aphrody-embed (local offline text embeddings, fastembed/ONNX) --------
 # Default-features off so consumers opt into the heavy `embeddings` feature.
 aphrody-embed      = { path = "crates/aphrody-embed", version = "1.0.0-canary", default-features = false }
+
+# --- Local inference stack (ONNX Runtime + preprocessing) ----------------
+# Declared centrally so every backend crate links ONE version of each. The
+# versions below are NOT the newest published — they are the ones fastembed
+# already forces into the graph (`ort` is pinned `=2.0.0-rc.12` inside
+# fastembed, which drags tokenizers 0.22 and ndarray 0.16 with it). Taking
+# `ort` rc.13 / tokenizers 0.23 / ndarray 0.17 here would duplicate all three
+# in the tree and break `cargo deny`'s ban on multiple versions. Re-pin only
+# when fastembed itself moves.
+#
+# NOTE for MSVC (CLAUDE.md §7): aphrody forces `+crt-static` while the prebuilt
+# ONNX Runtime is `/MD`. A consumer must therefore select ort's
+# `load-dynamic` (runtime `libloading`, no static link) exactly as
+# aphrody-embed does; declaring the dependency here does not link anything.
+#
+# CUDA: the `cuda` feature selects the CUDA execution provider. It is NOT
+# enabled here — a consumer opts in per-crate behind its own feature, so a
+# default build never requires a CUDA toolkit. Provider selection at runtime
+# is driven by `aphrody_models::accel::probe()`.
+# Feature selection, and why each one:
+#   * default-features OFF — the default set drags `download-binaries` +
+#     `tls-native`, and aphrody is rustls-only (CLAUDE.md §7). We ship our own
+#     ONNX Runtime instead (see `aphrody-infer::runtime`).
+#   * `api-24` — MANDATORY when defaults are off. The default set includes it;
+#     without it `ort-sys` falls back to API 17 and `ort`'s own EP modules
+#     (vitis.rs among them) fail to compile against the narrower `OrtApi`
+#     struct. This is the single non-obvious part of depending on ort.
+#   * `std` / `ndarray` / `tracing` — the rest of what `default` would have
+#     given us, minus the network and TLS pieces.
+ort                = { version = "=2.0.0-rc.12", default-features = false, features = [
+    "std",
+    "api-24",
+    "ndarray",
+    "tracing",
+] }
+# Hugging Face tokenizers: what every ONNX text/vision-language pipeline needs
+# between raw text and input ids.
+tokenizers         = { version = "0.22", default-features = false }
+# N-dimensional arrays: the tensor shape plumbing around an ONNX session.
+ndarray            = { version = "0.16" }
+# SIMD image resizing. Bulk OCR spends a large share of its wall clock in the
+# resize step, and this is an order of magnitude faster than `image`'s own
+# filters; it is the difference between a GPU that stays fed and one that idles.
+fast_image_resize  = { version = "6.1" }
+# Classic image ops (threshold, morphology, contours) for OCR pre-processing
+# and for turning a detector's heatmap into text boxes.
+imageproc          = { version = "0.27", default-features = false }
+
+# --- aphrody-models (local model lifecycle: catalog + store + downloader) -
+# No optional features: the crate is pure Rust (serde/sha2/reqwest) and pulls
+# no inference runtime of its own. Backends link their own runtime and ask this
+# crate where the bytes are.
+aphrody-models     = { path = "crates/aphrody-models", version = "1.0.0-canary" }
+
+# --- aphrody-infer (local ONNX inference backend) -------------------------
+# The `onnx` feature is requested here because the only consumer (the CLI's own
+# `infer` feature) always wants the real backend; a build that does not want
+# ONNX Runtime simply does not enable the CLI feature and never links this at
+# all. Keeping `onnx` optional inside the crate is what lets its `runtime`
+# module stay usable in a build without a runtime installed.
+aphrody-infer      = { path = "crates/aphrody-infer", version = "1.0.0-canary", features = ["onnx"] }
+
+# --- aphrody-ocr (image -> text via a local vision-language model) --------
+aphrody-ocr        = { path = "crates/aphrody-ocr", version = "1.0.0-canary" }
 aphrody-stdio-capture = { path = "crates/aphrody-stdio-capture", version = "1.0.0-canary" }
 
 # `fastembed` declared ONCE here as the single source of truth (CLAUDE.md §2 /

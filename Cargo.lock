@@ -389,9 +389,12 @@ dependencies = [
  "aphrody-firefly",
  "aphrody-fsindex",
  "aphrody-guard",
+ "aphrody-infer",
  "aphrody-logo",
  "aphrody-memory",
  "aphrody-messaging",
+ "aphrody-models",
+ "aphrody-ocr",
  "aphrody-re",
  "aphrody-stdio-capture",
  "aphrody-terminal-backend",
@@ -681,6 +684,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aphrody-infer"
+version = "1.0.0-canary"
+dependencies = [
+ "aphrody-models",
+ "dirs",
+ "ort",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
 name = "aphrody-llm-infra"
 version = "1.0.0-canary"
 dependencies = [
@@ -826,6 +842,37 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "aphrody-models"
+version = "1.0.0-canary"
+dependencies = [
+ "chrono",
+ "dirs",
+ "futures-util",
+ "hex",
+ "reqwest 0.13.3",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "aphrody-ocr"
+version = "1.0.0-canary"
+dependencies = [
+ "aphrody-infer",
+ "aphrody-models",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
  "tracing",
 ]
 

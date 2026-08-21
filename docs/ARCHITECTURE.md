@@ -48,6 +48,25 @@ their own layers so the CLI surface stays thin.
   introspection, cross-platform), `mrx` (unified Monorepo Real-time
   X-platform mapper — single crate, merged from the former
   `mrx-{core,detect,audit,watch,cli}`).
+- **L3a local inference**: `aphrody-models` — the model lifecycle layer of the
+  local-inference toolbox (cap 2026-08-21, see
+  [`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md)).
+  Owns `~/.aphrody/models`: a pinned-reference grammar, an embedded catalog of
+  OCR / visual-transcription / speech-to-text / embedding models, a resumable
+  digest-checked downloader, hand-rolled GGUF / GGML / safetensors / ONNX
+  header parsing, a GPU + CUDA probe that ranks the catalog for the host, and
+  an LRU-evicting store. Depends on nothing else in the workspace; the backend
+  crates above it ask it where the bytes are and what to run them on.
+  `aphrody-embed` shares the same `~/.aphrody/models` root.
+- **L3a inference backend**: `aphrody-infer` — sits directly on top of
+  `aphrody-models`. Discovers the ONNX Runtime shared library under
+  `~/.aphrody/runtimes` (loaded dynamically: aphrody forces `+crt-static` on
+  MSVC while every prebuilt ORT is `/MD`), walks the execution-provider chain
+  the hardware probe produced (CUDA → DirectML → CPU) and reports the provider
+  a session ACTUALLY got, so a silent CPU fallback cannot pass unnoticed. Also
+  resolves the upstream llama.cpp release binaries that run the catalog's GGUF
+  entries — those are spawned, never linked. Behind the `onnx` feature; exposed
+  by the CLI as `aphrody infer` behind `--features infer`.
 - **L3b domain infra**: `aphrody-llm-infra` (unified LLM runtime: cost +
   rateguard + retry + cache, merged from the former
   `aphrody-{cost,rateguard,retry,cache}`), `aphrody-skills` (runtime +

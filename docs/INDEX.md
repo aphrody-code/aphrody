@@ -24,6 +24,7 @@ This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line descrip
 - [`PROTOCOL.md`](PROTOCOL.md) — Normative A2A protocol plus aphrody extensions
 - [`api-unified-pattern.md`](api-unified-pattern.md) — Canonical cross-repo HTTP contract (REST/GraphQL/`Bun.serve`/cron) the downstream bots conform to
 - [`rag-unified-pattern.md`](rag-unified-pattern.md) — Canonical cross-repo RAG/retrieval contract
+- [`databooks-transcription-bridge.md`](databooks-transcription-bridge.md) — Pont aphrody <-> shenron : transcription GPU locale des planches databooks et depot via l API
 - [`ROADMAP.md`](ROADMAP.md) — Project milestones and roadmap
 - [`libc.md`](libc.md) — libc / FFI reference notes
 - [`notebooklm-d68c5204-report.md`](notebooklm-d68c5204-report.md) — Research report on NotebookLM Boq RPC surface
@@ -40,6 +41,7 @@ This page lists `docs/**/*.{md,txt}` grouped by purpose, with a one-line descrip
 - [`PLAN-MOONSHOT.md`](PLAN-MOONSHOT.md) — 30-day moonshot star-maximisation plan
 - [`plans/agent-home.md`](plans/agent-home.md) — Agent Home persistence migration plan
 - [`plans/antigravity-exploitation.md`](plans/antigravity-exploitation.md) — Antigravity cloud API exploitation plan
+- [`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md) — Cap 2026-08-21 : client + toolbox d'inference et de gestion de modeles locaux (OCR, transcription visuelle, taches de fond)
 - [`plans/tauri-app.md`](plans/tauri-app.md) — Tauri App desktop shell implementation roadmap
 
 ---

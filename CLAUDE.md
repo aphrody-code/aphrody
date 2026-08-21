@@ -8,6 +8,15 @@ Focus : Rust deep systems programming, FFI cross-platform, real OS integration, 
 
 ## 0. Cap projet
 
+> **Cap actuel — 2026-08-21 : client + toolbox d'inférence et de gestion de
+> modèles locaux.** `aphrody` sert des usages **programmatiques** : OCR,
+> transcription visuelle, transcription audio, et exécution de tâches répétées
+> organisées en **tâches de fond**. Plan, état et prochaines étapes :
+> [`docs/plans/local-inference-toolbox.md`](docs/plans/local-inference-toolbox.md).
+> Fondation livrée : crate `aphrody-models` + commande `aphrody model`.
+> Le cap « Apex Autonomous Agent » (2026-05-19) devient secondaire : ses briques
+> agent restent maintenues, mais consomment désormais la toolbox locale.
+
 **Le projet est `aphrody`, le CLI ultime cross-platform.**
 
 Priorités plateformes (ordre strict, non négociable) :
@@ -133,6 +142,7 @@ Détails complets dans [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
 ### Cœur du workspace
 - **CLI / cœur** : `cli` (binaire principal `aphrody`), `base` (primitives no_std), `backend` (network).
+- **Inférence locale** : `aphrody-infer` (backend ONNX Runtime CUDA/DirectML/CPU + découverte llama.cpp) ; `aphrody-models` (cycle de vie des poids : catalogue épinglé, téléchargement repris + vérifié SHA-256, inspection GGUF/GGML/safetensors/ONNX, sonde GPU/CUDA, store LRU sous `~/.aphrody/models`) ; `aphrody-embed` (embeddings ONNX, même racine de cache).
 - **MCP** : `google_mcp` produit le binaire `aphrody-mcp` (`cargo build --release --bin aphrody-mcp`).
 - **Term & Chat** : `aphrody-terminal-*` (8 crates), `aphrody-chat`, `aphrody-sdk`, `aphrody-tools`.
 - **Modules unifiés** : `mrx`, `aphrody-voice`, `aphrody-design`, `aphrody-messaging`, `aphrody-llm-infra`, `aphrody-skills`, `aphrody-marketplace`.
@@ -184,6 +194,9 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 
 - **Build local Linux (hors `scripts/deploy.sh`)** : `.cargo/config.toml` impose `build.rustc-wrapper = "sccache"` (tuné host Windows). Sans sccache → tout `cargo` échoue (`could not execute process \`sccache\``). `unset RUSTC_WRAPPER` **ne suffit pas** (le config gagne) ; passer `cargo <cmd> --config "build.rustc-wrapper=''"`. `--offline` échoue aussi (cache sparse incomplet : crossterm_winapi, android_system_properties…) → builder online. Cible native explicite : `--target x86_64-unknown-linux-gnu`.
 - **aphrody doctor nécessite ai.json** : Bien que le transport file-based soit historiquement obsolète au profit de gRPC, la commande `doctor` exige la présence de `ai.json` et `.well-known/ai.json` à la racine du dépôt pour réussir. Sans eux, elle retourne un verdict `UNHEALTHY` (exit code 1).
+- **`ort` + `default-features = false`** : la feature **`api-24` devient obligatoire**. Le set `default` d'`ort` l'inclut ; sans elle `ort-sys` retombe à l'API 17 et les modules EP d'`ort` (dont `vitis.rs`) ne compilent plus contre un `OrtApi` plus étroit (`E0609: no field SessionOptionsAppendExecutionProvider_VitisAI`). Déclaration workspace correcte : `features = ["std", "api-24", "ndarray", "tracing"]`.
+- **ONNX Runtime GPU + CUDA 13** : le build `onnxruntime-win-x64-gpu_cuda13-*` n'importe que `cublas64_13.dll` / `cublasLt64_13.dll` (**pas cuDNN**) — vérifié via `llvm-readobj --coff-imports`. Il fonctionne donc avec le seul toolkit CUDA 13.x, contrairement au build `gpu_cuda12` qui exige CUDA 12 **et** cuDNN 9. Runtime installé sous `~/.aphrody/runtimes/`, découvert par `aphrody_infer::runtime::discover()` ; `download-binaries` est désactivé (build CPU-only + native-tls, contraire à la politique rustls).
+- **llama.cpp est piloté, pas lié** : `aphrody-infer::llama` résout les binaires de release upstream (`$APHRODY_LLAMA_BIN` > `$APHRODY_LLAMA_DIR` > `~/.aphrody/runtimes/llama-*` > PATH), comme `gemini-runtime` pour le CLI Gemini. Lier `llama-cpp-2` figerait un build C++ à évolution rapide et se heurterait au `+crt-static` MSVC.
 - **aws-lc-sys** : MSVC require NASM prebuilt + Ninja via `.cargo/config.toml`. Linux require `libssl-dev`.
 - **rustls 0.23 CryptoProvider** : appeler `rustls::crypto::ring::default_provider().install_default()` avant premier `reqwest::Client`.
 - **cargo-zigbuild + `--icf=all`** : incompatible, retiré de `.cargo/config.toml`.

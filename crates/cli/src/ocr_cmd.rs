@@ -1,0 +1,297 @@
+// SPDX-License-Identifier: Apache-2.0
+//! `aphrody ocr …` — read images with a local vision-language model.
+//!
+//! Built only with `--features ocr`. Drives a GGUF vision model through
+//! llama.cpp (resolved by `aphrody-infer`) and turns each page into markdown,
+//! or into an explicit "no text" verdict.
+//!
+//! # Why JSONL for batches
+//!
+//! `batch` streams one JSON object per line as each page finishes, flushing as
+//! it goes. A run over ten thousand plates takes hours; a format that is only
+//! valid once complete would mean losing everything to one interruption, and
+//! would make resuming impossible. With JSONL the already-read pages are on
+//! disk and `--skip-done` can pick the run back up.
+
+use std::io::{BufRead as _, Write as _};
+use std::path::{Path, PathBuf};
+
+use aphrody_ocr::{OcrOptions, PageResult, VlmRunner};
+
+use crate::model_cmd::OutputOpts;
+
+/// Actions for the `ocr` subcommand.
+#[derive(clap::Subcommand, Debug, Clone)]
+pub(crate) enum OcrAction {
+    /// Read one image and print its markdown transcription.
+    ///
+    /// Example: aphrody ocr page plate.jpg
+    Page {
+        /// Image to read.
+        image: PathBuf,
+        /// Catalog id of the vision model.
+        #[arg(long, default_value = "granite-docling-258m")]
+        model: String,
+        /// Override the prompt handed to the model.
+        #[arg(long)]
+        prompt: Option<String>,
+        /// Token budget for the page.
+        #[arg(long, default_value_t = 1024)]
+        max_tokens: u32,
+        /// Include the model's raw output.
+        #[arg(long)]
+        raw: bool,
+        #[command(flatten)]
+        output: OutputOpts,
+    },
+    /// Read every image in a directory, streaming one JSON object per line.
+    ///
+    /// Example: aphrody ocr batch ./lot-001/images --out lot-001.jsonl
+    Batch {
+        /// Directory of images.
+        dir: PathBuf,
+        /// JSONL file to append results to. Without it, results go to stdout.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Stop after this many images.
+        #[arg(long)]
+        limit: Option<usize>,
+        /// Skip images already present in `--out`, so an interrupted run can
+        /// be resumed without redoing work.
+        #[arg(long)]
+        skip_done: bool,
+        /// Catalog id of the vision model.
+        #[arg(long, default_value = "granite-docling-258m")]
+        model: String,
+        /// Override the prompt handed to the model.
+        #[arg(long)]
+        prompt: Option<String>,
+        /// Token budget per page.
+        #[arg(long, default_value_t = 1024)]
+        max_tokens: u32,
+    },
+}
+
+/// Run an `ocr` action.
+///
+/// # Errors
+///
+/// Returns a `miette` report when the model or the llama.cpp runner is
+/// missing, or when the output file cannot be written.
+pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
+    match action {
+        OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
+            page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
+        }
+        OcrAction::Batch { dir, out, limit, skip_done, model, prompt, max_tokens } => {
+            batch(&dir, out.as_deref(), limit, skip_done, &model, prompt.as_deref(), max_tokens)
+        }
+    }
+}
+
+fn options(model: &str, prompt: Option<&str>, max_tokens: u32, raw: bool) -> OcrOptions {
+    // Start from the model's own defaults so the trained prompt follows the
+    // model choice; an explicit --prompt still wins.
+    let mut options = OcrOptions { max_tokens, keep_raw: raw, ..OcrOptions::for_model(model) };
+    if let Some(prompt) = prompt {
+        options.prompt = prompt.to_owned();
+    }
+    options
+}
+
+fn page(
+    image: &Path,
+    model: &str,
+    prompt: Option<&str>,
+    max_tokens: u32,
+    raw: bool,
+    output: &OutputOpts,
+) -> miette::Result<()> {
+    let runner = VlmRunner::new(options(model, prompt, max_tokens, raw))
+        .map_err(|e| miette::miette!("{e}"))?;
+    let result = runner.read(image).map_err(|e| miette::miette!("{e}"))?;
+
+    let json = serde_json::to_value(&result)
+        .map_err(|e| miette::miette!("serialise result: {e}"))?;
+
+    let mut report = aphrody_models::Report::new(
+        format!("OCR {}", image.display()),
+        &["FIELD", "VALUE"],
+    );
+    report.push(vec!["model".into(), model.to_owned()]);
+    report.push(vec!["elapsed".into(), format!("{} ms", result.elapsed_ms)]);
+    report.push(vec![
+        "text".into(),
+        result.text.markdown().map_or_else(|| "(none)".to_owned(), ToOwned::to_owned),
+    ]);
+
+    output.emit_report(&report, &json)
+}
+
+fn batch(
+    dir: &Path,
+    out: Option<&Path>,
+    limit: Option<usize>,
+    skip_done: bool,
+    model: &str,
+    prompt: Option<&str>,
+    max_tokens: u32,
+) -> miette::Result<()> {
+    let runner = VlmRunner::new(options(model, prompt, max_tokens, false))
+        .map_err(|e| miette::miette!("{e}"))?;
+
+    let done = if skip_done {
+        out.map(already_done).transpose()?.unwrap_or_default()
+    } else {
+        std::collections::BTreeSet::new()
+    };
+
+    // Append, never truncate: resuming must not destroy the earlier pages.
+    let mut sink: Box<dyn std::io::Write> = match out {
+        Some(path) => {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    std::fs::create_dir_all(parent)
+                        .map_err(|e| miette::miette!("create {}: {e}", parent.display()))?;
+                }
+            }
+            Box::new(
+                std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path)
+                    .map_err(|e| miette::miette!("open {}: {e}", path.display()))?,
+            )
+        }
+        None => Box::new(std::io::stdout()),
+    };
+
+    eprintln!("reading {} with {model}", dir.display());
+    if !done.is_empty() {
+        eprintln!("skipping {} page(s) already in {}", done.len(), out.unwrap_or(Path::new("-")).display());
+    }
+
+    let mut read = 0_usize;
+    let mut with_text = 0_usize;
+    let mut failed = 0_usize;
+    let started = std::time::Instant::now();
+
+    let total = runner
+        .read_dir_filtered(dir, limit, &done, |outcome| match outcome {
+            Ok(result) => {
+                read += 1;
+                if result.text.has_text() {
+                    with_text += 1;
+                }
+                if let Err(e) = write_line(&mut sink, &result) {
+                    eprintln!("write failed: {e}");
+                }
+                if read % 10 == 0 {
+                    eprintln!(
+                        "  {read} read, {with_text} with text, {failed} failed, {:.1}s elapsed",
+                        started.elapsed().as_secs_f64()
+                    );
+                }
+            }
+            Err(e) => {
+                failed += 1;
+                eprintln!("page failed: {e}");
+            }
+        })
+        .map_err(|e| miette::miette!("{e}"))?;
+
+    let _ = sink.flush();
+    eprintln!(
+        "\n{read}/{total} page(s) read in {:.1}s — {with_text} with text, {} textless, {failed} failed",
+        started.elapsed().as_secs_f64(),
+        read.saturating_sub(with_text)
+    );
+    Ok(())
+}
+
+/// Image paths already recorded in a JSONL file.
+fn already_done(path: &Path) -> miette::Result<std::collections::BTreeSet<PathBuf>> {
+    let file = match std::fs::File::open(path) {
+        Ok(f) => f,
+        // No file yet simply means nothing is done.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(std::collections::BTreeSet::new());
+        }
+        Err(e) => return Err(miette::miette!("read {}: {e}", path.display())),
+    };
+
+    let mut done = std::collections::BTreeSet::new();
+    for line in std::io::BufReader::new(file).lines() {
+        let Ok(line) = line else { continue };
+        // A run killed mid-write leaves a partial last line; skipping it is
+        // correct — that page will simply be read again.
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&line) else { continue };
+        if let Some(image) = value.get("image").and_then(serde_json::Value::as_str) {
+            done.insert(PathBuf::from(image));
+        }
+    }
+    Ok(done)
+}
+
+/// Write one result as a JSONL line and flush it.
+///
+/// Flushing per line is what makes `--skip-done` trustworthy after a kill.
+fn write_line(sink: &mut Box<dyn std::io::Write>, result: &PageResult) -> std::io::Result<()> {
+    let line = serde_json::to_string(result)?;
+    sink.write_all(line.as_bytes())?;
+    sink.write_all(b"\n")?;
+    sink.flush()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn options_carry_the_overrides_through() {
+        let opts = options("dots-ocr", Some("read it"), 512, true);
+        assert_eq!(opts.model_id, "dots-ocr");
+        assert_eq!(opts.prompt, "read it");
+        assert_eq!(opts.max_tokens, 512);
+        assert!(opts.keep_raw);
+    }
+
+    #[test]
+    fn options_without_a_prompt_keep_the_trained_instruction() {
+        let opts = options("granite-docling-258m", None, 1024, false);
+        assert!(opts.prompt.contains("docling"), "{}", opts.prompt);
+    }
+
+    #[test]
+    fn resume_reads_back_the_images_already_recorded() {
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("out.jsonl");
+        std::fs::write(
+            &jsonl,
+            "{\"image\":\"a.jpg\",\"text\":{\"kind\":\"none\"}}\n\
+             {\"image\":\"b.jpg\",\"text\":{\"kind\":\"text\",\"markdown\":\"hi\"}}\n",
+        )
+        .unwrap();
+
+        let done = already_done(&jsonl).unwrap();
+        assert_eq!(done.len(), 2);
+        assert!(done.contains(&PathBuf::from("a.jpg")));
+        assert!(done.contains(&PathBuf::from("b.jpg")));
+    }
+
+    #[test]
+    fn a_truncated_last_line_is_skipped_not_fatal() {
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("out.jsonl");
+        // Exactly what a process killed mid-write leaves behind.
+        std::fs::write(&jsonl, "{\"image\":\"a.jpg\"}\n{\"image\":\"b.jp").unwrap();
+        let done = already_done(&jsonl).unwrap();
+        assert_eq!(done, [PathBuf::from("a.jpg")].into_iter().collect());
+    }
+
+    #[test]
+    fn an_absent_resume_file_means_nothing_is_done() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(already_done(&dir.path().join("absent.jsonl")).unwrap().is_empty());
+    }
+}

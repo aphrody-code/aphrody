@@ -38,6 +38,21 @@ forensics = ["dep:rusqlite", "dep:sha2", "dep:hex"]
 # wasm). Build with: cargo build -p aphrody --features index
 index = ["dep:aphrody-fsindex"]
 
+# Local ONNX inference (`aphrody infer runtime/probe`), backed by aphrody-infer.
+# Opt-in because it links ONNX Runtime through `ort` in load-dynamic mode: the
+# shared library is discovered at RUNTIME under ~/.aphrody/runtimes (aphrody
+# forces +crt-static on MSVC while every prebuilt ORT is /MD, so static linking
+# is impossible — CLAUDE.md §7). Host-only, not wasm. Build with:
+#   cargo build -p aphrody --features infer
+infer = ["dep:aphrody-infer"]
+
+# Image-to-text via a local vision-language model (`aphrody ocr page/batch`),
+# backed by aphrody-ocr. Drives llama.cpp's llama-mtmd-cli, which is resolved
+# at RUNTIME under ~/.aphrody/runtimes — nothing is linked, so this feature is
+# cheap; it is opt-in only because the command is useless without a vision
+# model pulled. Build with: cargo build -p aphrody --features ocr
+ocr = ["dep:aphrody-ocr", "infer"]
+
 
 # Adobe Firefly Services image generation to disk (`aphrody firefly generate`),
 # backed by aphrody-firefly (IMS OAuth S2S + v3 async generate). Host-only.
@@ -143,6 +158,15 @@ aphrody-guard             = { path = "../aphrody-guard" }
 # because the SqliteLocal provider uses rusqlite (libsqlite3 bundled C lib) and
 # the Mem0/Honcho providers use reqwest, neither of which compile on wasm32.
 aphrody-memory            = { path = "../aphrody-memory" }
+# `aphrody model {...}` — local model lifecycle (catalog / pull / verify / gc).
+# Native-only: the store needs a filesystem and the downloader a reqwest client
+# (rustls/ring), neither of which links on wasm32.
+aphrody-models            = { workspace = true }
+# `aphrody infer {...}` — ONNX Runtime session loading with CUDA/DirectML/CPU
+# fallback. Optional: only linked by the `infer` feature.
+aphrody-infer             = { workspace = true, optional = true }
+# `aphrody ocr {...}` — image -> markdown through a local vision model.
+aphrody-ocr               = { workspace = true, optional = true }
 # Default sqlite path `$HOME/.aphrody/memory.sqlite` for `aphrody memory migrate`
 # resolution. `dirs` is portable across Linux/Windows/macOS.
 dirs                      = { workspace = true }

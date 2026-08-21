@@ -30,7 +30,28 @@
 
 ---
 
-## ⭐ Cap 2026-05-19+ : Apex Autonomous Agent
+## ⭐⭐ Cap actuel (2026-08-21) : toolbox d'inférence et de modèles locaux
+
+**Le cap du projet a changé le 2026-08-21.** `aphrody` devient un **client et
+une toolbox pour l'inférence et la gestion de modèles locaux**, orientés usages
+programmatiques : **OCR**, **transcription visuelle**, **transcription audio**,
+et **exécution de tâches répétées organisées en tâches de fond**.
+
+➡️ **Plan détaillé, état d'avancement et prochaines étapes :
+[`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md)**
+
+État au 2026-08-21 : **étape 1 livrée** — crate `aphrody-models` (catalogue de
+11 modèles épinglés, téléchargement repris et vérifié par SHA-256, inspection
+GGUF/GGML/safetensors/ONNX, sonde GPU/CUDA, store LRU) + commande
+`aphrody model` (12 sous-commandes, sorties texte/JSON/Markdown/HTML/CSV).
+
+Le cap « Apex Autonomous Agent » ci-dessous **reste valide comme historique et
+comme état des briques agent**, mais n'est plus la priorité #1 : ces briques
+deviennent des consommatrices de la toolbox locale.
+
+---
+
+## ⭐ Cap 2026-05-19 → 2026-08-21 : Apex Autonomous Agent (historique)
 
 **Mission** : faire de `aphrody` le **meilleur agent autonome** en exploitant 5 piliers asymétriques que les concurrents Python (hermes-agent v0.14.0, AutoGPT, OpenInterpreter, …) ne peuvent pas rattraper sans réécriture native.
 
