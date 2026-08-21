@@ -44,6 +44,20 @@ pub(crate) enum OcrAction {
         #[command(flatten)]
         output: OutputOpts,
     },
+    /// Audit a JSONL for defects before depositing it anywhere.
+    ///
+    /// A deposit is hard to undo: writing four hundred plates of degenerate
+    /// output into a corpus costs far more than the second this takes. Exits
+    /// non-zero when a blocking defect is found (control token, stuck
+    /// generation, surviving markup); watermarks are reported but do not fail.
+    ///
+    /// Example: aphrody ocr audit lot-001.jsonl --json
+    Audit {
+        /// JSONL produced by `aphrody ocr batch`.
+        input: PathBuf,
+        #[command(flatten)]
+        output: OutputOpts,
+    },
     /// Re-run the text cleanup over an existing JSONL, in place.
     ///
     /// The model output is not touched — the images are not read again. Only
@@ -111,6 +125,7 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         }
+        OcrAction::Audit { input, output } => audit(&input, &output),
         OcrAction::Clean { input, out } => clean(&input, out.as_deref()),
         OcrAction::Batch {
             dir,
@@ -285,6 +300,91 @@ fn batch(
         read.saturating_sub(with_text)
     );
     Ok(())
+}
+
+/// Audit a JSONL and refuse a batch that carries blocking defects.
+fn audit(input: &Path, output: &OutputOpts) -> miette::Result<()> {
+    let file = std::fs::File::open(input)
+        .map_err(|e| miette::miette!("read {}: {e}", input.display()))?;
+
+    let mut pages: Vec<(PathBuf, Option<String>)> = Vec::new();
+    for line in std::io::BufReader::new(file).lines() {
+        let Ok(line) = line else { continue };
+        if line.trim().is_empty() {
+            continue;
+        }
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&line) else { continue };
+        let image = value
+            .get("image")
+            .and_then(serde_json::Value::as_str)
+            .map_or_else(PathBuf::new, PathBuf::from);
+        let text = value
+            .get("text")
+            .and_then(|t| t.get("markdown"))
+            .and_then(serde_json::Value::as_str)
+            .map(ToOwned::to_owned);
+        pages.push((image, text));
+    }
+
+    let report = aphrody_ocr::audit::audit_batch(
+        pages.iter().map(|(image, text)| (image.clone(), text.as_deref())),
+    );
+
+    let mut table = aphrody_models::Report::new(
+        format!("Audit {}", input.display()),
+        &["PAGE", "DEFECT", "DETAIL"],
+    )
+    .with_summary(format!(
+        "{} with text, {} textless, {} finding(s) on {} page(s)",
+        report.examined,
+        report.textless,
+        report.finding_count(),
+        report.flagged.len()
+    ))
+    .with_footer(if report.has_blocking() {
+        "blocking defects found — do not deposit this batch".to_owned()
+    } else {
+        "no blocking defect".to_owned()
+    });
+
+    for page in &report.flagged {
+        let name = page
+            .image
+            .file_name()
+            .map_or_else(|| page.image.display().to_string(), |n| n.to_string_lossy().into_owned());
+        for finding in &page.findings {
+            let (kind, detail) = describe(finding);
+            table.push(vec![name.clone(), kind.to_owned(), detail]);
+        }
+    }
+
+    let json = serde_json::to_value(&report)
+        .map_err(|e| miette::miette!("serialise audit: {e}"))?;
+    output.emit_report(&table, &json)?;
+
+    if report.has_blocking() {
+        // Refusing here is the whole point: a deposit is hard to undo.
+        return Err(miette::miette!(
+            "{} page(s) carry blocking defects",
+            report
+                .flagged
+                .iter()
+                .filter(|p| p.findings.iter().any(aphrody_ocr::audit::Finding::is_blocking))
+                .count()
+        ));
+    }
+    Ok(())
+}
+
+/// Render one finding as `(kind, detail)`.
+fn describe(finding: &aphrody_ocr::audit::Finding) -> (&'static str, String) {
+    use aphrody_ocr::audit::Finding;
+    match finding {
+        Finding::ControlToken { token } => ("control-token", token.clone()),
+        Finding::Loop { word, repeats } => ("loop", format!("{word} x{repeats}")),
+        Finding::Markup { sample } => ("markup", sample.clone()),
+        Finding::Watermark { line } => ("watermark", line.clone()),
+    }
 }
 
 /// Re-run the cleanup rules over an existing JSONL.

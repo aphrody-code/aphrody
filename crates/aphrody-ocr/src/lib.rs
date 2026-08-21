@@ -28,6 +28,8 @@
 #![warn(missing_docs)]
 #![allow(clippy::module_name_repetitions)]
 
+/// Quality audit over a batch of transcriptions.
+pub mod audit;
 /// `DocTags` parsing: the serialisation document VLMs emit.
 pub mod doctags;
 /// Resident-model backend: one `llama-server` for a whole batch.
