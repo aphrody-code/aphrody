@@ -30,6 +30,9 @@
 
 /// `DocTags` parsing: the serialisation document VLMs emit.
 pub mod doctags;
+/// Resident-model backend: one `llama-server` for a whole batch.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod server;
 /// Running a vision-language model over images.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod vlm;
@@ -37,7 +40,8 @@ pub mod vlm;
 pub use doctags::{Block, Document};
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use vlm::{OcrOptions, PageResult, PageText, VlmRunner};
+pub use server::ServerRunner;
+pub use vlm::{OcrOptions, PageResult, PageText, VlmRunner, list_images_sorted};
 
 /// The crate's error type.
 #[derive(Debug, thiserror::Error)]

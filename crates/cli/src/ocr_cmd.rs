@@ -16,7 +16,7 @@
 use std::io::{BufRead as _, Write as _};
 use std::path::{Path, PathBuf};
 
-use aphrody_ocr::{OcrOptions, PageResult, VlmRunner};
+use aphrody_ocr::{OcrOptions, PageResult, ServerRunner, VlmRunner};
 
 use crate::model_cmd::OutputOpts;
 
@@ -69,6 +69,14 @@ pub(crate) enum OcrAction {
         /// Token budget per page.
         #[arg(long, default_value_t = 1024)]
         max_tokens: u32,
+        /// Keep the model resident behind a llama-server instead of spawning
+        /// one process per page. Several times faster over a long batch, at
+        /// the cost of crash isolation: a server that dies takes the run.
+        #[arg(long)]
+        server: bool,
+        /// Loopback port for --server.
+        #[arg(long, default_value_t = 8791)]
+        server_port: u16,
     },
 }
 
@@ -83,9 +91,26 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         }
-        OcrAction::Batch { dir, out, limit, skip_done, model, prompt, max_tokens } => {
-            batch(&dir, out.as_deref(), limit, skip_done, &model, prompt.as_deref(), max_tokens)
-        }
+        OcrAction::Batch {
+            dir,
+            out,
+            limit,
+            skip_done,
+            model,
+            prompt,
+            max_tokens,
+            server,
+            server_port,
+        } => batch(
+            &dir,
+            out.as_deref(),
+            limit,
+            skip_done,
+            &model,
+            prompt.as_deref(),
+            max_tokens,
+            server.then_some(server_port),
+        ),
     }
 }
 
@@ -136,9 +161,24 @@ fn batch(
     model: &str,
     prompt: Option<&str>,
     max_tokens: u32,
+    server_port: Option<u16>,
 ) -> miette::Result<()> {
-    let runner = VlmRunner::new(options(model, prompt, max_tokens, false))
-        .map_err(|e| miette::miette!("{e}"))?;
+    let opts = options(model, prompt, max_tokens, false);
+
+    // Two backends, one loop: a resident server for throughput, a process per
+    // page for isolation. The reader closure is the only thing that differs.
+    let resident = match server_port {
+        Some(port) => {
+            eprintln!("starting llama-server on 127.0.0.1:{port} (loading {model})…");
+            Some(ServerRunner::start(opts.clone(), port).map_err(|e| miette::miette!("{e}"))?)
+        }
+        None => None,
+    };
+    let runner = if resident.is_some() {
+        None
+    } else {
+        Some(VlmRunner::new(opts.clone()).map_err(|e| miette::miette!("{e}"))?)
+    };
 
     let done = if skip_done {
         out.map(already_done).transpose()?.unwrap_or_default()
@@ -176,8 +216,21 @@ fn batch(
     let mut failed = 0_usize;
     let started = std::time::Instant::now();
 
-    let total = runner
-        .read_dir_filtered(dir, limit, &done, |outcome| match outcome {
+    // One loop over both backends: the file selection and its order have to be
+    // identical, or a resumed run would skip different pages than it recorded.
+    let images = aphrody_ocr::list_images_sorted(dir).map_err(|e| miette::miette!("{e}"))?;
+    let pending: Vec<PathBuf> = images.into_iter().filter(|p| !done.contains(p)).collect();
+    let total = pending.len();
+
+    for image in pending.into_iter().take(limit.unwrap_or(usize::MAX)) {
+        let outcome = match (&resident, &runner) {
+            (Some(server), _) => server.read(&image),
+            (None, Some(cli)) => cli.read(&image),
+            // `batch` builds exactly one of the two above.
+            (None, None) => unreachable!("no OCR backend was constructed"),
+        };
+
+        match outcome {
             Ok(result) => {
                 read += 1;
                 if result.text.has_text() {
@@ -187,18 +240,19 @@ fn batch(
                     eprintln!("write failed: {e}");
                 }
                 if read % 10 == 0 {
+                    let rate = started.elapsed().as_secs_f64() / f64::from(u32::try_from(read).unwrap_or(u32::MAX));
                     eprintln!(
-                        "  {read} read, {with_text} with text, {failed} failed, {:.1}s elapsed",
-                        started.elapsed().as_secs_f64()
+                        "  {read}/{total} read, {with_text} with text, {failed} failed, {rate:.1}s/page"
                     );
                 }
             }
             Err(e) => {
+                // One unreadable plate must not cost the other 399.
                 failed += 1;
-                eprintln!("page failed: {e}");
+                eprintln!("page failed ({}): {e}", image.display());
             }
-        })
-        .map_err(|e| miette::miette!("{e}"))?;
+        }
+    }
 
     let _ = sink.flush();
     eprintln!(

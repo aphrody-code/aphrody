@@ -869,6 +869,8 @@ version = "1.0.0-canary"
 dependencies = [
  "aphrody-infer",
  "aphrody-models",
+ "reqwest 0.13.3",
+ "rustls",
  "serde",
  "serde_json",
  "tempfile",
@@ -9988,6 +9990,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
+ "futures-channel",
  "futures-core",
  "futures-util",
  "h2",

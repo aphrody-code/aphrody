@@ -261,6 +261,17 @@ impl VlmRunner {
     }
 }
 
+/// Every image file directly under `dir`, sorted.
+///
+/// Public because a caller that drives its own loop — one picking between the
+/// per-process and resident backends — needs the same file selection and the
+/// same order, or a resumed run would skip different pages than it recorded.
+pub fn list_images_sorted(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut images = list_images(dir)?;
+    images.sort();
+    Ok(images)
+}
+
 /// Every image file directly under `dir`.
 fn list_images(dir: &Path) -> Result<Vec<PathBuf>> {
     let entries =
@@ -278,6 +289,16 @@ pub fn is_image(path: &Path) -> bool {
     path.extension().and_then(|e| e.to_str()).is_some_and(|ext| {
         matches!(ext.to_ascii_lowercase().as_str(), "jpg" | "jpeg" | "png" | "webp" | "bmp")
     })
+}
+
+/// Resolve the weights and projector of a catalog vision entry.
+///
+/// Both are resolved up front: a vision GGUF is useless without its mmproj,
+/// and failing here beats failing on the first image of a batch.
+pub(crate) fn resolve_artifacts(model_id: &str) -> Result<(PathBuf, PathBuf)> {
+    let entry = Catalog::builtin().get(model_id)?;
+    let store = ModelStore::open()?;
+    Ok((installed_path(&store, entry, "weights")?, installed_path(&store, entry, "mmproj")?))
 }
 
 /// Resolve one role of a catalog entry to an installed path.
@@ -299,7 +320,7 @@ fn installed_path(
 }
 
 /// Last `limit` characters of a string, on a char boundary.
-fn tail(text: &str, limit: usize) -> String {
+pub(crate) fn tail(text: &str, limit: usize) -> String {
     let trimmed = text.trim();
     if trimmed.chars().count() <= limit {
         return trimmed.to_owned();
