@@ -1,10 +1,11 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: bxc
 description: Crawler and web scraping engine with advanced stealth, browser automation, and platform scrapers.
 when_to_use: User asks to crawl, recon, or scrape a webpage, search Google, automate browser tasks, extract data, or interact with platforms like x.com/Grok/WorldBeyblade.
 version: "1.1.0"
 ---
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Bxc — Bun-Native Stealth Browser & Scraping Engine
 

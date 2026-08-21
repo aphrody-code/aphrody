@@ -1,10 +1,11 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: n2b
 description: Scan and migrate a Node.js codebase to Bun using n2b, including API mappings, Bun Shell ($), shebang updates, and package config.
 when_to_use: User asks to migrate a Node project to Bun, mentions "n2b", "Node to Bun", or wants to analyze node compatibility of scripts.
 version: "1.1.0"
 ---
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # n2b — Node to Bun Migration & Scaffolding Tool
 
