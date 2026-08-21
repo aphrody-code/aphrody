@@ -125,6 +125,24 @@ async function lis(lot: string, local: string, o: Options): Promise<string> {
 	return jsonl;
 }
 
+/**
+ * Vérifie le lot avant tout dépôt.
+ *
+ * Un dépôt est difficile à défaire : mieux vaut refuser un lot que d'écrire
+ * quatre cents planches de sortie dégénérée dans un corpus public. `audit`
+ * sort en code non nul sur un défaut bloquant, ce qui fait échouer le lot et
+ * laisse la boucle passer au suivant.
+ */
+async function verifie(lot: string, jsonl: string, o: Options): Promise<void> {
+	const r = await $`${o.aphrody} ocr audit ${jsonl}`.nothrow().quiet();
+	const sortie = r.stdout.toString().trim().split("\n");
+	const resume = sortie.find((l) => l.includes("with text")) ?? "";
+	if (r.exitCode !== 0) {
+		throw new Error(`audit refusé — ${resume || r.stderr.toString().trim().slice(0, 200)}`);
+	}
+	console.log(`  ${lot} : audit OK${resume ? ` — ${resume}` : ""}`);
+}
+
 /** Renvoie le JSONL et le dépose. */
 async function depose(lot: string, jsonl: string, o: Options): Promise<void> {
 	const lignes = await compteLignes(jsonl);
@@ -169,6 +187,7 @@ async function main(): Promise<void> {
 		try {
 			const local = await rapatrie(lot, o);
 			const jsonl = await lis(lot, local, o);
+			await verifie(lot, jsonl, o);
 			await depose(lot, jsonl, o);
 
 			// Les planches pèsent ~200 Mio par lot et ne servent plus une fois
