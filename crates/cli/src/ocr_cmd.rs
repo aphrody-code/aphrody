@@ -384,6 +384,9 @@ fn describe(finding: &aphrody_ocr::audit::Finding) -> (&'static str, String) {
         Finding::Loop { word, repeats } => ("loop", format!("{word} x{repeats}")),
         Finding::Markup { sample } => ("markup", sample.clone()),
         Finding::Watermark { line } => ("watermark", line.clone()),
+        // `Finding` is `#[non_exhaustive]`: a new defect kind added upstream
+        // must still be reported, not silently dropped from the table.
+        other => ("other", format!("{other:?}")),
     }
 }
 
