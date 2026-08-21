@@ -44,6 +44,21 @@ pub(crate) enum OcrAction {
         #[command(flatten)]
         output: OutputOpts,
     },
+    /// Re-run the text cleanup over an existing JSONL, in place.
+    ///
+    /// The model output is not touched — the images are not read again. Only
+    /// the parsing and filtering are redone, which is what changes when a
+    /// cleanup rule is added. Use it to bring results produced before a rule
+    /// existed up to the current pipeline instead of re-reading them.
+    ///
+    /// Example: aphrody ocr clean lot-001.jsonl --out lot-001-clean.jsonl
+    Clean {
+        /// JSONL produced by `aphrody ocr batch --raw`.
+        input: PathBuf,
+        /// Where to write the cleaned JSONL. Defaults to overwriting `input`.
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
     /// Read every image in a directory, streaming one JSON object per line.
     ///
     /// Example: aphrody ocr batch ./lot-001/images --out lot-001.jsonl
@@ -69,6 +84,11 @@ pub(crate) enum OcrAction {
         /// Token budget per page.
         #[arg(long, default_value_t = 1024)]
         max_tokens: u32,
+        /// Keep each page's raw model output in the JSONL. Costs disk, but it
+        /// is what makes `aphrody ocr clean` able to re-apply a cleanup rule
+        /// later without reading the images again.
+        #[arg(long)]
+        raw: bool,
         /// Keep the model resident behind a llama-server instead of spawning
         /// one process per page. Several times faster over a long batch, at
         /// the cost of crash isolation: a server that dies takes the run.
@@ -91,6 +111,7 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         }
+        OcrAction::Clean { input, out } => clean(&input, out.as_deref()),
         OcrAction::Batch {
             dir,
             out,
@@ -99,6 +120,7 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
             model,
             prompt,
             max_tokens,
+            raw,
             server,
             server_port,
         } => batch(
@@ -109,6 +131,7 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
             &model,
             prompt.as_deref(),
             max_tokens,
+            raw,
             server.then_some(server_port),
         ),
     }
@@ -161,9 +184,10 @@ fn batch(
     model: &str,
     prompt: Option<&str>,
     max_tokens: u32,
+    keep_raw: bool,
     server_port: Option<u16>,
 ) -> miette::Result<()> {
-    let opts = options(model, prompt, max_tokens, false);
+    let opts = options(model, prompt, max_tokens, keep_raw);
 
     // Two backends, one loop: a resident server for throughput, a process per
     // page for isolation. The reader closure is the only thing that differs.
@@ -263,6 +287,77 @@ fn batch(
     Ok(())
 }
 
+/// Re-run the cleanup rules over an existing JSONL.
+///
+/// Only lines that kept their raw model output can be recleaned: everything
+/// else has already lost the text the rules act on. Those lines pass through
+/// untouched rather than being dropped, so the file stays complete and a
+/// caller never silently loses pages to a maintenance command.
+fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
+    let file = std::fs::File::open(input)
+        .map_err(|e| miette::miette!("read {}: {e}", input.display()))?;
+
+    let mut lines = Vec::new();
+    let mut recleaned = 0_usize;
+    let mut changed = 0_usize;
+    let mut passthrough = 0_usize;
+
+    for line in std::io::BufReader::new(file).lines() {
+        let Ok(line) = line else { continue };
+        if line.trim().is_empty() {
+            continue;
+        }
+        let Ok(mut value) = serde_json::from_str::<serde_json::Value>(&line) else {
+            // A torn last line from a killed run: keep it out rather than
+            // writing back something unparseable.
+            continue;
+        };
+
+        let Some(raw) = value.get("raw").and_then(serde_json::Value::as_str) else {
+            passthrough += 1;
+            lines.push(value);
+            continue;
+        };
+
+        let before = value
+            .get("text")
+            .and_then(|t| t.get("markdown"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+
+        let document = aphrody_ocr::Document::parse(raw);
+        let after = document.to_markdown();
+        if after.as_deref().unwrap_or_default() != before {
+            changed += 1;
+        }
+        value["text"] = match &after {
+            Some(markdown) => serde_json::json!({ "kind": "text", "markdown": markdown }),
+            None => serde_json::json!({ "kind": "none" }),
+        };
+        recleaned += 1;
+        lines.push(value);
+    }
+
+    let target = out.unwrap_or(input);
+    let body = lines
+        .iter()
+        .map(|v| serde_json::to_string(v).unwrap_or_default())
+        .collect::<Vec<_>>()
+        .join("\n");
+    std::fs::write(target, format!("{body}\n"))
+        .map_err(|e| miette::miette!("write {}: {e}", target.display()))?;
+
+    eprintln!(
+        "{recleaned} page(s) recleaned ({changed} changed), {passthrough} without raw output kept as-is -> {}",
+        target.display()
+    );
+    if passthrough > 0 && recleaned == 0 {
+        eprintln!("note: no line carried `raw`; re-run the batch with --raw to make cleaning possible");
+    }
+    Ok(())
+}
+
 /// Image paths already recorded in a JSONL file.
 fn already_done(path: &Path) -> miette::Result<std::collections::BTreeSet<PathBuf>> {
     let file = match std::fs::File::open(path) {
@@ -347,5 +442,58 @@ mod tests {
     fn an_absent_resume_file_means_nothing_is_done() {
         let dir = tempfile::tempdir().unwrap();
         assert!(already_done(&dir.path().join("absent.jsonl")).unwrap().is_empty());
+    }
+
+    #[test]
+    fn cleaning_reapplies_the_rules_to_lines_that_kept_their_raw_output() {
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("in.jsonl");
+        // A watermark that predates the rule: `text` still carries it, `raw`
+        // is what the rule can act on.
+        std::fs::write(
+            &jsonl,
+            "{\"image\":\"a.jpg\",\"raw\":\"宿敵\\ncapsulecommentary.com\",\
+             \"text\":{\"kind\":\"text\",\"markdown\":\"宿敵\\ncapsulecommentary.com\"}}\n",
+        )
+        .unwrap();
+
+        let out = dir.path().join("out.jsonl");
+        clean(&jsonl, Some(&out)).unwrap();
+
+        let written = std::fs::read_to_string(&out).unwrap();
+        let value: serde_json::Value = serde_json::from_str(written.trim()).unwrap();
+        let markdown = value["text"]["markdown"].as_str().unwrap();
+        assert!(markdown.contains("宿敵"), "{markdown}");
+        assert!(!markdown.contains("capsulecommentary"), "{markdown}");
+    }
+
+    #[test]
+    fn cleaning_keeps_lines_without_raw_output_instead_of_dropping_them() {
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("in.jsonl");
+        std::fs::write(
+            &jsonl,
+            "{\"image\":\"a.jpg\",\"text\":{\"kind\":\"text\",\"markdown\":\"gardé\"}}\n\
+             {\"image\":\"b.jpg\",\"text\":{\"kind\":\"none\"}}\n",
+        )
+        .unwrap();
+
+        let out = dir.path().join("out.jsonl");
+        clean(&jsonl, Some(&out)).unwrap();
+
+        // A maintenance command must never silently lose pages.
+        let written = std::fs::read_to_string(&out).unwrap();
+        assert_eq!(written.lines().count(), 2, "{written}");
+        assert!(written.contains("gardé"), "{written}");
+    }
+
+    #[test]
+    fn cleaning_defaults_to_rewriting_the_input() {
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("in.jsonl");
+        std::fs::write(&jsonl, "{\"image\":\"a.jpg\",\"raw\":\"texte réel\"}\n").unwrap();
+        clean(&jsonl, None).unwrap();
+        let written = std::fs::read_to_string(&jsonl).unwrap();
+        assert!(written.contains("texte réel"), "{written}");
     }
 }
