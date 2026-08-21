@@ -234,6 +234,36 @@ longue, sans humain dans la boucle, exécutée en tâche de fond.
 
 ---
 
+## 7bis. Déploiement sur le VPS
+
+Le VPS **n'a pas de GPU**. Ce qui s'y déploie utilement n'est donc pas la
+lecture, mais tout le reste de la chaîne :
+
+| Commande | Sur le VPS | Pourquoi |
+|---|---|---|
+| `aphrody model …` | ✅ | catalogue, téléchargement vérifié, store — aucun GPU |
+| `aphrody infer runtime` / `llama` | ✅ | diagnostic de ce qui est installé |
+| `aphrody ocr audit` / `clean` | ✅ | pur traitement de JSONL |
+| `aphrody ocr batch` | ⚠️ | fonctionne, mais sur CPU : hors de question pour un lot |
+
+La répartition qui en découle : **la lecture reste sur le poste à GPU**, le VPS
+audite et dépose. C'est déjà la forme du pont, le déploiement ne fait que rendre
+les deux moitiés disponibles là où elles servent.
+
+```bash
+# Sur le VPS
+cd ~/aphrody && git pull
+export RUSTC_WRAPPER= CARGO_CONFIG="$HOME/aphrody/.cargo/config.linux-vps.toml"
+export CARGO_TARGET_DIR="$HOME/aphrody/target/x86_64-unknown-linux-gnu"
+cargo build --release --target x86_64-unknown-linux-gnu -p aphrody --features ocr
+install -m 0755 "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/aphrody" ~/.local/bin/aphrody
+```
+
+Le `.cargo/config.toml` par défaut vise Windows MSVC : sans `CARGO_CONFIG`, le
+build échoue (cf. [`../DEPLOY.md`](../DEPLOY.md)).
+
+---
+
 ## 8. État au 2026-08-21
 
 **Lot 001 terminé** : 400/400 planches lues, **zéro échec**, en 50 minutes
