@@ -72,6 +72,15 @@ pub(crate) enum OcrAction {
         /// Where to write the cleaned JSONL. Defaults to overwriting `input`.
         #[arg(long)]
         out: Option<PathBuf>,
+        /// Also apply the Japanese rules: rejoin lines cut mid-word and drop
+        /// spaces the model inserted between two Japanese characters.
+        ///
+        /// Measured on 5762 databook plates: 50 725 line breaks fall between
+        /// two Japanese characters, and Japanese has no spaces, so both are
+        /// artefacts of a page read in columns. Needs a binary built with
+        /// `--features ocr-japanese` — the IPADIC dictionary is compiled in.
+        #[arg(long)]
+        japonais: bool,
     },
     /// Read every image in a directory, streaming one JSON object per line.
     ///
@@ -137,7 +146,7 @@ pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         }
         OcrAction::Audit { input, output } => audit(&input, &output),
-        OcrAction::Clean { input, out } => clean(&input, out.as_deref()),
+        OcrAction::Clean { input, out, japonais } => clean(&input, out.as_deref(), japonais),
         OcrAction::Batch {
             dir,
             out,
@@ -506,7 +515,65 @@ fn describe(finding: &aphrody_ocr::audit::Finding) -> (&'static str, String) {
 /// else has already lost the text the rules act on. Those lines pass through
 /// untouched rather than being dropped, so the file stays complete and a
 /// caller never silently loses pages to a maintenance command.
-fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
+/// Loads the Japanese analyser, or explains why it is not there.
+///
+/// A missing cargo feature must say its own name. The trap it replaces cost an
+/// afternoon once already: an argv the binary cannot serve fell through to the
+/// A2A fallback and complained about an unreachable server.
+#[cfg(feature = "ocr-japanese")]
+fn japonais_optionnel(demande: bool) -> miette::Result<Option<aphrody_ocr::japonais::Analyseur>> {
+    if !demande {
+        return Ok(None);
+    }
+    aphrody_ocr::japonais::Analyseur::nouveau()
+        .map(Some)
+        .map_err(|e| miette::miette!("{e}"))
+}
+
+#[cfg(not(feature = "ocr-japanese"))]
+fn japonais_optionnel(demande: bool) -> miette::Result<Option<std::convert::Infallible>> {
+    if demande {
+        return Err(miette::miette!(
+            "--japonais needs a binary built with `--features ocr-japanese`; this one was not"
+        ));
+    }
+    Ok(None)
+}
+
+/// Applies the Japanese rules to one page, tallying what they changed.
+///
+/// Order matters: spaces first, then the rejoin. A space sitting between the
+/// two halves of a cut word would otherwise hide the cut from the analyser,
+/// and the pass would leave the word broken.
+#[cfg(feature = "ocr-japanese")]
+fn remet_en_forme(
+    markdown: &str,
+    japonais: Option<&aphrody_ocr::japonais::Analyseur>,
+    recolles: &mut usize,
+    espaces: &mut usize,
+) -> String {
+    let Some(analyseur) = japonais else {
+        return markdown.to_owned();
+    };
+    let (sans_espaces, retires) = aphrody_ocr::japonais::espaces_parasites(markdown);
+    *espaces += retires;
+    let (recolle, jointures) = analyseur.recolle_lignes(&sans_espaces);
+    *recolles += jointures;
+    recolle
+}
+
+#[cfg(not(feature = "ocr-japanese"))]
+fn remet_en_forme(
+    markdown: &str,
+    _japonais: Option<&std::convert::Infallible>,
+    _recolles: &mut usize,
+    _espaces: &mut usize,
+) -> String {
+    markdown.to_owned()
+}
+
+fn clean(input: &Path, out: Option<&Path>, japonais: bool) -> miette::Result<()> {
+    let japonais = japonais_optionnel(japonais)?;
     let file = std::fs::File::open(input)
         .map_err(|e| miette::miette!("read {}: {e}", input.display()))?;
 
@@ -514,6 +581,8 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
     let mut recleaned = 0_usize;
     let mut changed = 0_usize;
     let mut passthrough = 0_usize;
+    let mut recolles = 0_usize;
+    let mut espaces = 0_usize;
 
     for line in std::io::BufReader::new(file).lines() {
         let Ok(line) = line else { continue };
@@ -553,7 +622,7 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
         }
 
         let document = aphrody_ocr::Document::parse(&source);
-        let after = document.to_markdown();
+        let after = document.to_markdown().map(|m| remet_en_forme(&m, japonais.as_ref(), &mut recolles, &mut espaces));
         if after.as_deref().unwrap_or_default() != before {
             changed += 1;
         }
@@ -578,6 +647,9 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
         "{recleaned} page(s) recleaned ({changed} changed), {passthrough} re-parsed from their text for want of `raw` -> {}",
         target.display()
     );
+    if recolles > 0 || espaces > 0 {
+        eprintln!("japonais: {recolles} ligne(s) recollée(s), {espaces} espace(s) parasite(s) retiré(s)");
+    }
     if passthrough > 0 && recleaned == passthrough {
         eprintln!("note: no line carried `raw`, so only rules that act on the text itself could run; --raw keeps the markup a future rule may need");
     }
@@ -684,7 +756,7 @@ mod tests {
         .unwrap();
 
         let out = dir.path().join("out.jsonl");
-        clean(&jsonl, Some(&out)).unwrap();
+        clean(&jsonl, Some(&out), false).unwrap();
 
         let written = std::fs::read_to_string(&out).unwrap();
         let value: serde_json::Value = serde_json::from_str(written.trim()).unwrap();
@@ -705,7 +777,7 @@ mod tests {
         .unwrap();
 
         let out = dir.path().join("out.jsonl");
-        clean(&jsonl, Some(&out)).unwrap();
+        clean(&jsonl, Some(&out), false).unwrap();
 
         // A maintenance command must never silently lose pages.
         let written = std::fs::read_to_string(&out).unwrap();
@@ -731,7 +803,7 @@ mod tests {
         .unwrap();
 
         let out = dir.path().join("out.jsonl");
-        clean(&jsonl, Some(&out)).unwrap();
+        clean(&jsonl, Some(&out), false).unwrap();
 
         let written = std::fs::read_to_string(&out).unwrap();
         assert!(written.contains("Chapitre 26"), "the good prefix survives: {written}");
@@ -743,7 +815,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let jsonl = dir.path().join("in.jsonl");
         std::fs::write(&jsonl, "{\"image\":\"a.jpg\",\"raw\":\"texte réel\"}\n").unwrap();
-        clean(&jsonl, None).unwrap();
+        clean(&jsonl, None, false).unwrap();
         let written = std::fs::read_to_string(&jsonl).unwrap();
         assert!(written.contains("texte réel"), "{written}");
     }

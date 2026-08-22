@@ -132,7 +132,17 @@ impl Document {
         if plain.is_empty() {
             return Self { blocks: Vec::new() };
         }
-        let (trimmed, looped) = truncate_loop(&plain);
+        // Le texte brut boucle exactement comme les blocs, et l'audit à l'image
+        // l'a montré : sur sept planches denses, six finissent en cycle — un
+        // triplet de titres quarante fois, cinquante-cinq codes-barres
+        // consécutifs, quatre-vingt-dix nombres nus. Aucune n'était en DocTags,
+        // donc la coupure de cycle, qui ne gardait que le chemin à blocs, ne les
+        // voyait pas. Ici une ligne tient lieu de bloc.
+        let (sans_cycle, cycle) = truncate_line_cycle(&plain);
+        if cycle {
+            tracing::debug!("cut a line cycle in a tagless generation");
+        }
+        let (trimmed, looped) = truncate_loop(&sans_cycle);
         if looped {
             tracing::debug!(kept = trimmed.len(), "truncated a looping generation");
         }
@@ -368,8 +378,124 @@ fn clean_blocks(blocks: Vec<Block>) -> Vec<Block> {
         out.push(Block { tag: block.tag, text });
     }
 
+    truncate_block_cycle(out)
+}
+
+/// Cut where the blocks start going round in a circle.
+///
+/// The rule above only looks at the block just before, so it sees `A A A A`
+/// and misses `A B C A B C`. Audited against the scans, six dense plates out
+/// of seven ended in exactly that shape — one, forty times over:
+///
+/// ```text
+/// # スーパー
+/// # レイרסの超戦隊
+/// # モンブロリー
+/// ```
+///
+/// Digits are collapsed to `#` before comparing, which folds a second failure
+/// into the same mechanism: the model that stops reading and starts *counting*.
+/// One plate emitted `JAN97897800852210` through `JAN97897800852263`, another
+/// the bare numbers `3` to `92` — never twice the same block, so nothing above
+/// caught them, yet `JAN#` against `JAN#` is a circle like any other.
+#[must_use]
+fn truncate_block_cycle(blocks: Vec<Block>) -> Vec<Block> {
+    let keys: Vec<String> = blocks.iter().map(cle_de_boucle).collect();
+    let refs: Vec<&str> = keys.iter().map(String::as_str).collect();
+    let Some(coupe) = premier_cycle(&refs) else {
+        return blocks;
+    };
+    tracing::debug!(gardes = coupe, "cut a block cycle");
+    let mut kept = blocks;
+    kept.truncate(coupe);
+    kept
+}
+
+/// La même coupure de cycle, mais sur des lignes plutôt que sur des blocs.
+///
+/// Rend le texte coupé et si un cycle a été trouvé. Les lignes vides sont
+/// ignorées pour la comparaison mais rendues telles quelles : un modèle qui
+/// tourne en rond sépare souvent ses répétitions d'une ligne vide, et s'en
+/// tenir aux lignes pleines évite d'avoir à deviner un rythme.
+#[must_use]
+fn truncate_line_cycle(texte: &str) -> (String, bool) {
+    // (indice de la ligne dans le texte, clé de comparaison)
+    let pleines: Vec<(usize, String)> = texte
+        .split('\n')
+        .enumerate()
+        .filter(|(_, l)| !l.trim().is_empty())
+        .map(|(i, l)| (i, cle_texte(l.trim())))
+        .collect();
+
+    let cles: Vec<&str> = pleines.iter().map(|(_, c)| c.as_str()).collect();
+    let Some(coupe) = premier_cycle(&cles) else {
+        return (texte.to_owned(), false);
+    };
+
+    // Garder tout ce qui précède, plus un tour du motif.
+    let derniere = pleines[coupe - 1].0;
+    let gardees: Vec<&str> = texte.split('\n').take(derniere + 1).collect();
+    (gardees.join("\n"), true)
+}
+
+/// Indice, dans `cles`, de la fin du premier tour d'un cycle qui se répète.
+///
+/// `None` quand rien ne tourne en rond.
+fn premier_cycle(cles: &[&str]) -> Option<usize> {
+    for period in 1..=CYCLE_MAX {
+        let mut index = 0;
+        while index + period * (LOOP_THRESHOLD + 1) <= cles.len() {
+            let motif = &cles[index..index + period];
+            let mut repeats = 1;
+            let mut probe = index + period;
+            while probe + period <= cles.len() && &cles[probe..probe + period] == motif {
+                repeats += 1;
+                probe += period;
+            }
+            if repeats > LOOP_THRESHOLD {
+                return Some(index + period);
+            }
+            index += 1;
+        }
+    }
+    None
+}
+
+/// Comparison key for two blocks, with runs of digits folded to `#`.
+///
+/// An enumeration that runs away differs by one digit each time, which is
+/// enough to defeat an equality test and not enough to be content.
+fn cle_de_boucle(block: &Block) -> String {
+    format!("{}\u{1}{}", block.tag, cle_texte(&block.text))
+}
+
+/// Le texte avec chaque suite de chiffres réduite à `#`.
+fn cle_texte(texte: &str) -> String {
+    let mut out = String::with_capacity(texte.len());
+    let mut dans_un_nombre = false;
+    for c in texte.chars() {
+        if c.is_ascii_digit() {
+            if !dans_un_nombre {
+                out.push('#');
+                dans_un_nombre = true;
+            }
+        } else {
+            dans_un_nombre = false;
+            out.push(c);
+        }
+    }
     out
 }
+
+/// Longest cycle of blocks worth looking for.
+///
+/// The measured failures cycle over one to three blocks — a heading, a line,
+/// a caption. Beyond four, a repeat is more plausibly a real page structure
+/// (a table row, a character sheet) than a model going round in circles.
+const CYCLE_MAX: usize = 4;
+
+/// Plus long motif, en mots, cherché dans une boucle séparée par des espaces.
+const MOTIF_MAX: usize = 8;
 
 /// How many consecutive repeats of the same token run count as a stuck loop.
 ///
@@ -412,7 +538,11 @@ fn truncate_spaced_loop(text: &str) -> (String, bool) {
 
     // Try short motifs first: `a a a a` should cut at the first `a`, not be
     // missed because `a a` also repeats.
-    for window in 1..=4_usize {
+    //
+    // Huit et non quatre : une planche d'interview est partie en anglais et a
+    // répété `I was a fire man and` quatre-vingt-trois fois — un motif de six
+    // mots, que la fenêtre d'origine ne pouvait pas voir.
+    for window in 1..=MOTIF_MAX {
         let mut index = 0;
         while index + window * (LOOP_THRESHOLD + 1) <= tokens.len() {
             let motif = &tokens[index..index + window];
@@ -592,6 +722,106 @@ mod tests {
         let doc = Document::parse(&raw);
         assert_eq!(doc.blocks.len(), 4);
         assert!(doc.to_markdown().is_some_and(|m| m.contains("Fin du chapitre")));
+    }
+
+    #[test]
+    fn a_cycle_in_a_tagless_answer_is_cut_too() {
+        // Le cas réel : dots.ocr répond en markdown nu, donc rien de tout ceci
+        // ne passait par le chemin à blocs. La planche 120-0005 gardait ses
+        // quarante tours après nettoyage.
+        let mut brut = String::from("# 超死闘!!!\n\n# マジで!! ガチな!! 【超】バトル!!!\n");
+        for _ in 0..40 {
+            brut.push_str("\n# スーパー\n\n# レイの超戦隊\n\n# モンブロリー\n");
+        }
+        let doc = Document::parse(&brut);
+        let markdown = doc.to_markdown().expect("le vrai texte survit");
+        assert!(markdown.contains("超死闘"), "{markdown}");
+        assert_eq!(markdown.matches("モンブロリー").count(), 1, "{markdown}");
+    }
+
+    #[test]
+    fn a_runaway_enumeration_in_plain_text_is_cut() {
+        // Cinquante-cinq codes-barres qui ne figurent nulle part sur la page.
+        let mut brut = String::from("# システムファイル4\n\nカード60枚収納可能\n");
+        for n in 97_897_800_852_210_u64..97_897_800_852_263 {
+            brut.push_str(&format!("\nJAN{n}\n"));
+        }
+        let doc = Document::parse(&brut);
+        let markdown = doc.to_markdown().expect("le vrai texte survit");
+        assert!(markdown.contains("システムファイル4"));
+        assert_eq!(markdown.matches("JAN").count(), 1, "{markdown}");
+    }
+
+    #[test]
+    fn a_six_word_motif_is_caught_now_that_the_window_is_eight() {
+        // `I was a fire man and`, quatre-vingt-trois fois, sur une planche
+        // d'interview partie en anglais. Six mots : la fenêtre de quatre les
+        // laissait passer.
+        let texte = format!("悟空と野沢雅子さんの声は{}", " I was a fire man and".repeat(83));
+        let (garde, coupe) = truncate_loop(&texte);
+        assert!(coupe, "le motif de six mots doit être vu");
+        assert_eq!(garde.matches("fire").count(), 1, "{garde}");
+    }
+
+    #[test]
+    fn three_blocks_going_round_in_a_circle_are_cut() {
+        // Relevé à l'image sur la planche 120-0005 : le même triplet quarante
+        // fois, 96 % du fichier. La règle qui ne regarde que le bloc précédent
+        // ne voyait rien, parce que deux blocs consécutifs diffèrent toujours.
+        let mut raw = String::from("<doctag>");
+        for _ in 0..40 {
+            for texte in ["スーパー", "レイの超戦隊", "モンブロリー"] {
+                raw.push_str(&format!("<text><loc_1><loc_2><loc_3><loc_4>{texte}</text>\n"));
+            }
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), 3, "un seul tour est gardé");
+    }
+
+    #[test]
+    fn an_enumeration_that_runs_away_is_cut_even_though_no_two_blocks_match() {
+        // `JAN97897800852210` … `JAN97897800852263` : cinquante-cinq codes-barres
+        // qui ne figurent nulle part sur la planche. Aucun bloc n'est égal à un
+        // autre, d'où la normalisation des chiffres avant comparaison.
+        let mut raw = String::from("<doctag><text><loc_1><loc_2><loc_3><loc_4>本文</text>\n");
+        for n in 97_897_800_852_210_u64..97_897_800_852_263 {
+            raw.push_str(&format!("<text><loc_1><loc_2><loc_3><loc_4>JAN{n}</text>\n"));
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), 2, "le texte réel, puis un seul code");
+        assert_eq!(doc.blocks[0].text, "本文");
+        assert!(doc.blocks[1].text.starts_with("JAN"));
+    }
+
+    #[test]
+    fn a_run_of_bare_numbers_is_cut() {
+        // L'autre forme du même décrochage : le modèle cesse de lire et compte.
+        let mut raw = String::from("<doctag>");
+        for n in 3..93 {
+            raw.push_str(&format!("<text><loc_1><loc_2><loc_3><loc_4>{n}</text>\n"));
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), 1, "{:?}", doc.blocks);
+    }
+
+    #[test]
+    fn a_real_numbered_list_survives_because_its_text_differs() {
+        // Le garde-fou ne doit pas manger un sommaire : les numéros se
+        // ressemblent, les titres non.
+        let titres = ["神龍の伝説", "魔神城のねむり姫", "摩訶不思議大冒険", "この世で一番強いヤツ", "地球まるごと超決戦", "超サイヤ人だ孫悟空"];
+        let mut raw = String::from("<doctag>");
+        for (i, titre) in titres.iter().enumerate() {
+            raw.push_str(&format!(
+                "<text><loc_1><loc_2><loc_3><loc_4>#{:02} {titre}</text>\n",
+                i + 1
+            ));
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), titres.len());
     }
 
     #[test]

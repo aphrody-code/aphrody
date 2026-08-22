@@ -90,3 +90,6 @@ pub enum OcrError {
 
 /// Result alias for this crate.
 pub type Result<T> = core::result::Result<T, OcrError>;
+
+#[cfg(feature = "japanese")]
+pub mod japonais;

@@ -53,6 +53,12 @@ infer = ["dep:aphrody-infer"]
 # model pulled. Build with: cargo build -p aphrody --features ocr
 ocr = ["dep:aphrody-ocr", "infer"]
 
+# Regles de mise en forme propres au japonais pour `aphrody ocr clean --japonais`
+# (lindera / Kuromoji, dictionnaire IPADIC compile dans le binaire). Separee de
+# `ocr` parce qu'elle pese : le nettoyage marche sans, il est juste moins fin.
+#   cargo build -p aphrody --features ocr-japanese
+ocr-japanese = ["ocr", "aphrody-ocr/japanese"]
+
 
 # Adobe Firefly Services image generation to disk (`aphrody firefly generate`),
 # backed by aphrody-firefly (IMS OAuth S2S + v3 async generate). Host-only.

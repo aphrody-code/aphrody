@@ -380,6 +380,15 @@ chrono             = { version = "0.4", features = ["serde"] }
 jiff               = { version = "0.2" }
 regex              = { version = "1" }
 
+# --- Analyse morphologique japonaise --------------------------------------
+# Portage Rust de Kuromoji. Le corpus des databooks est japonais, une langue
+# sans espaces : sans segmentation en morphemes on ne peut ni recoller une
+# ligne coupee au milieu d'un mot, ni distinguer un mot latin legitime
+# (DRAGON BALL) d'une hallucination glissee dans un mot japonais.
+# `embed-ipadic` compile le dictionnaire dans le binaire : rien a telecharger
+# au build ni a resoudre au runtime.
+lindera            = { version = "5.3", default-features = false, features = ["embed-ipadic"] }
+
 # --- Logging / errors -----------------------------------------------------
 tracing            = { version = "0.1" }
 tracing-subscriber = { version = "=0.3.22", features = ["env-filter", "fmt", "json", "regex"] }

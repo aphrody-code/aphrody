@@ -24,6 +24,9 @@ thiserror      = { workspace = true }
 tracing        = { workspace = true }
 serde          = { workspace = true }
 serde_json     = { workspace = true }
+
+# `aphrody ocr` avec la feature `japanese` : segmentation en morphemes.
+lindera        = { workspace = true, optional = true }
 # Client HTTP synchrone pour llama-server. `blocking` parce que le pipeline OCR
 # est synchrone de bout en bout : une planche à la fois, pas de concurrence à
 # orchestrer, et un runtime async ici n'apporterait que de la cérémonie.
@@ -32,3 +35,11 @@ serde_json     = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+
+[features]
+# Analyse morphologique japonaise (lindera, portage de Kuromoji) pour le
+# nettoyage du texte : recoller les lignes coupées au milieu d'un mot et
+# repérer les caractères latins ou cyrilliques hallucinés dans un mot japonais.
+# Opt-in parce que le dictionnaire IPADIC est compilé dans le binaire — le
+# nettoyage de base fonctionne sans, il est simplement moins fin.
+japanese = ["dep:lindera"]
