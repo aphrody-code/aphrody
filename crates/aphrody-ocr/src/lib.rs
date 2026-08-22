@@ -32,6 +32,9 @@
 pub mod audit;
 /// `DocTags` parsing: the serialisation document VLMs emit.
 pub mod doctags;
+/// A minimal HTTP/1.1 client for the loopback llama-server.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod http;
 /// Resident-model backend: one `llama-server` for a whole batch.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod server;

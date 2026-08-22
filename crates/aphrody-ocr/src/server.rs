@@ -43,8 +43,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_mins(3);
 /// A running `llama-server` with a vision model loaded.
 pub struct ServerRunner {
     child: Child,
-    endpoint: String,
-    client: reqwest::blocking::Client,
+    port: u16,
     options: OcrOptions,
 }
 
@@ -96,29 +95,19 @@ impl ServerRunner {
             .spawn()
             .map_err(|source| OcrError::Io { path: source_path(&source, port), source })?;
 
-        let endpoint = format!("http://127.0.0.1:{port}");
-        let client = reqwest::blocking::Client::builder()
-            .timeout(REQUEST_TIMEOUT)
-            .build()
-            .map_err(|e| OcrError::Process {
-                command: "reqwest".to_owned(),
-                status: "client".to_owned(),
-                stderr: e.to_string(),
-            })?;
-
-        if let Err(e) = wait_healthy(&client, &endpoint, &mut child, &log_path) {
+        if let Err(e) = wait_healthy(port, &mut child, &log_path) {
             // Never leave a half-started server holding the GPU.
             let _ = child.kill();
             return Err(e);
         }
 
-        Ok(Self { child, endpoint, client, options })
+        Ok(Self { child, port, options })
     }
 
     /// The endpoint this runner talks to.
     #[must_use]
-    pub fn endpoint(&self) -> &str {
-        &self.endpoint
+    pub fn endpoint(&self) -> String {
+        format!("http://127.0.0.1:{}", self.port)
     }
 
     /// Read one image through the resident model.
@@ -146,31 +135,26 @@ impl ServerRunner {
             "stream": false,
         });
 
-        let response = self
-            .client
-            .post(format!("{}/v1/chat/completions", self.endpoint))
-            .json(&body)
-            .send()
-            .map_err(|e| OcrError::Process {
-                command: self.endpoint.clone(),
-                status: "request".to_owned(),
-                stderr: e.to_string(),
-            })?;
+        let payload = serde_json::to_string(&body).map_err(|e| OcrError::Process {
+            command: self.endpoint(),
+            status: "serialise request".to_owned(),
+            stderr: e.to_string(),
+        })?;
 
-        let status = response.status();
-        let text = response.text().unwrap_or_default();
-        if !status.is_success() {
+        let response =
+            crate::http::post_json(self.port, "/v1/chat/completions", &payload, REQUEST_TIMEOUT)?;
+        if !response.is_success() {
             return Err(OcrError::Process {
-                command: self.endpoint.clone(),
-                status: status.to_string(),
-                stderr: crate::vlm::tail(&text, 400),
+                command: self.endpoint(),
+                status: response.status.to_string(),
+                stderr: crate::vlm::tail(&response.body, 400),
             });
         }
 
-        let content = extract_content(&text).ok_or_else(|| OcrError::Process {
-            command: self.endpoint.clone(),
+        let content = extract_content(&response.body).ok_or_else(|| OcrError::Process {
+            command: self.endpoint(),
             status: "malformed response".to_owned(),
-            stderr: crate::vlm::tail(&text, 400),
+            stderr: crate::vlm::tail(&response.body, 400),
         })?;
 
         let document = Document::parse(&content);
@@ -197,14 +181,8 @@ impl Drop for ServerRunner {
 }
 
 /// Poll the server until it reports ready, or the child dies, or time runs out.
-fn wait_healthy(
-    client: &reqwest::blocking::Client,
-    endpoint: &str,
-    child: &mut Child,
-    log_path: &Path,
-) -> Result<()> {
+fn wait_healthy(port: u16, child: &mut Child, log_path: &Path) -> Result<()> {
     let deadline = Instant::now() + STARTUP_TIMEOUT;
-    let health = format!("{endpoint}/health");
 
     while Instant::now() < deadline {
         // A server that exited will never become healthy: say so immediately
@@ -218,8 +196,8 @@ fn wait_healthy(
             });
         }
 
-        if let Ok(response) = client.get(&health).timeout(Duration::from_secs(2)).send() {
-            if response.status().is_success() {
+        if let Ok(response) = crate::http::get(port, "/health", Duration::from_secs(2)) {
+            if response.is_success() {
                 return Ok(());
             }
         }
@@ -229,7 +207,7 @@ fn wait_healthy(
     Err(OcrError::Process {
         command: "llama-server".to_owned(),
         status: "timeout".to_owned(),
-        stderr: format!("no healthy answer from {endpoint} within {STARTUP_TIMEOUT:?}"),
+        stderr: format!("no healthy answer from 127.0.0.1:{port} within {STARTUP_TIMEOUT:?}"),
     })
 }
 

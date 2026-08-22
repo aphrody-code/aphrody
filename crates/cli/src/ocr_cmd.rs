@@ -104,13 +104,27 @@ pub(crate) enum OcrAction {
         #[arg(long)]
         raw: bool,
         /// EXPERIMENTAL — keep the model resident behind a llama-server
-        /// instead of spawning one process per page.
+        /// instead of spawning one process per page. DOES NOT WORK YET.
         ///
-        /// Measured on this hardware with dots.ocr: the server starts and
-        /// answers /health in three seconds, then no page completes. The
-        /// per-process backend is what is known to work end to end, and stays
-        /// the default. Do not use this for a real batch until the stall is
-        /// understood.
+        /// The prize is real: posting a page to a resident llama-server takes
+        /// about a second where spawning llama-mtmd-cli takes five, so a whole
+        /// corpus would go from a day to a few hours.
+        ///
+        /// What is known, measured rather than assumed:
+        ///   * the protocol is fine — the same request from another client
+        ///     returns a correct transcription in 975 ms;
+        ///   * the server starts, loads the model and answers its health
+        ///     endpoint in about three seconds, and its log then shows NO
+        ///     incoming request at all;
+        ///   * so the client side never reaches it, and the batch makes no
+        ///     progress whatsoever.
+        ///
+        /// Two causes were found and fixed on the way — an unread stderr pipe
+        /// that deadlocked the server once its 64 KiB buffer filled, and a
+        /// blocking HTTP client unusable from inside the tokio runtime (now a
+        /// hand-rolled HTTP/1.1 client). Neither was the whole story. Until the
+        /// rest is understood, use the default backend, which has read eight
+        /// hundred plates without a single failure.
         #[arg(long)]
         server: bool,
         /// Loopback port for --server.
@@ -125,7 +139,7 @@ pub(crate) enum OcrAction {
 ///
 /// Returns a `miette` report when the model or the llama.cpp runner is
 /// missing, or when the output file cannot be written.
-pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
+pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
     match action {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
@@ -143,17 +157,96 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
             raw,
             server,
             server_port,
-        } => batch(
-            &dir,
-            out.as_deref(),
-            limit,
-            skip_done,
-            &model,
-            prompt.as_deref(),
-            max_tokens,
-            raw,
-            server.then_some(server_port),
-        ),
+        } => {
+            batch(
+                &dir,
+                out.as_deref(),
+                limit,
+                skip_done,
+                &model,
+                prompt.as_deref(),
+                max_tokens,
+                raw,
+                server.then_some(server_port),
+            )
+            .await
+        }
+    }
+}
+
+/// Whether an argv is `ocr batch … --server`.
+///
+/// Checked before the runtime is built, so this looks at raw arguments rather
+/// than a parsed `OcrAction`: clap runs later, and by then a runtime exists.
+/// Deliberately narrow — only this exact shape takes the synchronous path.
+pub(crate) fn is_synchronous_server_batch(argv: &[std::ffi::OsString]) -> bool {
+    let words: Vec<String> =
+        argv.iter().map(|a| a.to_string_lossy().into_owned()).collect();
+    let Some(ocr) = words.iter().position(|w| w == "ocr") else { return false };
+    words.get(ocr + 1).is_some_and(|w| w == "batch") && words.iter().any(|w| w == "--server")
+}
+
+/// Run `ocr batch --server` with no async runtime at all.
+///
+/// # Errors
+///
+/// Returns the process exit code; failures are printed rather than propagated,
+/// because this runs before the CLI's normal error reporting is set up.
+pub(crate) fn run_sync_server_batch(argv: &[std::ffi::OsString]) -> i32 {
+    use clap::Parser as _;
+
+    #[derive(clap::Parser)]
+    struct Shim {
+        #[command(subcommand)]
+        command: Wrapper,
+    }
+    #[derive(clap::Subcommand)]
+    enum Wrapper {
+        Ocr {
+            #[command(subcommand)]
+            action: OcrAction,
+        },
+    }
+
+    // Parse only the subset this path accepts; anything else has already been
+    // ruled out by `is_synchronous_server_batch`.
+    let parsed = match Shim::try_parse_from(argv) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            let _ = e.print();
+            return 2;
+        }
+    };
+    let Wrapper::Ocr { action } = parsed.command;
+    let OcrAction::Batch {
+        dir,
+        out,
+        limit,
+        skip_done,
+        model,
+        prompt,
+        max_tokens,
+        raw,
+        server_port,
+        ..
+    } = action
+    else {
+        eprintln!("aphrody: internal error — synchronous path reached with a non-batch action");
+        return 70;
+    };
+
+    let opts = options(&model, prompt.as_deref(), max_tokens, raw);
+    eprintln!("starting llama-server on 127.0.0.1:{server_port} (loading {model})…");
+    let outcome = ServerRunner::start(opts, server_port).and_then(|resident| {
+        batch_loop(&dir, out.as_deref(), limit, skip_done, &|image| resident.read(image))
+    });
+
+    match outcome {
+        Ok(()) => 0,
+        Err(e) => {
+            eprintln!("aphrody: {e}");
+            1
+        }
     }
 }
 
@@ -196,7 +289,7 @@ fn page(
     output.emit_report(&report, &json)
 }
 
-fn batch(
+async fn batch(
     dir: &Path,
     out: Option<&Path>,
     limit: Option<usize>,
@@ -209,23 +302,45 @@ fn batch(
 ) -> miette::Result<()> {
     let opts = options(model, prompt, max_tokens, keep_raw);
 
-    // Two backends, one loop: a resident server for throughput, a process per
-    // page for isolation. The reader closure is the only thing that differs.
-    let resident = match server_port {
-        Some(port) => {
+    // `reqwest::blocking` cannot run inside the CLI's tokio runtime: every
+    // request stalls silently. The resident backend therefore owns its own OS
+    // thread, and everything it needs is moved onto it.
+    if let Some(port) = server_port {
+        let dir = dir.to_path_buf();
+        let out = out.map(Path::to_path_buf);
+        let model = model.to_owned();
+        // `spawn_blocking` is the only correct way to run this from the CLI's
+        // async context: the loop blocks on sockets and on a child process, and
+        // doing that on a runtime worker makes tokio panic when it later drops
+        // a runtime it was not allowed to block in.
+        return tokio::task::spawn_blocking(move || {
             eprintln!("starting llama-server on 127.0.0.1:{port} (loading {model})…");
-            Some(ServerRunner::start(opts.clone(), port).map_err(|e| miette::miette!("{e}"))?)
-        }
-        None => None,
-    };
-    let runner = if resident.is_some() {
-        None
-    } else {
-        Some(VlmRunner::new(opts.clone()).map_err(|e| miette::miette!("{e}"))?)
-    };
+            let resident = ServerRunner::start(opts, port)?;
+            batch_loop(&dir, out.as_deref(), limit, skip_done, &|image| resident.read(image))
+        })
+        .await
+        .map_err(|e| miette::miette!("ocr server task: {e}"))?
+        .map_err(|e| miette::miette!("{e}"));
+    }
 
+    let runner = VlmRunner::new(opts).map_err(|e| miette::miette!("{e}"))?;
+    batch_loop(dir, out, limit, skip_done, &|image| runner.read(image))
+        .map_err(|e| miette::miette!("{e}"))
+}
+
+/// The batch loop itself, independent of which backend reads a page.
+///
+/// Both backends must see the same file selection and the same order, or a
+/// resumed run would skip different pages than it recorded.
+fn batch_loop(
+    dir: &Path,
+    out: Option<&Path>,
+    limit: Option<usize>,
+    skip_done: bool,
+    read_page: &dyn Fn(&Path) -> aphrody_ocr::Result<PageResult>,
+) -> aphrody_ocr::Result<()> {
     let done = if skip_done {
-        out.map(already_done).transpose()?.unwrap_or_default()
+        out.map(already_done).unwrap_or_default()
     } else {
         std::collections::BTreeSet::new()
     };
@@ -235,8 +350,9 @@ fn batch(
         Some(path) => {
             if let Some(parent) = path.parent() {
                 if !parent.as_os_str().is_empty() {
-                    std::fs::create_dir_all(parent)
-                        .map_err(|e| miette::miette!("create {}: {e}", parent.display()))?;
+                    std::fs::create_dir_all(parent).map_err(|source| {
+                        aphrody_ocr::OcrError::Io { path: parent.to_path_buf(), source }
+                    })?;
                 }
             }
             Box::new(
@@ -244,49 +360,46 @@ fn batch(
                     .create(true)
                     .append(true)
                     .open(path)
-                    .map_err(|e| miette::miette!("open {}: {e}", path.display()))?,
+                    .map_err(|source| aphrody_ocr::OcrError::Io {
+                        path: path.to_path_buf(),
+                        source,
+                    })?,
             )
         }
         None => Box::new(std::io::stdout()),
     };
 
-    eprintln!("reading {} with {model}", dir.display());
+    eprintln!("reading {}", dir.display());
     if !done.is_empty() {
         eprintln!("skipping {} page(s) already in {}", done.len(), out.unwrap_or(Path::new("-")).display());
     }
 
-    let mut read = 0_usize;
+    let mut done_count = 0_usize;
     let mut with_text = 0_usize;
     let mut failed = 0_usize;
     let started = std::time::Instant::now();
 
     // One loop over both backends: the file selection and its order have to be
     // identical, or a resumed run would skip different pages than it recorded.
-    let images = aphrody_ocr::list_images_sorted(dir).map_err(|e| miette::miette!("{e}"))?;
+    let images = aphrody_ocr::list_images_sorted(dir)?;
     let pending: Vec<PathBuf> = images.into_iter().filter(|p| !done.contains(p)).collect();
     let total = pending.len();
 
     for image in pending.into_iter().take(limit.unwrap_or(usize::MAX)) {
-        let outcome = match (&resident, &runner) {
-            (Some(server), _) => server.read(&image),
-            (None, Some(cli)) => cli.read(&image),
-            // `batch` builds exactly one of the two above.
-            (None, None) => unreachable!("no OCR backend was constructed"),
-        };
-
-        match outcome {
+        match read_page(&image) {
             Ok(result) => {
-                read += 1;
+                done_count += 1;
                 if result.text.has_text() {
                     with_text += 1;
                 }
                 if let Err(e) = write_line(&mut sink, &result) {
                     eprintln!("write failed: {e}");
                 }
-                if read % 10 == 0 {
-                    let rate = started.elapsed().as_secs_f64() / f64::from(u32::try_from(read).unwrap_or(u32::MAX));
+                if done_count % 10 == 0 {
+                    let rate = started.elapsed().as_secs_f64()
+                        / f64::from(u32::try_from(done_count).unwrap_or(u32::MAX));
                     eprintln!(
-                        "  {read}/{total} read, {with_text} with text, {failed} failed, {rate:.1}s/page"
+                        "  {done_count}/{total} read, {with_text} with text, {failed} failed, {rate:.1}s/page"
                     );
                 }
             }
@@ -300,9 +413,9 @@ fn batch(
 
     let _ = sink.flush();
     eprintln!(
-        "\n{read}/{total} page(s) read in {:.1}s — {with_text} with text, {} textless, {failed} failed",
+        "\n{done_count}/{total} page(s) read in {:.1}s — {with_text} with text, {} textless, {failed} failed",
         started.elapsed().as_secs_f64(),
-        read.saturating_sub(with_text)
+        done_count.saturating_sub(with_text)
     );
     Ok(())
 }
@@ -467,14 +580,14 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
 }
 
 /// Image paths already recorded in a JSONL file.
-fn already_done(path: &Path) -> miette::Result<std::collections::BTreeSet<PathBuf>> {
-    let file = match std::fs::File::open(path) {
-        Ok(f) => f,
-        // No file yet simply means nothing is done.
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            return Ok(std::collections::BTreeSet::new());
-        }
-        Err(e) => return Err(miette::miette!("read {}: {e}", path.display())),
+///
+/// Infaillible : un fichier de reprise illisible signifie « rien de fait »,
+/// jamais un échec de lot. Au pire, des planches sont relues — coûteux, pas
+/// destructeur.
+fn already_done(path: &Path) -> std::collections::BTreeSet<PathBuf> {
+    // No file yet — or one that cannot be read — simply means nothing is done.
+    let Ok(file) = std::fs::File::open(path) else {
+        return std::collections::BTreeSet::new();
     };
 
     let mut done = std::collections::BTreeSet::new();
@@ -487,7 +600,7 @@ fn already_done(path: &Path) -> miette::Result<std::collections::BTreeSet<PathBu
             done.insert(PathBuf::from(image));
         }
     }
-    Ok(done)
+    done
 }
 
 /// Write one result as a JSONL line and flush it.
@@ -530,7 +643,7 @@ mod tests {
         )
         .unwrap();
 
-        let done = already_done(&jsonl).unwrap();
+        let done = already_done(&jsonl);
         assert_eq!(done.len(), 2);
         assert!(done.contains(&PathBuf::from("a.jpg")));
         assert!(done.contains(&PathBuf::from("b.jpg")));
@@ -542,14 +655,14 @@ mod tests {
         let jsonl = dir.path().join("out.jsonl");
         // Exactly what a process killed mid-write leaves behind.
         std::fs::write(&jsonl, "{\"image\":\"a.jpg\"}\n{\"image\":\"b.jp").unwrap();
-        let done = already_done(&jsonl).unwrap();
+        let done = already_done(&jsonl);
         assert_eq!(done, [PathBuf::from("a.jpg")].into_iter().collect());
     }
 
     #[test]
     fn an_absent_resume_file_means_nothing_is_done() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(already_done(&dir.path().join("absent.jsonl")).unwrap().is_empty());
+        assert!(already_done(&dir.path().join("absent.jsonl")).is_empty());
     }
 
     #[test]

@@ -27,8 +27,8 @@ serde_json     = { workspace = true }
 # Client HTTP synchrone pour llama-server. `blocking` parce que le pipeline OCR
 # est synchrone de bout en bout : une planche à la fois, pas de concurrence à
 # orchestrer, et un runtime async ici n'apporterait que de la cérémonie.
-reqwest        = { workspace = true, features = ["blocking"] }
-rustls         = { workspace = true }
+
+
 
 [dev-dependencies]
 tempfile = { workspace = true }

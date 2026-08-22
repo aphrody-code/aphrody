@@ -1351,7 +1351,7 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         #[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))]
         Some(Commands::Ocr { action }) => {
-            ocr_cmd::run(action)?;
+            ocr_cmd::run(action).await?;
         },
 
         #[cfg(feature = "firefly")]
@@ -1537,6 +1537,19 @@ where
     I: IntoIterator<Item = T>,
     T: Into<std::ffi::OsString> + Clone,
 {
+    // `ocr batch --server` is entirely synchronous: it blocks on a child
+    // process and on loopback sockets, and touches no async API. Running it
+    // inside a tokio runtime is not merely unnecessary — it panics, because a
+    // runtime ends up dropped from a context where blocking is forbidden. So
+    // that one path is dispatched BEFORE any runtime exists.
+    // `I` is consumed once, so materialise it here and pass the vector on.
+    let argv: Vec<std::ffi::OsString> = args.into_iter().map(Into::into).collect();
+
+    #[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))]
+    if ocr_cmd::is_synchronous_server_batch(&argv) {
+        return ocr_cmd::run_sync_server_batch(&argv);
+    }
+
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -1547,7 +1560,7 @@ where
             return 70; // EX_SOFTWARE (sysexits.h)
         },
     };
-    runtime.block_on(run_async(args))
+    runtime.block_on(run_async(argv))
 }
 
 /// Process-global [`GoogleContext`], built once and reused across calls so the
