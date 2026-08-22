@@ -113,7 +113,13 @@ impl Document {
     pub fn parse(raw: &str) -> Self {
         let blocks = parse_blocks(raw);
         if !blocks.is_empty() {
-            return Self { blocks };
+            // A model that speaks DocTags loops exactly as readily as one that
+            // does not: measured on 1600 databook plates, seven ended in a
+            // motif repeated up to 129 times, and every one of them had parsed
+            // into blocks — so the cleanup below, which used to guard only the
+            // plain-text fallback, never ran on them. Four whole lots were then
+            // refused at audit over those seven pages.
+            return Self { blocks: clean_blocks(blocks) };
         }
 
         // Not every vision model speaks DocTags. dots.ocr answers in plain
@@ -320,6 +326,51 @@ fn is_bare_url(line: &str) -> bool {
     tld_is_alpha && host_is_hostname && host.chars().any(|c| c.is_ascii_alphabetic())
 }
 
+/// Apply the loop and watermark cleanups to a parsed block list.
+///
+/// Two shapes of degeneracy have to be caught, and neither sees the other:
+///
+///   * a loop **inside** one block — `DRAGONBALL` a hundred and twenty-nine
+///     times at the end of an otherwise good page — handled by
+///     [`truncate_loop`] per block;
+///   * a **block** repeated over and over, where each block on its own is far
+///     too short to look like a loop. Only a pass over the sequence sees it.
+///
+/// Blocks emptied by the cleanup are dropped: an empty block is not a
+/// transcription, and leaving it in would make a page look readable.
+#[must_use]
+fn clean_blocks(blocks: Vec<Block>) -> Vec<Block> {
+    let mut out: Vec<Block> = Vec::with_capacity(blocks.len());
+    let mut repeats = 1_usize;
+
+    for block in blocks {
+        let (trimmed, looped) = truncate_loop(&block.text);
+        if looped {
+            tracing::debug!(tag = %block.tag, kept = trimmed.len(), "truncated a looping block");
+        }
+        let text = strip_watermarks(&trimmed);
+        if text.is_empty() {
+            continue;
+        }
+
+        // A run of identical blocks is the same failure at another scale.
+        // Keep the first few — a page really can repeat a short label — and
+        // drop the rest of the run.
+        if out.last().is_some_and(|last: &Block| last.text == text && last.tag == block.tag) {
+            repeats += 1;
+            if repeats > LOOP_THRESHOLD {
+                continue;
+            }
+        } else {
+            repeats = 1;
+        }
+
+        out.push(Block { tag: block.tag, text });
+    }
+
+    out
+}
+
 /// How many consecutive repeats of the same token run count as a stuck loop.
 ///
 /// Four is above anything a real transcription produces — a table column of
@@ -414,6 +465,57 @@ mod tests {
     const PAGE_WITH_TEXT: &str = "<doctag><section_header_level_1><loc_17><loc_68><loc_308><loc_126>APHRODY LOCAL INFERENCE</section_header_level_1>\n<text><loc_18><loc_185><loc_209><loc_252>Invoice 2026-08-21</text>\n<text><loc_18><loc_302><loc_213><loc_366>Total: 1337.42 EUR</text>\n</doctag>";
 
     const PICTURE_ONLY: &str = "<doctag><page_header><loc_42><loc_17><loc_213><loc_26>ORIGINAL COLOR WORKS part1</page_header>\n<picture><loc_51><loc_68><loc_228><loc_154><other></picture>\n<picture><loc_52><loc_159><loc_170><loc_261><other></picture>\n<page_footer><loc_40><loc_480><loc_52><loc_485>103</page_footer>\n<text><loc_328><loc_330><loc_397><loc_343>4# 4# 4# 4# 4#</text>\n</doctag>";
+
+    #[test]
+    fn a_loop_inside_a_doctags_block_is_truncated_like_one_in_plain_text() {
+        // The shape that cost four lots: a good page whose last block
+        // degenerates. Before the fix the cleanup only guarded the plain-text
+        // fallback, so a page that parsed into blocks kept its loop whole.
+        let looped = format!(
+            "<doctag><text><loc_1><loc_2><loc_3><loc_4>Chapitre 26</text>\n<text><loc_5><loc_6><loc_7><loc_8>{}</text>\n</doctag>",
+            "DRAGONBALL ".repeat(129)
+        );
+        let doc = Document::parse(&looped);
+        let markdown = doc.to_markdown().expect("the good prefix survives");
+        assert!(markdown.contains("Chapitre 26"), "{markdown}");
+        assert_eq!(markdown.matches("DRAGONBALL").count(), 1, "the loop is cut: {markdown}");
+    }
+
+    #[test]
+    fn a_block_repeated_over_and_over_is_cut_even_though_each_is_short() {
+        // Each block is two tokens — far below the loop threshold — so only a
+        // pass over the sequence catches this.
+        let mut raw = String::from("<doctag>");
+        for _ in 0..40 {
+            raw.push_str("<text><loc_1><loc_2><loc_3><loc_4>Son Goku</text>\n");
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), LOOP_THRESHOLD, "{} blocks kept", doc.blocks.len());
+    }
+
+    #[test]
+    fn a_page_that_legitimately_repeats_a_short_label_keeps_it() {
+        // Cutting must not eat real content: a few identical labels happen on
+        // a real page, and the threshold is what separates them from a loop.
+        let mut raw = String::from("<doctag>");
+        for _ in 0..3 {
+            raw.push_str("<text><loc_1><loc_2><loc_3><loc_4>NEW</text>\n");
+        }
+        raw.push_str("<text><loc_5><loc_6><loc_7><loc_8>Fin du chapitre</text>\n</doctag>");
+        let doc = Document::parse(&raw);
+        assert_eq!(doc.blocks.len(), 4);
+        assert!(doc.to_markdown().is_some_and(|m| m.contains("Fin du chapitre")));
+    }
+
+    #[test]
+    fn a_watermark_in_a_doctags_block_is_stripped_and_the_block_dropped() {
+        let raw = "<doctag><text><loc_1><loc_2><loc_3><loc_4>Contenu réel</text>\n<text><loc_5><loc_6><loc_7><loc_8>http://www.iei.co.jp</text>\n</doctag>";
+        let doc = Document::parse(raw);
+        let markdown = doc.to_markdown().expect("real content survives");
+        assert!(markdown.contains("Contenu réel"), "{markdown}");
+        assert!(!markdown.contains("iei.co.jp"), "{markdown}");
+    }
 
     #[test]
     fn a_real_page_parses_into_blocks_without_coordinates() {

@@ -526,12 +526,6 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
             continue;
         };
 
-        let Some(raw) = value.get("raw").and_then(serde_json::Value::as_str) else {
-            passthrough += 1;
-            lines.push(value);
-            continue;
-        };
-
         let before = value
             .get("text")
             .and_then(|t| t.get("markdown"))
@@ -539,7 +533,26 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
             .unwrap_or_default()
             .to_owned();
 
-        let document = aphrody_ocr::Document::parse(raw);
+        // `raw` is the better input — it still holds the markup a rule may
+        // want to act on. But a batch run without `--raw` is not beyond help:
+        // the rules that matter most in practice (a loop, a watermark) act on
+        // the text itself, and re-parsing the markdown recovers them. That is
+        // the difference between salvaging four hundred plates and re-reading
+        // them on the GPU for an hour.
+        let source = value
+            .get("raw")
+            .and_then(serde_json::Value::as_str)
+            .map(ToOwned::to_owned)
+            .unwrap_or_else(|| {
+                passthrough += 1;
+                before.clone()
+            });
+        if source.is_empty() {
+            lines.push(value);
+            continue;
+        }
+
+        let document = aphrody_ocr::Document::parse(&source);
         let after = document.to_markdown();
         if after.as_deref().unwrap_or_default() != before {
             changed += 1;
@@ -562,11 +575,11 @@ fn clean(input: &Path, out: Option<&Path>) -> miette::Result<()> {
         .map_err(|e| miette::miette!("write {}: {e}", target.display()))?;
 
     eprintln!(
-        "{recleaned} page(s) recleaned ({changed} changed), {passthrough} without raw output kept as-is -> {}",
+        "{recleaned} page(s) recleaned ({changed} changed), {passthrough} re-parsed from their text for want of `raw` -> {}",
         target.display()
     );
-    if passthrough > 0 && recleaned == 0 {
-        eprintln!("note: no line carried `raw`; re-run the batch with --raw to make cleaning possible");
+    if passthrough > 0 && recleaned == passthrough {
+        eprintln!("note: no line carried `raw`, so only rules that act on the text itself could run; --raw keeps the markup a future rule may need");
     }
     Ok(())
 }
@@ -698,6 +711,31 @@ mod tests {
         let written = std::fs::read_to_string(&out).unwrap();
         assert_eq!(written.lines().count(), 2, "{written}");
         assert!(written.contains("gardé"), "{written}");
+    }
+
+    #[test]
+    fn cleaning_salvages_a_looping_page_that_never_kept_its_raw_output() {
+        // The four lots refused at audit were read without `--raw`. Re-reading
+        // them on the GPU costs an hour; re-parsing their text costs nothing,
+        // and the rule that matters here acts on the text anyway.
+        let dir = tempfile::tempdir().unwrap();
+        let jsonl = dir.path().join("in.jsonl");
+        let looped = format!("Chapitre 26 {}", "DRAGONBALL ".repeat(129));
+        std::fs::write(
+            &jsonl,
+            format!(
+                "{{\"image\":\"26-0021.jpg\",\"text\":{{\"kind\":\"text\",\"markdown\":\"{}\"}}}}\n",
+                looped.trim()
+            ),
+        )
+        .unwrap();
+
+        let out = dir.path().join("out.jsonl");
+        clean(&jsonl, Some(&out)).unwrap();
+
+        let written = std::fs::read_to_string(&out).unwrap();
+        assert!(written.contains("Chapitre 26"), "the good prefix survives: {written}");
+        assert_eq!(written.matches("DRAGONBALL").count(), 1, "the loop is cut: {written}");
     }
 
     #[test]
