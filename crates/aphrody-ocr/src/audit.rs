@@ -19,7 +19,10 @@
 use std::path::PathBuf;
 
 /// What is wrong with one transcription.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+///
+/// Not `Eq`: one variant carries a measured share, and a float has no total
+/// equality to offer.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
 #[non_exhaustive]
 pub enum Finding {
@@ -46,6 +49,31 @@ pub enum Finding {
         /// The line.
         line: String,
     },
+    /// The model's structured output survived into the text instead of being
+    /// parsed.
+    ///
+    /// Four plates of the deposited corpus carry raw `{"bbox": [...],
+    /// "category": ...}` where their transcription should be. Rare, and
+    /// blocking without hesitation: what is in the database is not a bad
+    /// reading of the plate, it is not a reading at all.
+    RawJson {
+        /// A sample of the offending text.
+        sample: String,
+    },
+    /// The text has the shape of Japanese but forms almost no words: a plate
+    /// the model looked at and improvised over.
+    ///
+    /// This is the defect none of the others can see. A stuck generation
+    /// repeats, an empty page is empty, markup looks like markup — but a page
+    /// of invented kana looks exactly like a page of real ones. Only a
+    /// dictionary tells them apart.
+    Charabia {
+        /// Japanese characters examined.
+        caracteres: usize,
+        /// Share of them falling inside a morpheme the dictionary does not
+        /// know, between 0 and 1.
+        part_inconnue: f64,
+    },
 }
 
 impl Finding {
@@ -54,14 +82,21 @@ impl Finding {
     /// Control tokens, loops and markup are always defects. A watermark is
     /// noise rather than corruption: worth reporting, not worth refusing a
     /// batch over.
+    ///
+    /// Gibberish is reported without blocking, which is a deliberately
+    /// cautious choice rather than a judgement that it matters less — it
+    /// matters more. The threshold behind it has been checked against
+    /// hand-written cases, not yet against the corpus, and a heuristic that
+    /// refuses four hundred plates has to earn that power on measured data
+    /// first. Until then it points a reader at the pages worth opening.
     #[must_use]
     pub const fn is_blocking(&self) -> bool {
-        !matches!(self, Self::Watermark { .. })
+        !matches!(self, Self::Watermark { .. } | Self::Charabia { .. })
     }
 }
 
 /// One page's findings.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct PageFindings {
     /// The image the transcription came from.
     pub image: PathBuf,
@@ -70,7 +105,7 @@ pub struct PageFindings {
 }
 
 /// The result of auditing a batch.
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
 pub struct AuditReport {
     /// Pages carrying text that were examined.
     pub examined: usize,
@@ -119,6 +154,13 @@ pub fn audit_text(text: &str) -> Vec<Finding> {
         findings.push(Finding::Markup { sample });
     }
 
+    if let Some(at) = text.find("\"bbox\"") {
+        // No databook prints that string; the model's JSON did.
+        let fin = text.len().min(at + 120);
+        let fin = (at..=fin).rev().find(|i| text.is_char_boundary(*i)).unwrap_or(at);
+        findings.push(Finding::RawJson { sample: text[at..fin].to_owned() });
+    }
+
     for line in text.lines() {
         let trimmed = line.trim();
         if crate::doctags::strip_watermarks(trimmed).is_empty() && !trimmed.is_empty() {
@@ -127,6 +169,28 @@ pub fn audit_text(text: &str) -> Vec<Finding> {
     }
 
     findings
+}
+
+/// Examine one transcription for defects only a Japanese dictionary can see.
+///
+/// Separate from [`audit_text`] because it needs IPADIC, which [`audit_text`]
+/// deliberately does not: a caller auditing a French or English batch should
+/// not pay for a dictionary it will never consult.
+///
+/// # Panics
+///
+/// Never: the comparison guards against a non-finite share.
+#[cfg(feature = "japanese")]
+#[must_use]
+pub fn audit_japonais(text: &str, analyseur: &crate::japonais::Analyseur) -> Vec<Finding> {
+    let mesure = analyseur.confiance(text);
+    if !mesure.charabia() {
+        return Vec::new();
+    }
+    vec![Finding::Charabia {
+        caracteres: mesure.caracteres,
+        part_inconnue: mesure.part_inconnue(),
+    }]
 }
 
 /// Audit a whole batch of `(image, text)` pairs.
@@ -194,6 +258,32 @@ fn markup_sample(text: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn du_json_brut_dans_une_transcription_est_bloquant() {
+        // Cas réel, planche 4/p91 : la sortie structurée du modèle est arrivée
+        // telle quelle en base, à la place du texte.
+        let texte = "た。\"}, {\"bbox\": [799, 405, 978, 627], \"category\": \"Picture\"}";
+        let trouve = audit_text(texte);
+        let json: Vec<&Finding> =
+            trouve.iter().filter(|f| matches!(f, Finding::RawJson { .. })).collect();
+        assert_eq!(json.len(), 1, "{trouve:?}");
+        assert!(json[0].is_blocking(), "du JSON en base doit refuser le dépôt");
+    }
+
+    #[test]
+    fn une_transcription_ordinaire_ne_declenche_pas_le_detecteur_de_json() {
+        for texte in [
+            "孫悟空は界王拳を使った。",
+            "戦闘力は42000です",
+            "Invoice 2026-08-21, total 1337.42 EUR",
+        ] {
+            assert!(
+                !audit_text(texte).iter().any(|f| matches!(f, Finding::RawJson { .. })),
+                "{texte}"
+            );
+        }
+    }
 
     #[test]
     fn clean_japanese_text_raises_nothing() {

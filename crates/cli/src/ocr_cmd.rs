@@ -36,7 +36,7 @@ pub(crate) enum OcrAction {
         #[arg(long)]
         prompt: Option<String>,
         /// Token budget for the page.
-        #[arg(long, default_value_t = 1024)]
+        #[arg(long, default_value_t = aphrody_ocr::vlm::DEFAULT_MAX_TOKENS)]
         max_tokens: u32,
         /// Include the model's raw output.
         #[arg(long)]
@@ -55,6 +55,13 @@ pub(crate) enum OcrAction {
     Audit {
         /// JSONL produced by `aphrody ocr batch`.
         input: PathBuf,
+        /// Also run the checks that need a Japanese dictionary — chiefly, is
+        /// this page real Japanese or invented kana? No other check can tell:
+        /// gibberish has the exact shape of a transcription.
+        ///
+        /// Needs a binary built with `--features ocr-japanese`.
+        #[arg(long)]
+        japonais: bool,
         #[command(flatten)]
         output: OutputOpts,
     },
@@ -105,7 +112,11 @@ pub(crate) enum OcrAction {
         #[arg(long)]
         prompt: Option<String>,
         /// Token budget per page.
-        #[arg(long, default_value_t = 1024)]
+        ///
+        /// A backstop rather than the usual stopping condition: a page now
+        /// ends where the model ends it. What this guards against is a
+        /// generation that never terminates.
+        #[arg(long, default_value_t = aphrody_ocr::vlm::DEFAULT_MAX_TOKENS)]
         max_tokens: u32,
         /// Keep each page's raw model output in the JSONL. Costs disk, but it
         /// is what makes `aphrody ocr clean` able to re-apply a cleanup rule
@@ -131,6 +142,29 @@ pub(crate) enum OcrAction {
         /// Loopback port for --server.
         #[arg(long, default_value_t = 8791)]
         server_port: u16,
+        /// Pages the resident server reads at once, one slot each.
+        ///
+        /// This is where a batch's wall-clock actually comes from. Generating
+        /// a page is bound by memory bandwidth, not by arithmetic: at one
+        /// sequence the GPU re-reads four gigabytes of weights for every
+        /// single token. Two sequences read those same weights once and emit
+        /// two tokens, so the second page is very nearly free — the cost is
+        /// one KV cache per slot, not a second copy of the model.
+        ///
+        /// Raise it only if the card has the memory: each slot holds its own
+        /// context. Ignored without --server, where each page is its own
+        /// process and concurrency would mean loading the model twice.
+        #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_SLOTS)]
+        slots: u32,
+        /// Context window per slot, in tokens.
+        ///
+        /// A vision model spends most of its context on the image: a
+        /// high-resolution plate becomes thousands of visual tokens before the
+        /// first word is generated. Too small a window truncates the
+        /// transcription in silence, which reads exactly like a page that had
+        /// nothing more to say.
+        #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_CTX_PER_SLOT)]
+        ctx: u32,
     },
 }
 
@@ -145,7 +179,7 @@ pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         }
-        OcrAction::Audit { input, output } => audit(&input, &output),
+        OcrAction::Audit { input, japonais, output } => audit(&input, japonais, &output),
         OcrAction::Clean { input, out, japonais } => clean(&input, out.as_deref(), japonais),
         OcrAction::Batch {
             dir,
@@ -158,6 +192,8 @@ pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
             raw,
             server,
             server_port,
+            slots,
+            ctx,
         } => {
             batch(
                 &dir,
@@ -168,7 +204,11 @@ pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
                 prompt.as_deref(),
                 max_tokens,
                 raw,
-                server.then_some(server_port),
+                server.then(|| aphrody_ocr::server::ServerConfig {
+                    port: server_port,
+                    slots,
+                    ctx_per_slot: ctx,
+                }),
             )
             .await
         }
@@ -229,6 +269,8 @@ pub(crate) fn run_sync_server_batch(argv: &[std::ffi::OsString]) -> i32 {
         max_tokens,
         raw,
         server_port,
+        slots,
+        ctx,
         ..
     } = action
     else {
@@ -237,9 +279,15 @@ pub(crate) fn run_sync_server_batch(argv: &[std::ffi::OsString]) -> i32 {
     };
 
     let opts = options(&model, prompt.as_deref(), max_tokens, raw);
-    eprintln!("starting llama-server on 127.0.0.1:{server_port} (loading {model})…");
-    let outcome = ServerRunner::start(opts, server_port).and_then(|resident| {
-        batch_loop(&dir, out.as_deref(), limit, skip_done, &|image| resident.read(image))
+    let config = aphrody_ocr::server::ServerConfig { port: server_port, slots, ctx_per_slot: ctx };
+    eprintln!(
+        "starting llama-server on 127.0.0.1:{server_port} (loading {model}, {slots} slot(s) x {ctx} tokens)…"
+    );
+    let outcome = ServerRunner::start(opts, config).and_then(|resident| {
+        let workers = resident.slots() as usize;
+        batch_loop(&dir, out.as_deref(), limit, skip_done, workers, &|image| {
+            resident.read(image)
+        })
     });
 
     match outcome {
@@ -299,14 +347,14 @@ async fn batch(
     prompt: Option<&str>,
     max_tokens: u32,
     keep_raw: bool,
-    server_port: Option<u16>,
+    resident: Option<aphrody_ocr::server::ServerConfig>,
 ) -> miette::Result<()> {
     let opts = options(model, prompt, max_tokens, keep_raw);
 
     // `reqwest::blocking` cannot run inside the CLI's tokio runtime: every
     // request stalls silently. The resident backend therefore owns its own OS
     // thread, and everything it needs is moved onto it.
-    if let Some(port) = server_port {
+    if let Some(config) = resident {
         let dir = dir.to_path_buf();
         let out = out.map(Path::to_path_buf);
         let model = model.to_owned();
@@ -315,9 +363,15 @@ async fn batch(
         // doing that on a runtime worker makes tokio panic when it later drops
         // a runtime it was not allowed to block in.
         return tokio::task::spawn_blocking(move || {
-            eprintln!("starting llama-server on 127.0.0.1:{port} (loading {model})…");
-            let resident = ServerRunner::start(opts, port)?;
-            batch_loop(&dir, out.as_deref(), limit, skip_done, &|image| resident.read(image))
+            eprintln!(
+                "starting llama-server on 127.0.0.1:{} (loading {model}, {} slot(s) x {} tokens)…",
+                config.port, config.slots, config.ctx_per_slot
+            );
+            let resident = ServerRunner::start(opts, config)?;
+            let workers = resident.slots() as usize;
+            batch_loop(&dir, out.as_deref(), limit, skip_done, workers, &|image| {
+                resident.read(image)
+            })
         })
         .await
         .map_err(|e| miette::miette!("ocr server task: {e}"))?
@@ -325,20 +379,30 @@ async fn batch(
     }
 
     let runner = VlmRunner::new(opts).map_err(|e| miette::miette!("{e}"))?;
-    batch_loop(dir, out, limit, skip_done, &|image| runner.read(image))
+    // One worker: this backend spawns a process per page, and running two at
+    // once would mean two copies of the model resident at the same time — more
+    // memory for less throughput than the resident backend gives for free.
+    batch_loop(dir, out, limit, skip_done, 1, &|image| runner.read(image))
         .map_err(|e| miette::miette!("{e}"))
 }
 
 /// The batch loop itself, independent of which backend reads a page.
 ///
-/// Both backends must see the same file selection and the same order, or a
-/// resumed run would skip different pages than it recorded.
+/// Both backends must see the same file selection, or a resumed run would skip
+/// different pages than it recorded. They do not have to see the same *order*:
+/// `--skip-done` matches on paths, not on an offset, so a file written out of
+/// order still resumes exactly.
+///
+/// `workers` is how many pages are read at once. Above one, `read_page` is
+/// called from several threads at the same time, so a backend that cannot bear
+/// that must ask for one — which is what the per-process backend does.
 fn batch_loop(
     dir: &Path,
     out: Option<&Path>,
     limit: Option<usize>,
     skip_done: bool,
-    read_page: &dyn Fn(&Path) -> aphrody_ocr::Result<PageResult>,
+    workers: usize,
+    read_page: &(dyn Fn(&Path) -> aphrody_ocr::Result<PageResult> + Sync),
 ) -> aphrody_ocr::Result<()> {
     let done = if skip_done {
         out.map(already_done).unwrap_or_default()
@@ -372,57 +436,139 @@ fn batch_loop(
 
     eprintln!("reading {}", dir.display());
     if !done.is_empty() {
-        eprintln!("skipping {} page(s) already in {}", done.len(), out.unwrap_or(Path::new("-")).display());
+        eprintln!(
+            "skipping {} page(s) already in {}",
+            done.len(),
+            out.unwrap_or(Path::new("-")).display()
+        );
     }
 
-    let mut done_count = 0_usize;
-    let mut with_text = 0_usize;
-    let mut failed = 0_usize;
-    let started = std::time::Instant::now();
-
-    // One loop over both backends: the file selection and its order have to be
-    // identical, or a resumed run would skip different pages than it recorded.
     let images = aphrody_ocr::list_images_sorted(dir)?;
     let pending: Vec<PathBuf> = images.into_iter().filter(|p| !done.contains(p)).collect();
     let total = pending.len();
+    let queue: Vec<PathBuf> = pending.into_iter().take(limit.unwrap_or(usize::MAX)).collect();
 
-    for image in pending.into_iter().take(limit.unwrap_or(usize::MAX)) {
-        match read_page(&image) {
-            Ok(result) => {
-                done_count += 1;
-                if result.text.has_text() {
-                    with_text += 1;
+    let mut tally = Tally::default();
+    let started = std::time::Instant::now();
+
+    if workers <= 1 {
+        for image in &queue {
+            tally.record(read_page(image), image, &mut sink, total, started);
+        }
+    } else {
+        read_concurrently(&queue, workers, read_page, &mut tally, &mut sink, total, started);
+    }
+
+    let _ = sink.flush();
+    eprintln!(
+        "\n{}/{total} page(s) read in {:.1}s — {} with text, {} textless, {} failed",
+        tally.done,
+        started.elapsed().as_secs_f64(),
+        tally.with_text,
+        tally.done.saturating_sub(tally.with_text),
+        tally.failed
+    );
+    Ok(())
+}
+
+/// Read `queue` with `workers` pages in flight, writing results as they land.
+///
+/// Work is taken by whoever is free rather than dealt out in advance: plates
+/// differ by several seconds each, and a fixed split would leave one thread
+/// finishing alone while the others idle.
+///
+/// Only the workers are parallel. Writing and counting stay on this thread —
+/// a JSONL line torn in half by two concurrent writes would corrupt the very
+/// file that makes a run resumable, and no amount of throughput is worth that.
+fn read_concurrently(
+    queue: &[PathBuf],
+    workers: usize,
+    read_page: &(dyn Fn(&Path) -> aphrody_ocr::Result<PageResult> + Sync),
+    tally: &mut Tally,
+    sink: &mut Box<dyn std::io::Write>,
+    total: usize,
+    started: std::time::Instant,
+) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let next = AtomicUsize::new(0);
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            let tx = tx.clone();
+            let next = &next;
+            scope.spawn(move || {
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(image) = queue.get(index) else { break };
+                    // A closed channel means the collector is gone, which only
+                    // happens once the batch is over: stop rather than read a
+                    // page whose result nobody will write down.
+                    if tx.send((image.clone(), read_page(image))).is_err() {
+                        break;
+                    }
                 }
-                if let Err(e) = write_line(&mut sink, &result) {
+            });
+        }
+        // The collector below ends when every sender is dropped; this one is
+        // held by the loop above and would keep it waiting forever.
+        drop(tx);
+
+        for (image, outcome) in rx {
+            tally.record(outcome, &image, sink, total, started);
+        }
+    });
+}
+
+/// Running counts for a batch, and the one place a result is written down.
+#[derive(Debug, Default)]
+struct Tally {
+    done: usize,
+    with_text: usize,
+    failed: usize,
+}
+
+impl Tally {
+    /// Write one page's outcome and fold it into the counts.
+    fn record(
+        &mut self,
+        outcome: aphrody_ocr::Result<PageResult>,
+        image: &Path,
+        sink: &mut Box<dyn std::io::Write>,
+        total: usize,
+        started: std::time::Instant,
+    ) {
+        match outcome {
+            Ok(result) => {
+                self.done += 1;
+                if result.text.has_text() {
+                    self.with_text += 1;
+                }
+                if let Err(e) = write_line(sink, &result) {
                     eprintln!("write failed: {e}");
                 }
-                if done_count % 10 == 0 {
-                    let rate = started.elapsed().as_secs_f64()
-                        / f64::from(u32::try_from(done_count).unwrap_or(u32::MAX));
+                if self.done % 10 == 0 {
+                    #[allow(clippy::cast_precision_loss)]
+                    let rate = started.elapsed().as_secs_f64() / self.done as f64;
                     eprintln!(
-                        "  {done_count}/{total} read, {with_text} with text, {failed} failed, {rate:.1}s/page"
+                        "  {}/{total} read, {} with text, {} failed, {rate:.1}s/page",
+                        self.done, self.with_text, self.failed
                     );
                 }
             }
             Err(e) => {
                 // One unreadable plate must not cost the other 399.
-                failed += 1;
+                self.failed += 1;
                 eprintln!("page failed ({}): {e}", image.display());
             }
         }
     }
-
-    let _ = sink.flush();
-    eprintln!(
-        "\n{done_count}/{total} page(s) read in {:.1}s — {with_text} with text, {} textless, {failed} failed",
-        started.elapsed().as_secs_f64(),
-        done_count.saturating_sub(with_text)
-    );
-    Ok(())
 }
 
 /// Audit a JSONL and refuse a batch that carries blocking defects.
-fn audit(input: &Path, output: &OutputOpts) -> miette::Result<()> {
+fn audit(input: &Path, japonais: bool, output: &OutputOpts) -> miette::Result<()> {
+    let japonais = japonais_optionnel(japonais)?;
     let file = std::fs::File::open(input)
         .map_err(|e| miette::miette!("read {}: {e}", input.display()))?;
 
@@ -445,9 +591,10 @@ fn audit(input: &Path, output: &OutputOpts) -> miette::Result<()> {
         pages.push((image, text));
     }
 
-    let report = aphrody_ocr::audit::audit_batch(
+    let mut report = aphrody_ocr::audit::audit_batch(
         pages.iter().map(|(image, text)| (image.clone(), text.as_deref())),
     );
+    ajoute_findings_japonais(&mut report, &pages, japonais.as_ref());
 
     let mut table = aphrody_models::Report::new(
         format!("Audit {}", input.display()),
@@ -503,6 +650,11 @@ fn describe(finding: &aphrody_ocr::audit::Finding) -> (&'static str, String) {
         Finding::Loop { word, repeats } => ("loop", format!("{word} x{repeats}")),
         Finding::Markup { sample } => ("markup", sample.clone()),
         Finding::Watermark { line } => ("watermark", line.clone()),
+        Finding::RawJson { sample } => ("json-brut", sample.clone()),
+        Finding::Charabia { caracteres, part_inconnue } => (
+            "charabia",
+            format!("{:.0}% de {caracteres} caractères hors dictionnaire", part_inconnue * 100.0),
+        ),
         // `Finding` is `#[non_exhaustive]`: a new defect kind added upstream
         // must still be reported, not silently dropped from the table.
         other => ("other", format!("{other:?}")),
@@ -549,31 +701,153 @@ fn japonais_optionnel(demande: bool) -> miette::Result<Option<std::convert::Infa
 fn remet_en_forme(
     markdown: &str,
     japonais: Option<&aphrody_ocr::japonais::Analyseur>,
-    recolles: &mut usize,
-    espaces: &mut usize,
+    lexique: &aphrody_ocr::lexique::Lexique,
+    bilan: &mut Bilan,
 ) -> String {
+    let texte = sans_dictionnaire(markdown, bilan);
+
     let Some(analyseur) = japonais else {
-        return markdown.to_owned();
+        return texte;
     };
-    let (sans_espaces, retires) = aphrody_ocr::japonais::espaces_parasites(markdown);
-    *espaces += retires;
-    let (recolle, jointures) = analyseur.recolle_lignes(&sans_espaces);
-    *recolles += jointures;
-    recolle
+
+    // L'ordre compte. Les espaces d'abord : une espace posée entre les deux
+    // moitiés d'un mot coupé cacherait la coupure à l'analyseur, qui laisserait
+    // le mot en deux.
+    let (texte, espaces) = aphrody_ocr::japonais::espaces_parasites(&texte);
+    bilan.espaces += espaces;
+    let (texte, recolles) = analyseur.recolle_lignes(&texte);
+    bilan.recolles += recolles;
+    // Les sosies ensuite : un mot coupé en deux par la mise en page n'est
+    // reconnaissable qu'une fois recollé, et c'est le dictionnaire qui
+    // autorise ou refuse chaque substitution.
+    let (texte, corrections) = analyseur.corrige_sosies(&texte);
+    bilan.sosies += corrections.len();
+    // Le lexique en dernier, parce que c'est la seule passe qui n'a pas besoin
+    // du dictionnaire pour trancher — elle sait déjà. Un nom propre est
+    // absent d'IPADIC par construction, donc les passes précédentes ne
+    // pouvaient rien pour `プロリー` ; celle-ci le corrige de mémoire.
+    let (texte, noms) = lexique.applique(&texte);
+    bilan.noms += noms.len();
+    // Et enfin la distance : un nom que la table ne connaît pas encore, mais
+    // qui n'est qu'à un kana d'un terme attesté — et d'un seul.
+    let (texte, voisins) = lexique.corrige_par_distance(&texte);
+    bilan.voisins += voisins.len();
+    texte
 }
 
 #[cfg(not(feature = "ocr-japanese"))]
 fn remet_en_forme(
     markdown: &str,
     _japonais: Option<&std::convert::Infallible>,
-    _recolles: &mut usize,
-    _espaces: &mut usize,
+    lexique: &aphrody_ocr::lexique::Lexique,
+    bilan: &mut Bilan,
 ) -> String {
-    markdown.to_owned()
+    let texte = sans_dictionnaire(markdown, bilan);
+    let (texte, noms) = lexique.applique(&texte);
+    bilan.noms += noms.len();
+    // Et enfin la distance : un nom que la table ne connaît pas encore, mais
+    // qui n'est qu'à un kana d'un terme attesté — et d'un seul.
+    let (texte, voisins) = lexique.corrige_par_distance(&texte);
+    bilan.voisins += voisins.len();
+    texte
+}
+
+/// Les passes japonaises qui ne demandent aucun dictionnaire.
+///
+/// Elles tournent quelle que soit la feature : ce sont des règles d'Unicode et
+/// de typographie, pas de morphologie. Une planche qui n'est pas en japonais
+/// les traverse sans une seule modification — elles ne touchent que des plages
+/// de caractères que rien d'autre n'occupe.
+fn sans_dictionnaire(markdown: &str, bilan: &mut Bilan) -> String {
+    // La ponctuation d'abord, et après la coupure de boucles qu'a déjà faite
+    // `Document::parse` : une planche du corpus porte 2 034 points médians
+    // d'affilée, qui relèvent de la génération bloquée. Les convertir en
+    // ellipses remplacerait un défaut par un autre.
+    let (texte, ponctuation) = aphrody_ocr::kana::normalise_ponctuation(markdown);
+    bilan.ponctuation += ponctuation;
+    // Puis la demi-chasse : les katakana étroits n'existent pas dans un livre
+    // imprimé, donc `ｶﾞ` ne peut vouloir dire que `ガ`. Après la ponctuation,
+    // pour qu'un `･` isolé — un vrai séparateur — devienne `・` sans avoir été
+    // pris pour le reste d'une ellipse.
+    let (texte, demi_chasse) = aphrody_ocr::kana::normalise_demi_chasse(&texte);
+    bilan.demi_chasse += demi_chasse;
+    texte
+}
+
+/// Ce que les passes japonaises ont changé sur tout un fichier.
+#[derive(Debug, Default)]
+struct Bilan {
+    /// Points de secours ramenés à une ellipse.
+    ponctuation: usize,
+    /// Caractères demi-chasse ramenés en pleine chasse.
+    demi_chasse: usize,
+    /// Espaces retirées d'entre deux caractères japonais.
+    espaces: usize,
+    /// Lignes recollées au milieu d'un mot.
+    recolles: usize,
+    /// Sosies typographiques remplacés, dictionnaire à l'appui.
+    sosies: usize,
+    /// Noms propres remis dans leur graphie, lexique à l'appui.
+    noms: usize,
+    /// Noms rétablis parce qu'un seul terme du lexique était à un kana près.
+    voisins: usize,
+}
+
+impl Bilan {
+    /// Rien n'a bougé.
+    const fn vide(&self) -> bool {
+        self.ponctuation == 0
+            && self.demi_chasse == 0
+            && self.espaces == 0
+            && self.recolles == 0
+            && self.sosies == 0
+            && self.noms == 0
+            && self.voisins == 0
+    }
+}
+
+/// Ajoute au rapport les défauts que seul un dictionnaire japonais voit.
+#[cfg(feature = "ocr-japanese")]
+fn ajoute_findings_japonais(
+    report: &mut aphrody_ocr::audit::AuditReport,
+    pages: &[(PathBuf, Option<String>)],
+    japonais: Option<&aphrody_ocr::japonais::Analyseur>,
+) {
+    let Some(analyseur) = japonais else { return };
+    for (image, text) in pages {
+        let Some(text) = text else { continue };
+        let findings = aphrody_ocr::audit::audit_japonais(text, analyseur);
+        if findings.is_empty() {
+            continue;
+        }
+        // Une planche déjà signalée garde ses défauts : c'en est un de plus,
+        // pas une entrée concurrente.
+        if let Some(page) = report.flagged.iter_mut().find(|p| &p.image == image) {
+            page.findings.extend(findings);
+        } else {
+            report.flagged.push(aphrody_ocr::audit::PageFindings {
+                image: image.clone(),
+                findings,
+            });
+        }
+    }
+}
+
+#[cfg(not(feature = "ocr-japanese"))]
+#[allow(clippy::needless_pass_by_value)]
+fn ajoute_findings_japonais(
+    _report: &mut aphrody_ocr::audit::AuditReport,
+    _pages: &[(PathBuf, Option<String>)],
+    _japonais: Option<&std::convert::Infallible>,
+) {
 }
 
 fn clean(input: &Path, out: Option<&Path>, japonais: bool) -> miette::Result<()> {
     let japonais = japonais_optionnel(japonais)?;
+    // Le lexique tourne toujours : ses entrées sont des fautes mesurées sur le
+    // corpus, pas des devinettes, et chacune porte sa garde contre le mot
+    // japonais légitime qui lui ressemble.
+    let lexique = aphrody_ocr::lexique::Lexique::databooks_dragon_ball();
     let file = std::fs::File::open(input)
         .map_err(|e| miette::miette!("read {}: {e}", input.display()))?;
 
@@ -581,8 +855,7 @@ fn clean(input: &Path, out: Option<&Path>, japonais: bool) -> miette::Result<()>
     let mut recleaned = 0_usize;
     let mut changed = 0_usize;
     let mut passthrough = 0_usize;
-    let mut recolles = 0_usize;
-    let mut espaces = 0_usize;
+    let mut bilan = Bilan::default();
 
     for line in std::io::BufReader::new(file).lines() {
         let Ok(line) = line else { continue };
@@ -622,7 +895,9 @@ fn clean(input: &Path, out: Option<&Path>, japonais: bool) -> miette::Result<()>
         }
 
         let document = aphrody_ocr::Document::parse(&source);
-        let after = document.to_markdown().map(|m| remet_en_forme(&m, japonais.as_ref(), &mut recolles, &mut espaces));
+        let after = document
+            .to_markdown()
+            .map(|m| remet_en_forme(&m, japonais.as_ref(), &lexique, &mut bilan));
         if after.as_deref().unwrap_or_default() != before {
             changed += 1;
         }
@@ -647,8 +922,17 @@ fn clean(input: &Path, out: Option<&Path>, japonais: bool) -> miette::Result<()>
         "{recleaned} page(s) recleaned ({changed} changed), {passthrough} re-parsed from their text for want of `raw` -> {}",
         target.display()
     );
-    if recolles > 0 || espaces > 0 {
-        eprintln!("japonais: {recolles} ligne(s) recollée(s), {espaces} espace(s) parasite(s) retiré(s)");
+    if !bilan.vide() {
+        eprintln!(
+            "japonais: {} ligne(s) recollée(s), {} espace(s) parasite(s) retirée(s), {} demi-chasse normalisée(s), {} ponctuation(s) remise(s) en forme, {} sosie(s) corrigé(s), {} nom(s) propre(s) rétabli(s), {} par voisinage du lexique",
+            bilan.recolles,
+            bilan.espaces,
+            bilan.demi_chasse,
+            bilan.ponctuation,
+            bilan.sosies,
+            bilan.noms,
+            bilan.voisins
+        );
     }
     if passthrough > 0 && recleaned == passthrough {
         eprintln!("note: no line carried `raw`, so only rules that act on the text itself could run; --raw keeps the markup a future rule may need");

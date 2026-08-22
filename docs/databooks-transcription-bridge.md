@@ -313,3 +313,162 @@ puis déposé ; la fiche 4 (*Daizenshuu 3 — TV Animation Part 1*) passe de 0 �
 | préexistantes | 236 |
 
 Lots 3 à 29 en cours de traitement par la boucle autonome.
+
+---
+
+## 9. Révision du 2026-08-22 — qualité de lecture et débit
+
+Quatre audits menés en parallèle sur le corpus déposé, sur le code, et sur la
+documentation amont de dots.ocr. Ce qui suit distingue **ce qui est mesuré** de
+**ce qui reste à mesurer sur GPU** : aucune inférence n'a été relancée.
+
+### 9.1. Le vrai défaut du backend résident n'était pas celui qu'on croyait
+
+Le pont notait que `llama-server` « lit moins » que `llama-mtmd-cli` : 1384
+caractères contre 1624 sur la planche 18-0249, un folio manquant, et un budget
+de jetons porté à 3072 sans effet. La conclusion inscrite dans le code était que
+« les mêmes poids voient l'image différemment selon la façade ». **C'est faux.**
+
+Les journaux que le serveur écrit lui-même sous `%TEMP%\aphrody-llama-server-*.log`
+disent autre chose :
+
+| | |
+|---|---|
+| `n_ctx_slot` | 131 072 |
+| Jetons de prompt | 1 936 |
+| `truncated` | **0**, sur les 61 requêtes journalisées |
+| Jetons générés, lot de 12 planches | 437 · **1024** · **1024** · 292 · **1024** · 390 · 301 · 364 · 275 · **1024** · **1024** · **1024** |
+
+Six planches sur douze s'arrêtent à **exactement** 1024, la valeur de
+`max_tokens`. Le serveur ne s'arrêtait pas trop tôt : **il ne s'arrêtait pas du
+tout**.
+
+Cause : dots.ocr ferme son tour par `<|endofassistant|>`, jeton **151673**. Son
+GGUF déclare `eos_token_id = 151643` et **aucun** `eot_token_id`, et llama.cpp
+construit son ensemble de fin de génération à partir d'une liste de **noms** de
+jetons en dur — où `<|endofassistant|>` ne figure pas. Le modèle disait « j'ai
+fini » et personne n'écoutait. Les 2048 jetons gagnés en passant à 3072 étaient
+de la boucle, que `truncate_loop` retaillait au même préfixe : d'où l'impression
+que le budget n'y changeait rien.
+
+Seconde cause, indépendante : **les deux façades ne prompt pas pareil.**
+`--jinja` est activé par défaut sur `llama-server` et désactivé sur
+`llama-mtmd-cli` (`common/arg.cpp`, cas `LLAMA_EXAMPLE_MTMD`). Le CLI tombait
+donc sur le détecteur de gabarits de llama.cpp, qui le classait **GLMEDGE** — le
+gabarit d'un autre modèle, qui omet `<|endofuser|>` et insère un saut de ligne.
+Deux prompts différents, deux décodages gloutons différents.
+
+**Corrigé** : `--override-kv tokenizer.ggml.eot_token_id=int:151673` sur les deux
+backends, `--jinja` sur le CLI, `-c` explicite côté serveur (`--fit` choisissait
+131 072 sur sept lancements et 8 192 sur quatorze autres),
+`--no-context-shift`, `--reasoning-format none`, `--skip-chat-parsing`, et
+l'échantillonnage épinglé dans le corps de la requête.
+
+### 9.2. Débit : deux leviers, aucun surcoût de VRAM significatif
+
+1. **Une page finie s'arrête.** Sur l'échantillon mesuré, la moitié des planches
+   brûlaient 1024 jetons là où elles en avaient produit 300 à 400 d'utiles.
+2. **`--parallel N` et N requêtes en vol.** La génération est bornée par la bande
+   passante mémoire, pas par le calcul : à une séquence, le GPU relit quatre
+   gigaoctets de poids pour produire **un** jeton. Deux séquences relisent les
+   mêmes poids une fois et en produisent deux. Le coût est d'un cache KV par
+   slot, pas d'une seconde copie du modèle. Défaut : `--slots 2`, réglable.
+
+La boucle de lot lit désormais plusieurs pages de front, mais **écrit sur un
+seul fil** : une ligne JSONL déchirée par deux écritures concurrentes
+corromprait le fichier même qui rend une reprise possible. L'ordre de sortie
+n'est plus l'ordre alphabétique — sans conséquence, `--skip-done` reconnaissant
+les planches par leur chemin et non par un décalage.
+
+### 9.3. Le prompt était une paraphrase
+
+`Extract all text from this image.` était câblé ; la chaîne d'entraînement
+(`dots_ocr/utils/prompts.py`, clé `prompt_ocr`) est
+`Extract the text content from this image.` Trois mots d'écart, sur un modèle
+dont le mainteneur écrit qu'il **n'a aucune capacité de suivi d'instructions** :
+il ne lit pas la consigne, il reconnaît une des quatre chaînes vues à
+l'entraînement. Aligné.
+
+**Écarté après examen** : basculer le corpus sur `prompt_layout_all_en` pour
+récupérer les boîtes englobantes et retrier les colonnes. C'est le mode où les
+boucles infinies sont attestées en amont ; son JSON est assez peu fiable pour
+qu'upstream livre un réparateur dédié (`output_cleaner.py`) ; et surtout **le
+désordre qu'il corrigerait n'existe pas ici** — les 50 725 coupures de ligne
+mesurées tombent au milieu de mots *contigus*, ce qui prouve que le modèle
+descend correctement chaque colonne et se contente d'un saut de ligne au retour.
+
+### 9.4. Qualité de lecture : ce qui est corrigé, et ce qui est seulement signalé
+
+Audit du corpus déposé — **6 305 planches transcrites**, pas un échantillon.
+
+**Corrigé, règle déterministe et contre-exemples bornés :**
+
+| Défaut | Planches | Règle |
+|---|---|---|
+| Noms propres, sourde ↔ sonore | **479** | Table mesurée (`lexique.rs`), gardée contre `ベジタブル`, `フルマラソン`, `フリーサイズ` |
+| `･` demi-chasse répété = ellipse | **638** | `･{2,}` → `…` ; `･` isolé → `・` |
+| Boucle à motif long | **112** | Fenêtre portée de 6 à 40 caractères, seuil dégressif |
+| `...` ASCII au contact du japonais | **108** | 3 à 5 points → `…` ; jamais 6 et plus, qui sont des points de conduite |
+| Marqueur de page halluciné | **62** | Ligne dont le contenu entier est `Page N` |
+| Sosies `口`/`二`/`力` → `ロ`/`ニ`/`カ` | **23** | Substitution confirmée par IPADIC |
+| Débordement d'énumération en hangul | **15** | Chiffres cerclés repliés comme les chiffres ASCII |
+| JSON brut en base | **4** | Défaut **bloquant** à l'audit |
+
+**Signalé, jamais corrigé** — parce qu'une règle qui casse du texte légitime est
+pire que le défaut :
+
+| Défaut | Planches | Pourquoi |
+|---|---|---|
+| Furigana rendu en ligne propre | 585 | Une ligne tout en hiragana peut être du vrai texte |
+| Confusions de kana | 124 | Environ la moitié de faux positifs (`ヤシ`, `ミート`, `キラー`) |
+| Sosie `一` → `ー` hors contexte | 88 | 95 % de légitime : `一味`, `一家`, `一ツ橋`, `一同` |
+| Charabia | mesuré au fil de l'eau | Nouveau : part de caractères hors dictionnaire ≥ 60 % |
+
+Le charabia est le seul défaut qu'aucun filtre de forme ne voyait : une planche
+de bulles manuscrites que le modèle n'a pas su lire **a la forme du japonais**.
+Le dictionnaire, lui, le voit tout de suite. Mesuré en **caractères** et non en
+morphèmes — une file de katakana illisible ne se découpe pas en trente morphèmes
+inconnus, elle ressort en **un seul**, et comptée ainsi la planche la plus
+illisible du lot passait pour trop courte pour être jugée.
+
+**Relecture image obligatoire** : 783 planches dont la mise en page est aplatie
+(aucun saut de ligne sur plus de 300 caractères) et 113 dont le texte vertical
+est éclaté à un caractère par ligne. Ni l'une ni l'autre ne se répare depuis le
+texte seul.
+
+### 9.5. Correction par voisinage, et le piège qu'elle évite
+
+Un lexique de **321 termes** — établi contre le wiki puis **vérifié terme à terme
+contre le corpus**, ce qui a éliminé les graphies inventées (`気孔砲`,
+`惑星ナメック` : zéro occurrence) — permet de corriger un nom propre à un kana
+près, là où aucun dictionnaire japonais ne peut rien puisqu'il les ignore tous.
+
+La règle naïve « à une substitution d'un terme, donc c'est ce terme » est
+**fausse** : 54 paires du lexique collisionnent, en 18 groupes. `孫悟空`,
+`孫悟飯` et `孫悟天` sont mutuellement à distance un, comme les six
+`人造人間1X号` et les quatre `X の界王神`. Appliquée telle quelle, elle
+changerait Gohan en Goku, en silence, sur un corpus public.
+
+La règle retenue exige **exactement un** candidat, plus trois gardes : katakana
+pur uniquement, suite complète de katakana, quatre caractères au minimum. Un
+test de propriété vérifie qu'aucun terme du lexique n'est réécrit vers un autre.
+
+Effet sur un cas réel : `トラククス` devient `トランクス`, tandis que `ワーロン`
+— à une substitution de `ウーロン` **et** de `マーロン` — est laissé tel quel.
+
+### 9.6. Ce qui reste à mesurer sur GPU
+
+Rien de ce qui précède n'a été revalidé par une inférence. À faire, dans cet
+ordre :
+
+1. **Vérifier que l'override du jeton de fin prend.** Chercher dans le journal
+   `Using metadata override (int) 'tokenizer.ggml.eot_token_id' = 151673`, puis
+   vérifier qu'aucune génération ne bute plus sur un multiple exact de
+   `max_tokens`.
+2. **Re-mesurer les deux backends sur les mêmes planches**, maintenant qu'ils
+   voient le même gabarit et le même jeton d'arrêt. Si l'écart de fidélité a
+   disparu, le backend résident devient le défaut du corpus — et le lot passe de
+   13 s à moins de 3 s par planche.
+3. **Ne pas mélanger les deux moitiés du corpus.** Ce qui a été déposé avant
+   cette révision a été lu avec l'ancien prompt et sans jeton d'arrêt ; un corpus
+   lu à moitié d'une façon et à moitié de l'autre est pire que l'un ou l'autre.

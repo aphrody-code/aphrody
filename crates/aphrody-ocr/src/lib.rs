@@ -32,6 +32,10 @@
 pub mod audit;
 /// `DocTags` parsing: the serialisation document VLMs emit.
 pub mod doctags;
+/// Japanese script normalisation, dictionary-free and wasm-safe.
+pub mod kana;
+/// Closed-lexicon correction: measured wrong forms, and only those.
+pub mod lexique;
 /// A minimal HTTP/1.1 client for the loopback llama-server.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod http;
@@ -44,8 +48,14 @@ pub mod vlm;
 
 pub use doctags::{Block, Document};
 
+// Ces deux-là pilotent un processus llama.cpp : ils n'existent pas pour wasm,
+// et la ré-exportation doit être gardée comme le module l'est. Elle ne l'était
+// pas, ce qui faisait échouer `cargo check --target wasm32-unknown-unknown` sur
+// tout le crate — alors que le parsing, la normalisation et l'audit, eux,
+// compilent pour wasm sans rien demander.
 #[cfg(not(target_arch = "wasm32"))]
 pub use server::ServerRunner;
+#[cfg(not(target_arch = "wasm32"))]
 pub use vlm::{OcrOptions, PageResult, PageText, VlmRunner, list_images_sorted};
 
 /// The crate's error type.

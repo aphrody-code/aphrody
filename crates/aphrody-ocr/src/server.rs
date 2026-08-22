@@ -20,17 +20,32 @@
 //
 // WHAT IT COSTS, MEASURED (dots.ocr, RTX 4070, twelve databook plates)
 //
-// Speed: 4.9 s per plate against 13 s for the CLI backend — a little under 3×.
-// Fidelity: LOWER. On plate 18-0249 the server returned 1384 characters where
-// `llama-mtmd-cli` returned 1624, stopping before the folio number, and it
-// flattened paragraph breaks to spaces. Raising `--max-tokens` from 1024 to
-// 3072 changed nothing, so this is not budget truncation: the same weights see
-// the image differently through the two front ends.
+// Speed: 4.9 s per plate against 13 s for the CLI backend — a little under 3×,
+// because the CLI reloads four gigabytes of weights for every single page.
 //
-// So this backend is `--server`, opt-in, and NOT what the databook corpus runs
-// on. A public transcription that silently drops the last lines of a page is
-// worse than one that takes twice as long, and a corpus half-read one way and
-// half the other is worse than either.
+// Fidelity used to be the objection, and it was the wrong diagnosis. On plate
+// 18-0249 this backend returned 1384 characters where `llama-mtmd-cli`
+// returned 1624, stopping before the folio; raising the budget from 1024 to
+// 3072 changed nothing, which was read at the time as "the same weights see
+// the image differently through the two front ends".
+//
+// The server's own logs say otherwise, and they were sitting in the temp
+// directory the whole time. `n_ctx_slot = 131072`, prompt 1936 tokens,
+// `truncated = 0` on every request — nothing was ever cut for want of context.
+// What the logs show instead is six plates out of twelve stopping at EXACTLY
+// 1024 generated tokens, and three identical runs of the same lot producing
+// byte-identical output. The server was not stopping early: it was not
+// stopping at all, and the budget was cutting it off mid-loop.
+//
+// Two causes, both now fixed and both shared with the CLI backend:
+//
+//   * the model's end-of-turn token is not in llama.cpp's end-of-generation
+//     set, so nothing hears the model finish — see `vlm::eot_override`;
+//   * the two front ends disagree on the chat template, because jinja is on by
+//     default here and off in `llama-mtmd-cli` — see the `--jinja` flag there.
+//
+// This backend is still `--server`, opt-in, until the fixes are measured on
+// real plates. But the reason is now "not yet re-measured", not "reads less".
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -54,10 +69,58 @@ const STARTUP_TIMEOUT: Duration = Duration::from_mins(2);
 /// stalling the batch behind it.
 const REQUEST_TIMEOUT: Duration = Duration::from_mins(3);
 
+/// How a resident server is sized.
+#[derive(Debug, Clone, Copy)]
+pub struct ServerConfig {
+    /// Loopback port to bind. Never exposed off the machine: the server holds
+    /// no authentication of any kind.
+    pub port: u16,
+    /// Requests the server serves at once, one slot each.
+    ///
+    /// This is where the throughput is. Generating a page is bound by memory
+    /// bandwidth, not by arithmetic: at one sequence, the GPU reads four
+    /// gigabytes of weights to produce a single token, then reads them again
+    /// for the next one. Two sequences in flight read those same weights once
+    /// and produce two tokens — the second page is very nearly free. The cost
+    /// is one KV cache per slot, not one copy of the model per slot.
+    pub slots: u32,
+    /// Context window granted to each slot, in tokens.
+    ///
+    /// `llama-server` divides `--ctx-size` between its slots, so the flag is
+    /// computed as `slots × this`. Sized per slot rather than globally because
+    /// what a page needs does not shrink when a second page runs beside it —
+    /// and a slot too small for a dense plate truncates the transcription
+    /// silently.
+    pub ctx_per_slot: u32,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self { port: 8791, slots: DEFAULT_SLOTS, ctx_per_slot: DEFAULT_CTX_PER_SLOT }
+    }
+}
+
+/// Slots opened when nothing else is asked.
+///
+/// Two, not more: the win from a third is small once the GPU is bandwidth-fed,
+/// while each slot costs a full KV cache — and this pipeline was measured on a
+/// 12 GiB card holding a 4.1 GiB model.
+pub const DEFAULT_SLOTS: u32 = 2;
+
+/// Context per slot when nothing else is asked.
+///
+/// A vision model spends most of its context on the image, not on the answer:
+/// a high-resolution plate becomes thousands of visual tokens before the first
+/// word is generated. llama.cpp's own default of 4096 leaves too little room
+/// after that for a dense databook page, and the failure is silent — the text
+/// simply stops early, which is indistinguishable from a page that had nothing
+/// more to say.
+pub const DEFAULT_CTX_PER_SLOT: u32 = 8192;
+
 /// A running `llama-server` with a vision model loaded.
 pub struct ServerRunner {
     child: Child,
-    port: u16,
+    config: ServerConfig,
     options: OcrOptions,
 }
 
@@ -65,7 +128,7 @@ impl ServerRunner {
     /// Start a server for the model named by `options` and wait until it is
     /// ready to answer.
     ///
-    /// `port` is bound on loopback only: this server holds no auth and must
+    /// The port is bound on loopback only: this server holds no auth and must
     /// not be reachable from the network.
     ///
     /// # Errors
@@ -73,9 +136,10 @@ impl ServerRunner {
     /// [`OcrError::NoRunner`] when llama.cpp is not installed,
     /// [`OcrError::Model`] when the weights are not pulled, and
     /// [`OcrError::Process`] when the server does not become healthy.
-    pub fn start(options: OcrOptions, port: u16) -> Result<Self> {
+    pub fn start(options: OcrOptions, config: ServerConfig) -> Result<Self> {
         let source = llama::resolve(LlamaTool::Server).ok_or(OcrError::NoRunner)?;
         let (weights, mmproj) = resolve_artifacts(&options.model_id)?;
+        let port = config.port;
 
         let mut command = Command::new(source.path());
         command
@@ -89,11 +153,40 @@ impl ServerRunner {
             .arg("127.0.0.1")
             .arg("--port")
             .arg(port.to_string())
-            // One page at a time keeps VRAM predictable; the win here is not
-            // reloading the model, not batching concurrent requests.
+            // One slot per page in flight. The weights are read once for the
+            // whole batch of sequences, so a second page costs a KV cache and
+            // almost no extra time.
             .arg("--parallel")
-            .arg("1")
+            .arg(config.slots.to_string())
+            // Divided between the slots by llama-server, hence the product.
+            // Sized so a dense plate's visual tokens and its answer both fit:
+            // an undersized context truncates the transcription without
+            // saying so.
+            //
+            // Explicit rather than left to `--fit`, which picked 131072 on
+            // seven launches and 8192 on fourteen others of the same machine.
+            // A context that changes with whatever else holds VRAM is a
+            // reproducibility hole, and 131072 tokens of KV cache costs 3.5
+            // GiB for a prompt that never exceeds two thousand.
+            .arg("-c")
+            .arg((config.slots * config.ctx_per_slot).to_string())
+            // Never let the server drop the head of a conversation to make
+            // room: a silently shifted context is a silently wrong page.
+            .arg("--no-context-shift")
+            // The chat parser exists to lift reasoning traces out of an
+            // answer. There is no reasoning here, only a transcription, and
+            // any rewriting of `message.content` is damage.
+            .arg("--reasoning-format")
+            .arg("none")
+            .arg("--skip-chat-parsing")
             .stdout(Stdio::null());
+
+        // The same end-of-turn token the CLI backend installs. Both front ends
+        // must see the same vocabulary, or one of them stops where the other
+        // does not.
+        if let Some(kv) = crate::vlm::eot_argument(options.eot_token) {
+            command.arg("--override-kv").arg(kv);
+        }
 
         // llama-server logs continuously on stderr. Piping it without ever
         // reading the pipe deadlocks the server the moment the OS buffer fills
@@ -115,13 +208,22 @@ impl ServerRunner {
             return Err(e);
         }
 
-        Ok(Self { child, port, options })
+        Ok(Self { child, config, options })
     }
 
     /// The endpoint this runner talks to.
     #[must_use]
     pub fn endpoint(&self) -> String {
-        format!("http://127.0.0.1:{}", self.port)
+        format!("http://127.0.0.1:{}", self.config.port)
+    }
+
+    /// How many pages this server can read at once.
+    ///
+    /// A caller driving the batch reads this rather than assuming: sending
+    /// more requests than there are slots does not go faster, it queues.
+    #[must_use]
+    pub const fn slots(&self) -> u32 {
+        self.config.slots
     }
 
     /// Read one image through the resident model.
@@ -146,6 +248,22 @@ impl ServerRunner {
             // Transcription must be reproducible: the same plate has to give
             // the same text on a re-run, or an idempotent deposit is a lie.
             "temperature": 0.0,
+            // Sampling is pinned rather than left to the server's defaults,
+            // which differ from the CLI's (temperature 0.80 against 0.20) and
+            // could change with a llama.cpp release. At temperature 0 the
+            // decode is greedy and none of these can alter the argmax — but
+            // the repetition penalties act on the logits BEFORE temperature,
+            // so a non-zero one would genuinely move it. Spelling them out
+            // makes the request say what it does instead of inheriting it.
+            "top_k": 0,
+            "top_p": 1.0,
+            "min_p": 0.0,
+            "typical_p": 1.0,
+            "repeat_penalty": 1.0,
+            "presence_penalty": 0.0,
+            "frequency_penalty": 0.0,
+            "dry_multiplier": 0.0,
+            "seed": 0,
             // And reproducible means independent of what came before. The
             // server reuses one slot's KV cache across requests, so a plate
             // read second could come out differently from the same plate read
@@ -163,8 +281,12 @@ impl ServerRunner {
             stderr: e.to_string(),
         })?;
 
-        let response =
-            crate::http::post_json(self.port, "/v1/chat/completions", &payload, REQUEST_TIMEOUT)?;
+        let response = crate::http::post_json(
+            self.config.port,
+            "/v1/chat/completions",
+            &payload,
+            REQUEST_TIMEOUT,
+        )?;
         if !response.is_success() {
             return Err(OcrError::Process {
                 command: self.endpoint(),

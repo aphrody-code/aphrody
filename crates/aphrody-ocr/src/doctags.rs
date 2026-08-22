@@ -297,7 +297,8 @@ pub fn html_to_text(raw: &str) -> String {
     normalised.trim().to_owned()
 }
 
-/// Drop lines that are nothing but a bare URL or domain.
+/// Drop lines that carry nothing the plate holds: a bare URL, or an invented
+/// page marker.
 ///
 /// Scans carry watermarks. A Dragon Ball databook plate came back with
 /// `capsulecommentary.com` sitting between two paragraphs of Japanese — read
@@ -308,8 +309,37 @@ pub fn html_to_text(raw: &str) -> String {
 /// there the model is transcribing the page rather than its watermark.
 #[must_use]
 pub fn strip_watermarks(text: &str) -> String {
-    let kept: Vec<&str> = text.lines().filter(|line| !is_bare_url(line.trim())).collect();
+    let kept: Vec<&str> = text
+        .lines()
+        .filter(|line| {
+            let line = line.trim();
+            !is_bare_url(line) && !is_page_marker(line)
+        })
+        .collect();
     kept.join("\n").trim().to_owned()
+}
+
+/// Whether a whole line is an invented page marker and nothing else.
+///
+/// Measured on 6 305 deposited transcriptions: 62 plates carry a line reading
+/// `Page 83`, `page 6` or `## Page 96`. No databook prints that — a folio is a
+/// bare number in a corner, which [`Block::is_furniture`] already drops. This
+/// is export furniture the model produced from nowhere, and it repeats
+/// verbatim across plates of the same book.
+///
+/// Narrow on purpose: the WHOLE line must be the marker. A sentence mentioning
+/// a page stays, because there the model is reading the plate.
+fn is_page_marker(line: &str) -> bool {
+    let line = line.trim_start_matches('#').trim();
+    let Some(rest) = line
+        .strip_prefix("Page")
+        .or_else(|| line.strip_prefix("page"))
+        .or_else(|| line.strip_prefix("PAGE"))
+    else {
+        return false;
+    };
+    let number = rest.trim();
+    !number.is_empty() && number.chars().all(|c| c.is_ascii_digit())
 }
 
 /// Whether a whole line is a single URL or domain and nothing else.
@@ -470,11 +500,18 @@ fn cle_de_boucle(block: &Block) -> String {
 }
 
 /// Le texte avec chaque suite de chiffres réduite à `#`.
+///
+/// Les chiffres cerclés comptent comme des chiffres. Mesuré : quinze planches
+/// portent une énumération `㉑ ㉒ ㉓ …` qui **déborde de son bloc Unicode** —
+/// les cercles s'arrêtent à `㉟` (U+325F) et le caractère suivant, U+3260, est
+/// `㉠`, un cercle hangul. Un modèle qui compte au lieu de lire continue dans
+/// la table sans s'en apercevoir. Replier ces chiffres ici fait tomber ces
+/// planches dans la détection de cycle déjà en place, sans code nouveau.
 fn cle_texte(texte: &str) -> String {
     let mut out = String::with_capacity(texte.len());
     let mut dans_un_nombre = false;
     for c in texte.chars() {
-        if c.is_ascii_digit() {
+        if chiffre(c) {
             if !dans_un_nombre {
                 out.push('#');
                 dans_un_nombre = true;
@@ -485,6 +522,18 @@ fn cle_texte(texte: &str) -> String {
         }
     }
     out
+}
+
+/// Un chiffre, y compris cerclé, parenthésé, ou pleine chasse.
+const fn chiffre(c: char) -> bool {
+    matches!(c,
+        '0'..='9'
+        | '\u{FF10}'..='\u{FF19}' // ０..９
+        | '\u{2460}'..='\u{24FF}' // ①..⓿ et parenthésés
+        | '\u{3251}'..='\u{325F}' // ㉑..㉟
+        | '\u{32B1}'..='\u{32BF}' // ㊱..㊿
+        | '\u{3260}'..='\u{327F}' // ㉠.. : le débordement hangul lui-même
+    )
 }
 
 /// Longest cycle of blocks worth looking for.
@@ -614,12 +663,13 @@ fn find_glued_loop(token: &str) -> Option<usize> {
     let count = chars.len();
     let at = |i: usize| if i == count { token.len() } else { chars[i].0 };
 
-    for window in 1..=6_usize {
-        if count < window * (GLUED_LOOP_THRESHOLD + 1) {
+    for window in 1..=MOTIF_COLLE_MAX {
+        let seuil = seuil_colle(window);
+        if count < window * (seuil + 1) {
             continue;
         }
         let mut index = 0;
-        while index + window * (GLUED_LOOP_THRESHOLD + 1) <= count {
+        while index + window * (seuil + 1) <= count {
             let motif = &token[at(index)..at(index + window)];
             let mut repeats = 1;
             let mut probe = index + window;
@@ -627,13 +677,68 @@ fn find_glued_loop(token: &str) -> Option<usize> {
                 repeats += 1;
                 probe += window;
             }
-            if repeats > GLUED_LOOP_THRESHOLD {
+            // Le garde-fou typographique ne vaut que pour les motifs longs,
+            // dont le seuil est bas. Un glyphe unique répété garde le seuil de
+            // 64, qui sépare déjà les points de conduite d'une ligne de
+            // sommaire (une trentaine) de la génération bloquée (2 034 `･`
+            // mesurés sur une planche) — et il faut bien couper celle-là.
+            if repeats > seuil && (window == 1 || !typographie(motif)) {
                 return Some(at(index + window));
             }
             index += 1;
         }
     }
     None
+}
+
+/// Plus long motif collé cherché dans une boucle.
+///
+/// Six ne suffisait pas, mesuré : sur les 6 305 planches transcrites des
+/// databooks, **112** portent un motif japonais de sept à trente-deux
+/// caractères, collé, répété 24 à 166 fois — et les trois filtres de ce module
+/// les laissaient toutes passer. `truncate_spaced_loop` découpe sur les
+/// espaces, que le japonais n'a pas ; `truncate_line_cycle` a besoin de sauts
+/// de ligne, et onze de ces planches n'en portent aucun ; et cette fonction-ci
+/// ne cherchait pas au-delà de six caractères.
+///
+/// Exemple mesuré, planche 23/p9 : le motif de 28 caractères
+/// `squaremanの口の部分から部分を除いて、その部分を` répété 67 fois, soit
+/// 1 876 caractères, sur une planche d'un seul tenant.
+///
+/// Quarante est le plafond parce qu'une ligne imprimée en fait une quarantaine :
+/// un motif plus long aurait forcément franchi un retour à la ligne, qui aurait
+/// coupé le token et rendu la boucle visible autrement.
+const MOTIF_COLLE_MAX: usize = 40;
+
+/// Répétitions à dépasser pour qu'un motif de `window` caractères soit une
+/// boucle.
+///
+/// Dégressif, et pour une raison physique : ce qui ne peut pas être de la
+/// typographie, c'est la longueur totale de la répétition, pas son nombre de
+/// tours. Soixante-quatre glyphes identiques collés sont impossibles sur une
+/// page imprimée ; soixante-quatre *répétitions* d'un motif de vingt-huit
+/// caractères le sont tout autant, mais quatre le sont déjà.
+///
+/// Le plancher de quatre garde le seuil au-dessus de la typographie réelle
+/// mesurée : 177 planches répètent un motif cinq à neuf fois — filets, points
+/// de conduite, ellipses — et il n'y a rien à y couper.
+const fn seuil_colle(window: usize) -> usize {
+    let borne = GLUED_LOOP_THRESHOLD / window;
+    if borne < 4 { 4 } else { borne }
+}
+
+/// Un motif fait-il de la mise en page plutôt que du texte ?
+///
+/// Le contre-exemple mesuré, planche 88/p103 : `アタック .......... P` est une
+/// ligne de sommaire, dont les points de conduite se répètent légitimement —
+/// un motif de sept points, répété cinq fois, que le seuil dégressif
+/// attraperait sans ce garde-fou.
+///
+/// Ne vaut que pour les motifs de plus d'un caractère : un glyphe unique
+/// répété quatre cents fois est une boucle même s'il s'agit d'un point
+/// médian, et son seuil de 64 lui suffit à se démarquer de la typographie.
+fn typographie(motif: &str) -> bool {
+    !motif.chars().any(|c| c.is_alphanumeric() || crate::kana::japonais(c))
 }
 
 /// Strip chat control tokens and surrounding whitespace from a raw answer.
@@ -834,6 +939,107 @@ mod tests {
         assert!(cut, "the run must be recognised as a loop");
         assert!(kept.starts_with("ドラゴンボール"), "{kept}");
         assert_eq!(kept.matches('･').count(), 1, "one seed survives: {kept}");
+    }
+
+    #[test]
+    fn a_long_japanese_motif_repeated_is_cut() {
+        // Cas réel, planche 23/p9 : un motif de 28 caractères répété 67 fois,
+        // sur une planche sans un seul saut de ligne. Il traversait les trois
+        // filtres — celui-ci ne cherchait pas au-delà de six caractères.
+        let motif = "squaremanの口の部分から部分を除いて、その部分を";
+        assert_eq!(motif.chars().count(), 28);
+        let looped = format!("戦闘力は42000。{}", motif.repeat(67));
+        let (kept, cut) = truncate_loop(&looped);
+        assert!(cut, "un motif de 28 caractères répété 67 fois est une boucle");
+        assert!(kept.starts_with("戦闘力は42000。"), "{kept}");
+        assert!(kept.chars().count() < looped.chars().count() / 10, "{}", kept.chars().count());
+    }
+
+    #[test]
+    fn les_autres_motifs_longs_mesures_sont_cuts_aussi() {
+        for (motif, tours) in [
+            ("コートでコートする", 155),
+            ("ユーザーレーや", 155),
+            ("、アリーナの下に、アリーナの右に、アリーナの左に", 24),
+            ("の11th『カドレ』、おまえ", 70),
+        ] {
+            let looped = format!("本文の始まり{}", motif.repeat(tours));
+            let (kept, cut) = truncate_loop(&looped);
+            assert!(cut, "{motif} x{tours}");
+            assert!(kept.chars().count() < looped.chars().count() / 5, "{motif} : {kept}");
+        }
+    }
+
+    #[test]
+    fn un_motif_de_ponctuation_repete_reste_de_la_mise_en_page() {
+        // Cas réel, planche 88/p103 : sept points répétés cinq fois font une
+        // ligne de sommaire, pas une boucle. Le seuil dégressif les
+        // attraperait sans le garde-fou typographique.
+        let sommaire = "アタック......................................... P";
+        let (kept, cut) = truncate_loop(sommaire);
+        assert!(!cut, "{kept}");
+        assert_eq!(kept, sommaire);
+    }
+
+    #[test]
+    fn une_vraie_repetition_de_texte_court_survit_au_seuil_degressif() {
+        // Le risque du seuil dégressif : un motif long répété quatre fois
+        // suffit désormais. Une énumération réelle doit rester intacte.
+        for texte in [
+            "第一章第二章第三章第四章第五章",
+            "はいはいはいはい",
+            "ドラゴンボールドラゴンボール",
+        ] {
+            let (kept, cut) = truncate_loop(texte);
+            assert!(!cut, "{texte} -> {kept}");
+            assert_eq!(kept, texte);
+        }
+    }
+
+    #[test]
+    fn un_marqueur_de_page_invente_est_retire() {
+        // 62 planches du corpus déposé portent une ligne pareille. Aucun
+        // databook ne l'imprime : c'est du mobilier d'export.
+        for ligne in ["Page 83", "page 6", "## Page 96", "PAGE 12", "  page 47  "] {
+            let texte = format!("本文があります\n{ligne}\n続きです");
+            assert_eq!(strip_watermarks(&texte), "本文があります\n続きです", "{ligne}");
+        }
+    }
+
+    #[test]
+    fn une_phrase_qui_parle_dune_page_est_gardee() {
+        // La règle ne vaut que sur une ligne entière : ici le modèle transcrit
+        // la planche, il n'invente pas un marqueur.
+        for texte in ["Page 83 of the guide", "voir Page 12 pour la suite", "Pages 4"] {
+            assert_eq!(strip_watermarks(texte), texte);
+        }
+    }
+
+    #[test]
+    fn les_chiffres_cercles_se_replient_comme_les_chiffres_ascii() {
+        // Le débordement mesuré : l'énumération passe de ㉟ (U+325F) à ㉠
+        // (U+3260), un cercle hangul, parce que le modèle compte dans la table
+        // Unicode au lieu de lire. Repliés, ces blocs deviennent identiques et
+        // tombent dans la détection de cycle déjà en place.
+        assert_eq!(cle_texte("㉟ ワープポイント"), cle_texte("㉠ ワープポイント"));
+        assert_eq!(cle_texte("㉑ 武術"), cle_texte("21 武術"));
+        assert_eq!(cle_texte("① あ"), cle_texte("② あ"));
+        // Et le repli ne mange pas le texte autour.
+        assert_eq!(cle_texte("㉟ ワープポイント"), "# ワープポイント");
+    }
+
+    #[test]
+    fn une_enumeration_qui_deborde_en_hangul_est_coupee() {
+        // La séquence réelle de la planche 12/p25.
+        let mut raw = String::from("<doctag>");
+        for cercle in ['㉞', '㉟', '㉠', '㉡', '㉢', '㉣'] {
+            raw.push_str(&format!(
+                "<text><loc_1><loc_2><loc_3><loc_4>{cercle}\n武術の鍵は\n悟し、掌握し、</text>\n"
+            ));
+        }
+        raw.push_str("</doctag>");
+        let doc = Document::parse(&raw);
+        assert!(doc.blocks.len() < 6, "le cycle doit être coupé : {} blocs", doc.blocks.len());
     }
 
     #[test]

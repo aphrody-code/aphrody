@@ -80,6 +80,10 @@ pub struct OcrOptions {
     pub gpu_layers: u32,
     /// Keep the model's raw output in each result.
     pub keep_raw: bool,
+    /// End-of-turn token to force on a model whose GGUF fails to declare one.
+    ///
+    /// See [`eot_override`] for why this exists and what it is worth.
+    pub eot_token: Option<u32>,
 }
 
 impl Default for OcrOptions {
@@ -103,22 +107,91 @@ impl OcrOptions {
         Self {
             model_id: model_id.to_owned(),
             prompt,
-            max_tokens: 1024,
+            max_tokens: DEFAULT_MAX_TOKENS,
             gpu_layers: 99,
             keep_raw: false,
+            eot_token: eot_override(model_id),
         }
     }
 }
 
+/// Token budget per page when nothing else is asked.
+///
+/// Was 1024, which the measurements showed to be the wrong number twice over.
+/// Six of twelve databook plates stopped at **exactly** 1024 — that is not a
+/// page running out of things to say, that is a budget running out. And
+/// upstream dots.ocr runs at 16384 to 32768.
+///
+/// Four thousand rather than sixteen because the budget is now a backstop
+/// rather than the usual stopping condition: with [`eot_override`] in place a
+/// page ends when the model says it ends. What is left to guard against is a
+/// generation that never terminates, and there a smaller ceiling costs less
+/// GPU time per runaway page.
+pub const DEFAULT_MAX_TOKENS: u32 = 4096;
+
+/// The end-of-turn token a model's GGUF forgot to declare.
+///
+/// # Why this is not a workaround but the fix
+///
+/// dots.ocr closes its turn with `<|endofassistant|>`, token **151673**. Its
+/// GGUF declares `eos_token_id = 151643` and no `eot_token_id` at all, and
+/// llama.cpp builds its end-of-generation set from a hard-coded list of token
+/// *names* — a list `<|endofassistant|>` is not on. So the model says "I am
+/// done" and nobody is listening: generation runs on until the token budget
+/// cuts it off.
+///
+/// Measured in the server's own logs, twelve plates: six stopped at exactly
+/// 1024 tokens, the other six between 275 and 437. The six that hit the
+/// ceiling were not dense pages — they were pages that had finished and kept
+/// talking. That is what made plate 18-0249 look like it had lost its folio,
+/// and why raising the budget to 3072 changed nothing: the extra 2048 tokens
+/// were degenerate, and this crate's own loop cutter trimmed them back to the
+/// same prefix.
+///
+/// So this override buys both halves of the problem at once. Fidelity: a page
+/// ends where the model ends it. Speed: a page that used to burn 1024 tokens
+/// now spends what it needs — on the measured sample, roughly a third.
+#[must_use]
+pub fn eot_override(model_id: &str) -> Option<u32> {
+    model_id.starts_with("dots-ocr").then_some(DOTS_OCR_EOT)
+}
+
+/// `<|endofassistant|>` in the dots.ocr vocabulary.
+pub const DOTS_OCR_EOT: u32 = 151673;
+
 /// The trained instruction for a catalog model.
+///
+/// These are the upstream strings, character for character, and that matters
+/// more here than it would elsewhere. dots.ocr's maintainer states plainly
+/// that the model "has no general instruction following ability": it does not
+/// read the instruction, it recognises one of four strings it was trained on
+/// and switches mode. A paraphrase is out of distribution, with no defined
+/// behaviour — which is how a Docling prompt produced an empty turn, the most
+/// expensive failure this pipeline can have.
+///
+/// `Extract all text from this image.` had been in use here, a near-miss of
+/// upstream's `prompt_ocr`. Reading upstream's `dots_ocr/utils/prompts.py`
+/// settled it: three words differed, for nothing gained.
 #[must_use]
 pub fn default_prompt(model_id: &str) -> &'static str {
     if model_id.starts_with("dots-ocr") {
-        "Extract all text from this image."
+        // `prompt_ocr`, verbatim. Documented to skip page headers and footers,
+        // which is what `Block::is_furniture` filters downstream anyway.
+        "Extract the text content from this image."
     } else {
         // Docling family (granite-docling, and anything else emitting DocTags).
         "Convert this page to docling."
     }
+}
+
+/// The `--override-kv` argument that installs an end-of-turn token, if the
+/// model needs one.
+///
+/// Shared by both backends: they must see the same vocabulary, or the same
+/// plate read twice would end in two different places.
+#[must_use]
+pub fn eot_argument(eot_token: Option<u32>) -> Option<String> {
+    eot_token.map(|token| format!("tokenizer.ggml.eot_token_id=int:{token}"))
 }
 
 /// A configured vision-language runner.
@@ -164,7 +237,8 @@ impl VlmRunner {
     pub fn read(&self, image: &Path) -> Result<PageResult> {
         let started = std::time::Instant::now();
 
-        let output = Command::new(&self.binary)
+        let mut command = Command::new(&self.binary);
+        command
             .arg("-m")
             .arg(&self.weights)
             .arg("--mmproj")
@@ -181,7 +255,21 @@ impl VlmRunner {
             // the same text on a re-run, or an idempotent deposit is a lie.
             .arg("--temp")
             .arg("0")
-            .arg("--no-warmup")
+            // `llama-mtmd-cli` disables jinja where the server enables it, so
+            // without this the two front ends prompt the model differently:
+            // the CLI falls through llama.cpp's template detector onto GLMEDGE
+            // — a template belonging to another model, which drops
+            // `<|endofuser|>` and inserts a newline. Same weights, same image,
+            // two different prompts, two different greedy decodes.
+            .arg("--jinja")
+            .arg("--no-warmup");
+
+        // Teach llama.cpp the end-of-turn token this model's GGUF omits.
+        if let Some(kv) = eot_argument(self.options.eot_token) {
+            command.arg("--override-kv").arg(kv);
+        }
+
+        let output = command
             .output()
             .map_err(|source| OcrError::Io { path: self.binary.clone(), source })?;
 
@@ -192,6 +280,16 @@ impl VlmRunner {
                 status: output.status.to_string(),
                 stderr: tail(&stderr, 400),
             });
+        }
+
+        // Le serveur écrit son journal dans un fichier ; celui-ci le jetait en
+        // silence dès que la page réussissait. Comparer les deux backends
+        // demandait alors de deviner d'un côté ce qu'on lisait de l'autre —
+        // notamment le nombre de jetons générés, qui est ce qui a fini par
+        // trancher le diagnostic. Il coûte une ligne de le garder.
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::debug!(image = %image.display(), timings = %tail(&stderr, 600), "llama-mtmd-cli");
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -378,6 +476,45 @@ mod tests {
         // The serialised shape is what a deposit script branches on.
         let json = serde_json::to_string(&none).unwrap();
         assert_eq!(json, r#"{"kind":"none"}"#);
+    }
+
+    #[test]
+    fn le_jeton_de_fin_de_tour_nest_impose_quaux_modeles_qui_loublient() {
+        // dots.ocr ne déclare pas le sien, et llama.cpp ne le devine pas :
+        // sans cet override, une page finie continue jusqu'au plafond.
+        assert_eq!(eot_override("dots-ocr"), Some(DOTS_OCR_EOT));
+        assert_eq!(eot_override("dots-ocr-q8"), Some(DOTS_OCR_EOT));
+        // granite-docling déclare le sien : y toucher casserait sa génération.
+        assert_eq!(eot_override("granite-docling-258m"), None);
+        assert_eq!(eot_override("un-modele-inconnu"), None);
+    }
+
+    #[test]
+    fn largument_override_kv_a_la_forme_que_llama_cpp_attend() {
+        assert_eq!(
+            eot_argument(Some(DOTS_OCR_EOT)).as_deref(),
+            Some("tokenizer.ggml.eot_token_id=int:151673")
+        );
+        assert_eq!(eot_argument(None), None);
+    }
+
+    #[test]
+    fn le_prompt_de_dots_ocr_est_la_chaine_amont_mot_pour_mot() {
+        // Ce modèle ne suit pas les instructions, il reconnaît quatre chaînes.
+        // Une paraphrase est hors distribution ; celle-ci vient de
+        // `dots_ocr/utils/prompts.py`, clé `prompt_ocr`.
+        assert_eq!(default_prompt("dots-ocr"), "Extract the text content from this image.");
+        let options = OcrOptions::for_model("dots-ocr");
+        assert_eq!(options.prompt, "Extract the text content from this image.");
+        assert_eq!(options.eot_token, Some(DOTS_OCR_EOT));
+    }
+
+    #[test]
+    fn le_budget_de_jetons_par_defaut_a_de_la_marge() {
+        // Mesuré : six planches sur douze s'arrêtaient EXACTEMENT à 1024, ce
+        // qui est la signature d'un plafond atteint et non d'une page finie.
+        assert!(DEFAULT_MAX_TOKENS > 1024);
+        assert_eq!(OcrOptions::for_model("dots-ocr").max_tokens, DEFAULT_MAX_TOKENS);
     }
 
     #[test]
