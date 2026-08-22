@@ -103,28 +103,20 @@ pub(crate) enum OcrAction {
         /// later without reading the images again.
         #[arg(long)]
         raw: bool,
-        /// EXPERIMENTAL — keep the model resident behind a llama-server
-        /// instead of spawning one process per page. DOES NOT WORK YET.
+        /// Keep the model resident behind a llama-server instead of spawning
+        /// one process per page. Faster, but it reads less of each page.
         ///
-        /// The prize is real: posting a page to a resident llama-server takes
-        /// about a second where spawning llama-mtmd-cli takes five, so a whole
-        /// corpus would go from a day to a few hours.
+        /// Measured on twelve databook plates with dots.ocr: 4.9 s per plate
+        /// against 13 s for the default backend. The catch is fidelity — on
+        /// plate 18-0249 the server returned 1384 characters where the default
+        /// backend returned 1624, stopping before the folio number and
+        /// flattening paragraph breaks into spaces. Raising --max-tokens from
+        /// 1024 to 3072 changed nothing, so this is the front end, not the
+        /// budget: the same weights see the image differently.
         ///
-        /// What is known, measured rather than assumed:
-        ///   * the protocol is fine — the same request from another client
-        ///     returns a correct transcription in 975 ms;
-        ///   * the server starts, loads the model and answers its health
-        ///     endpoint in about three seconds, and its log then shows NO
-        ///     incoming request at all;
-        ///   * so the client side never reaches it, and the batch makes no
-        ///     progress whatsoever.
-        ///
-        /// Two causes were found and fixed on the way — an unread stderr pipe
-        /// that deadlocked the server once its 64 KiB buffer filled, and a
-        /// blocking HTTP client unusable from inside the tokio runtime (now a
-        /// hand-rolled HTTP/1.1 client). Neither was the whole story. Until the
-        /// rest is understood, use the default backend, which has read eight
-        /// hundred plates without a single failure.
+        /// Use it when speed matters more than completeness — a rough index, a
+        /// smoke test over a large directory. For a transcription anyone will
+        /// read, take the slower backend. Do not mix the two over one corpus.
         #[arg(long)]
         server: bool,
         /// Loopback port for --server.

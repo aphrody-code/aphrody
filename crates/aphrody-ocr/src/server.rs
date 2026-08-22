@@ -17,6 +17,20 @@
 //
 // The process is owned by `ServerRunner` and killed on drop, so an interrupted
 // batch does not leave a multi-gigabyte process holding the GPU.
+//
+// WHAT IT COSTS, MEASURED (dots.ocr, RTX 4070, twelve databook plates)
+//
+// Speed: 4.9 s per plate against 13 s for the CLI backend — a little under 3×.
+// Fidelity: LOWER. On plate 18-0249 the server returned 1384 characters where
+// `llama-mtmd-cli` returned 1624, stopping before the folio number, and it
+// flattened paragraph breaks to spaces. Raising `--max-tokens` from 1024 to
+// 3072 changed nothing, so this is not budget truncation: the same weights see
+// the image differently through the two front ends.
+//
+// So this backend is `--server`, opt-in, and NOT what the databook corpus runs
+// on. A public transcription that silently drops the last lines of a page is
+// worse than one that takes twice as long, and a corpus half-read one way and
+// half the other is worse than either.
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -132,6 +146,14 @@ impl ServerRunner {
             // Transcription must be reproducible: the same plate has to give
             // the same text on a re-run, or an idempotent deposit is a lie.
             "temperature": 0.0,
+            // And reproducible means independent of what came before. The
+            // server reuses one slot's KV cache across requests, so a plate
+            // read second could come out differently from the same plate read
+            // first — measured: paragraph breaks collapsed to spaces. A batch
+            // resumed at another offset would then rewrite text it had already
+            // deposited. The saved prefix is a few hundred tokens; correctness
+            // is worth more.
+            "cache_prompt": false,
             "stream": false,
         });
 
