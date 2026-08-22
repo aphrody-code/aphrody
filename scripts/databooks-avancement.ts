@@ -27,6 +27,7 @@ const BASE = "https://dragonballfr.com";
 
 export interface Planche {
     number: number;
+    image?: string | null;
     text?: string | null;
 }
 
@@ -44,6 +45,26 @@ export interface Avancement {
     categorie: string;
     planches: number;
     transcrites: number;
+    sansScan: number;
+}
+
+/**
+ * Une planche sans scan ET sans texte ne sera jamais lue : il n'y a rien à lire.
+ *
+ * La base porte des lignes de planche vides — `{"number":5,"image":null,
+ * "text":null}` — réservées pour un scan qui n'est jamais arrivé. Mesuré le
+ * 2026-08-22 : 262 planches, dont 228 pour le seul Daizenshuu 1. Les compter
+ * comme du travail en retard fait mentir l'avancement de deux points et promet
+ * une fin qui ne peut pas venir.
+ *
+ * L'absence d'image ne suffit pas comme critère : 236 planches portent du texte
+ * venu d'une autre source sans avoir de scan en base. Les retirer du
+ * dénominateur tout en comptant leur texte ferait passer des ouvrages
+ * au-dessus de 100 %.
+ */
+export function sansScan(planche: Planche): boolean {
+    const image = typeof planche.image === "string" && planche.image.trim().length > 0;
+    return !image && !estTranscrite(planche);
 }
 
 /**
@@ -64,8 +85,11 @@ export function avancementOuvrage(o: Ouvrage): Avancement {
         id: o.id,
         titre: o.title,
         categorie: o.category ?? "(sans catégorie)",
-        planches: pages.length,
+        // `planches` est le lisible, pas le total : une planche sans scan sort
+        // du dénominateur, sinon l'avancement ne peut jamais atteindre 100 %.
+        planches: pages.length - pages.filter(sansScan).length,
         transcrites: pages.filter(estTranscrite).length,
+        sansScan: pages.filter(sansScan).length,
     };
 }
 
@@ -74,6 +98,7 @@ export interface Total {
     ouvrages: number;
     planches: number;
     transcrites: number;
+    sansScan: number;
 }
 
 /** Regroupe par catégorie, la plus fournie en tête. */
@@ -85,10 +110,12 @@ export function totalise(lignes: Avancement[]): Total[] {
             ouvrages: 0,
             planches: 0,
             transcrites: 0,
+            sansScan: 0,
         };
         t.ouvrages += 1;
         t.planches += l.planches;
         t.transcrites += l.transcrites;
+        t.sansScan += l.sansScan;
         par.set(l.categorie, t);
     }
     return [...par.values()].toSorted((a, b) => b.planches - a.planches);
@@ -191,10 +218,15 @@ async function main(): Promise<void> {
 
     const planches = lignes.reduce((s, l) => s + l.planches, 0);
     const transcrites = lignes.reduce((s, l) => s + l.transcrites, 0);
+    const orphelines = lignes.reduce((s, l) => s + l.sansScan, 0);
 
     if (o.json) {
         console.log(
-            JSON.stringify({ ouvrages: lignes.length, planches, transcrites, lignes }, null, 2),
+            JSON.stringify(
+                { ouvrages: lignes.length, planches, transcrites, sansScan: orphelines, lignes },
+                null,
+                2,
+            ),
         );
         return;
     }
@@ -224,7 +256,9 @@ async function main(): Promise<void> {
     }
 
     console.log(
-        `\n${lignes.length} ouvrage(s), ${transcrites}/${planches} planche(s) transcrite(s) — ${pourcent(transcrites, planches)}`,
+        `\n${lignes.length} ouvrage(s), ${transcrites}/${planches} planche(s) transcrite(s) — ` +
+            pourcent(transcrites, planches) +
+            (orphelines > 0 ? ` (${orphelines} sans scan, hors compte)` : ""),
     );
 }
 
