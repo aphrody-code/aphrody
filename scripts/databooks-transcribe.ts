@@ -14,14 +14,27 @@
  * Usage :
  *   bun scripts/databooks-transcribe.ts [--lots 1-29] [--travail <dir>]
  *                                       [--modele dots-ocr] [--simulation]
- *                                       [--garder-images] [--resident]
+ *                                       [--garder-images] [--resident] [--force]
  *
  * ATTENTION : `--simulation` ne simule QUE le dépôt. Les planches sont bel et
  * bien lues par le GPU — soit environ une heure par lot. Pour vérifier la
  * chaîne rapidement, restreindre d'abord avec `--lots 1`.
+ *
+ * UNE SEULE INSTANCE : deux boucles se partagent le même GPU, saturent sa
+ * mémoire et divisent le débit par huit — mesuré 10,9 s la planche seule contre
+ * 90 s à deux, avec la VRAM à 95 % et le calcul retombé à 45 %. Le second
+ * lancement est donc refusé par un verrou dans le dossier de travail, plutôt
+ * que confié à la vigilance de qui lance la commande.
  */
 
-import { existsSync, mkdirSync, readdirSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { $ } from "bun";
 
@@ -36,6 +49,7 @@ interface Options {
 	simulation: boolean;
 	garderImages: boolean;
 	resident: boolean;
+	force: boolean;
 	aphrody: string;
 }
 
@@ -113,8 +127,101 @@ function options(total: number): Options {
 		simulation: args.includes("--simulation"),
 		garderImages: args.includes("--garder-images"),
 		resident: args.includes("--resident"),
+		force: args.includes("--force"),
 		aphrody: opt("aphrody") ?? process.env.APHRODY_BIN ?? "aphrody",
 	};
+}
+
+/** Ce qu'un fichier verrou contient. */
+export interface Verrou {
+	/** PID du processus qui tient le verrou. */
+	pid: number;
+	/** Date ISO du lancement, pour un message d'erreur lisible. */
+	depuis: string;
+}
+
+/**
+ * Le verrou est-il encore tenu par un processus vivant ?
+ *
+ * Un verrou survit à un `kill -9` et à une coupure de courant ; s'y fier
+ * aveuglément condamnerait la boucle à refuser de redémarrer. On vérifie donc
+ * le PID plutôt que la seule présence du fichier. `vivant` est injecté pour
+ * que le test n'ait pas à créer de vrais processus.
+ */
+export function verrouTenu(
+	contenu: string | null,
+	vivant: (pid: number) => boolean,
+): Verrou | null {
+	if (!contenu) return null;
+	let v: Partial<Verrou>;
+	try {
+		v = JSON.parse(contenu) as Partial<Verrou>;
+	} catch {
+		// Un verrou illisible est un verrou mort : un fichier tronqué par un
+		// arrêt brutal ne doit pas bloquer la reprise.
+		return null;
+	}
+	if (!Number.isInteger(v.pid) || (v.pid as number) <= 0) return null;
+	if (!vivant(v.pid as number)) return null;
+	return { pid: v.pid as number, depuis: typeof v.depuis === "string" ? v.depuis : "?" };
+}
+
+/** `process.kill(pid, 0)` : ne tue rien, lève si le PID n'existe pas. */
+function pidVivant(pid: number): boolean {
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch (e) {
+		// EPERM = le processus existe mais appartient à quelqu'un d'autre.
+		return (e as NodeJS.ErrnoException).code === "EPERM";
+	}
+}
+
+/**
+ * Prend le verrou du dossier de travail, ou refuse le lancement.
+ *
+ * Renvoie la fonction qui le rend. Le verrou est aussi relâché sur SIGINT et
+ * SIGTERM : une boucle interrompue au clavier ne doit pas laisser derrière elle
+ * un fichier qui interdit la reprise.
+ */
+function prendVerrou(travail: string, force: boolean): () => void {
+	const chemin = join(travail, ".verrou");
+	const contenu = existsSync(chemin) ? readFileSync(chemin, "utf8") : null;
+	const tenu = verrouTenu(contenu, pidVivant);
+	if (tenu && !force) {
+		console.error(
+			`erreur : une boucle tourne déjà (pid ${tenu.pid}, depuis ${tenu.depuis}).\n` +
+				"Deux boucles saturent la VRAM et divisent le débit par huit.\n" +
+				`Arrêter l'autre, ou forcer avec --force si le pid est un faux positif.`,
+		);
+		process.exit(3);
+	}
+	if (tenu) {
+		console.log(`note : --force, verrou du pid ${tenu.pid} ignoré`);
+	}
+	const mien: Verrou = { pid: process.pid, depuis: new Date().toISOString() };
+	writeFileSync(chemin, JSON.stringify(mien));
+
+	let rendu = false;
+	const rends = (): void => {
+		if (rendu) return;
+		rendu = true;
+		// Ne retirer que SON propre verrou : sous --force, un autre processus
+		// peut avoir repris la main entre-temps.
+		try {
+			const actuel = existsSync(chemin) ? readFileSync(chemin, "utf8") : null;
+			if (actuel && (JSON.parse(actuel) as Verrou).pid === process.pid) rmSync(chemin);
+		} catch {
+			/* un verrou déjà disparu n'est pas une erreur */
+		}
+	};
+	for (const signal of ["SIGINT", "SIGTERM"] as const) {
+		process.on(signal, () => {
+			rends();
+			process.exit(130);
+		});
+	}
+	return rends;
 }
 
 /** Rapatrie un lot s'il n'est pas déjà complet localement. */
@@ -191,6 +298,23 @@ async function depose(lot: string, jsonl: string, o: Options): Promise<void> {
 async function main(): Promise<void> {
 	const total = await detecteLots();
 	const o = options(total);
+	// Avant tout travail : le dossier doit exister pour porter le verrou, et le
+	// verrou doit être pris avant qu'un seul octet de VRAM soit réservé.
+	mkdirSync(o.travail, { recursive: true });
+	const rendsVerrou = prendVerrou(o.travail, o.force);
+	let echecs = 0;
+	try {
+		echecs = await boucle(o);
+	} finally {
+		// Rendre le verrou avant de sortir : un `process.exit` dans la boucle
+		// sauterait ce bloc et laisserait le prochain lancement bloqué.
+		rendsVerrou();
+	}
+	if (echecs > 0) process.exit(1);
+}
+
+/** Le travail proprement dit, une fois le verrou acquis ; renvoie le nombre d'échecs. */
+async function boucle(o: Options): Promise<number> {
 	console.log(
 		`transcription databooks — ${o.lots.length} lot(s), modèle ${o.modele}` +
 			`${o.resident ? ", modèle résident" : ""}${o.simulation ? ", dépôt simulé" : ""}` +
@@ -232,7 +356,7 @@ async function main(): Promise<void> {
 	}
 
 	console.log(`\n${faits}/${o.lots.length} lot(s) traités, ${echecs} en échec.`);
-	if (echecs > 0) process.exit(1);
+	return echecs;
 }
 
 if (import.meta.main) await main();
