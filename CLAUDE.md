@@ -203,6 +203,7 @@ Surface skills exposée via le plugin `aphrody` (`.claude/plugins/aphrody/`).
 - **cargo-zigbuild + `--icf=all`** : incompatible, retiré de `.cargo/config.toml`.
 - **`a2a-pb` build.rs** : code source `src/gen/` fait autorité. Codegen gated sous `A2A_PB_REGEN=1`.
 - **Crate name `aphrody`** : utiliser `-p aphrody` pour builds/checks. Le dossier reste `crates/cli/`.
+- **Rebuild du binaire = rebuild avec ses features** : `ocr`, `infer`, `magika`, `forensics`, `index`, `firefly` sont **opt-in**. Un `cargo build -p aphrody --bin aphrody` sans `--features ocr` produit un binaire où `aphrody ocr` n'existe plus — et clap ne dit pas « unknown subcommand » : l'argv non reconnue tombe dans le repli **A2A `auto_command`**, qui échoue sur `http://localhost:8788/jsonrpc: error sending request`. Le message ne parle jamais de features, donc on cherche un serveur A2A absent pendant que le vrai problème est le drapeau de build. Vérifier après tout rebuild : `aphrody ocr` doit lister `page/audit/clean/batch`.
 - **tracing-subscriber** : pinné à `0.3.22` due to packaging bug in 0.3.23+.
 - **`base` package** : `path-bases` (RFC 3529) instable nightly 1.97, désactivé.
 - **rand** : version 0.8 imposée par `denokv_proto` (pas de 0.9).

@@ -388,8 +388,23 @@ const LOOP_THRESHOLD: usize = 4;
 /// Discarding the whole answer would throw away a good transcription over a
 /// bad tail, so the loop is truncated and everything before it is kept.
 /// Returns the trimmed text and whether a loop was found.
+///
+/// Two shapes of loop, because two shapes of writing. English repeats with
+/// spaces between the repeats; Japanese has no spaces at all, so a stuck
+/// generation comes out as one unbroken run of characters that the
+/// whitespace-splitting pass below cannot even see. Measured on 5023 databook
+/// plates: 101 of them carried a run of over a hundred glued repeats — `_`
+/// 8168 times, `･` 2034, `J` 1956 — and every one had passed this function
+/// untouched.
 #[must_use]
 pub fn truncate_loop(text: &str) -> (String, bool) {
+    let (text, glued) = truncate_glued_loop(text);
+    let (out, spaced) = truncate_spaced_loop(&text);
+    (out, glued || spaced)
+}
+
+/// Cut at a run of repeats separated by whitespace.
+fn truncate_spaced_loop(text: &str) -> (String, bool) {
     let tokens: Vec<&str> = text.split_whitespace().collect();
     if tokens.len() < LOOP_THRESHOLD * 2 {
         return (text.trim().to_owned(), false);
@@ -418,6 +433,77 @@ pub fn truncate_loop(text: &str) -> (String, bool) {
     }
 
     (text.trim().to_owned(), false)
+}
+
+/// How many glued repeats of one motif stop being typography.
+///
+/// A printed databook line holds roughly forty characters, and a run of
+/// identical glyphs cannot cross a line break — the newline would split the
+/// token. So no page can legitimately carry sixty-four of them in a row, while
+/// a table-of-contents row of leader dots, the longest honest run there is,
+/// stays well under. Chosen from the measured distribution, which is split in
+/// two with almost nothing between: 177 plates repeat something five to nine
+/// times (rules, ellipses, leader dots — all real), 22 fall between ten and
+/// ninety-nine, and 101 repeat past a hundred. The threshold sits in that gap,
+/// nearer the garbage than the typography.
+const GLUED_LOOP_THRESHOLD: usize = 64;
+
+/// Cut at a run of repeats with no whitespace between them.
+fn truncate_glued_loop(text: &str) -> (String, bool) {
+    let mut start: Option<usize> = None;
+    // One pass over the text, tracking where the current unbroken run of
+    // non-whitespace began. Scanning per token is the same work, but this way
+    // the byte offset back into `text` is never lost — and it has to be exact,
+    // because cutting a multi-byte character in half would panic.
+    for (offset, ch) in text.char_indices() {
+        if ch.is_whitespace() {
+            if let Some(begin) = start.take()
+                && let Some(cut) = find_glued_loop(&text[begin..offset])
+            {
+                return (text[..begin + cut].trim_end().to_owned(), true);
+            }
+        } else if start.is_none() {
+            start = Some(offset);
+        }
+    }
+    if let Some(begin) = start
+        && let Some(cut) = find_glued_loop(&text[begin..])
+    {
+        return (text[..begin + cut].trim_end().to_owned(), true);
+    }
+    (text.to_owned(), false)
+}
+
+/// Byte offset just past the first instance of a motif that then repeats.
+///
+/// Returns `None` when the token holds no run long enough to be a loop. The
+/// one surviving instance is deliberate: the repeat often starts on a word the
+/// page really does end with, and dropping it would lose real text.
+fn find_glued_loop(token: &str) -> Option<usize> {
+    let chars: Vec<(usize, char)> = token.char_indices().collect();
+    let count = chars.len();
+    let at = |i: usize| if i == count { token.len() } else { chars[i].0 };
+
+    for window in 1..=6_usize {
+        if count < window * (GLUED_LOOP_THRESHOLD + 1) {
+            continue;
+        }
+        let mut index = 0;
+        while index + window * (GLUED_LOOP_THRESHOLD + 1) <= count {
+            let motif = &token[at(index)..at(index + window)];
+            let mut repeats = 1;
+            let mut probe = index + window;
+            while probe + window <= count && &token[at(probe)..at(probe + window)] == motif {
+                repeats += 1;
+                probe += window;
+            }
+            if repeats > GLUED_LOOP_THRESHOLD {
+                return Some(at(index + window));
+            }
+            index += 1;
+        }
+    }
+    None
 }
 
 /// Strip chat control tokens and surrounding whitespace from a raw answer.
@@ -506,6 +592,49 @@ mod tests {
         let doc = Document::parse(&raw);
         assert_eq!(doc.blocks.len(), 4);
         assert!(doc.to_markdown().is_some_and(|m| m.contains("Fin du chapitre")));
+    }
+
+    #[test]
+    fn a_japanese_loop_with_no_spaces_in_it_is_cut() {
+        // The shape the whitespace pass is blind to. Japanese writes without
+        // spaces, so a stuck generation is one unbroken token — measured on
+        // 101 of 5023 databook plates, up to 8168 repeats of a single glyph.
+        let looped = format!("ドラゴンボール{}", "･".repeat(400));
+        let (kept, cut) = truncate_loop(&looped);
+        assert!(cut, "the run must be recognised as a loop");
+        assert!(kept.starts_with("ドラゴンボール"), "{kept}");
+        assert_eq!(kept.matches('･').count(), 1, "one seed survives: {kept}");
+    }
+
+    #[test]
+    fn a_row_of_leader_dots_is_typography_and_survives() {
+        // The reason the threshold is 64 and not 8: a table-of-contents row
+        // legitimately runs a motif for as long as the line is wide, and a
+        // printed line stops around forty characters.
+        let sommaire = format!("第一章{}12", "･".repeat(30));
+        let (kept, cut) = truncate_loop(&sommaire);
+        assert!(!cut, "a leader row is not a loop");
+        assert_eq!(kept, sommaire);
+    }
+
+    #[test]
+    fn a_glued_loop_of_several_characters_is_cut_at_the_first_repeat() {
+        let looped = format!("Chapitre 26{}", "たビラフが、".repeat(143));
+        let (kept, cut) = truncate_loop(&looped);
+        assert!(cut);
+        assert_eq!(kept.matches("たビラフが、").count(), 1, "{kept}");
+        assert!(kept.starts_with("Chapitre 26"));
+    }
+
+    #[test]
+    fn cutting_a_glued_loop_never_splits_a_character_in_half() {
+        // The cut is a byte offset into a string full of three-byte glyphs;
+        // landing mid-character would panic rather than return bad text.
+        for taille in [65_usize, 66, 129, 400] {
+            let (kept, cut) = truncate_loop(&"あ".repeat(taille));
+            assert!(cut, "{taille} repeats is a loop");
+            assert_eq!(kept, "あ", "{taille}: {kept}");
+        }
     }
 
     #[test]
