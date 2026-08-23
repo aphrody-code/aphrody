@@ -645,3 +645,83 @@ n'est pas un symptôme de panne. Vérifier d'abord la catégorie de l'ouvrage. L
 mode d'échec du mauvais prompt (§3) produit le même symptôme, mais lui vide
 *tout*, y compris les fiches techniques bien imprimées.
 
+---
+
+## 11. Les bulles — ce que §10 croyait impossible
+
+§10 concluait que les 1 035 planches restantes demandaient « une détection de
+bulles suivie d'un modèle spécialisé sur bulles pré-découpées ». La première
+moitié est juste. **La seconde est fausse, et la mesure du 2026-08-23 le dit
+sans ambiguïté.**
+
+### L'expérience que personne n'avait faite
+
+La note disait qu'il faudrait un modèle travaillant *sur bulles pré-découpées*
+— sans avoir jamais donné une bulle pré-découpée au modèle qu'on a déjà. Quatre
+zones de la planche 18 de *DBZ TV Special : Bardock* ont donc été recadrées à
+la main et passées à dots.ocr, telles quelles puis agrandies trois fois :
+
+| Zone | crop brut | crop ×3 |
+|---|---|---|
+| `カナッサ星`, titre vertical imprimé | lu | lu |
+| `クッ!!`, **bulle manuscrite** | rien | **`クッ!!`** |
+| `グォーッ`, `ドゥッ`, onomatopées dessinées | rien | rien |
+
+dots.ocr lit donc les bulles. Ce qui lui manquait n'était pas le vocabulaire,
+c'était le **cadrage** : sur une planche de 1128×1600, cette bulle occupe
+130×100 pixels — une poignée de jetons visuels dans une image qu'il traite
+comme un dessin.
+
+### Le pavage ne suffit pas
+
+Découper la planche en tuiles est la réponse évidente, et elle ne marche pas.
+Six tuiles agrandies ×2 : seul le titre ressort. Douze tuiles ×3, pour 28 s au
+lieu de 5 : le titre ressort *mieux* (`カナッサ星` correct au lieu de
+`カナツサ星`), la bulle reste muette. Le modèle ne veut pas plus de pixels, il
+veut une image dont le texte est le **sujet**.
+
+### Ce que la détection récupère
+
+`aphrody-ocr::bulles` cherche les régions claires connexes — ce qu'est une
+bulle — et les remet en ordre de lecture japonais. Sur douze planches que le
+pipeline de page rend entièrement muettes : **44 bulles récupérées sur 9
+d'entre elles**, portant du dialogue vérifiable contre la scène :
+
+```
+フリーザ様 たった今 カナッサ星を占領したという報告が入りました
+さすがはバーダックだな わずか数日でほとんど完治してしまうとは…!
+戦闘力が1万近くになっているはずだ……
+ベジータさん しっかり働いてきてくださいね
+```
+
+Coût : 114 s pour 254 régions, soit environ une lecture de page par planche.
+
+### Deux résultats qui vont contre l'intuition
+
+**Le filtre d'encre ne filtre rien.** Quatre régions détectées sur cinq ne
+portent aucun texte, et l'idée évidente — « une bulle vide a peu de pixels
+sombres » — est démentie : les régions avec texte ont 0,187 d'encre médiane,
+celles sans texte 0,195. Les distributions se recouvrent entièrement, parce
+que les faux positifs ne sont pas des bulles vides mais des zones claires
+*dans les dessins* — visages, ciels, vêtements pâles — pleines de traits.
+
+**La sortie n'est pas déposable telle quelle.** Une région qui tient un
+*fragment* de glyphe fait inventer au modèle des caractères plausibles plutôt
+que rien : un fragment d'onomatopée orange est revenu en `禁 幸`. Et une bulle
+lisible peut sortir en romaji approximatif — `ありがとうございます` rendu
+`ary ga thu / gōzoku`. D'où le passage obligatoire par
+`aphrody ocr audit --japonais`, dont le détecteur de charabia est exactement
+l'outil pour ça.
+
+### Mode d'emploi
+
+```bash
+aphrody ocr bulles lot-028-resultats.jsonl   --images lot-028/images --out lot-028-bulles.jsonl   --server --slots 8 --skip-done
+aphrody ocr audit lot-028-bulles.jsonl --japonais
+```
+
+Construire avec `--features ocr-bulles`. `--decoupes <dir>` conserve les
+recadrages, ce qui est le seul moyen de confronter une lecture surprenante aux
+pixels qui l'ont produite — et cette commande en a plus besoin que `batch`,
+puisque son entrée est un fragment de page et qu'un fragment peut tromper.
+
