@@ -725,3 +725,51 @@ recadrages, ce qui est le seul moyen de confronter une lecture surprenante aux
 pixels qui l'ont produite — et cette commande en a plus besoin que `batch`,
 puisque son entrée est un fragment de page et qu'un fragment peut tromper.
 
+---
+
+## 12. Résultat de la passe par bulles — 2026-08-24
+
+Les 300 planches que les douze lots rendaient muettes ont été relues bulle par
+bulle. **235 ont retrouvé leur texte, soit 78 %.**
+
+| Lot | Récupérées | | Lot | Récupérées |
+|---|---|---|---|---|
+| 018 | 3/3 | | 024 | 15/17 |
+| 019 | 5/5 | | 025 | 2/14 |
+| 020 | 8/8 | | 026 | 11/13 |
+| 021 | 18/19 | | 027 | 19/20 |
+| 022 | 15/19 | | 028 | **121/159** |
+| 023 | 18/21 | | 029 | 0/2 |
+
+Débit : 3,6 à 10,6 s la planche selon le nombre de régions, backend résident,
+8 slots. Les deux lots à faible rendement (025, 029) sont des planches
+d'illustration sans bulle — la chaîne y rend un `none` honnête plutôt que
+d'inventer, ce qui est le comportement voulu.
+
+### Ce qui a été déposé, et ce qui ne l'a pas été
+
+**223 planches déposées** en mode `merge`, 0 en échec. Douze ont été écartées :
+celles dont le texte tient en quatre caractères ou moins, où se concentrent les
+fragments d'onomatopée mal lus — `力 力`, `二三`, `取 後`. Le prix de ce filtre
+est mesuré : quatre vraies onomatopées de bulle (`ハッ！`, `クッ！`) partent
+avec, et n'apportaient presque rien.
+
+Défaut résiduel assumé : **30 % des planches récupérées portent une suite
+latine**. Une partie est authentique — `CHINESE RESTAURANT` est une enseigne
+dessinée dans la case — le reste est de l'artefact ponctuel au milieu de texte
+correct (`sti`, `lest`, `lesslook`). Aucun audit `--japonais` n'a signalé de
+défaut bloquant, mais son détecteur de charabia vise les textes longs et ne
+voit pas ces intrusions : elles sont documentées ici plutôt que masquées.
+
+### Effet sur le corpus
+
+| | Avant | Après |
+|---|---|---|
+| Corpus complet | 91,0 % | **92,9 %** (10 704 / 11 516) |
+| Jump Anime Comics | 54,3 % | **72,0 %** |
+| V-Jump | 92,2 % | 94,7 % |
+
+Le §10 de ce document déclarait la catégorie Jump Anime Comics structurellement
+plafonnée. Elle ne l'était pas. Ce qui reste hors de portée, à toute échelle,
+ce sont les **onomatopées dessinées** — du dessin, pas de la lettre.
+
