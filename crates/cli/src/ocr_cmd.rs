@@ -156,15 +156,25 @@ pub(crate) enum OcrAction {
         /// two tokens, so the second page is very nearly free — the cost is
         /// one KV cache per slot, not a second copy of the model.
         ///
-        /// That reasoning stops at two. Measured on twelve databook plates,
-        /// same images, same card: two slots read them in 35 s, four in 50 s
-        /// with one page failing outright, six in 51 s. Past two slots the
-        /// image prompts — 2179 tokens each — start queueing against each
-        /// other in the same batch, and the win from sharing a weight read is
-        /// spent paying for it. Worse, the numerics shift: at six slots one
-        /// plate came back with 4918 characters of repeated sentence where two
-        /// slots read 433 clean ones. More slots is not more throughput here,
-        /// it is a different and less stable decode.
+        /// How far that goes depends entirely on the plates. A light batch —
+        /// 1600x1056, some 250 tokens generated — is dominated by the image
+        /// prompt, and there two slots won: 35 s against 50 s at four. The
+        /// databook corpus inverts it. Its plates are 1340x2048 and generate
+        /// 1357 tokens, so the 2.3 s image prompt is a sixth of the page and
+        /// decode is the rest; twelve of them took 196 s at two slots, 146 s
+        /// at four, 118 s at eight. Measure on the plates you will read, not
+        /// on a sample chosen for being quick to try.
+        ///
+        /// One earlier reading here was that six slots "shift the numerics",
+        /// because a plate came back with 4918 characters of repeated sentence
+        /// where two slots read 433 clean ones. That plate does degenerate —
+        /// but so it does at two. There is no reproducible decode to protect:
+        /// two runs with identical slots, `temperature 0` and a pinned seed
+        /// diverge on seven plates out of twelve, because llama.cpp's batched
+        /// attention is not invariant to batch composition and composition
+        /// follows the order pages land in slots. Choose this number for
+        /// throughput and for the KV cache the card can hold; it buys no
+        /// stability either way.
         ///
         /// Ignored without --server, where each page is its own process and
         /// concurrency would mean loading the model twice.

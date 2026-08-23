@@ -102,10 +102,26 @@ impl Default for ServerConfig {
 
 /// Slots opened when nothing else is asked.
 ///
-/// Two, not more: the win from a third is small once the GPU is bandwidth-fed,
-/// while each slot costs a full KV cache — and this pipeline was measured on a
-/// 12 GiB card holding a 4.1 GiB model.
-pub const DEFAULT_SLOTS: u32 = 2;
+/// Four, and the number came from re-measuring on the plates this pipeline is
+/// actually pointed at. An earlier default of two rested on a light batch —
+/// 1600x1056 images, some 250 tokens generated each — where the image prompt
+/// dominated and extra slots queued against each other. The databook corpus is
+/// nothing like that: 1340x2048 plates generating 1357 tokens, so the 2.3 s
+/// image prompt is 15 % of a page and the 13.5 s of decode is the rest. Decode
+/// is bound by memory bandwidth, so a second sequence is nearly free, and the
+/// curve inverts — twelve real plates took 196 s at two slots, 146 s at four,
+/// 118 s at eight.
+///
+/// Eight is therefore faster still on the 12 GiB card this was measured on,
+/// but each slot costs a full KV cache on top of a 4.1 GiB model; four is what
+/// a smaller card can also hold. Ask for more when the card allows it.
+///
+/// What the number is *not* is a fidelity setting. Two runs with identical
+/// slots, `temperature 0` and a pinned seed still diverge on seven plates out
+/// of twelve: llama.cpp's batched attention kernels are not numerically
+/// invariant to batch composition, and that composition depends on the order
+/// pages land in slots. Picking a slot count "for stable output" buys nothing.
+pub const DEFAULT_SLOTS: u32 = 4;
 
 /// Context per slot when nothing else is asked.
 ///
