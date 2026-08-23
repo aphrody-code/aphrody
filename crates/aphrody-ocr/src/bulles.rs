@@ -180,30 +180,57 @@ fn retenue(b: &Bulle, reglages: &ReglagesBulles, aire_min: f64, aire_max: f64) -
     aire / boite >= f64::from(reglages.remplissage_min)
 }
 
-/// Put balloons in Japanese comics reading order: top to bottom, right to left
-/// within a band.
+/// Put balloons in Japanese comics reading order: top to bottom, and right to
+/// left within a band.
 ///
-/// Bands are rows of balloons whose vertical spans overlap. Without them a
-/// balloon sitting slightly higher than its neighbour on the left would sort
-/// ahead of the one on the right, and the dialogue would come out shuffled.
+/// # Why bands are assigned before sorting, not inside the comparison
+///
+/// The obvious version — "if these two overlap vertically, compare by x, else
+/// by y" — is not a total order, and Rust's sort detects it and panics. It is
+/// not transitive: A can overlap B and B overlap C without A overlapping C, so
+/// the same three balloons compare inconsistently depending on the pairs the
+/// sort happens to pick. It survived a three-balloon test with well-separated
+/// rows and died on the first real plate.
+///
+/// So banding is decided once, globally: sweep the balloons top-down, and open
+/// a new band whenever one no longer overlaps the band being built by at least
+/// half its own height. Sorting then compares `(band, -x)`, which is a total
+/// order by construction.
 pub fn ordonne_lecture(bulles: &mut [Bulle]) {
-    // Une bande vaut la hauteur médiane : deux bulles qui se chevauchent
-    // verticalement de plus de la moitié se lisent sur la même ligne.
-    bulles.sort_unstable_by(|a, b| {
-        let chevauchement = a.y < b.bas() && b.y < a.bas();
-        let hauteur_min = a.hauteur.min(b.hauteur);
-        let recouvrement = if chevauchement {
-            a.bas().min(b.bas()).saturating_sub(a.y.max(b.y))
+    if bulles.len() < 2 {
+        return;
+    }
+    let mut ordre: Vec<usize> = (0..bulles.len()).collect();
+    ordre.sort_unstable_by_key(|&i| (bulles[i].y, bulles[i].x));
+
+    // Bande courante : l'intervalle vertical couvert par ses membres.
+    let mut bande = vec![0_usize; bulles.len()];
+    let mut numero = 0_usize;
+    let (mut haut, mut bas) = (bulles[ordre[0]].y, bulles[ordre[0]].bas());
+    for &i in &ordre {
+        let b = bulles[i];
+        let recouvrement = bas.min(b.bas()).saturating_sub(haut.max(b.y));
+        if recouvrement * 2 <= b.hauteur {
+            numero += 1;
+            haut = b.y;
+            bas = b.bas();
         } else {
-            0
-        };
-        if recouvrement * 2 > hauteur_min {
-            // Même bande : de droite à gauche.
-            b.x.cmp(&a.x)
-        } else {
-            a.y.cmp(&b.y)
+            // La bande s'étire : une réplique plus haute que ses voisines ne
+            // doit pas fermer la ligne derrière elle.
+            haut = haut.min(b.y);
+            bas = bas.max(b.bas());
         }
-    });
+        bande[i] = numero;
+    }
+
+    // Trier des indices plutôt que les bulles : la clé a besoin de la bande,
+    // qui est indexée par position. `Reverse` sur x parce que le japonais se
+    // lit de droite à gauche ; y départage deux bulles superposées.
+    let mut ordre_final: Vec<usize> = (0..bulles.len()).collect();
+    ordre_final
+        .sort_unstable_by_key(|&i| (bande[i], std::cmp::Reverse(bulles[i].x), bulles[i].y));
+    let trie: Vec<Bulle> = ordre_final.into_iter().map(|i| bulles[i]).collect();
+    bulles.copy_from_slice(&trie);
 }
 
 /// Crop `bulle` out of `image`, with a margin, enlarged for the model.
@@ -466,6 +493,38 @@ mod tests {
         assert_eq!(bulles[0].x, 800, "la bulle de droite se lit en premier");
         assert_eq!(bulles[1].x, 100);
         assert_eq!(bulles[2].y, 900, "la bande du dessous vient après");
+    }
+
+    #[test]
+    fn une_chaine_de_bulles_en_escalier_ne_casse_pas_le_tri() {
+        // Le cas qui a fait paniquer la premiere version : chaque bulle
+        // chevauche sa voisine sans chevaucher la suivante, donc « meme
+        // bande » decide dans le comparateur n'est pas transitif. Rust
+        // detecte l'ordre partiel et panique — sur une planche reelle, pas
+        // sur trois bulles bien separees.
+        let mut bulles: Vec<Bulle> = (0..12_u32)
+            .map(|i| Bulle {
+                x: 900 - i * 70,
+                y: 100 + i * 60,
+                largeur: 100,
+                hauteur: 100,
+                aire: 10_000,
+            })
+            .collect();
+        ordonne_lecture(&mut bulles);
+        assert_eq!(bulles.len(), 12, "aucune bulle perdue par le tri");
+        // Et l'ordre reste deterministe : deux appels donnent le meme.
+        let premier = bulles.clone();
+        ordonne_lecture(&mut bulles);
+        assert_eq!(premier, bulles, "le tri doit etre idempotent");
+    }
+
+    #[test]
+    fn une_bulle_seule_traverse_le_tri() {
+        let mut une = vec![Bulle { x: 10, y: 10, largeur: 50, hauteur: 50, aire: 2500 }];
+        ordonne_lecture(&mut une);
+        assert_eq!(une.len(), 1);
+        ordonne_lecture(&mut []);
     }
 
     #[test]
