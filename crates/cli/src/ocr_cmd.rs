@@ -190,6 +190,81 @@ pub(crate) enum OcrAction {
         #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_CTX_PER_SLOT)]
         ctx: u32,
     },
+    /// Re-read the plates a run found silent, one speech balloon at a time.
+    ///
+    /// A document model returns nothing for a comics page: the lettering is a
+    /// detail inside what it reads as a drawing. Cropped out and enlarged, the
+    /// very same balloon reads fine. This takes a JSONL from `batch`, finds
+    /// the pages it recorded as textless, and gives each balloon its own read.
+    ///
+    /// Measured on twelve silent plates: 44 balloons recovered across nine.
+    ///
+    /// Audit before depositing — a cropped fragment of a hand-drawn sound
+    /// effect makes the model invent characters rather than return nothing.
+    ///
+    /// Example: aphrody ocr bulles lot-028.jsonl --images lot-028/images --out lot-028-bulles.jsonl --server
+    #[cfg(feature = "ocr-bulles")]
+    Bulles {
+        /// JSONL produced by `aphrody ocr batch`.
+        input: PathBuf,
+        /// Directory holding the plates. Without it, the paths recorded in the
+        /// JSONL are used as they stand.
+        #[arg(long)]
+        images: Option<PathBuf>,
+        /// JSONL to append the recomposed plates to.
+        #[arg(long)]
+        out: PathBuf,
+        /// Skip plates already present in `--out`.
+        #[arg(long)]
+        skip_done: bool,
+        /// Stop after this many plates.
+        #[arg(long)]
+        limit: Option<usize>,
+        /// Keep the crops under this directory instead of deleting them.
+        ///
+        /// The only way to check a surprising reading against the pixels that
+        /// produced it, which this command needs more than `batch` does: its
+        /// input is a fragment of a page, and a fragment can mislead.
+        #[arg(long)]
+        decoupes: Option<PathBuf>,
+        /// Longest side a crop is enlarged towards, in pixels.
+        ///
+        /// Enlargement is what makes the read work: a raw crop of a small
+        /// balloon still returns nothing, the same crop tripled reads `クッ!!`.
+        #[arg(long, default_value_t = 900)]
+        cible: u32,
+        /// Most balloons read per plate.
+        ///
+        /// Bounds the cost, since each is one model read and four fifths of
+        /// the regions are bright drawing rather than lettering. Regions are
+        /// tried largest first, so the cut falls on the least likely.
+        #[arg(long, default_value_t = 30)]
+        max_bulles: usize,
+        /// Catalog id of the vision model.
+        #[arg(long, default_value = "dots-ocr")]
+        model: String,
+        /// Override the prompt handed to the model.
+        #[arg(long)]
+        prompt: Option<String>,
+        /// Token budget per balloon.
+        ///
+        /// Far below a page's: a balloon holds a line of dialogue, and a
+        /// budget sized for a full plate only buys room for a degenerate loop.
+        #[arg(long, default_value_t = 256)]
+        max_tokens: u32,
+        /// Keep the resident server between plates.
+        #[arg(long)]
+        server: bool,
+        /// Loopback port for --server.
+        #[arg(long, default_value_t = 8791)]
+        server_port: u16,
+        /// Balloons read at once by the resident server.
+        #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_SLOTS)]
+        slots: u32,
+        /// Context window per slot, in tokens.
+        #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_CTX_PER_SLOT)]
+        ctx: u32,
+    },
 }
 
 /// Run an `ocr` action.
@@ -235,6 +310,51 @@ pub(crate) async fn run(action: OcrAction) -> miette::Result<()> {
                 }),
             )
             .await
+        }
+        #[cfg(feature = "ocr-bulles")]
+        OcrAction::Bulles {
+            input,
+            images,
+            out,
+            skip_done,
+            limit,
+            decoupes,
+            cible,
+            max_bulles,
+            model,
+            prompt,
+            max_tokens,
+            server,
+            server_port,
+            slots,
+            ctx,
+        } => {
+            let opts = options(&model, prompt.as_deref(), max_tokens, false);
+            let resident = server.then(|| aphrody_ocr::server::ServerConfig {
+                port: server_port,
+                slots,
+                ctx_per_slot: ctx,
+            });
+            // Comme `batch --server` : la boucle bloque sur des sockets et sur
+            // un processus enfant, et faire ça sur un worker du runtime fait
+            // paniquer tokio quand il vient à droper un runtime depuis un
+            // contexte où il n'avait pas le droit de bloquer.
+            tokio::task::spawn_blocking(move || {
+                bulles(
+                    &input,
+                    images.as_deref(),
+                    &out,
+                    skip_done,
+                    limit,
+                    decoupes.as_deref(),
+                    cible,
+                    max_bulles,
+                    opts,
+                    resident,
+                )
+            })
+            .await
+            .map_err(|e| miette::miette!("ocr bulles task: {e}"))?
         }
     }
 }
@@ -1127,4 +1247,277 @@ mod tests {
         let written = std::fs::read_to_string(&jsonl).unwrap();
         assert!(written.contains("texte réel"), "{written}");
     }
+}
+
+/// `aphrody ocr bulles` — read the plates a page-level run found silent.
+///
+/// # Why a separate command
+///
+/// It asks a different question than `batch`. `batch` asks what a page says;
+/// on a comics page a document model answers nothing, because the lettering is
+/// a detail inside what it reads as a drawing. This asks what the *balloons*
+/// say, which the same model answers well once each balloon is its own image.
+///
+/// Measured on twelve plates the page-level pipeline reported silent: 44
+/// balloons recovered across nine of them, carrying real dialogue. The cost is
+/// roughly one page-read per plate, because four fifths of the detected
+/// regions are bright areas of drawing that read as nothing.
+///
+/// # Why its output is not ready to deposit
+///
+/// A region holding a fragment of a hand-drawn sound effect makes the model
+/// produce plausible wrong characters rather than nothing — one came back as
+/// `禁 幸`. Run `aphrody ocr audit --japonais` over this output before it goes
+/// anywhere near a corpus.
+#[cfg(feature = "ocr-bulles")]
+#[allow(clippy::too_many_arguments)]
+fn bulles(
+    input: &Path,
+    images: Option<&Path>,
+    out: &Path,
+    skip_done: bool,
+    limit: Option<usize>,
+    decoupes: Option<&Path>,
+    cible: u32,
+    max_bulles: usize,
+    opts: OcrOptions,
+    resident: Option<aphrody_ocr::server::ServerConfig>,
+) -> miette::Result<()> {
+    let muettes = planches_sans_texte(input, images).map_err(|e| miette::miette!("{e}"))?;
+    let deja = if skip_done { already_done(out) } else { std::collections::BTreeSet::new() };
+    let queue: Vec<PathBuf> = muettes
+        .into_iter()
+        .filter(|p| !deja.contains(p))
+        .take(limit.unwrap_or(usize::MAX))
+        .collect();
+
+    eprintln!(
+        "{} silent plate(s) to re-read{}",
+        queue.len(),
+        if deja.is_empty() { String::new() } else { format!(", {} already done", deja.len()) }
+    );
+    if queue.is_empty() {
+        return Ok(());
+    }
+
+    let reglages =
+        aphrody_ocr::bulles::ReglagesBulles { maximum: max_bulles, ..Default::default() };
+
+    if let Some(config) = resident {
+        eprintln!(
+            "starting llama-server on 127.0.0.1:{} ({} slot(s) x {} tokens)…",
+            config.port, config.slots, config.ctx_per_slot
+        );
+        let runner = ServerRunner::start(opts, config).map_err(|e| miette::miette!("{e}"))?;
+        let workers = runner.slots() as usize;
+        return boucle_bulles(&queue, out, &reglages, cible, decoupes, workers, &|image| {
+            runner.read(image)
+        })
+        .map_err(|e| miette::miette!("{e}"));
+    }
+
+    let runner = VlmRunner::new(opts).map_err(|e| miette::miette!("{e}"))?;
+    boucle_bulles(&queue, out, &reglages, cible, decoupes, 1, &|image| runner.read(image))
+        .map_err(|e| miette::miette!("{e}"))
+}
+
+/// The plates a JSONL records as carrying no text.
+///
+/// Paths are taken from the file, then re-rooted under `images` when given: a
+/// JSONL written on one machine names plates relative to where that run was
+/// launched, which is rarely where it is re-read.
+#[cfg(feature = "ocr-bulles")]
+fn planches_sans_texte(input: &Path, images: Option<&Path>) -> std::io::Result<Vec<PathBuf>> {
+    let file = std::fs::File::open(input)?;
+    let mut out = Vec::new();
+    for ligne in std::io::BufReader::new(file).lines() {
+        let ligne = ligne?;
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&ligne) else { continue };
+        if v.get("text").and_then(|t| t.get("kind")).and_then(serde_json::Value::as_str)
+            != Some("none")
+        {
+            continue;
+        }
+        let Some(image) = v.get("image").and_then(serde_json::Value::as_str) else { continue };
+        // Un JSONL écrit sous Windows porte des antislashs. Le relire ailleurs
+        // ne doit pas dépendre du séparateur de la machine qui l'a produit.
+        let normalise = image.replace('\\', "/");
+        let chemin = match images {
+            Some(racine) => racine.join(normalise.rsplit('/').next().unwrap_or(&normalise)),
+            None => PathBuf::from(&normalise),
+        };
+        out.push(chemin);
+    }
+    Ok(out)
+}
+
+/// Read every plate in `queue` balloon by balloon, one JSONL line each.
+///
+/// Crops go to disk because both backends take a path — the resident server
+/// wants a file to encode, the per-process one wants an argv. They are deleted
+/// with their directory unless `decoupes` asks to keep them, which is how a
+/// surprising reading gets checked against the pixels that produced it.
+#[cfg(feature = "ocr-bulles")]
+fn boucle_bulles(
+    queue: &[PathBuf],
+    out: &Path,
+    reglages: &aphrody_ocr::bulles::ReglagesBulles,
+    cible: u32,
+    decoupes: Option<&Path>,
+    workers: usize,
+    read_page: &(dyn Fn(&Path) -> aphrody_ocr::Result<PageResult> + Sync),
+) -> aphrody_ocr::Result<()> {
+    let mut sink = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(out)
+        .map_err(|source| aphrody_ocr::OcrError::Io { path: out.to_path_buf(), source })?;
+
+    let started = std::time::Instant::now();
+    let mut avec_texte = 0_usize;
+    let mut bulles_lues = 0_usize;
+    let mut echouees = 0_usize;
+
+    for (rang, planche) in queue.iter().enumerate() {
+        let debut = std::time::Instant::now();
+        let (texte, lues) =
+            match lit_une_planche(planche, reglages, cible, decoupes, workers, read_page) {
+                Ok(pair) => pair,
+                Err(e) => {
+                    eprintln!("plate failed ({}): {e}", planche.display());
+                    echouees += 1;
+                    continue;
+                }
+            };
+        bulles_lues += lues;
+        let page = PageResult {
+            image: planche.clone(),
+            text: texte,
+            elapsed_ms: debut.elapsed().as_millis(),
+            raw: None,
+        };
+        if page.text.has_text() {
+            avec_texte += 1;
+        }
+        let ligne = serde_json::to_string(&page).unwrap_or_default();
+        writeln!(sink, "{ligne}")
+            .map_err(|source| aphrody_ocr::OcrError::Io { path: out.to_path_buf(), source })?;
+        let _ = sink.flush();
+
+        if (rang + 1) % 10 == 0 || rang + 1 == queue.len() {
+            let par_planche = started.elapsed().as_secs_f64() / (rang + 1) as f64;
+            eprintln!(
+                "  {}/{} plate(s), {avec_texte} recovered, {bulles_lues} balloon(s) read, {par_planche:.1}s/plate",
+                rang + 1,
+                queue.len(),
+            );
+        }
+    }
+
+    let relues = queue.len() - echouees;
+    eprintln!(
+        "\n{relues}/{} plate(s) re-read in {:.1}s — {avec_texte} recovered text, {} still silent, {echouees} failed",
+        queue.len(),
+        started.elapsed().as_secs_f64(),
+        relues - avec_texte
+    );
+    Ok(())
+}
+
+/// Detect, crop, read and recompose one plate.
+///
+/// Returns the recomposed text and how many balloons were read, so a caller
+/// can tell "no balloon found" from "balloons found, none of them readable".
+///
+/// The crops live in a directory rather than in memory because both backends
+/// take a path: the resident server wants a file to encode, the per-process
+/// one wants an argv. Unless `--decoupes` asks to keep them, that directory is
+/// under the system temp root and is removed as soon as the plate is read.
+#[cfg(feature = "ocr-bulles")]
+fn lit_une_planche(
+    planche: &Path,
+    reglages: &aphrody_ocr::bulles::ReglagesBulles,
+    cible: u32,
+    decoupes: Option<&Path>,
+    workers: usize,
+    read_page: &(dyn Fn(&Path) -> aphrody_ocr::Result<PageResult> + Sync),
+) -> aphrody_ocr::Result<(aphrody_ocr::PageText, usize)> {
+    let tige = planche.file_stem().unwrap_or_default().to_string_lossy().into_owned();
+    let (dossier, ephemere) = match decoupes {
+        Some(racine) => (racine.join(&tige), false),
+        // Le pid dans le nom : deux lots lancés en parallèle sur la même
+        // machine liraient sinon les découpes l'un de l'autre.
+        None => (
+            std::env::temp_dir().join(format!("aphrody-bulles-{}-{tige}", std::process::id())),
+            true,
+        ),
+    };
+    std::fs::create_dir_all(&dossier)
+        .map_err(|source| aphrody_ocr::OcrError::Io { path: dossier.clone(), source })?;
+
+    let resultat = (|| {
+        let chemins =
+            aphrody_ocr::bulles::decoupe_planche(planche, &dossier, reglages, cible)?;
+        if chemins.is_empty() {
+            return Ok((aphrody_ocr::PageText::None, 0));
+        }
+        let lues = chemins.len();
+        let assemble: Vec<String> =
+            lit_en_parallele(&chemins, workers, read_page).into_iter().flatten().collect();
+        if assemble.is_empty() {
+            return Ok((aphrody_ocr::PageText::None, lues));
+        }
+        // Une ligne vide entre deux bulles : chacune est une réplique
+        // distincte, et les recoller sans séparation en ferait une phrase que
+        // personne n'a dite.
+        Ok((aphrody_ocr::PageText::Text { markdown: assemble.join("
+
+") }, lues))
+    })();
+
+    // Nettoyer même quand la lecture a échoué : sur onze mille planches, des
+    // découpes oubliées à chaque échec finissent par remplir le disque.
+    if ephemere {
+        let _ = std::fs::remove_dir_all(&dossier);
+    }
+    resultat
+}
+
+/// Read `chemins` with `workers` in flight, keeping the input order.
+///
+/// Order matters here in a way it does not for a page batch: the crops arrive
+/// from `ordonne_lecture` already in reading order, and shuffling them would
+/// scramble the dialogue.
+#[cfg(feature = "ocr-bulles")]
+fn lit_en_parallele(
+    chemins: &[PathBuf],
+    workers: usize,
+    read_page: &(dyn Fn(&Path) -> aphrody_ocr::Result<PageResult> + Sync),
+) -> Vec<Option<String>> {
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let resultats: Vec<Mutex<Option<String>>> =
+        (0..chemins.len()).map(|_| Mutex::new(None)).collect();
+    let suivant = AtomicUsize::new(0);
+
+    std::thread::scope(|scope| {
+        for _ in 0..workers.max(1) {
+            scope.spawn(|| {
+                loop {
+                    let i = suivant.fetch_add(1, Ordering::Relaxed);
+                    let Some(chemin) = chemins.get(i) else { break };
+                    let texte = read_page(chemin)
+                        .ok()
+                        .and_then(|p| p.text.markdown().map(str::to_owned))
+                        .filter(|t| !t.trim().is_empty());
+                    if let Ok(mut slot) = resultats[i].lock() {
+                        *slot = texte;
+                    }
+                }
+            });
+        }
+    });
+
+    resultats.into_iter().map(|m| m.into_inner().unwrap_or(None)).collect()
 }

@@ -27,6 +27,8 @@ serde_json     = { workspace = true }
 
 # `aphrody ocr` avec la feature `japanese` : segmentation en morphemes.
 lindera        = { workspace = true, optional = true }
+# `aphrody ocr` avec la feature `bulles` : decodage des planches a decouper.
+image          = { workspace = true, features = ["jpeg", "png"], optional = true }
 # Client HTTP synchrone pour llama-server. `blocking` parce que le pipeline OCR
 # est synchrone de bout en bout : une planche à la fois, pas de concurrence à
 # orchestrer, et un runtime async ici n'apporterait que de la cérémonie.
@@ -43,3 +45,8 @@ tempfile = { workspace = true }
 # Opt-in parce que le dictionnaire IPADIC est compilé dans le binaire — le
 # nettoyage de base fonctionne sans, il est simplement moins fin.
 japanese = ["dep:lindera"]
+
+# Detection des bulles de bande dessinee, pour les planches qu'un modele de
+# document rend muettes. Opt-in : `image` compile des decodeurs dont un OCR de
+# document n'a pas l'usage, et le gros du corpus n'en a pas besoin.
+bulles = ["dep:image"]

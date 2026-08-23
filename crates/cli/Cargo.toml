@@ -59,6 +59,13 @@ ocr = ["dep:aphrody-ocr", "infer"]
 #   cargo build -p aphrody --features ocr-japanese
 ocr-japanese = ["ocr", "aphrody-ocr/japanese"]
 
+# Detection des bulles pour `aphrody ocr bulles`, qui relit planche par planche
+# ce qu'un modele de document rend muet — les film-comics et les artbooks.
+# Opt-in comme `ocr-japanese` : elle tire un decodeur d'images que le reste du
+# pipeline n'utilise pas.
+#   cargo build -p aphrody --features ocr-bulles
+ocr-bulles = ["ocr", "aphrody-ocr/bulles"]
+
 
 # Adobe Firefly Services image generation to disk (`aphrody firefly generate`),
 # backed by aphrody-firefly (IMS OAuth S2S + v3 async generate). Host-only.

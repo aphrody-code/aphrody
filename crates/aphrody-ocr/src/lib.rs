@@ -45,6 +45,9 @@ pub mod server;
 /// Running a vision-language model over images.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod vlm;
+/// Speech-balloon detection, for comics pages a document model reads as blank.
+#[cfg(feature = "bulles")]
+pub mod bulles;
 
 pub use doctags::{Block, Document};
 
