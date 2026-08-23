@@ -589,3 +589,59 @@ charabia. Ce qu'il ne sait pas faire, c'est trancher une graphie étrangère. Po
 les katakana, **le lexique fermé, mesuré et gardé est la seule forme sûre** —
 et si `キャプテン翼` doit être corrigé un jour, c'est par une entrée de table
 avec son comptage et ses contre-exemples, pas par une inférence.
+
+---
+
+## 10. Fin de campagne — 2026-08-23
+
+**Les vingt-neuf lots exportés sont lus et déposés.** Le corpus passe de
+**81,5 % à 91,0 %** — 10 481 planches transcrites sur 11 516, les 262 sans scan
+hors compte. Vingt-deux dépôts, aucun en échec.
+
+### Ce que la dernière session a lu
+
+| Étage | Résultat |
+|---|---|
+| Lecture des lots 026-029 | 1 191 planches, serveur résident, 8 slots |
+| Balayage des refus PEG sur les douze lots | **22 planches** rattrapées par le backend par processus |
+| Rejeu du nettoyage sur les lots déjà déposés | 78 632 octets de boucle retirés |
+
+Les douze lots locaux sont à **4 477 / 4 477**, aucune planche manquante. Le
+balayage a fait exactement ce que §9 en attendait : les vingt-deux planches que
+`llama-server` refusait par un 500 `peg-native` sont toutes passées par
+`llama-mtmd-cli`, qui n'a pas de parseur de chat.
+
+Débit : 3,1 à 7,4 s la planche selon la densité, environ 57 jetons/s par slot.
+Les lots denses tournent à 7 s, ceux riches en planches illustrées à 3,1 s —
+une planche que le modèle ne lit pas se rend vite.
+
+### Ce qui reste n'est pas du travail en attente
+
+Mille trente-cinq planches restent sans transcription, dont trois cents dans
+ces douze lots. **Ce ne sont pas des planches vides.** Vérification faite sur
+l'image : `312-0014.jpg` — *DBZ TV Special : Bardock*, planche 18 — porte
+`カナッサ星`, une bulle `クッ!!`, les onomatopées `グォーッ` et `ドゥッ`, et le
+folio 18. dots.ocr rend `none`.
+
+C'est ce que §3 annonçait : du texte de manga, bulles verticales et onomatopées
+dessinées, hors du domaine d'un modèle de document. Le reliquat se concentre
+donc là où ce texte vit :
+
+| Catégorie | Transcrit |
+|---|---|
+| Databook | 95,4 % |
+| Pamphlet & Fair | 94,0 % |
+| V-Jump | 92,2 % |
+| Weekly Shōnen Jump | 90,4 % |
+| **Art Book** | **56,6 %** |
+| **Jump Anime Comics** | **54,3 %** |
+
+Aucune passe supplémentaire de dots.ocr n'y changera quoi que ce soit. Les
+récupérer demande une détection de bulles suivie d'un modèle spécialisé sur
+bulles pré-découpées — un chantier distinct, pas une reprise de celui-ci.
+
+**Corollaire opérationnel** : une vague de planches `textless` dans un ouvrage
+n'est pas un symptôme de panne. Vérifier d'abord la catégorie de l'ouvrage. Le
+mode d'échec du mauvais prompt (§3) produit le même symptôme, mais lui vide
+*tout*, y compris les fiches techniques bien imprimées.
+
