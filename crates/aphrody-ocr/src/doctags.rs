@@ -142,7 +142,11 @@ impl Document {
         if cycle {
             tracing::debug!("cut a line cycle in a tagless generation");
         }
-        let (trimmed, looped) = truncate_loop(&sans_cycle);
+        let (sans_json, bascule) = truncate_json_tail(&sans_cycle);
+        if bascule {
+            tracing::debug!(kept = sans_json.len(), "cut a switch into layout JSON");
+        }
+        let (trimmed, looped) = truncate_loop(&sans_json);
         if looped {
             tracing::debug!(kept = trimmed.len(), "truncated a looping generation");
         }
@@ -544,7 +548,7 @@ const fn chiffre(c: char) -> bool {
 const CYCLE_MAX: usize = 4;
 
 /// Plus long motif, en mots, cherché dans une boucle séparée par des espaces.
-const MOTIF_MAX: usize = 8;
+const MOTIF_MAX: usize = 40;
 
 /// How many consecutive repeats of the same token run count as a stuck loop.
 ///
@@ -552,6 +556,36 @@ const MOTIF_MAX: usize = 8;
 /// identical values is separated by other tokens — and below the dozens a
 /// degenerate model emits.
 const LOOP_THRESHOLD: usize = 4;
+
+/// Cut a generation where the model switched into its layout-JSON mode.
+///
+/// dots.ocr sait rendre deux choses : du markdown, et un JSON de mise en page
+/// (`prompt_layout_all_en`, dont chaque entrée porte `bbox`, `category` et
+/// `text`). On lui demande le premier, et il arrive qu'il bascule dans le
+/// second **en cours de génération** — relevé sur la planche 251-0003 du lot
+/// 025, une sur 3083 : 377 caractères de markdown correct, puis
+/// `大{"data: [{"bbox": [321, 218, …` jusqu'au bout du budget.
+///
+/// Même principe que la coupure de boucle : jeter la réponse entière perdrait
+/// une bonne transcription à cause d'une mauvaise queue, donc on coupe à la
+/// bascule et on garde le préfixe. Ce qui reste après la coupe est du JSON
+/// tronqué — l'analyser produirait au mieux les mêmes mots, au pire du bruit
+/// structurel dans une page de texte.
+///
+/// Sans cette coupure la planche sort **bloquante** à l'audit, ce qui est la
+/// bonne sévérité mais fait refuser un lot de quatre cents pour une queue de
+/// trois cents caractères.
+#[must_use]
+pub fn truncate_json_tail(text: &str) -> (String, bool) {
+    // Les trois amorces observées. `{"data` est celle de la planche mesurée ;
+    // les deux autres couvrent une bascule qui commencerait directement par la
+    // liste ou par sa première entrée.
+    const AMORCES: [&str; 3] = ["{\"data", "[{\"bbox\"", "{\"bbox\""];
+    let Some(coupe) = AMORCES.iter().filter_map(|amorce| text.find(amorce)).min() else {
+        return (text.to_owned(), false);
+    };
+    (text[..coupe].trim_end().to_owned(), true)
+}
 
 /// Cut a generation at the point where the model started looping.
 ///
@@ -588,9 +622,23 @@ fn truncate_spaced_loop(text: &str) -> (String, bool) {
     // Try short motifs first: `a a a a` should cut at the first `a`, not be
     // missed because `a a` also repeats.
     //
-    // Huit et non quatre : une planche d'interview est partie en anglais et a
-    // répété `I was a fire man and` quatre-vingt-trois fois — un motif de six
-    // mots, que la fenêtre d'origine ne pouvait pas voir.
+    // Quarante et non huit. Huit venait d'une planche d'interview partie en
+    // anglais, qui répétait `I was a fire man and` quatre-vingt-trois fois. Ce
+    // motif de six mots était le plus long qu'on eût vu, et il ne l'est pas :
+    // mesuré sur les 791 planches des lots 018 et 019, trente portent une
+    // boucle survivante dont le motif va de un à **trente-huit** jetons, la
+    // médiane à quinze. Une fiche de jeu répétée — `## ゲム ### 好評発売中
+    // * 機種: … * 価格: …` — en fait seize à elle seule.
+    //
+    // Porter la fenêtre à quarante coupe vingt-cinq planches de plus sur ces
+    // deux lots et retire 112 925 caractères de pure répétition. Le cas le plus
+    // net tombe de 5693 caractères à 74 : tout ce qui suivait le titre était
+    // une seule fiche redite jusqu'à épuisement du budget.
+    //
+    // Le coût est linéaire en la largeur de fenêtre — quelques millisecondes
+    // par page — et le seuil de cinq répétitions identiques ne bouge pas : ce
+    // qui protège un tableau légitime n'est pas la taille du motif mais le fait
+    // que ses lignes diffèrent.
     for window in 1..=MOTIF_MAX {
         let mut index = 0;
         while index + window * (LOOP_THRESHOLD + 1) <= tokens.len() {
@@ -866,6 +914,84 @@ mod tests {
         let (garde, coupe) = truncate_loop(&texte);
         assert!(coupe, "le motif de six mots doit être vu");
         assert_eq!(garde.matches("fire").count(), 1, "{garde}");
+    }
+
+    #[test]
+    fn une_bascule_en_json_de_mise_en_page_est_coupee() {
+        // Planche 251-0003 du lot 025, la seule sur 3083 : le modèle rend du
+        // markdown correct puis part dans son format de mise en page.
+        let texte = "# 「DB」&「OP」!
+
+このケースへ、
+大                     {\"data: [{\"bbox\": [321, 218, 374, 233], \"category\": \"Text\",                      \"text\": \"Cardass\"}, {\"bbox\": [321, 234,";
+        let (garde, coupe) = truncate_json_tail(texte);
+        assert!(coupe, "la bascule doit être vue");
+        assert!(garde.ends_with('大'), "le préfixe légitime est gardé: {garde}");
+        assert!(!garde.contains("bbox"), "plus rien du JSON: {garde}");
+    }
+
+    #[test]
+    fn un_texte_sans_json_traverse_intact() {
+        // La garde : une accolade ou un crochet dans du texte ordinaire ne
+        // doit pas déclencher la coupure.
+        let texte = "# 設定資料
+
+{ 参考 } [注1] 「data」の項を参照。";
+        let (garde, coupe) = truncate_json_tail(texte);
+        assert!(!coupe);
+        assert_eq!(garde, texte);
+    }
+
+    #[test]
+    fn une_fiche_de_jeu_redite_est_coupee() {
+        // Planche 162-0011 du lot 018, telle qu'elle est sortie du modèle : la
+        // même fiche de jeu jusqu'à épuisement du budget. Seize jetons séparés
+        // par des espaces — deux fois la fenêtre de huit, qui la laissait
+        // passer entière. Trente planches sur les 791 des lots 018 et 019
+        // portaient une boucle de ce genre.
+        let fiche = "## ゲム
+
+### 好評発売中
+
+* 機種: ニンタンドリューザ
+
+                     * メーカー: パンダイナムコエンターテインメント
+
+                     * ジャンル: ドラゴンボールアクション
+
+* 価格: 6100円+税
+
+";
+        // Seize, contre une fenêtre qui s'arrêtait à huit : c'est tout le défaut.
+        assert_eq!(fiche.split_whitespace().count(), 16, "largeur du motif mesurée");
+        let texte = format!("# DRAGONBALL XENOVERSE 2
+
+{}", fiche.repeat(24));
+        let (garde, coupe) = truncate_loop(&texte);
+        assert!(coupe, "la fiche redite doit être vue");
+        assert_eq!(garde.matches("ジャンル").count(), 1, "un seul exemplaire gardé: {garde}");
+        assert!(garde.contains("XENOVERSE"), "le titre légitime survit: {garde}");
+    }
+
+    #[test]
+    fn un_tableau_dont_les_lignes_different_survit() {
+        // Le garde-fou de la fenêtre élargie : ce qui protège un tableau
+        // légitime n'est pas la taille du motif, c'est que ses lignes ne sont
+        // pas identiques. Douze lignes de même forme, valeurs distinctes.
+        let mut texte = String::from("# 全キャラクター一覧
+
+");
+        for i in 1..=12 {
+            texte.push_str(&format!(
+                "* 機種: 第{i}作 * メーカー: バンダイナムコ * 価格: {}円+税
+
+",
+                5000 + i * 100
+            ));
+        }
+        let (garde, coupe) = truncate_loop(&texte);
+        assert!(!coupe, "un tableau aux valeurs distinctes n'est pas une boucle");
+        assert_eq!(garde.matches("機種").count(), 12, "{garde}");
     }
 
     #[test]

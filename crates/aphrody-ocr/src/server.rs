@@ -245,8 +245,24 @@ impl ServerRunner {
                 ],
             }],
             "max_tokens": self.options.max_tokens,
-            // Transcription must be reproducible: the same plate has to give
-            // the same text on a re-run, or an idempotent deposit is a lie.
+            // Greedy, because there is one right reading of a plate and no
+            // reason to sample away from it.
+            //
+            // Ce que ce zéro ne donne PAS, contrairement à ce qui était écrit
+            // ici : la reproductibilité. Mesuré le 2026-08-23 — deux runs
+            // strictement identiques, mêmes douze planches, même `--slots 4`,
+            // même échantillonnage épinglé, `seed 0` — divergent sur SEPT
+            // planches sur douze, dont une à 0,213 de ressemblance. Le décodage
+            // glouton n'est déterministe que pour une composition de lot
+            // donnée ; celle-ci dépend de l'ordre d'arrivée des pages dans les
+            // slots, et les noyaux d'attention batchés de llama.cpp ne sont pas
+            // numériquement invariants à la taille du lot.
+            //
+            // Conséquence à connaître avant de s'appuyer sur ce backend : une
+            // planche peut ressortir à 47 caractères là où un autre passage en
+            // rend 775 — arrêt précoce, pas contenu absent. Le dépôt reste
+            // idempotent parce qu'il est en `mode: "merge"`, pas parce que la
+            // lecture serait stable.
             "temperature": 0.0,
             // Sampling is pinned rather than left to the server's defaults,
             // which differ from the CLI's (temperature 0.80 against 0.20) and
@@ -264,7 +280,7 @@ impl ServerRunner {
             "frequency_penalty": 0.0,
             "dry_multiplier": 0.0,
             "seed": 0,
-            // And reproducible means independent of what came before. The
+            // Le cache reste désactivé pour une raison qui, elle, tient. The
             // server reuses one slot's KV cache across requests, so a plate
             // read second could come out differently from the same plate read
             // first — measured: paragraph breaks collapsed to spaces. A batch

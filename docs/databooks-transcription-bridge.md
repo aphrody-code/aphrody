@@ -456,19 +456,136 @@ test de propriété vérifie qu'aucun terme du lexique n'est réécrit vers un a
 Effet sur un cas réel : `トラククス` devient `トランクス`, tandis que `ワーロン`
 — à une substitution de `ウーロン` **et** de `マーロン` — est laissé tel quel.
 
-### 9.6. Ce qui reste à mesurer sur GPU
+### 9.6. Mesuré sur GPU le 2026-08-23
 
-Rien de ce qui précède n'a été revalidé par une inférence. À faire, dans cet
-ordre :
+Les trois points laissés ouverts ci-dessus ont été repris sur la carte. Deux
+sont confirmés, le troisième a produit un résultat que personne n'attendait.
 
-1. **Vérifier que l'override du jeton de fin prend.** Chercher dans le journal
-   `Using metadata override (int) 'tokenizer.ggml.eot_token_id' = 151673`, puis
-   vérifier qu'aucune génération ne bute plus sur un multiple exact de
-   `max_tokens`.
-2. **Re-mesurer les deux backends sur les mêmes planches**, maintenant qu'ils
-   voient le même gabarit et le même jeton d'arrêt. Si l'écart de fidélité a
-   disparu, le backend résident devient le défaut du corpus — et le lot passe de
-   13 s à moins de 3 s par planche.
-3. **Ne pas mélanger les deux moitiés du corpus.** Ce qui a été déposé avant
-   cette révision a été lu avec l'ancien prompt et sans jeton d'arrêt ; un corpus
-   lu à moitié d'une façon et à moitié de l'autre est pire que l'un ou l'autre.
+**1. Le jeton de fin est bien installé.** La preuve n'est pas la ligne
+d'override espérée mais un avertissement de llama.cpp :
+`load: special_eot_id is not in special_eog_ids - the tokenizer config may be
+incorrect`. C'est exactement le chemin qui insère le jeton dans l'ensemble de
+fin — sans l'override, il n'y a rien à signaler et le message n'apparaît pas.
+Effet mesuré : six planches donnent 169, 254, 219, 196, 361 et 422 jetons. Plus
+une seule valeur ronde, plus un seul arrêt sur le plafond.
+
+**2. L'écart de fidélité entre les deux backends n'existe plus** — et il allait
+dans l'autre sens que ce que le pont affirmait. Mêmes six planches, même carte :
+
+| Backend | Par planche | Transcriptions identiques |
+|---|---|---|
+| `llama-mtmd-cli` (par processus) | 8,4 s | référence |
+| `llama-server` (résident) | 2,6 s | **5 sur 6, au caractère** |
+
+Sur la sixième, c'est le backend **par processus** qui dégénère : il répète
+quatre fois `上段で選んだカードと流派、星の数、数字…合わせていく修行です。`
+là où le serveur lit des furigana distincts. Les 175 caractères de plus que la
+note d'origine comptait comme de la fidélité étaient de la boucle.
+
+**3. Il n'y a pas de configuration reproductible.** C'est le résultat qui
+compte.
+
+En cherchant à savoir si un grand nombre de slots dégradait la lecture, deux
+runs **strictement identiques** — mêmes douze planches, même `--slots 4`, même
+échantillonnage épinglé, `temperature 0`, `seed 0` — ont divergé sur **sept
+planches sur douze**, dont une à 0,213 de ressemblance. Le décodage glouton
+n'est déterministe que pour une composition de lot donnée ; celle-ci dépend de
+l'ordre d'arrivée des pages dans les slots, et les noyaux d'attention batchés de
+llama.cpp ne sont pas numériquement invariants à la taille du lot.
+
+Conséquence directe : **choisir un nombre de slots « pour la stabilité » n'a pas
+de sens**, il n'y a rien de stable à préserver. Le choix redevient purement une
+question de débit.
+
+Conséquence gênante : une planche peut ressortir à 47 caractères là où un autre
+passage en rend 775 — non pas parce qu'elle en contient moins, mais parce que la
+génération s'est arrêtée tôt. Le remède ne coûte aucun code : lire le corpus une
+seconde fois dans un JSONL parallèle, puis fusionner en gardant par planche la
+lecture que `ocr audit` ne signale pas, et à défaut la plus longue. Le dépôt
+étant en `mode: "merge"`, améliorer après coup ne casse rien.
+
+### 9.7. Le débit dépend de la planche, pas du réglage
+
+La première estimation — 3 s par planche — venait d'un échantillon non
+représentatif. Les planches du lot 029 font 1600×1056 et rendent ~250 jetons ;
+celles du corpus font **1340×2048 et en rendent 1 357**. Le profil réel d'une
+requête :
+
+| | |
+|---|---|
+| Prompt (image) | 3 141 jetons, 2,3 s à 1 350 j/s |
+| Génération | 1 357 jetons, 13,5 s à 100 j/s |
+
+Le décodage pèse donc 85 % du temps. Comme il est borné par la bande passante
+mémoire, le nombre de slots redevient le levier — l'inverse de ce que disaient
+les petites planches, où le prompt dominait :
+
+| slots | 12 planches denses |
+|---|---|
+| 2 | 196 s |
+| 3 | 194 s |
+| 4 | 146 s |
+| 6 | 127 s |
+| 8 | **118 s** |
+
+`--slots 8` est le réglage retenu pour ce corpus. Sur des planches légères la
+courbe s'inverse et deux slots gagnent : le bon réglage se mesure sur les
+planches qu'on va lire, pas sur les premières venues.
+
+### 9.8. Une planche sur trois cents que le serveur refuse
+
+`llama-server` rend un **500** — `The model produced output that does not match
+the expected peg-native format` — quand dots.ocr produit du texte que la
+grammaire PEG du gabarit n'accepte pas. Le journal nomme le fautif :
+`common_chat_peg_parse: unparsed peg-native output: Welcome to the`.
+
+`--skip-chat-parsing` est bien passé sur la ligne de commande et **ne
+court-circuite pas** `common_chat_peg_parse` dans `llama-b10549`. Le refus est
+**déterministe** : la même planche retombe dessus à chaque reprise, donc relire
+par le serveur ne sert à rien.
+
+`llama-mtmd-cli` n'a aucun parseur de chat. Le rattrapage est donc structurel et
+ne demande aucun correctif : une planche perdue n'est pas écrite dans le JSONL,
+donc `--skip-done` la représente, et une passe finale avec le backend par
+processus la lit. C'est ce que fait `balayage.sh` dans la boucle de production.
+
+Le correctif propre — que le backend résident bascule seul sur le processus
+quand le serveur refuse une page — reste à écrire dans `server.rs`.
+
+### 9.9. Une règle écrite, mesurée, et retirée : le voisement par dictionnaire
+
+Le site rend `キャブテン翼` là où la planche dit `キャプテン翼`. La confusion
+sourde ↔ sonore ↔ semi-sonore n'est donc **pas** limitée au vocabulaire Dragon
+Ball, et le lexique de 321 termes ne peut rien pour Captain Tsubasa — mais
+IPADIC connaît `キャプテン`. D'où une règle : dans une suite de katakana que le
+dictionnaire ne reconnaît pas, essayer chaque variante de voisement, et ne
+corriger que si **exactement une** rend un mot connu. Même discipline que la
+correction par voisinage du lexique, six tests, contre-exemples compris.
+
+Mesurée sur les 396 planches du lot 018 avant d'être déposée : **242
+substitutions**, inspectées une par une.
+
+| Justes | Fautes |
+|---|---|
+| `パンダイ → バンダイ` (21) | **`プレイ → フレイ` (36)** |
+| `バワー → パワー` (13) | **`ゲット → ケット` (16)** |
+| `ワンビース → ワンピース` (4) | **`フロスト → プロスト` (6)** — Frost, univers 6 |
+| `キャブテン → キャプテン` (2) | **`グルド → クルド` (3)** — Guldo |
+| `ジャンフ → ジャンプ`, `タメージ → ダメージ`, `トリフル → トリプル`… | **`コルド → コルト` (3)** — le roi Cold |
+
+Environ quatre-vingt-dix corrections justes contre cent dix dégâts. **Retirée.**
+
+La cause n'est pas la garde du candidat unique, elle est en amont : **IPADIC
+n'arbitre pas les katakana.** Il juge `プレイ` inconnu — c'est pourtant
+l'orthographe correcte — et connaît `フレイ`. Quand le verdict « inconnu » porté
+sur l'original est faux, aucune garde sur le candidat ne rattrape quoi que ce
+soit. Pire, le mécanisme détruisait exactement les noms que le lexique existe
+pour protéger : absents du dictionnaire par construction, ils ont toujours une
+variante qui, elle, y est.
+
+Ce que le dictionnaire sait faire reste vrai et mesuré : valider un sosie de
+kanji (`corrige_sosies`, 3 corrections sur ce lot, aucune fausse) et compter du
+charabia. Ce qu'il ne sait pas faire, c'est trancher une graphie étrangère. Pour
+les katakana, **le lexique fermé, mesuré et gardé est la seule forme sûre** —
+et si `キャプテン翼` doit être corrigé un jour, c'est par une entrée de table
+avec son comptage et ses contre-exemples, pas par une inférence.

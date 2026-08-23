@@ -124,19 +124,24 @@ pub(crate) enum OcrAction {
         #[arg(long)]
         raw: bool,
         /// Keep the model resident behind a llama-server instead of spawning
-        /// one process per page. Faster, but it reads less of each page.
+        /// one process per page. Three times faster, and no less faithful.
         ///
-        /// Measured on twelve databook plates with dots.ocr: 4.9 s per plate
-        /// against 13 s for the default backend. The catch is fidelity — on
-        /// plate 18-0249 the server returned 1384 characters where the default
-        /// backend returned 1624, stopping before the folio number and
-        /// flattening paragraph breaks into spaces. Raising --max-tokens from
-        /// 1024 to 3072 changed nothing, so this is the front end, not the
-        /// budget: the same weights see the image differently.
+        /// An earlier note here said the opposite — that the server "reads less
+        /// of each page", 1384 characters against 1624 on plate 18-0249. That
+        /// was a missing stop token, not a front end: dots.ocr closes its turn
+        /// with a token llama.cpp did not have in its end-of-generation set, so
+        /// half the pages ran to the token ceiling and the loop cutter trimmed
+        /// them all back to the same prefix. Fixed on both backends.
         ///
-        /// Use it when speed matters more than completeness — a rough index, a
-        /// smoke test over a large directory. For a transcription anyone will
-        /// read, take the slower backend. Do not mix the two over one corpus.
+        /// Re-measured after the fix, same six plates: 2.6 s per plate against
+        /// 8.4 s, five transcriptions identical to the character. On the sixth
+        /// it is the *default* backend that degenerates, repeating one sentence
+        /// four times where the server reads distinct furigana.
+        ///
+        /// The per-page process still earns its place when a run must survive a
+        /// crash: a server that dies takes the batch with it. Do not mix the two
+        /// over one corpus — not for fidelity now, but because greedy decoding
+        /// through two front ends is not bit-identical.
         #[arg(long)]
         server: bool,
         /// Loopback port for --server.
@@ -151,9 +156,18 @@ pub(crate) enum OcrAction {
         /// two tokens, so the second page is very nearly free — the cost is
         /// one KV cache per slot, not a second copy of the model.
         ///
-        /// Raise it only if the card has the memory: each slot holds its own
-        /// context. Ignored without --server, where each page is its own
-        /// process and concurrency would mean loading the model twice.
+        /// That reasoning stops at two. Measured on twelve databook plates,
+        /// same images, same card: two slots read them in 35 s, four in 50 s
+        /// with one page failing outright, six in 51 s. Past two slots the
+        /// image prompts — 2179 tokens each — start queueing against each
+        /// other in the same batch, and the win from sharing a weight read is
+        /// spent paying for it. Worse, the numerics shift: at six slots one
+        /// plate came back with 4918 characters of repeated sentence where two
+        /// slots read 433 clean ones. More slots is not more throughput here,
+        /// it is a different and less stable decode.
+        ///
+        /// Ignored without --server, where each page is its own process and
+        /// concurrency would mean loading the model twice.
         #[arg(long, default_value_t = aphrody_ocr::server::DEFAULT_SLOTS)]
         slots: u32,
         /// Context window per slot, in tokens.
