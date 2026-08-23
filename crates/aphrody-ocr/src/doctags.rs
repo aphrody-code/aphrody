@@ -142,7 +142,11 @@ impl Document {
         if cycle {
             tracing::debug!("cut a line cycle in a tagless generation");
         }
-        let (sans_json, bascule) = truncate_json_tail(&sans_cycle);
+        let (aere, titres) = split_inline_headings(&sans_cycle);
+        if titres > 0 {
+            tracing::debug!(titres, "moved inline headings onto their own line");
+        }
+        let (sans_json, bascule) = truncate_json_tail(&aere);
         if bascule {
             tracing::debug!(kept = sans_json.len(), "cut a switch into layout JSON");
         }
@@ -557,6 +561,84 @@ const MOTIF_MAX: usize = 40;
 /// degenerate model emits.
 const LOOP_THRESHOLD: usize = 4;
 
+/// Rend sa ligne a un titre que le modele a laisse au milieu d'une autre.
+///
+/// Le modele rend du markdown, et un `#` ne devient un titre que s'il ouvre sa
+/// ligne. Quand il aplatit une page en colonnes, il empile les titres a la
+/// suite du texte — `… Entertainment Inc. # 実績 ## ゲーム ### 好評発売中 …` —
+/// et pas un seul ne se rend : le lecteur affiche les diese en clair.
+///
+/// Mesure sur les 3163 planches lues : 14 797 marqueurs ouvrent bien leur
+/// ligne et n'ont rien a se reprocher ; 329 tombent au milieu, sur 42
+/// planches. Les seconds sont reportes en tete de ligne, ce qui les rend et
+/// retire le bruit d'un coup.
+///
+/// Seuls les `#` sont touches, jamais les `*` : un asterisque sert aussi
+/// d'emphase et de multiplication, et le distinguer d'une puce demanderait de
+/// deviner. Un diese colle a son mot (`C#`) ne compte pas non plus — la forme
+/// cherchee est celle d'un titre ATX, diese isole suivi d'une espace.
+#[must_use]
+pub fn split_inline_headings(text: &str) -> (String, usize) {
+    let mut out = String::with_capacity(text.len());
+    let mut deplaces = 0_usize;
+
+    for (rang, ligne) in text.split('\n').enumerate() {
+        if rang > 0 {
+            out.push('\n');
+        }
+        let mut reste = ligne;
+        while let Some(coupe) = position_titre_interne(reste) {
+            let (tete, queue) = reste.split_at(coupe);
+            let tete = tete.trim_end();
+            if !tete.is_empty() {
+                out.push_str(tete);
+                out.push('\n');
+                deplaces += 1;
+            }
+            reste = queue;
+        }
+        out.push_str(reste);
+    }
+
+    (out, deplaces)
+}
+
+/// Ou commence un `#` de titre qui n'ouvre pas la ligne, s'il y en a un.
+fn position_titre_interne(ligne: &str) -> Option<usize> {
+    let octets = ligne.as_bytes();
+    let mut i = 0;
+    // Sauter un eventuel titre en tete : celui-la est deja bien place.
+    while i < octets.len() && (octets[i] == b' ' || octets[i] == b'\t') {
+        i += 1;
+    }
+    if i < octets.len() && octets[i] == b'#' {
+        while i < octets.len() && octets[i] == b'#' {
+            i += 1;
+        }
+    }
+    while i < octets.len() {
+        if octets[i] != b'#' {
+            i += 1;
+            continue;
+        }
+        // Il faut une espace avant — sinon c'est `C#`, pas un titre.
+        let precede_espace = i > 0 && (octets[i - 1] == b' ' || octets[i - 1] == b'\t');
+        let mut fin = i;
+        while fin < octets.len() && octets[fin] == b'#' {
+            fin += 1;
+        }
+        let niveau = fin - i;
+        // ATX : un a six diese, puis une espace, puis du contenu.
+        let suivi_espace = octets.get(fin) == Some(&b' ');
+        let contenu = octets.get(fin + 1).is_some_and(|&c| c != b' ');
+        if precede_espace && (1..=6).contains(&niveau) && suivi_espace && contenu {
+            return Some(i);
+        }
+        i = fin;
+    }
+    None
+}
+
 /// Cut a generation where the model switched into its layout-JSON mode.
 ///
 /// dots.ocr sait rendre deux choses : du markdown, et un JSON de mise en page
@@ -914,6 +996,51 @@ mod tests {
         let (garde, coupe) = truncate_loop(&texte);
         assert!(coupe, "le motif de six mots doit être vu");
         assert_eq!(garde.matches("fire").count(), 1, "{garde}");
+    }
+
+    #[test]
+    fn un_titre_coince_au_milieu_dune_ligne_recupere_la_sienne() {
+        // Planche 158-0021 : le modele empile trois niveaux de titre a la
+        // suite du texte, et pas un seul ne se rend.
+        let ligne = "BANDAI NAMCO Entertainment Inc. # 実績 ## ゲーム ### 好評発売中 ●機種 / PS4";
+        let (texte, deplaces) = split_inline_headings(ligne);
+        assert_eq!(deplaces, 3, "trois titres a replacer");
+        let lignes: Vec<&str> = texte.split('\n').collect();
+        assert_eq!(lignes[0], "BANDAI NAMCO Entertainment Inc.");
+        assert_eq!(lignes[1], "# 実績");
+        assert_eq!(lignes[2], "## ゲーム");
+        assert_eq!(lignes[3], "### 好評発売中 ●機種 / PS4");
+    }
+
+    #[test]
+    fn un_titre_qui_ouvre_deja_sa_ligne_nest_pas_touche() {
+        // 14 797 marqueurs sur 3163 planches sont dans ce cas : la regle ne
+        // doit rien leur faire.
+        let source = "# その手で明日を掴め\n\n## 構築済みデッキ\n1260円";
+        let (texte, deplaces) = split_inline_headings(source);
+        assert_eq!(texte, source);
+        assert_eq!(deplaces, 0);
+    }
+
+    #[test]
+    fn un_diese_colle_a_son_mot_nest_pas_un_titre() {
+        // `C#` et `No.21#` ne sont pas des titres ATX : il faut une espace
+        // avant, un a six diese, une espace apres, et du contenu.
+        for source in ["言語は C# です", "型番 No.21#", "地図 # ", "四則 #### "] {
+            let (texte, deplaces) = split_inline_headings(source);
+            assert_eq!(texte, source, "{source} doit traverser intact");
+            assert_eq!(deplaces, 0, "{source}");
+        }
+    }
+
+    #[test]
+    fn les_asterisques_sont_laisses_tranquilles() {
+        // Une puce est indistinguable d'une emphase ou d'une multiplication
+        // sans deviner, donc on ne devine pas.
+        let source = "HP * BP * BE を半減 * 効果は重複しない";
+        let (texte, deplaces) = split_inline_headings(source);
+        assert_eq!(texte, source);
+        assert_eq!(deplaces, 0);
     }
 
     #[test]

@@ -99,6 +99,87 @@ impl Lexique {
         Self {
             termes: termes_tsv(DRAGON_BALL_TSV),
             entrees: vec![
+                // ---------------------------------------------------------
+                // Le vocabulaire ordinaire que le scan abime.
+                //
+                // Ces mots ne sont pas de la serie — ce sont ceux des pages de
+                // jeux, d'editeurs et de cartes qui remplissent les databooks.
+                // Aucun lexique Dragon Ball ne pouvait les atteindre, et une
+                // regle par dictionnaire non plus : la §9.9 du pont raconte
+                // comment IPADIC, essaye pour ca, a detruit Frost, Guldo et le
+                // roi Cold. Reste la table fermee, mesuree une paire a la fois.
+                //
+                // La colonne qui tranche est le nombre de fois ou la BONNE
+                // graphie apparait dans le meme corpus : elle prouve que la
+                // fautive est un defaut de lecture et non un mot.
+                // ---------------------------------------------------------
+                // 446 planches, 1198 occurrences ; `バトル` vu 1658 fois.
+                Entree { fautif: "パトル", juste: "バトル", interdits: &[] },
+                // 271 planches, 958 occurrences. Le modele se trompe plus
+                // souvent qu'il ne reussit : `アビリティ` n'est vu que 74 fois.
+                Entree { fautif: "アピリティ", juste: "アビリティ", interdits: &[] },
+                // 334 planches, 657 occurrences ; `バンダイ` vu 182 fois.
+                Entree { fautif: "パンダイ", juste: "バンダイ", interdits: &[] },
+                // 58 planches, 201 occurrences ; `パワー` vu 829 fois.
+                Entree { fautif: "バワー", juste: "パワー", interdits: &[] },
+                // 69 planches, 100 occurrences. La garde est obligatoire : le
+                // corpus ecrit `スーパードコンポールヒローズ` et
+                // `ドラコンポール`, ou `コンポ` est un debris de
+                // `ドラゴンボール` et non un `コンボ`. Corriger la sourde y
+                // aggraverait la faute au lieu de la reparer.
+                Entree { fautif: "コンポ", juste: "コンボ", interdits: &["ール"] },
+                // 10 planches, 68 occurrences ; `ワンピース` vu 32 fois.
+                Entree { fautif: "ワンビース", juste: "ワンピース", interdits: &[] },
+                // 37 planches, 53 occurrences ; `ビクトリー` vu 180 fois.
+                Entree { fautif: "ピクトリー", juste: "ビクトリー", interdits: &[] },
+                // 14 planches, 44 occurrences. Garde contre `ハワード`, que le
+                // corpus ne porte pas mais qu'une page d'interview porterait.
+                // Le suffixe est `ド` et non `ード` : la voyelle longue fait
+                // deja partie de la forme fautive, et l'ecrire `ード` rendait
+                // la garde inoperante — un test l'a montre.
+                Entree { fautif: "ハワー", juste: "パワー", interdits: &["ド"] },
+                // 19 planches, 37 occurrences ; `ジャンプ` vu 2008 fois.
+                Entree { fautif: "ジャンフ", juste: "ジャンプ", interdits: &[] },
+                // 29 planches, 33 occurrences.
+                Entree { fautif: "ポリューム", juste: "ボリューム", interdits: &[] },
+                // 22 planches, 29 occurrences ; `ダメージ` vu 909 fois.
+                Entree { fautif: "タメージ", juste: "ダメージ", interdits: &[] },
+                // 10 planches, 11 occurrences. A ne pas confondre avec
+                // `ブロリー` : ce sont deux mots differents.
+                Entree { fautif: "プロッコリー", juste: "ブロッコリー", interdits: &[] },
+                // 6 planches, 8 occurrences.
+                Entree { fautif: "バッケージ", juste: "パッケージ", interdits: &[] },
+                // 8 planches, 8 occurrences. Garde contre `インテックス大阪`,
+                // le centre d'exposition, qui est bien ecrit ainsi.
+                Entree { fautif: "インテックス", juste: "インデックス", interdits: &["大阪"] },
+                // 5 et 2 planches. Captain Tsubasa, hors univers Dragon Ball —
+                // le cas qui avait motive la regle par dictionnaire.
+                Entree { fautif: "キャブテン", juste: "キャプテン", interdits: &[] },
+                Entree { fautif: "キャフテン", juste: "キャプテン", interdits: &[] },
+                // 5 planches, 6 occurrences.
+                Entree { fautif: "ピキニ", juste: "ビキニ", interdits: &[] },
+                // 4 planches, 5 occurrences.
+                Entree { fautif: "トリフル", juste: "トリプル", interdits: &[] },
+                // 2 planches, 3 occurrences.
+                Entree { fautif: "アッフ", juste: "アップ", interdits: &[] },
+                // 2 planches, 2 occurrences.
+                Entree { fautif: "ヒクトリー", juste: "ビクトリー", interdits: &[] },
+                // 1 planche. Faible, mais sans ambiguite.
+                Entree { fautif: "カギシャポン", juste: "ガシャポン", interdits: &[] },
+                //
+                // ECARTES, et pourquoi :
+                //
+                // `テッキ -> デッキ` (11 occurrences) — juste partout dans le
+                // corpus (`使用テッキ`, `スターターテッキ`), mais `ステッキ`
+                // est un mot et le risque est en PREFIXE, que `interdits` ne
+                // sait pas garder. Onze occurrences ne valent pas d'elargir le
+                // modele de donnees.
+                //
+                // `パッチリ -> バッチリ` (6 occurrences) — `ぱっちり` existe et
+                // se rencontre en katakana pour insister. Trop peu pour prendre
+                // le risque.
+                //
+                // ---------------------------------------------------------
                 // 111 planches, 280 occurrences. `プロリー` n'est pas un mot.
                 Entree { fautif: "プロリー", juste: "ブロリー", interdits: &[] },
                 // 111 planches, 204 occurrences.
@@ -654,5 +735,63 @@ mod tests {
         let (_, faits) = Lexique::databooks_dragon_ball().applique(texte);
         assert_eq!(faits.len(), 1);
         assert!(texte[faits[0].debut..].starts_with("プロリー"), "{faits:?}");
+    }
+}
+#[cfg(test)]
+mod tests_vocabulaire_ordinaire {
+    use super::*;
+
+    #[test]
+    fn les_mots_de_jeu_les_plus_abimes_sont_retablis() {
+        let lex = Lexique::databooks_dragon_ball();
+        for (source, attendu) in [
+            ("パトル開始時", "バトル開始時"),
+            ("カードアクションアピリティ", "カードアクションアビリティ"),
+            ("メーカー: パンダイナムコ", "メーカー: バンダイナムコ"),
+            ("バワースピード", "パワースピード"),
+            ("キャブテン翼 FCG", "キャプテン翼 FCG"),
+            ("ワンビース", "ワンピース"),
+        ] {
+            let (texte, _) = lex.applique(source);
+            assert_eq!(texte, attendu, "depuis {source}");
+        }
+    }
+
+    #[test]
+    fn un_debris_de_dragon_ball_nest_pas_pris_pour_un_combo() {
+        // La garde qui compte. Le corpus ecrit `スーパードコンポールヒローズ`
+        // et `ドラコンポール` : la ou `コンポ` est suivi de `ール`, c'est un
+        // `ドラゴンボール` massacre, pas un `コンボ`. Le corriger aggraverait.
+        let lex = Lexique::databooks_dragon_ball();
+        for source in ["スーパードコンポールヒローズ", "ドラコンポールがついている"] {
+            let (texte, remplacements) = lex.applique(source);
+            assert_eq!(texte, source, "{source} doit traverser intact");
+            assert!(remplacements.is_empty());
+        }
+        // Sans le suffixe, la correction se fait.
+        let (texte, _) = lex.applique("スキルやコンポを決めて");
+        assert_eq!(texte, "スキルやコンボを決めて");
+    }
+
+    #[test]
+    fn les_homonymes_gardes_traversent() {
+        let lex = Lexique::databooks_dragon_ball();
+        for source in ["インテックス大阪", "ハワード氏の証言"] {
+            let (texte, remplacements) = lex.applique(source);
+            assert_eq!(texte, source, "{source} est legitime");
+            assert!(remplacements.is_empty(), "{source}");
+        }
+    }
+
+    #[test]
+    fn les_formes_ecartees_ne_sont_pas_dans_la_table() {
+        // `テッキ` et `パッチリ` ont ete mesures puis ecartes faute de garde
+        // possible. Ce test fige la decision : les rajouter sans resoudre le
+        // probleme de prefixe le fera echouer.
+        let lex = Lexique::databooks_dragon_ball();
+        for source in ["ステッキを持つ", "パッチリした目"] {
+            let (texte, _) = lex.applique(source);
+            assert_eq!(texte, source, "{source} doit traverser intact");
+        }
     }
 }

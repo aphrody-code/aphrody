@@ -162,11 +162,34 @@ pub fn normalise_ponctuation(texte: &str) -> (String, usize) {
 
     while i < chars.len() {
         let c = chars[i];
-        if c != '\u{FF65}' && c != '.' {
+        if c != '\u{FF65}' && c != '.' && c != '!' && c != '?' {
             out.push(c);
             i += 1;
             continue;
         }
+        // `!` et `?` se consomment ENSEMBLE : `?!` est une seule marque, et
+        // la decouper par caractere identique ferait juger le `!` d'apres le
+        // `?` qui le precede — donc d'apres de l'ASCII, jamais du japonais.
+        if c == '!' || c == '?' {
+            let debut = i;
+            while i < chars.len() && (chars[i] == '!' || chars[i] == '?') {
+                i += 1;
+            }
+            let precede = debut
+                .checked_sub(1)
+                .map(|k| chars[k])
+                .is_some_and(|c| japonais(c) || ferme_une_proposition(c));
+            for &marque in &chars[debut..i] {
+                if precede {
+                    out.push(if marque == '!' { '！' } else { '？' });
+                    remplaces += 1;
+                } else {
+                    out.push(marque);
+                }
+            }
+            continue;
+        }
+
         let debut = i;
         while i < chars.len() && chars[i] == c {
             i += 1;
@@ -194,6 +217,26 @@ pub fn normalise_ponctuation(texte: &str) -> (String, usize) {
     }
 
     (out, remplaces)
+}
+
+/// Ce caractere termine-t-il une proposition japonaise ?
+///
+/// La plage des kana commence a U+3041, donc `japonais` ne voit pas les
+/// guillemets `」` et `』` (U+300D, U+300F) ni le point `。`. Or une phrase de
+/// databook se termine tres souvent sur eux : `「身勝手の極意」!!`,
+/// `『ジャンプフォース』!!`, `大会」!!!`. Mesure sur les 3163 planches : 714
+/// marques de plus reviennent a la pleine chasse par ce seul ajout.
+///
+/// Ce qui reste apres — 1269 marques accrochees a du latin, `SCOOP!!`, `DBZ!`,
+/// jusqu'a une ligne entierement anglaise `new world!!」` — est trop melange
+/// pour etre tranche sans deviner, et reste donc en chasse etroite.
+const fn ferme_une_proposition(c: char) -> bool {
+    matches!(
+        c,
+        '」' | '』' | '）' | '〕' | '｝' | '】' | '〉' | '》'
+            | '。' | '、' | '！' | '？' | '…' | '・' | '：' | '；'
+            | '\u{301C}' | '\u{FF5E}'
+    )
 }
 
 /// Y a-t-il du japonais juste avant ou juste après `chars[debut..fin]` ?
@@ -532,5 +575,82 @@ mod tests {
         assert_eq!(pleine_chasse('ﾝ'), Some('ン'));
         assert_eq!(pleine_chasse('ﾂ'), Some('ツ'));
         assert_eq!(pleine_chasse('ﾎ'), Some('ホ'));
+    }
+}
+#[cfg(test)]
+mod tests_chasse_ponctuation {
+    use super::*;
+
+    #[test]
+    fn une_exclamation_apres_du_japonais_passe_en_pleine_chasse() {
+        // Releve 18 840 fois sur les 3163 planches lues : le databook imprime
+        // `！！`, le modele rend `!!`.
+        let (texte, n) = normalise_ponctuation("勝利を収めろ!!");
+        assert_eq!(texte, "勝利を収めろ！！");
+        assert_eq!(n, 2);
+    }
+
+    #[test]
+    fn une_interrogation_aussi_et_les_melanges_gardent_leur_ordre() {
+        let (texte, _) = normalise_ponctuation("本当に?!そうか？");
+        assert_eq!(texte, "本当に？！そうか？");
+    }
+
+    #[test]
+    fn une_marque_apres_un_guillemet_fermant_passe_aussi() {
+        // 714 marques du corpus sont dans ce cas. La plage des kana commence a
+        // U+3041, donc `japonais` ne voyait pas `」` et laissait la phrase en
+        // chasse etroite.
+        for (source, attendu) in [
+            ("「身勝手の極意」!!", "「身勝手の極意」！！"),
+            ("『ジャンプフォース』!!", "『ジャンプフォース』！！"),
+            // Les deux marques passent : la premiere suit `ざ`, la seconde `〜`.
+            ("いざ! 冒険へ出発だ〜!!", "いざ！ 冒険へ出発だ〜！！"),
+        ] {
+            let (texte, _) = normalise_ponctuation(source);
+            assert_eq!(texte, attendu, "depuis {source}");
+        }
+    }
+
+    #[test]
+    fn une_ligne_anglaise_reste_en_chasse_etroite() {
+        // Le cas qui a fait renoncer a une garde par ligne : la ligne porte un
+        // guillemet japonais fermant APRES la marque, mais tout le reste est
+        // anglais. Ce qui precede la marque est ce qui compte.
+        let source = "MN 7th Anniversary and new world!!」";
+        let (texte, n) = normalise_ponctuation(source);
+        assert_eq!(texte, source);
+        assert_eq!(n, 0);
+    }
+
+    #[test]
+    fn un_titre_latin_garde_la_chasse_etroite() {
+        // 2861 occurrences dans du latin pur : `DRAGONBALL Z!!` s'imprime avec
+        // une exclamation etroite, la convertir serait le defaut inverse.
+        let (texte, n) = normalise_ponctuation("DRAGONBALL Z!! GO!");
+        assert_eq!(texte, "DRAGONBALL Z!! GO!");
+        assert_eq!(n, 0);
+    }
+
+    #[test]
+    fn une_marque_accrochee_a_du_latin_devant_du_japonais_est_laissee() {
+        // Les quarante et un cas ecartes par la garde : `C!スピード` et
+        // `EX RPG!!そ`. Le `!` appartient au sigle, pas a la phrase japonaise.
+        for source in ["C!スピード", "EX RPG!!そ"] {
+            let (texte, n) = normalise_ponctuation(source);
+            assert_eq!(texte, source, "{source} doit traverser intact");
+            assert_eq!(n, 0);
+        }
+    }
+
+    #[test]
+    fn les_ellipses_marchent_toujours() {
+        // La regle est greffee dans la meme boucle : verifier qu'elle n'a rien
+        // casse de ce qui existait.
+        let (texte, _) = normalise_ponctuation("そう\u{FF65}\u{FF65}\u{FF65}");
+        assert_eq!(texte, "そう…");
+        let (garde, n) = normalise_ponctuation("sommaire.......... 12");
+        assert_eq!(garde, "sommaire.......... 12", "les points de conduite restent");
+        assert_eq!(n, 0);
     }
 }
