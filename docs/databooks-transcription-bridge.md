@@ -909,3 +909,58 @@ client rendait `os error 10060` sur des planches qui généraient parfaitement.
 Le timeout lisait de la contention comme un blocage. Il suit désormais le
 nombre de slots.
 
+---
+
+## 15. Clôture — 97,6 %
+
+Les 317 planches ont toutes été lues, 41 déposées, aucun échec. Le corpus
+termine à **11 240 planches sur 11 516, soit 97,6 %**.
+
+| Catégorie | Avant-hier soir | Maintenant |
+|---|---|---|
+| **Corpus complet** | **81,5 %** | **97,6 %** |
+| Weekly Shōnen Jump | 78,6 % | 99,6 % |
+| V-Jump | 78,4 % | 99,5 % |
+| Light Novel | 99,0 % | 99,5 % |
+| Databook | 95,4 % | 98,8 % |
+| Pamphlet & Fair | 94,0 % | 95,3 % |
+| Jump Anime Comics | 42,9 % | 86,1 % |
+| Art Book | 48,7 % | 61,1 % |
+
+### Un faux positif de l'audit, tranché sur l'image
+
+`ocr audit --japonais` signalait deux planches en charabia — 68 % et 100 % de
+caractères hors dictionnaire. L'image dit autre chose. La planche 142-26 est
+une carte *Super Dragon Ball Heroes* (SDVPJ-030, PR), et la transcription est
+exacte caractère pour caractère :
+
+```
+ベジータ
+HP 3500  パワー 5300  ガード 1000
+ゴッドギャリック砲
+サイヤ人の本能
+```
+
+Un seul écart, `ゴット` pour `ゴッド` — le défaut sourde/sonore déjà inventorié.
+La seconde planche est un tableau de trophées de jeu :
+`プラチナ ゴールド シルバー ブロンズ トロフィー`.
+
+La cause est celle que la mémoire du projet documente pour le lexique et qui
+vaut aussi pour l'audit : **IPADIC n'arbitre pas les katakana**. Un texte fait
+de mots étrangers translittérés — platine, or, argent, bronze, trophée — est
+intégralement « hors dictionnaire » tout en étant parfaitement juste.
+
+Les deux planches ont donc été déposées, contre l'avis de l'audit et sur preuve
+visuelle. C'est le seul motif acceptable pour passer outre : regarder l'image,
+pas trouver le verdict gênant.
+
+### Ce qui reste — 276 planches
+
+Art Book à 61,1 % est le dernier bloc, et pour la raison mesurée au §14 : des
+pages d'illustration où il n'y a pas de texte à lire. Les onomatopées dessinées
+restent hors de portée à toute échelle.
+
+Trois angles ont été essayés et mesurés — lecture de page, pavage, détection de
+bulles — et un quatrième écarté sur mesure : la relecture en pleine résolution,
+qui ne rapporte que 14 % sur des planches déjà classées muettes.
+
