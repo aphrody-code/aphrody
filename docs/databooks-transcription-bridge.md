@@ -773,3 +773,71 @@ Le §10 de ce document déclarait la catégorie Jump Anime Comics structurelleme
 plafonnée. Elle ne l'était pas. Ce qui reste hors de portée, à toute échelle,
 ce sont les **onomatopées dessinées** — du dessin, pas de la lettre.
 
+---
+
+## 13. Les lots 001-017 — le corpus à 95,9 %
+
+La passe par bulles du §12 n'avait touché que les douze lots traités en local.
+Les **dix-sept premiers lots n'y étaient jamais passés** : 595 planches muettes
+de plus, soit les trois quarts du reliquat.
+
+### Ne rapatrier que ce qu'on va lire
+
+Les images de ces lots pèsent environ 3,4 Go, mais seules 9 % des planches sont
+concernées. Extraire la liste des muettes côté VPS et n'archiver que
+celles-là : **188 Mo, transférés en 17 secondes**. Le JSONL d'entrée, lui, n'a
+pas été rapatrié du tout — `ocr bulles` n'y lit que le nom de l'image et le
+verdict, donc il se fabrique localement en trois lignes.
+
+### Résultat
+
+| | |
+|---|---|
+| Planches relues | 595, aucun échec |
+| Texte récupéré | **365 (61 %)** |
+| Déposées après filtrage | **344** |
+| Débit | 3,8 s/planche, backend résident, 8 slots |
+
+Le taux est plus bas que les 78 % du §12, et c'est attendu : ces lots sont des
+V-Jump et des databooks, dont les planches muettes sont souvent des
+illustrations pleine page sans une seule bulle. La chaîne y rend un `none`
+honnête — c'est le comportement voulu, pas un échec.
+
+Écartées du dépôt : 21 planches. Les 19 dont le texte tient en quatre
+caractères (`高`, `2004`, `z`, `D V` — des fragments), plus les 2 que
+`audit --japonais` signalait en charabia.
+
+### Le bug qui a coûté vingt-six minutes de GPU
+
+La reprise après interruption a annoncé « 595 planches à relire, 448 déjà
+faites », puis les a **toutes relues**. Le compte était juste, le filtre ne
+l'était pas : il comparait des chemins bruts, et la reprise avait été lancée
+avec un chemin relatif là où la première passe portait un chemin absolu.
+
+`batch` peut comparer des chemins — il relit son propre répertoire, la forme
+est la même des deux côtés. `ocr bulles` prend un JSONL et ré-enracine chaque
+planche sous `--images` : la forme dépend de la ligne de commande, alors que
+l'identité d'une planche est son **nom de fichier**. Corrigé.
+
+Le symptôme est silencieux : rien n'échoue, le travail est simplement refait.
+
+**Ce qui a été récupéré du gâchis** : ces 448 secondes lectures ont été
+fusionnées avec les premières en gardant la plus longue de chaque planche —
+le décodage n'étant pas reproductible (cf. mémoire projet), deux passages
+divergent. **83 planches y ont gagné du texte**, dont une muette dans un
+passage et lue dans l'autre.
+
+### Le corpus au terme des trois campagnes
+
+| Catégorie | Départ (21 h) | Fin |
+|---|---|---|
+| **Corpus complet** | **81,5 %** | **95,9 %** |
+| Weekly Shōnen Jump | 78,6 % | 98,6 % |
+| Databook | 95,4 % | 97,9 % |
+| V-Jump | 78,4 % | 97,1 % |
+| Jump Anime Comics | 42,9 % | **84,1 %** |
+| Art Book | 48,7 % | 59,2 % |
+
+Restent 469 planches. Art Book est le dernier bloc, et pour la raison déjà
+donnée : des planches d'illustration où il n'y a pas de texte à lire.
+
