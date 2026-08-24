@@ -64,10 +64,25 @@ use crate::{OcrError, Result};
 /// that will never come up.
 const STARTUP_TIMEOUT: Duration = Duration::from_mins(2);
 
-/// Per-request timeout. A dense plate takes seconds, not minutes; anything
-/// beyond this is a stuck generation, and failing the page is better than
-/// stalling the batch behind it.
+/// Per-request timeout for a server serving one request at a time.
+///
+/// A dense plate takes seconds, not minutes; beyond this it is a stuck
+/// generation, and failing the page beats stalling the batch behind it.
 const REQUEST_TIMEOUT: Duration = Duration::from_mins(3);
+
+/// What each extra slot adds to that budget.
+///
+/// A request does not only wait for its own decode: with N slots in flight it
+/// waits behind the others sharing the same batch. Three minutes flat was
+/// calibrated on 1000x1495 plates, and it held — until a re-read of 2048x1526
+/// scans, four times the visual tokens, at eight slots. Requests then failed
+/// with `os error 10060` on plates that were generating perfectly well; the
+/// timeout was reading contention as a hang.
+///
+/// Scaling with the slot count keeps the guarantee that matters — a genuinely
+/// stuck generation still fails rather than hanging the batch forever — while
+/// not calling a queued request stuck.
+const REQUEST_TIMEOUT_PER_SLOT: Duration = Duration::from_secs(45);
 
 /// How a resident server is sized.
 #[derive(Debug, Clone, Copy)]
@@ -242,6 +257,13 @@ impl ServerRunner {
         self.config.slots
     }
 
+    /// Per-request timeout, widened by how many requests share the batch.
+    ///
+    /// See [`REQUEST_TIMEOUT_PER_SLOT`]: a queued request is not a stuck one.
+    fn request_timeout(&self) -> Duration {
+        REQUEST_TIMEOUT + REQUEST_TIMEOUT_PER_SLOT * self.config.slots.saturating_sub(1)
+    }
+
     /// Read one image through the resident model.
     ///
     /// # Errors
@@ -317,7 +339,7 @@ impl ServerRunner {
             self.config.port,
             "/v1/chat/completions",
             &payload,
-            REQUEST_TIMEOUT,
+            self.request_timeout(),
         )?;
         if !response.is_success() {
             return Err(OcrError::Process {
@@ -526,5 +548,18 @@ mod tests {
         // batch can tolerate.
         assert!(STARTUP_TIMEOUT >= Duration::from_mins(1));
         assert!(REQUEST_TIMEOUT >= Duration::from_mins(1));
+    }
+
+    #[test]
+    fn le_budget_par_requete_suit_le_nombre_de_slots() {
+        let budget = |slots| {
+            REQUEST_TIMEOUT + REQUEST_TIMEOUT_PER_SLOT * (u32::from(slots) - 1)
+        };
+        // Un seul slot : rien a partager, le budget de base suffit.
+        assert_eq!(budget(1_u8), REQUEST_TIMEOUT);
+        // Huit slots sur des scans lourds : c'est le cas qui rendait
+        // `os error 10060` sur des planches qui generaient tres bien.
+        assert!(budget(8_u8) >= Duration::from_mins(8));
+        assert!(budget(2_u8) > budget(1_u8), "le budget doit croitre avec les slots");
     }
 }

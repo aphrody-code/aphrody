@@ -841,3 +841,71 @@ passage et lue dans l'autre.
 Restent 469 planches. Art Book est le dernier bloc, et pour la raison déjà
 donnée : des planches d'illustration où il n'y a pas de texte à lire.
 
+---
+
+## 14. La résolution n'explique pas le mutisme — mesure contre hypothèse
+
+Une observation avait fait naître une hypothèse séduisante, et fausse. La voici
+avec ce qui l'a tuée, parce que le raisonnement se reproduira.
+
+### L'observation, réelle
+
+Sur le livre 23 (*TV Anime Guide*), onze pages classées « confirmées muettes »
+par les campagnes précédentes se sont transcrites sans peine dès lors qu'elles
+étaient relues depuis les scans du site plutôt que depuis les lots exportés. La
+raison paraissait évidente, et elle est mesurée :
+
+| Planche 23-0100 | Largeur | Poids |
+|---|---|---|
+| dans `lot-007/images/` | **422 px** | 20 Ko |
+| scan du site | **2048 px** | ~400 Ko |
+
+Un facteur 25 en surface. Sur une image de 422 px, une bulle occupe 40×30
+pixels — illisible, et cohérent avec ce que §11 avait établi : une bulle de
+130×100 ne se lit pas, la même agrandie ×3 se lit.
+
+D'où la généralisation : les 283 planches déclarées muettes l'auraient été sur
+des vignettes, et seraient massivement récupérables en pleine résolution.
+
+### La mesure, qui dit non
+
+317 planches relues depuis les scans du site, taux de récupération croisé avec
+la largeur du scan :
+
+| Largeur du scan | Lues | Avec texte | Taux |
+|---|---|---|---|
+| < 600 px | 18 | 5 | **27 %** |
+| 600 – 1000 | 25 | 6 | 24 % |
+| 1000 – 1500 | 166 | 19 | 11 % |
+| 1500 – 2500 | 5 | 2 | 40 % |
+| **> 2500 px** | 66 | 2 | **3 %** |
+
+**Le taux décroît quand la résolution croît.** Les plus grands scans donnent le
+plus mauvais résultat, et le taux global tombe à 12 % là où le cas du livre 23
+en laissait espérer 55.
+
+L'explication tient en une phrase : la taille d'un scan renseigne sur le *type*
+de page, pas sur sa lisibilité. Un scan de plus de 2500 px est une double page
+ou un poster d'artbook — de l'illustration pure. La corrélation existait, elle
+pointait dans l'autre sens que supposé.
+
+Le livre 23 reste un vrai cas particulier : ses exports étaient des vignettes.
+Ce n'est pas une règle, et un cas ne fait pas une distribution.
+
+### Ce que §10 disait, et qui tient
+
+« Ces planches ne sont pas vides, elles sont hors domaine » était vrai pour les
+onomatopées dessinées. « Ce sont des pages sans texte à lire » est vrai pour le
+reste. Les deux conclusions ont survécu à la vérification ; c'est l'hypothèse
+de la résolution qui n'a pas tenu.
+
+### Un bug trouvé en chemin
+
+Les scans de 2048 px ont fait apparaître un défaut invisible jusque-là :
+`REQUEST_TIMEOUT` valait trois minutes en dur, quel que soit le nombre de
+slots. Avec huit requêtes en vol sur des images quatre fois plus lourdes en
+jetons visuels, une requête attend derrière les sept autres et dépasse — et le
+client rendait `os error 10060` sur des planches qui généraient parfaitement.
+Le timeout lisait de la contention comme un blocage. Il suit désormais le
+nombre de slots.
+
