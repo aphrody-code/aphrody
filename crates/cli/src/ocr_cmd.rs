@@ -1284,10 +1284,23 @@ fn bulles(
     resident: Option<aphrody_ocr::server::ServerConfig>,
 ) -> miette::Result<()> {
     let muettes = planches_sans_texte(input, images).map_err(|e| miette::miette!("{e}"))?;
-    let deja = if skip_done { already_done(out) } else { std::collections::BTreeSet::new() };
+    // La reprise se decide sur le NOM de la planche, pas sur son chemin.
+    // `batch` peut comparer des chemins parce qu'il relit son propre
+    // repertoire ; ici l'entree est un JSONL et les planches sont re-enracinees
+    // sous `--images`, donc lancer la reprise avec un chemin absolu la ou la
+    // premiere passe en avait un relatif suffit a ne rien reconnaitre — et a
+    // tout relire en silence. Mesure : 448 planches relues pour rien.
+    let deja: std::collections::BTreeSet<std::ffi::OsString> = if skip_done {
+        already_done(out)
+            .iter()
+            .filter_map(|p| p.file_name().map(std::ffi::OsStr::to_os_string))
+            .collect()
+    } else {
+        std::collections::BTreeSet::new()
+    };
     let queue: Vec<PathBuf> = muettes
         .into_iter()
-        .filter(|p| !deja.contains(p))
+        .filter(|p| !p.file_name().is_some_and(|n| deja.contains(n)))
         .take(limit.unwrap_or(usize::MAX))
         .collect();
 
