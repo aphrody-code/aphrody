@@ -264,6 +264,14 @@ impl ServerRunner {
         REQUEST_TIMEOUT + REQUEST_TIMEOUT_PER_SLOT * self.config.slots.saturating_sub(1)
     }
 
+    /// Turn a server refusal into something a caller can act on.
+    ///
+    /// See [`explique_refus`].
+    fn explique(&self, body: &str) -> String {
+        explique_refus(body, self.config.ctx_per_slot)
+    }
+
+
     /// Read one image through the resident model.
     ///
     /// # Errors
@@ -345,7 +353,7 @@ impl ServerRunner {
             return Err(OcrError::Process {
                 command: self.endpoint(),
                 status: response.status.to_string(),
-                stderr: crate::vlm::tail(&response.body, 400),
+                stderr: self.explique(&response.body),
             });
         }
 
@@ -477,6 +485,35 @@ fn source_path(_error: &std::io::Error, _port: u16) -> PathBuf {
         .map_or_else(|| PathBuf::from("llama-server"), |s| s.path().to_path_buf())
 }
 
+/// Turn a server refusal into something a caller can act on.
+///
+/// One refusal deserves it: a plate whose image alone outgrows the slot's
+/// context. The server says so precisely — `exceed_context_size_error`, with
+/// the token counts — but relayed as a bare 400 it reads like any other server
+/// error, and a run keeps losing every large plate in silence. Measured on
+/// full-resolution scans: 14 300 tokens of image against an 8192-token slot,
+/// on thirty-two plates in a row.
+///
+/// The fix belongs to the caller: `--ctx` is theirs to raise, and raising it
+/// costs KV cache we cannot spend on their behalf. So say what to do, and
+/// leave the deciding.
+fn explique_refus(body: &str, ctx_per_slot: u32) -> String {
+    if body.contains("exceed_context_size_error") {
+        let jetons = body
+            .split("\"n_prompt_tokens\":")
+            .nth(1)
+            .and_then(|reste| reste.split(|c: char| !c.is_ascii_digit()).find(|s| !s.is_empty()))
+            .unwrap_or("?");
+        let suggere = jetons
+            .parse::<u32>()
+            .map_or(32768, |n| n.saturating_mul(2).next_power_of_two().max(16384));
+        return format!(
+            "the image alone needs {jetons} tokens, more than this slot's              {ctx_per_slot} — re-run with `--ctx {suggere}` (each slot costs              that much KV cache)"
+        );
+    }
+    crate::vlm::tail(body, 400)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -548,6 +585,24 @@ mod tests {
         // batch can tolerate.
         assert!(STARTUP_TIMEOUT >= Duration::from_mins(1));
         assert!(REQUEST_TIMEOUT >= Duration::from_mins(1));
+    }
+
+    #[test]
+    fn un_refus_de_contexte_dit_quoi_faire() {
+        let runner_config = ServerConfig { port: 8791, slots: 2, ctx_per_slot: 8192 };
+        let corps = r#"{"error":{"code":400,"message":"request (14368 tokens) exceeds the available context size (8192 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":14368,"n_ctx":8192}}"#;
+        let explique = explique_refus(corps, runner_config.ctx_per_slot);
+        assert!(explique.contains("14368"), "le compte de jetons doit survivre : {explique}");
+        assert!(explique.contains("--ctx"), "il faut dire quoi faire : {explique}");
+        assert!(explique.contains("32768"), "et suggerer une valeur qui passe : {explique}");
+    }
+
+    #[test]
+    fn une_erreur_ordinaire_passe_telle_quelle() {
+        let corps = "internal server error, something else entirely";
+        let explique = explique_refus(corps, 8192);
+        assert!(explique.contains("something else entirely"));
+        assert!(!explique.contains("--ctx"), "ne pas suggerer --ctx a tort : {explique}");
     }
 
     #[test]
