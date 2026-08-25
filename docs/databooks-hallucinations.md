@@ -345,3 +345,57 @@ sur les 763 planches à intrusion comme sur les 30 renvoyées en relecture.
 Le principe de la maison est intact — **le moteur propose, le dump tranche** —
 mais la proposition vaut désormais quelque chose : c'est une lecture optique
 indépendante, pas une plausibilité linguistique.
+
+---
+
+## 11. Le service de seconde lecture — livré le 2026-08-25
+
+La recommandation du § 10 est en place : le relecteur affiche désormais deux
+lectures du même scan, pas une seule plus un scan à déchiffrer.
+
+### Ce qui tourne
+
+| Pièce | Où |
+|---|---|
+| Service résident | `shenron-relecture-ocr.service` (systemd), `127.0.0.1:8791` |
+| Code | `shenron:services/relecture-ocr/serveur.py` |
+| Endpoint | `GET /api/databooks/:id/relecture-ocr?planche=N` (admin ou jeton) |
+| Interface | panneau « Seconde lecture » dans `/admin/databooks/<id>` |
+
+**Mesuré sur le VPS** : 3,8 s pour une planche jamais lue, **6 ms depuis le
+cache** — soit deux fois plus rapide que sur le poste local, sans GPU. Le cache
+est indexé par **empreinte SHA-256 du scan** : remplacer une image la fait
+relire, la renommer ne la fait pas relire deux fois.
+
+### Trois choix qui méritent d'être expliqués
+
+**À la demande, pas automatique.** Un bouton déclenche la lecture. Charger
+chaque planche visitée coûterait quelques secondes de processeur sur la machine
+qui sert *aussi* le site — pour un second avis dont le relecteur n'a pas besoin
+à chaque page.
+
+**Aucun dépôt automatique.** Le panneau propose d'ajouter une région au texte,
+région par région, jamais de remplacer la transcription. PP-OCR ne restitue pas
+la mise en page : ses régions sortent dans l'ordre du détecteur, pas dans
+l'ordre de lecture japonais. Remplacer d'un bloc détruirait la structure
+markdown que le corpus a acquise.
+
+**Le service est optionnel.** S'il est arrêté, l'endpoint répond `200` avec
+`indisponible: true` plutôt qu'une erreur : la relecture continue sans le
+second avis. Un outil d'aide qui casse l'outil principal ne vaut rien.
+
+### Confinement
+
+Le service n'écoute que la boucle locale, refuse tout chemin sortant de
+`public/` (vérifié : `/etc/passwd` → 403), et tourne sous systemd avec
+`ProtectSystem=strict`, `ProtectHome=read-only` et un seul `ReadWritePaths`
+vers son cache.
+
+### Un piège rencontré, pour mémoire
+
+La première version tenait **un seul verrou** pour le chargement des modèles et
+pour l'inférence. `lire()` le prenait, puis appelait `moteur()` qui le reprenait
+— et un `threading.Lock` n'est pas réentrant. Interblocage franc : la requête
+ne rendait jamais la main, `/sante` continuait d'annoncer `charge: false`, et
+rien dans les journaux ne parlait de verrou. Deux verrous distincts, et le
+chargement fait **avant** de prendre celui de l'inférence.
