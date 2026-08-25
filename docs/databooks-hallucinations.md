@@ -275,3 +275,73 @@ Une graphie attestée par 11 255 planches du même domaine est une preuve ; une
 proposition plausible n'en est pas une. Le principe à conserver si l'on reprend
 un modèle un jour — **il propose, le dump tranche** — n'est pas une précaution
 de style, c'est ce qui a bloqué quatre destructions sur douze cas.
+
+---
+
+## 10. L'alternative optique : un second moteur OCR — mesuré le 2026-08-25
+
+Après l'échec du modèle de langue (§ 9), la voie suivante ne raisonne plus sur
+le texte mais relit le pixel. Elle repose sur un argument **structurel**, pas
+statistique.
+
+| | dots.ocr | PP-OCRv5/v6 |
+|---|---|---|
+| Famille | VLM autorégressif | détection + CRNN |
+| Vocabulaire | **ouvert** | **fermé** |
+| Peut émettre de l'arabe ? | **oui** — il l'a fait 2 412 fois | **non** |
+
+Le dictionnaire de PP-OCRv5, vérifié dans le fichier livré : **86 hiragana,
+94 katakana, 15 565 kanji, 11 cyrilliques, zéro arabe.** Il lui est
+*impossible* de produire l'artefact qu'on cherche à retirer. Et comme rien
+n'est généré jeton par jeton, les boucles dégénérées, les arrêts sur
+`max_tokens` et le jeton de fin manquant disparaissent aussi.
+
+### Ce qui est démontré
+
+Sur 12 planches à intrusion relues (échantillon du VPS, scans dans
+`shenron:apps/site/public/wiki/databooks/`) :
+
+- **11 planches sur 12 relues sans AUCUNE intrusion.** La propriété structurelle
+  tient en pratique.
+- La relecture est **meilleure** sur des passages entiers. Planche #2 p.119 :
+
+  | Base (dots.ocr) | PP-OCR |
+  |---|---|
+  | `而の未来のブルマ` | `別の未来のブルマ` |
+  | `電船を喰されて` | `宇宙船を壊されて` |
+  | `洞窟や崖の間に駆走していた` | `洞窟や岩の間に隠れていた` |
+
+- **7,5 s par planche sur CPU**, soit ~1 h 35 pour les 763 planches concernées.
+  Sans GPU, et sans le moindre jeton généré.
+
+### Ce qui ne marche PAS, et pourquoi
+
+**L'appariement automatique mot-à-mot.** Sur 34 mots abîmés, il n'en récupère
+que **1 à 3** avec certitude. Cause mesurée : les deux moteurs **découpent leurs
+régions différemment**, donc les bords d'un mot coïncident rarement. Assouplir
+le critère par une distance d'édition a *dégradé* le résultat (3 → 1), les mots
+courts tombant sous le seuil.
+
+Deux essais d'ancrage, deux enseignements :
+
+- Se limiter à `graphies-corpus.tsv` rendait tout mot en kanji ou hiragana
+  structurellement « non attesté », `英雄` compris — **le même filtre trop
+  strict** que celui qui avait fait disparaître les 54 occurrences de `プロリー`.
+  L'ancrage correct est le corpus brut entier, 5 987 722 signes.
+- Même corrigé, le taux reste trop bas pour un dépôt automatique.
+
+**PP-OCR ne restitue pas la mise en page** — ni l'ordre de lecture, ni les
+titres markdown. Remplacer une transcription entière par sa relecture
+détruirait la structure que le corpus a acquise. Ce n'est donc pas un
+remplaçant de dots.ocr, c'est un **second avis**.
+
+### La voie viable
+
+Non pas un correcteur automatique, mais une **seconde source affichée au
+relecteur**. `/admin/databooks/<id>` montre déjà le scan à côté du texte ;
+y ajouter la lecture PP-OCR change un déchiffrage en un choix d'une seconde,
+sur les 763 planches à intrusion comme sur les 30 renvoyées en relecture.
+
+Le principe de la maison est intact — **le moteur propose, le dump tranche** —
+mais la proposition vaut désormais quelque chose : c'est une lecture optique
+indépendante, pas une plausibilité linguistique.
