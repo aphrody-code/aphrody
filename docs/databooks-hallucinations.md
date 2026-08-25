@@ -1,0 +1,224 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Corriger les hallucinations du corpus databooks
+
+> Passe complète menée le **2026-08-25** sur les 11 255 planches transcrites de
+> `dragonballfr.com`. Amont : [`databooks-transcription-bridge.md`](databooks-transcription-bridge.md).
+> Détecteur : `shenron:apps/site/scripts/detecte-hallucinations.ts`.
+
+Ce document ne raconte pas une passe de nettoyage. Il consigne **ce qui se
+corrige sur le texte seul, ce qui ne se corrige pas, et comment on distingue les
+deux** — parce que la distinction n'est pas évidente et que se tromper coûte
+plus cher que le défaut.
+
+---
+
+## 1. La règle de fond
+
+Le corpus est public. Une règle de nettoyage à 50 % de faux positifs est **pire
+que le défaut qu'elle corrige** : le défaut se voit, la fausse correction non.
+
+Toute famille de défauts qu'on veut corriger doit venir avec trois choses :
+
+1. son **comptage** de planches touchées, mesuré, pas estimé ;
+2. le **contre-exemple** qu'on a cherché — la chose qui ressemble au défaut et
+   n'en est pas ;
+3. un **test de non-régression** sur ce contre-exemple.
+
+Le cas d'école est `ベジタブル` : deux planches expliquent que le nom de Vegeta
+vient de *vegetable*, et une règle `ベジタ → ベジータ` sans garde de frontière
+détruirait exactement le passage qui la justifie.
+
+---
+
+## 2. Le mode d'échec le plus coûteux : le filtre silencieux
+
+C'est le piège central du domaine, et il ne lève aucune erreur.
+
+Une table de correction des noms propres avait été construite par un script
+d'analyse qui comptait le point médian `・` comme un katakana **bloquant**. Le
+module de correction, écrit ensuite, le tenait au contraire pour une **frontière
+de mot**. L'analyse n'a jamais été relancée avec la règle du module.
+
+Résultat : `プロリー` (faute de `ブロリー`) a **54 occurrences** dans le corpus,
+dont toutes les propres sont bordées d'un `・`. Le script comptait donc zéro, et
+un `if (occurrences === 0) continue;` l'écartait **en silence**. Vingt-cinq
+planches sont restées fautives, invisibles dans tous les rapports.
+
+**Deux règles en découlent, et elles valent au-delà de ce corpus :**
+
+- Le filtre de **découverte** ne doit jamais être plus strict que le filtre de
+  **correction**. Quand on écarte des candidats, on compte et on journalise ce
+  qu'on écarte.
+- Un détecteur **annote, il ne filtre pas**. Une occurrence agglutinée est
+  souvent une sous-chaîne accidentelle (`ゴニック` dans `ドラゴニック`) mais
+  parfois un vrai nom collé à son voisin. On la marque, un humain tranche.
+
+---
+
+## 3. Les quatre arbitres d'une lecture
+
+Du plus fort au plus faible.
+
+### 3.1. Le corpus
+
+Une graphie attestée des centaines de fois est la bonne ; une graphie unique
+est suspecte. C'est l'arbitre le plus simple et le plus fiable.
+
+### 3.2. Le rapport de fréquence
+
+**Une faute de lecture est toujours moins attestée que la forme dont elle
+dérive.** Seuil retenu : la forme juste doit être au moins **2× plus fréquente**
+que la fautive.
+
+Sans ce critère, la simple ressemblance fait remonter du vocabulaire courant :
+`アビリティ` (798 occurrences) sort comme faute de `レアリティ` (178), `ナルト`
+comme faute de `ボルト`, `チョコボ` comme faute de `チョコ`.
+
+### 3.3. La chronologie
+
+L'arbitre le plus tranchant, et celui auquel on ne pense pas.
+
+| Paire | Verdict | Raison |
+|---|---|---|
+| `ガンバー` → `カンバー` (Cumber) | refusé | titre de jeu de **1992**, treize ans avant le personnage |
+| `トキドキ` → `トキトキ` | refusé | V-Jump **1997**, c'est l'adverbe *tokidoki* ; Tokitoki date de 2015 |
+| `シレン` → `ジレン` | refusé | 風来のシレン, jeu Chunsoft cité de 1996 à 2000, vingt ans avant Jiren |
+
+### 3.4. Le dictionnaire, et ses deux angles morts
+
+JMdict écarte les pièges où une règle par distance réécrirait un mot japonais
+réel en nom de personnage — `ジャンパ` (blouson) visait `シャンパ` (Champa),
+`ドルビー` (Dolby) visait `トルビー`. **Douze cas** bloqués ainsi.
+
+Mais le dictionnaire ignore deux choses :
+
+- **Il n'arbitre pas les katakana.** Un texte de mots étrangers translittérés
+  est intégralement « hors dictionnaire » tout en étant juste. Deux planches
+  signalées charabia à 68 % et 100 % étaient exactes : une carte Heroes
+  (`ベジータ / HP 3500 パワー 5300`) et un tableau de trophées
+  (`プラチナ ゴールド シルバー ブロンズ`).
+- **Il ne connaît pas les noms propres hors Dragon Ball.** `ゲール` → `ケール`
+  refusé : c'est **Gale**, garde du corps de DBGT, et la planche porte sa propre
+  traduction « シーラ&ゲール / Sheera & Gale ». Ni le dictionnaire ni la
+  fréquence ne pouvaient l'attraper.
+
+### 3.5. Le piège de la couverture du lexique
+
+La couverture `name_ja` du wiki est **très inégale** : 95 % sur les databooks,
+59 % sur les personnages, **2 % sur les techniques** (17 sur 825). `ギャリック`
+(de ギャリック砲) est absent du lexique alors que `ガーリック` (Garlic, le
+personnage) y figure — d'où des « corrections » de l'un vers l'autre.
+
+**Une absence du lexique n'est pas une preuve de faute.**
+
+---
+
+## 4. Ce qui a été corrigé
+
+| Famille | Planches | Le garde qui l'encadre |
+|---|---|---|
+| Artefacts du modèle (`�` tronqué, `･･`, `...`, marqueurs de page, phrases méta) | 878 | le folio authentique est un chiffre **nu** |
+| Ellipses `・・・` pleine chasse | 333 | `・・` est une **puce de liste**, seuil à 3 |
+| Noms propres — dakuten rendu | 391 + 212 | frontière de mot, fréquence, chronologie |
+| Générations déraillées — boucles coupées, préfixe gardé | 142 | segment uniforme exclu ; seuil à 10 tours |
+| Sosies `口`/`力`, compteurs hangul | 50 | sosie en bord de suite collé à un kanji : jamais |
+
+Corpus : **6 167 250 → 5 976 468 signes**, soit 190 782 signes de bruit retirés,
+**à nombre de planches transcrites inchangé** (11 255). Rien n'a été perdu.
+
+### Les gardes qui ont payé, mesurés
+
+- **Frontière de mot** : `ベジタブル` intact, et surtout **7 régressions évitées
+  sur `スーパーボンバーマン`**, où `パーボン` est une sous-chaîne du titre de
+  Hudson — que personne n'avait anticipé.
+- **`・` isolé** : 15 317 occurrences sur 4 109 planches, **strictement
+  inchangées** de part et d'autre de la passe.
+- **Segment uniforme** : `ーーーー`, `……`, un cri étiré `おおおお` sont
+  périodiques pour *toute* période et ressortiraient à tort de n'importe quel
+  détecteur de répétition.
+- **Le compteur cerclé est de l'arithmétique, pas de l'écriture** : Unicode met
+  1-20 en U+2460, 21-35 en U+3251, 36-50 en U+32B1, et intercale le hangul
+  cerclé en U+3260. Le modèle a suivi les codets. Formule `35 + (cp - U+325F)`,
+  vérifiée 26 fois sur 26.
+
+---
+
+## 5. Ce qu'on ne corrige jamais
+
+Mesuré, verdict stable. Ne pas re-tenter sans mesure nouvelle contradictoire.
+
+| Famille | Volume | Pourquoi |
+|---|---|---|
+| Furigana en ligne propre | 3 737 | une ligne tout en hiragana peut être du vrai texte |
+| Intrusions d'alphabet | 818 | `げмар`, `容питしない` — caractère isolé substitué, aucun motif ; exige l'image |
+| Textes courts | 287 | sur les 84 planches de ≤ 4 signes, **44 sont purement numériques** — des folios légitimes |
+| Romaji seul | 259 | latin authentique (logos, ISBN) + trois ouvrages réellement anglophones |
+| Confusions ソ/ン, シ/ツ | 124 | ~50 % de faux positifs : `ヤシ`, `ミート`, `キラー` |
+| Sosie `一` → `ー` | 88 | **95 % de légitime** : `一味`, `一家`, `一ツ橋` |
+| `�` entre deux kana | 70 | le remplacer = deviner ; le **retirer** souderait `使える�けではない` en `使えるけではない` — faute silencieuse, pire que le signal |
+| Compteur cerclé > 50 | 3 | Unicode n'a aucun nombre cerclé au-delà de 50 |
+
+### Hypothèses infirmées par le comptage
+
+Elles figuraient dans la mémoire du projet et étaient **fausses** :
+
+- `力 力` et `二三` annoncés comme fragments d'onomatopée à vider : **0
+  occurrence** de `力 力` dans tout le corpus.
+- « Bulles rendues en romaji approximatif » : population **introuvable**.
+- Jetons de contrôle du modèle : **0** sur 11 255 planches, déjà nettoyés.
+- Hallucinations par répétition inter-planches : les 8 phrases récurrentes sont
+  du **boilerplate authentique de magazine**.
+
+---
+
+## 6. Le détecteur
+
+```bash
+bun apps/site/scripts/detecte-hallucinations.ts               # rapport lisible
+bun apps/site/scripts/detecte-hallucinations.ts --json out.json
+bun apps/site/scripts/detecte-hallucinations.ts --famille boucle-motif-long
+bun apps/site/scripts/detecte-hallucinations.ts --sans-lexique
+```
+
+Trois niveaux, qui ne se traitent pas pareil :
+
+| Niveau | Sens | Action |
+|---|---|---|
+| **bloquant** | une règle existe, ceci ne devrait plus exister | régression : lot neuf non nettoyé, ou runner qui en a écrasé un autre |
+| **signalé** | défaut réel, aucune règle fiable sur texte seul | file de relecture humaine |
+| **témoin** | population légitime | une **BAISSE** est une régression : une règle a mangé du vrai texte |
+
+Sortie en **code 1** si une famille bloquante est non vide ou si un témoin
+s'écarte de plus de 2 % de sa référence.
+
+Chaque famille du fichier porte son seuil **et la mesure qui l'a fixé** — lire
+ces commentaires avant d'en ajouter une.
+
+Le **balayage du lexique** est le détecteur le plus important : il régénère les
+variantes sourde/sonore de chaque nom propre du wiki et les cherche dans le
+corpus. C'est lui qui rattrape ce qu'une table figée laisse passer. Une table se
+périme ; ce balayage, non.
+
+---
+
+## 7. Mécanique de dépôt
+
+- Mode `merge`, **par planche** : seules les planches citées sont touchées.
+- Une chaîne vide est **ignorée**, pas traitée comme un effacement. Pour retirer
+  un texte, il faut `"text": null`.
+- Chaque dépôt écrit une révision dans `public.wiki_revisions` : réversible
+  depuis `/admin/wiki/history`.
+- Deux runners en parallèle peuvent s'écraser — le second redépose depuis un
+  texte lu avant le passage du premier. Tous étant idempotents, **une passe
+  finale de `--simulation` sur chacun** dit s'il reste à redéposer.
+- Le garde-fou « texte corrigé < 50 % de l'original » écarte la planche au lieu
+  de l'envoyer. Une boucle dégénérée, où perdre 90 % du texte EST la correction,
+  se traite par un prédicat **nommé et borné** à ces règles-là.
+- **Avant tout `--appliquer` de masse** :
+  `pg_dump "$DATABASE_URL" -t bot.db_databooks | gzip > ~/backups/…`
+
+## 8. Organisation du code
+
+Chaque famille vit dans son module pur sous `src/lib/databooks-ocr/`, avec son
+runner `scripts/corrige-*.ts`. **Ne jamais mettre deux familles dans un même
+fichier** : plusieurs agents y travaillent en parallèle et s'écraseraient.

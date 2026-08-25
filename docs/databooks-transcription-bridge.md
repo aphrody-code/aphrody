@@ -2,6 +2,7 @@
 # Pont aphrody ↔ shenron — transcription des databooks
 
 > Branché et vérifié de bout en bout le **2026-08-21**.
+> Corriger le corpus déjà déposé : [`databooks-hallucinations.md`](databooks-hallucinations.md).
 > Côté shenron : [`~/shenron/docs/prompt-transcription-databooks.md`](https://dragonballfr.com)
 > et `~/shenron/docs/databooks-transcription.md` (VPS `dbfr`).
 > Cap projet : [`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md).
