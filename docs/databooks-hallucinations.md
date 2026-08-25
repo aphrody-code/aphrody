@@ -222,3 +222,56 @@ périme ; ce balayage, non.
 Chaque famille vit dans son module pur sous `src/lib/databooks-ocr/`, avec son
 runner `scripts/corrige-*.ts`. **Ne jamais mettre deux familles dans un même
 fichier** : plusieurs agents y travaillent en parallèle et s'écraseraient.
+
+---
+
+## 9. Un modèle de langue japonais n'y arrive pas — mesuré le 2026-08-25
+
+L'idée était naturelle : après les passes déterministes, confier le reliquat à
+un modèle japonais rapide. Elle a été essayée et **elle échoue**. Ce qui suit
+est consigné pour éviter qu'on la reprenne de zéro.
+
+**Modèle** : `LFM2.5-1.2B-JP` Q8_0 (Liquid AI), choisi sur mesures et non sur
+réputation — il bat Qwen3-1.7B sur les évaluations japonaises, là où
+Sarashina2-7B, six fois plus gros et japonais par conception, plafonne à 0,400
+JMMLU. Architecture hybride convolution + attention, **0,07 s par requête** sur
+RTX 4070 : la vitesse n'a jamais été le facteur limitant.
+
+Le modèle n'est pas en cause dans son fonctionnement : il répond `悟空` à « qui
+est le héros de Dragon Ball » et `東京` à la capitale du Japon. Il génère du
+japonais correct. Il ne sait pas **évaluer**.
+
+| Usage | Résultat |
+|---|---|
+| **Réparer** une intrusion d'alphabet | **0 proposition attestée sur 40.** Il translittère au son (`م` → `ま`) au lieu de lire le contexte |
+| **Juger** si un texte est du japonais valide | **50 % sur un jeu équilibré** — le score d'une réponse constante. Interrogé en question ouverte, il déclare la boucle `着衣に着いた衣を被衣に…` « grammaticalement correcte » |
+| **Choisir** entre deux graphies candidates | 67 %, mais voir ci-dessous |
+
+### Le détail qui tranche : *où* il se trompe
+
+Sur le choix fermé, ses quatre erreurs sont **exactement les quatre pièges** que
+le travail déterministe avait identifiés et protégés :
+
+| Contexte | Il répond | Vérité | Coût de l'erreur |
+|---|---|---|---|
+| `不況の底値スラック` | `スラッグ` | `スラック` | détruit #82 p.65, l'horoscope financier |
+| `風来のシレン` | `ジレン` | `シレン` | le jeu Chunsoft réécrit en personnage de 2018 |
+| `名前の由来は野菜ベジタブル` | `ベジータブル` | `ベジタブル` | **casse le témoin** : la planche d'étymologie de Vegeta |
+| `天才ピート` | `ビート` | `ピート` | le mécanicien de *Dub & Peter 1*, manga de Toriyama |
+
+Il réussit là où le lexique donnait déjà la réponse, et échoue là où la
+difficulté est réelle. Le brancher sur le corpus serait une régression.
+
+### Ce que la mesure ne dit pas
+
+Le même jeu n'a **pas** été passé à un modèle plus gros : le téléchargement de
+Qwen3-8B (JMMLU 0,714) a été interrompu avant d'être complet, SHA-256 non
+vérifié. La conclusion ci-dessus vaut donc **pour un 1,2 B**, et rien n'est
+établi au-delà. Le refaire demande une heure : douze cas, dont les quatre
+pièges, sont dans `scratchpad/choix.ts` du jour.
+
+**Ce qui est établi, en revanche** : sur ce corpus, l'ancrage bat le modèle.
+Une graphie attestée par 11 255 planches du même domaine est une preuve ; une
+proposition plausible n'en est pas une. Le principe à conserver si l'on reprend
+un modèle un jour — **il propose, le dump tranche** — n'est pas une précaution
+de style, c'est ce qui a bloqué quatre destructions sur douze cas.

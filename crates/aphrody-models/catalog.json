@@ -367,6 +367,27 @@
       ],
       "vram_min_bytes": 5368709120,
       "speed": "quality"
+    },
+    {
+      "id": "lfm2.5-1.2b-jp",
+      "title": "LFM2.5 1.2B JP Q8_0 (GGUF)",
+      "task": "text-generation",
+      "backend": "llama-cpp",
+      "summary": "Japanese-native text generation, and the only text model in this catalog. Liquid AI's hybrid convolution-plus-attention architecture runs roughly twice as fast as a transformer of the same size: 0.07 s per short prompt on a 4070, with 1.25 GB of weights leaving the card free for many parallel sequences. It generates correct Japanese and knows the domain — asked who the hero of Dragon Ball is, it answers 悟空. READ THIS BEFORE REACHING FOR IT TO CLEAN A CORPUS: measured on the databooks on 2026-08-25, it cannot do that job, and the measurement is worth more than the intuition it contradicts. Repairing a foreign character substituted inside a Japanese word: 0 proposals out of 40 survived checking against the corpus — it transliterates by sound (م to ま) instead of reading the context. Judging whether a text is valid Japanese: 50 percent on a balanced set, the score of a constant answer, and asked in the open it called a degenerate loop grammatically correct. Choosing between two candidate spellings: 67 percent, and its four errors were exactly the four traps that careful work had already identified — it would have destroyed a financial horoscope reading スラック, rewritten the Chunsoft game 風来のシレン as a character created twenty years later, and broken ベジタブル, the page that explains where Vegeta's name comes from. It succeeds where a lexicon already had the answer and fails where the difficulty is real. For corpus work the anchor beats the model: let attested spellings decide. It does not read images; pair it with dots-ocr.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:LiquidAI/LFM2.5-1.2B-JP-GGUF/LFM2.5-1.2B-JP-Q8_0.gguf@170ae1cecf0e74b0b25bd704047160fba9f613c6",
+          "bytes": 1246254016,
+          "sha256": "60585553df37d8fa396368aef63ffeb236b2fe7c6b430652307a006e0f451e2c"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 2147483648,
+      "speed": "fast"
     }
   ]
 }
