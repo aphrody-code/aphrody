@@ -34,6 +34,7 @@ bunfig.toml
 turbo.json
 turbo.jsonc
 tsconfig.json
+!packages/material-web/labs/gb/tsconfig.json
 tsconfig.*.json
 .npm/
 .npmrc

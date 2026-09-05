@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "bun --hot src/server.ts",
     "start": "bun src/server.ts",
-    "build": "bun build ./src/index.html --outdir dist --minify --target browser && cp ../../packages/bun-rs/pkg/bun_rs_bg.wasm dist/",
+    "build": "bun build ./src/index.html --outdir dist --minify --target browser",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "smoke": "bun src/smoke.ts",
     "qa": "bun src/qa-gemini.ts"

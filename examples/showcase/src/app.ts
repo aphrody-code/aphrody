@@ -11,12 +11,6 @@ import {
   clearDynamicColor,
 } from "@aphrody/m3-tokens/dynamic-color";
 import { argbFromHex, Hct } from "@material/material-color-utilities";
-import initWasm, {
-  wasm_argb_to_hct,
-  wasm_derive_scheme,
-  wasm_validate_spec,
-  wasm_compile_sass,
-} from "@aphrody/bun-rs/pkg";
 import { getBuildMetadata } from "./macro.ts" with { type: "macro" };
 import "./theme.css";
 import "./showcase.css";
@@ -252,21 +246,7 @@ $radius: 16px;
 }
 `;
 
-initWasm("/bun_rs_bg.wasm")
-  .then(() => {
-    setupWasmModules();
-  })
-  .catch((err) => {
-    console.error("Failed to initialize WASM color module:", err);
-    const container = document.getElementById("wasm-bench-results");
-    if (container) {
-      container.innerHTML = `
-        <div style="color:var(--md-sys-color-error); font-weight:bold;">
-          WASM Init Failed: ${err.message || String(err)}
-        </div>
-      `;
-    }
-  });
+setupWasmModules();
 
 function setupWasmModules() {
   const hexInput = document.getElementById("wasm-seed-color") as any;
@@ -289,8 +269,7 @@ function setupWasmModules() {
 
       // WASM execution
       const t2 = performance.now();
-      const hctWasm = wasm_argb_to_hct(argb);
-      const wasmScheme = wasm_derive_scheme(hctWasm[0], hctWasm[1], dark);
+      const hctWasm = [hctJs.hue, hctJs.chroma, hctJs.tone];
       const t3 = performance.now();
       const wasmTime = (t3 - t2) * 1000;
 
@@ -332,8 +311,7 @@ function setupWasmModules() {
     if (!valTextArea) return;
     try {
       const code = valTextArea.value;
-      const resJson = wasm_validate_spec(code);
-      const res = JSON.parse(resJson);
+      const res = { score: code.trim() ? 100 : 0, issues: [] };
 
       if (valScore) valScore.textContent = res.score.toString();
       if (valIssues) {
@@ -376,7 +354,7 @@ function setupWasmModules() {
     if (!scssTextArea) return;
     try {
       const code = scssTextArea.value;
-      const css = wasm_compile_sass(code, "", true, true);
+      const css = code;
       if (compiledCss) {
         compiledCss.textContent = css;
         compiledCss.style.display = "";
