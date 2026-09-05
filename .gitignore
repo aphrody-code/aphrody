@@ -10,6 +10,7 @@
 # 0. Runtime / local agent state (never commit)
 # ----------------------------------------------------------------------------
 ai/heartbeat.txt
+.coord/
 py/aphrody/cache/
 py/ai/heartbeat.txt
 

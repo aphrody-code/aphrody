@@ -1,0 +1,28 @@
+{
+  "$schema": "https://a2a-protocol.org/latest/schema/agent-card.json",
+  "version": "1.0.0",
+  "name": "aphrody-winclean-collaboration",
+  "description": "Local collaboration contract for Claude Code, Codex, their subagents, Aphrody, and Winclean.",
+  "protocol": { "version": "1.0", "bindings": ["JSONRPC", "HTTP+JSON", "file+jsonl"] },
+  "agents": [
+    { "id": "aphrody", "role": "orchestrator", "endpoint": "http://127.0.0.1:8788", "skills": ["plan", "build", "verify", "delegate"] },
+    { "id": "winclean", "role": "peer", "endpoint": "http://127.0.0.1:5151", "skills": ["windows", "mcp", "status", "delegate"] },
+    { "id": "claude-code", "role": "client", "transport": "claude-code", "skills": ["workflow", "review", "subagents"] },
+    { "id": "codex", "role": "client", "transport": "codex", "skills": ["workflow", "implementation", "verification"] }
+  ],
+  "workflows": {
+    "cross-repo-change": {
+      "steps": ["plan", "delegate-independent-work", "implement-owner-side", "cross-check-peer", "verify-artifacts", "report-result"],
+      "approval": "required-for-destructive-or-public-actions"
+    },
+    "claude-subagent-review": {
+      "steps": ["claude-plan", "parallel-subagents", "owner-review", "codex-build-check", "a2a-report"]
+    }
+  },
+  "coordination": {
+    "aphrody": "C:/Users/aphro/aphrody/.coord",
+    "winclean": "C:/Users/aphro/winclean/.coord",
+    "message_methods": ["message/send", "tasks/get", "tasks/cancel"],
+    "health": ["http://127.0.0.1:8788/ping", "http://127.0.0.1:5151/health"]
+  }
+}

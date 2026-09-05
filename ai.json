@@ -8,6 +8,7 @@
   "description": "Cross-platform Rust agent with A2A 1.0 JSON-RPC, file JSONL coordination, and native Claude Code / Grok / agy / bxc peers.",
   "a2a_protocol_version": "1.0",
   "documentation_url": "https://github.com/aphrody-code/aphrody/blob/main/docs/a2a/README.md",
+  "collaboration_manifest": "./ai-collaboration.json",
   "provider": {
     "organization": "aphrody-code",
     "url": "https://github.com/aphrody-code/aphrody"
