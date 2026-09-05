@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-models"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Local model lifecycle for aphrody: pinned HuggingFace/URL references, a curated catalog of OCR / visual-transcription / speech-to-text / embedding models, a digest-checked resumable downloader, hand-rolled GGUF / GGML / safetensors / ONNX header inspection, and an LRU-evicting on-disk store under ~/.aphrody/models."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+# Typed errors for the public API (mirrors aphrody-embed / aphrody-images).
+thiserror   = { workspace = true }
+# The registry, the embedded catalog and the safetensors header are all JSON.
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+# Artefact digests: cache keys, download verification, tamper detection.
+sha2        = { workspace = true }
+hex         = { workspace = true }
+
+# Host-only: everything below needs a filesystem, a socket or a clock.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Portable state-dir resolution (~/.aphrody/models), same crate aphrody-embed
+# uses so both land in one namespace.
+dirs        = { workspace = true }
+# RFC 3339 rendering of the registry's unix timestamps.
+chrono      = { workspace = true }
+# Streaming weight download with Range-based resume. The workspace pins
+# `rustls-no-provider`, so `fetch::ensure_crypto_provider` installs the ring
+# provider before the first client is built (CLAUDE.md §7).
+reqwest     = { workspace = true }
+rustls      = { workspace = true }
+# Driving `Response::bytes_stream()` chunk by chunk.
+futures-util = { workspace = true }
+
+[dev-dependencies]
+# The store and downloader tests all run against a throwaway root.
+tempfile    = { workspace = true }
+# `Downloader::pull` is async; the adoption path is covered by a runtime test.
+tokio       = { workspace = true }
+
+[package.metadata.cargo-machete]
+# `rustls` is referenced only through `rustls::crypto::ring::default_provider()`
+# inside a `Once`, which machete's symbol scan under-counts.
+ignored = ["rustls"]

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://code.claude.com/schema/plugin.json",
+  "name": "aphrody",
+  "version": "1.0.1",
+  "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (~9 MB, sub-millisecond cold-start) exposes 42 tools — 8 ex-google_mcp (coding_style_guide, universal_web_fetch, dns_recon, auth_extract, chrome_autopsy, advanced_recon, native_hooks, start_dashboard) + 2 voice (voice_synthesize, voice_transcribe) + 2 Context7 (context7_resolve_library_id, context7_query_docs) + 3 Microsoft Learn (microsoft_docs_search/fetch/code_sample_search) + 3 reverse-engineering (re_triage/re_strings/re_sections via aphrody-re) + 2 aggregators (docs_auto_search, aphrody_mcp_call) + Gemini web (gemini_chat 3.5 Flash, gemini_image Nano Banana, gemini_deep_research) + screen_capture + Adobe Firefly Services (firefly_generate, firefly_generative_expand, firefly_generative_fill) + headless cloud Photoshop/Lightroom/Sensei (photoshop_manifest, photoshop_rendition, photoshop_document_operations, photoshop_auto_tone, photoshop_auto_straighten, photoshop_edit, photoshop_remove_background, photoshop_create_mask, photoshop_product_crop, photoshop_depth_blur, photoshop_action_json, firefly_to_photoshop) + live in-app Photoshop via UXP bridge (photoshop_live_info, photoshop_live_batchplay, photoshop_live_exec). Zero JS runtime in the binary, zero secondary MCP server. 2 slash commands (/status, /docs). 20 agents, 28 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+  "author": {
+    "name": "aphrody-code",
+    "email": "37252373+aphrody-code@users.noreply.github.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "homepage": "https://github.com/aphrody-code/aphrody",
+  "repository": "https://github.com/aphrody-code/aphrody",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aphrody",
+    "material-design-3",
+    "rust",
+    "cross-platform",
+    "wasm",
+    "claude-code",
+    "adobe",
+    "photoshop",
+    "firefly",
+    "gemini"
+  ],
+  "icon": "icon.webp",
+  "category": "productivity",
+  "mcpServers": {
+    "aphrody": {
+      "type": "stdio",
+      "command": "aphrody-mcp",
+      "args": []
+    }
+  },
+  "interface": {
+    "icon": "icon.webp",
+    "displayName": "Aphrody",
+    "shortDescription": "One Rust binary, 42 tools: automation, vision, voice, RE triage, docs, Gemini web, Adobe Firefly + cloud & live in-app Photoshop.",
+    "longDescription": "Single-binary Rust MCP surface fusing 42 tools (forensics, network recon, Material Design 3 vision, ElevenLabs voice, Context7 + Microsoft Learn docs, PE/ELF RE triage, Gemini web chat/image/deep-research, Adobe Firefly Services generate/expand/fill, headless cloud Photoshop/Lightroom/Sensei edits, and live in-app Photoshop via a UXP↔WebSocket bridge — batchPlay drives any operation from the inside). Zero JS runtime in the binary, zero secondary MCP server. 20 agents, 28 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+    "brandColor": "#CE422B",
+    "category": "Productivity",
+    "capabilities": ["Automation", "Research", "Reference"],
+    "defaultPrompt": [
+      "DNS-recon google.com, then advanced-recon the top-3 hosts on ports 80 and 443.",
+      "Find official Azure Functions Python v2 timeout / quota limits via the Microsoft Learn MCP."
+    ]
+  }
+}

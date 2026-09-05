@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/color-guard.sh\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'aphrody-mcp ready. For ANY library / framework / SDK / API / cloud-service question, call the native docs search tool FIRST, then drill down on a specific URL when needed.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

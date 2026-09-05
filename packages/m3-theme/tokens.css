@@ -1,0 +1,173 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Canonical Material 3 fusion tokens (M3 + shadcn/ui + Tailwind v4), light + dark.
+ * GENERATED - do not hand-edit. Source of truth: generate.ts (M3 baseline palette
+ * + the shadcn/Tailwind alias maps). Regenerate with: bun run generate
+ */
+
+:root {
+  --md-sys-color-primary: #984061;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #ffc0e5;
+  --md-sys-color-on-primary-container: #41001d;
+  --md-sys-color-secondary: #74565f;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #ffd8e2;
+  --md-sys-color-on-secondary-container: #2b151c;
+  --md-sys-color-tertiary: #7c5635;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #ffd8ae;
+  --md-sys-color-on-tertiary-container: #2f1500;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffa08d;
+  --md-sys-color-on-error-container: #4f0000;
+  --md-sys-color-background: #fcfcfc;
+  --md-sys-color-on-background: #201a1b;
+  --md-sys-color-surface: #fcfcfc;
+  --md-sys-color-on-surface: #201a1b;
+  --md-sys-color-surface-variant: #f2dde1;
+  --md-sys-color-on-surface-variant: #514347;
+  --md-sys-color-outline: #837377;
+  --md-sys-color-outline-variant: #d5c2c6;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #352f30;
+  --md-sys-color-inverse-on-surface: #faeeef;
+  --md-sys-color-inverse-primary: #ffa5c9;
+  --md-sys-color-surface-dim: #ebe0e1;
+  --md-sys-color-surface-bright: #fff6f8;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #fdf1f2;
+  --md-sys-color-surface-container: #f7ebec;
+  --md-sys-color-surface-container-high: #f1e5e7;
+  --md-sys-color-surface-container-highest: #ebe0e1;
+}
+
+:root {
+  --background: var(--md-sys-color-surface);
+  --foreground: var(--md-sys-color-on-surface);
+  --card: var(--md-sys-color-surface-container-low);
+  --card-foreground: var(--md-sys-color-on-surface);
+  --popover: var(--md-sys-color-surface-container);
+  --popover-foreground: var(--md-sys-color-on-surface);
+  --primary: var(--md-sys-color-primary);
+  --primary-foreground: var(--md-sys-color-on-primary);
+  --secondary: var(--md-sys-color-secondary-container);
+  --secondary-foreground: var(--md-sys-color-on-secondary-container);
+  --muted: var(--md-sys-color-surface-variant);
+  --muted-foreground: var(--md-sys-color-on-surface-variant);
+  --accent: var(--md-sys-color-tertiary-container);
+  --accent-foreground: var(--md-sys-color-on-tertiary-container);
+  --destructive: var(--md-sys-color-error);
+  --destructive-foreground: var(--md-sys-color-on-error);
+  --border: var(--md-sys-color-outline-variant);
+  --input: var(--md-sys-color-outline-variant);
+  --ring: var(--md-sys-color-primary);
+}
+
+@theme inline {
+  --color-background: var(--md-sys-color-surface);
+  --color-foreground: var(--md-sys-color-on-surface);
+  --color-card: var(--md-sys-color-surface-container-low);
+  --color-card-foreground: var(--md-sys-color-on-surface);
+  --color-popover: var(--md-sys-color-surface-container);
+  --color-popover-foreground: var(--md-sys-color-on-surface);
+  --color-primary: var(--md-sys-color-primary);
+  --color-primary-foreground: var(--md-sys-color-on-primary);
+  --color-secondary: var(--md-sys-color-secondary-container);
+  --color-secondary-foreground: var(--md-sys-color-on-secondary-container);
+  --color-muted: var(--md-sys-color-surface-variant);
+  --color-muted-foreground: var(--md-sys-color-on-surface-variant);
+  --color-accent: var(--md-sys-color-tertiary-container);
+  --color-accent-foreground: var(--md-sys-color-on-tertiary-container);
+  --color-destructive: var(--md-sys-color-error);
+  --color-destructive-foreground: var(--md-sys-color-on-error);
+  --color-border: var(--md-sys-color-outline-variant);
+  --color-input: var(--md-sys-color-outline-variant);
+  --color-ring: var(--md-sys-color-primary);
+}
+
+/* Dark palette. The shadcn + Tailwind aliases above reference these vars, so
+   only the M3 palette is re-declared. Automatic via prefers-color-scheme;
+   force it with class="dark" on a root element. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --md-sys-color-primary: #ffa5c9;
+    --md-sys-color-on-primary: #5e1133;
+    --md-sys-color-primary-container: #7b2949;
+    --md-sys-color-on-primary-container: #ffc0e5;
+    --md-sys-color-secondary: #e3bdc6;
+    --md-sys-color-on-secondary: #422931;
+    --md-sys-color-secondary-container: #5a3f47;
+    --md-sys-color-on-secondary-container: #ffd8e2;
+    --md-sys-color-tertiary: #efbd94;
+    --md-sys-color-on-tertiary: #48290b;
+    --md-sys-color-tertiary-container: #623f20;
+    --md-sys-color-on-tertiary-container: #ffd8ae;
+    --md-sys-color-error: #ff8575;
+    --md-sys-color-on-error: #720000;
+    --md-sys-color-error-container: #960004;
+    --md-sys-color-on-error-container: #ffa08d;
+    --md-sys-color-background: #201a1b;
+    --md-sys-color-on-background: #ebe0e1;
+    --md-sys-color-surface: #201a1b;
+    --md-sys-color-on-surface: #ebe0e1;
+    --md-sys-color-surface-variant: #514347;
+    --md-sys-color-on-surface-variant: #d5c2c6;
+    --md-sys-color-outline: #9e8c90;
+    --md-sys-color-outline-variant: #514347;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #ebe0e1;
+    --md-sys-color-inverse-on-surface: #352f30;
+    --md-sys-color-inverse-primary: #984061;
+    --md-sys-color-surface-dim: #171213;
+    --md-sys-color-surface-bright: #3e3739;
+    --md-sys-color-surface-container-lowest: #120d0e;
+    --md-sys-color-surface-container-low: #241e1f;
+    --md-sys-color-surface-container: #2f282a;
+    --md-sys-color-surface-container-high: #3a3334;
+    --md-sys-color-surface-container-highest: #484042;
+  }
+}
+
+:root.dark,
+.dark {
+  --md-sys-color-primary: #ffa5c9;
+  --md-sys-color-on-primary: #5e1133;
+  --md-sys-color-primary-container: #7b2949;
+  --md-sys-color-on-primary-container: #ffc0e5;
+  --md-sys-color-secondary: #e3bdc6;
+  --md-sys-color-on-secondary: #422931;
+  --md-sys-color-secondary-container: #5a3f47;
+  --md-sys-color-on-secondary-container: #ffd8e2;
+  --md-sys-color-tertiary: #efbd94;
+  --md-sys-color-on-tertiary: #48290b;
+  --md-sys-color-tertiary-container: #623f20;
+  --md-sys-color-on-tertiary-container: #ffd8ae;
+  --md-sys-color-error: #ff8575;
+  --md-sys-color-on-error: #720000;
+  --md-sys-color-error-container: #960004;
+  --md-sys-color-on-error-container: #ffa08d;
+  --md-sys-color-background: #201a1b;
+  --md-sys-color-on-background: #ebe0e1;
+  --md-sys-color-surface: #201a1b;
+  --md-sys-color-on-surface: #ebe0e1;
+  --md-sys-color-surface-variant: #514347;
+  --md-sys-color-on-surface-variant: #d5c2c6;
+  --md-sys-color-outline: #9e8c90;
+  --md-sys-color-outline-variant: #514347;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #ebe0e1;
+  --md-sys-color-inverse-on-surface: #352f30;
+  --md-sys-color-inverse-primary: #984061;
+  --md-sys-color-surface-dim: #171213;
+  --md-sys-color-surface-bright: #3e3739;
+  --md-sys-color-surface-container-lowest: #120d0e;
+  --md-sys-color-surface-container-low: #241e1f;
+  --md-sys-color-surface-container: #2f282a;
+  --md-sys-color-surface-container-high: #3a3334;
+  --md-sys-color-surface-container-highest: #484042;
+}

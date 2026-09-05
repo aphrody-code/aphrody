@@ -1,0 +1,13 @@
+{
+  "jsPlugins": ["../index.js"],
+  "rules": {
+    "m3/valid-icon-name": "error",
+    "m3/valid-color-role": "error",
+    "m3/no-sx-prop": "error",
+    "m3/no-mui-import": "error",
+    "m3/no-mui-prop-on-md": "error",
+    "m3/prefer-icon-token": "error",
+    "m3/require-icon-button-label": "error",
+    "m3/no-hardcoded-color": "error"
+  }
+}

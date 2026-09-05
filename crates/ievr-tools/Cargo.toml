@@ -1,0 +1,35 @@
+[package]
+name                   = "ievr-tools"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+license.workspace      = true
+description            = "IEVR (Inazuma Eleven Victory Road) reverse-engineering analysis tools — consumes binary inventory JSON for static catalog work."
+
+[[bin]]
+name = "ievr-tools"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+integration = []
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow     = { workspace = true }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+clap       = { workspace = true, features = ["derive"] }
+goblin     = { workspace = true }
+byteorder  = { workspace = true }
+hex        = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = []

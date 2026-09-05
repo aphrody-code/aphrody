@@ -1,0 +1,149 @@
+# ============================================================================
+#  Release workflow — builds + uploads `cli` for all supported targets.
+#  Triggered on git tag `v*.*.*` (semver). Aligned `dist` profile.
+# ============================================================================
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0-canary)'
+        required: true
+
+permissions:
+  contents: write   # required to upload release artifacts
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUSTC_WRAPPER: "sccache"
+
+jobs:
+  # build-gemini removed 2026-05-18 : packages/gemini-cli/ is intentionally
+  # gitignored (it's the upstream Google reference, not vendored). The aphrody
+  # binary delegates to the user-installed `gemini` on PATH, so no bundled
+  # binary is required for the release. If we ever decide to ship a bundled
+  # gemini, restore the job here AND clone upstream first OR use the local
+  # packages/gemini/ port (Next.js app).
+
+  build:
+    name: build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            ext: .exe
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            ext: .exe
+            cross: zigbuild
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: zigbuild
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: ${{ matrix.target }}
+          components: rust-src
+      - name: Ensure rust-std for target (rustup belt-and-suspenders)
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
+      - uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Install zig (cross-targets prerequisite)
+        if: ${{ matrix.cross == 'zigbuild' }}
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+
+      - name: Install zigbuild (cross-targets)
+        if: ${{ matrix.cross == 'zigbuild' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Install cargo-auditable (embedded SBOM)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-auditable
+
+      - name: Build (auditable + reproducible profile)
+        shell: bash
+        env:
+          SOURCE_DATE_EPOCH: ${{ github.event.head_commit.timestamp && '1700000000' || '1700000000' }}
+        run: |
+          ${{ matrix.cross == 'zigbuild' && 'cargo auditable zigbuild' || 'cargo auditable build' }} \
+            --locked --profile reproducible \
+            --target ${{ matrix.target }} \
+            -p aphrody
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          BIN_PATH="target/${{ matrix.target }}/reproducible/aphrody${{ matrix.ext }}"
+          STAGE="aphrody-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir -p "$STAGE"
+          cp "$BIN_PATH" "$STAGE/"
+          cp README.md LICENSE "$STAGE/"
+          # gemini-cli bundling removed 2026-05-18 (see build-gemini comment above).
+          # Users install gemini-cli separately if desired (out-of-scope for this Rust release).
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            7z a "artifacts/$STAGE.zip" "$STAGE"
+          else
+            tar czf "artifacts/$STAGE.tar.gz" "$STAGE"
+          fi
+          # SHA-256 checksum for verification
+          shasum -a 256 "artifacts/$STAGE.${{ matrix.archive }}" > "artifacts/$STAGE.${{ matrix.archive }}.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aphrody-${{ matrix.target }}
+          path: artifacts/
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

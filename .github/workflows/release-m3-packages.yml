@@ -1,0 +1,68 @@
+name: Release M3 Packages
+
+# Publishes every @aphrody/* Material Design 3 package to the public npm
+# registry (registry.npmjs.org, org `aphrody`) when an `m3-v*` tag is pushed
+# (decoupled from the core `release.yml`, which fires on `v*`). Bun-only.
+# Workspace `workspace:*` deps are replaced with the resolved version by
+# `bun publish` automatically. Merged from the standalone material-web monorepo
+# 2026-06-01; npm became canonical (was GitHub Packages) 2026-06-04.
+on:
+  push:
+    tags: ["m3-v*"]
+  workflow_dispatch: {}
+
+env:
+  BUN_VERSION: "canary"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: build + publish to npm (@aphrody)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # GH_TOKEN feeds the repo .npmrc so any private GitHub Packages dep
+      # (e.g. @aphrody-code/bxc in the showcase) resolves at install time.
+      - run: bun install --frozen-lockfile
+        env:
+          GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      # build:sass falls back to sass-embedded when the bun-rs FFI lib is absent,
+      # so CI needs no Rust toolchain. Build only the publishable packages
+      # (turbo pulls in their workspace deps automatically); examples/* excluded.
+      - run: bunx turbo run build --filter='./packages/*'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      # npm auth for the public `@aphrody` scope on registry.npmjs.org. Uses the
+      # NPM_TOKEN secret (automation token, owner of org `aphrody`).
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> "$HOME/.npmrc"
+
+      # Publish in dependency order so consumers can always resolve. `bun publish`
+      # inlines workspace:* and defaults to registry.npmjs.org (no publishConfig
+      # registry override). `--access public` for the scoped @aphrody packages.
+      - name: Publish to npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pkg in \
+            packages/m3-tokens \
+            packages/material-web \
+            packages/react \
+            packages/m3-motion \
+            packages/m3-theme \
+            packages/m3-design \
+            packages/eslint-plugin-m3 \
+            packages/doc-ai \
+            packages/bun-rs; do
+            echo "::group::publish $pkg"
+            ( cd "$pkg" && bun publish --access public --registry https://registry.npmjs.org ) || echo "skip $pkg (version may already exist)"
+            echo "::endgroup::"
+          done

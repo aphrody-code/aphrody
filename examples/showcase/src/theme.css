@@ -1,0 +1,48 @@
+/**
+ * Showcase base styles — everything EXCEPT the M3 colour roles.
+ *
+ * The ~47 `--md-sys-color-*` roles (light + dark) are generated at SSR by the
+ * library itself: `layout.tsx` injects `cssFromSeed("#6750a4")` from
+ * `@aphrody/m3-tokens/dynamic-color` into a `<style>`, so the baseline palette
+ * is engine-produced (and WCAG-AA by construction, see the m3-tokens contrast
+ * tests) and rendered before first paint — no flash, no JS recomputation.
+ *
+ * Here we keep only the motion easings the components read at runtime, the
+ * layout reset, and the FOUC parade.
+ */
+
+:root {
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Outfit",
+    "Inter",
+    "Roboto",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* FOUC parade: custom elements have no shadow DOM until their definition
+ * upgrades on the client. Keep every still-undefined element invisible. */
+:not(:defined) {
+  visibility: hidden;
+}

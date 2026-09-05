@@ -1,0 +1,61 @@
+{
+  "name": "@aphrody/m3-tokens",
+  "version": "3.2.4",
+  "description": "Material 3 design tokens (--md-sys-*) for the @aphrody/material-web fork: MUI-theme → M3 token CSS generation and runtime Material You dynamic colour via material-color-utilities.",
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-tokens#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/m3-tokens"
+  },
+  "files": [
+    "dist",
+    "src/m3-tokens.css"
+  ],
+  "type": "module",
+  "main": "./dist/theme-to-tokens.js",
+  "types": "./dist/theme-to-tokens.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/theme-to-tokens.d.ts",
+      "default": "./dist/theme-to-tokens.js"
+    },
+    "./theme-to-tokens": {
+      "types": "./dist/theme-to-tokens.d.ts",
+      "default": "./dist/theme-to-tokens.js"
+    },
+    "./dynamic-color": {
+      "types": "./dist/dynamic-color.d.ts",
+      "default": "./dist/dynamic-color.js"
+    },
+    "./breakpoints": {
+      "types": "./dist/breakpoints.d.ts",
+      "default": "./dist/breakpoints.js"
+    },
+    "./breakpoints.css": "./src/breakpoints.css",
+    "./m3-tokens.css": "./src/m3-tokens.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:fast": "tsgo -p tsconfig.json --noEmit",
+    "test": "bun test",
+    "demo": "bun run src/cli.ts"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

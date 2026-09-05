@@ -1,0 +1,20 @@
+# rules/detect-mui-imports.yml — RAPPORT : signale tout import depuis @mui/material.
+#
+# Sert d'inventaire des fichiers restant à migrer (00-CONVENTIONS.md §3/§7).
+# Couvre l'import racine (`@mui/material`) ET les sous-chemins (`@mui/material/Button`).
+# Non-fixable (la réécriture variant-aware est faite par jscodeshift).
+id: detect-mui-imports
+language: tsx
+severity: warning
+message: Import MUI détecté — à migrer vers @aphrody/m3-react (cf. 00-CONVENTIONS.md §3).
+note: |
+  Utiliser les codemods jscodeshift pour la réécriture variant-aware :
+    bunx jscodeshift -t transforms/orchestrator.ts --parser=tsx <fichiers>
+rule:
+  kind: import_statement
+  has:
+    field: source
+    kind: string
+    has:
+      kind: string_fragment
+      regex: ^@mui/material(/|$)

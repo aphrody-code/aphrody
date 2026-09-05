@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+name: bench
+on:
+  push:
+    branches: [main, stable]
+    paths:
+      - 'crates/**/*.rs'
+      - 'crates/**/Cargo.toml'
+      - 'crates/**/benches/**'
+      - 'Cargo.lock'
+  pull_request:
+    branches: [main, stable]
+    paths:
+      - 'crates/**/*.rs'
+      - 'crates/**/Cargo.toml'
+      - 'crates/**/benches/**'
+      - 'Cargo.lock'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_INCREMENTAL: 0
+  # sccache via mozilla-actions/sccache-action@v0.0.10 (aligned with
+  # cross-platform.yml and build.yml per pipeline-optimization 2026-05-18).
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+
+jobs:
+  bench:
+    name: criterion benches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+      - uses: mozilla-actions/sccache-action@v0.0.10
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: bench
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: Run criterion benches
+        run: |
+          cargo bench --workspace --locked 2>&1 | tee bench-output.txt
+      - name: Extract summary
+        run: |
+          # Capture the criterion summary lines (mean +/- stddev per bench)
+          grep -E "^\w+\s+time:" bench-output.txt > bench-summary.txt || echo "no benches found" > bench-summary.txt
+          cat bench-summary.txt
+      - name: sccache stats (non-fatal)
+        if: always()
+        run: sccache --show-stats || true
+      # Tracks bench timings as PR-to-baseline regressions and posts alerts
+      # in-PR. auto-push=false keeps the workflow read-only on the default
+      # branch; flip to true once a gh-pages branch is provisioned.
+      - name: Store benchmark result (regression tracker)
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: bench-output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+          alert-threshold: '150%'
+          fail-on-alert: false
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('bench-summary.txt', 'utf8');
+            const body = `## Bench results\n\n\`\`\`\n${summary}\n\`\`\`\n\n_Baseline comparison handled by github-action-benchmark above (alert threshold 150%)._`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body,
+            });
+      - name: Upload bench artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-output-${{ github.sha }}
+          path: bench-output.txt
+          retention-days: 30

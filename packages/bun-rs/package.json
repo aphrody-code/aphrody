@@ -1,0 +1,21 @@
+{
+  "name": "@aphrody/bun-rs",
+  "version": "3.2.4",
+  "description": "Native Rust FFI wrappers for Bun.",
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "files": [
+    "src",
+    "target/release/libbun_rs.so",
+    "target/release/libbun_rs.dylib",
+    "target/release/libbun_rs.dll"
+  ],
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "cargo build --release || echo 'bun-rs: native build skipped (cargo or out-of-tree m3-tokens crate unavailable); the FFI lib is loaded at runtime only and the Sass build falls back to sass-embedded'"
+  }
+}

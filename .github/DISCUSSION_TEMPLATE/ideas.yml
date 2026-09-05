@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+title: "[idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are open-ended proposals. For concrete feature requests with implementation plan, open an issue instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What use case isn't well-served today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: How could aphrody solve this?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

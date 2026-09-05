@@ -1,0 +1,24 @@
+{
+  "//": "Type-checks the Bun-side files (build scripts, plugins, bun:test suites, bxc runner) that the strict lib tsconfig.json excludes because they use Bun/Node globals. Run via `tsc -p tsconfig.bun.json --noEmit`.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["bun-types"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noUnusedLocals": false,
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "//include": "build tooling + tests that do NOT statically import components; component tests (test/components.test.ts) traverse lib source under a different DOM lib, so they are validated at runtime by `bun test` instead",
+  "include": [
+    "aphrody-build.ts",
+    "aphrody-css-minify.ts",
+    "scripts/**/*.ts",
+    "tests-bxc/**/*.ts",
+    "test/transform-pseudo-classes.test.ts",
+    "test/sass-plugin.test.ts",
+    "test/happydom.ts"
+  ]
+}

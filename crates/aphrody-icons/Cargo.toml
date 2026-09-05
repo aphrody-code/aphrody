@@ -1,0 +1,18 @@
+[package]
+name = "aphrody-icons"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Material Design Icons & Symbols (Web Fonts, CSS, JSON) as a workspace crate"
+publish = false
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+base64.workspace = true
+serde = { workspace = true, optional = true }

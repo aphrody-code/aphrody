@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-re"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Reverse engineering primitives for aphrody — PE/ELF/Mach-O triage, sections + entropy + hash, ASCII/UTF-16 strings extraction. Pure Rust, no C bindings, no GPL."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[features]
+# Native Google Magika deep-learning file-type classification. Opt-in because
+# the `magika` crate links the ONNX Runtime via `ort`, which is host-only and
+# fetches a prebuilt runtime at build time (not hermetic-offline, not wasm).
+# The final binary must also pull `ort` with a backend — see crates/cli.
+magika = ["dep:magika"]
+
+# Read-only LevelDB key/value enumerator (WS6b). Chromium stores Local/Session
+# Storage and `shared_proto_db` as LevelDB. Pure-Rust, MIT-licensed reader so we
+# keep the no-C, no-GPL guarantee (the C++ `leveldb`/`leveldb-sys` bindings are
+# avoided). Opt-in because it pulls a filesystem `Env` (host-only); the default
+# + wasm builds stay untouched.
+leveldb = ["dep:rusty-leveldb", "dep:tempfile"]
+
+# YARA-X pattern-matching scanner (`aphrody re yara --rules <rules.yara> <binary>`).
+# Pure Rust (BSD-3-Clause). Opt-in because it pulls the yara-x crate which is
+# host-only (reads files + compiles rules at runtime). Not wasm-safe.
+# Build with: cargo build -p aphrody --features yara
+yara = ["dep:yara-x"]
+
+[dependencies]
+# Cross-platform binary parser (Apache-2.0/MIT). Features pe32+pe64+elf32+elf64
+# already enabled in [workspace.dependencies], with std + endian_fd.
+goblin     = { workspace = true }
+# SHA-256 for binary fingerprinting + per-section integrity.
+sha2       = { workspace = true }
+# Hex encoding for hashes in the JSON report.
+hex        = { workspace = true }
+# JSON serialization of the TriageReport (consumed by CLI + future MCP tools).
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# Structured errors for the public API.
+thiserror  = { workspace = true }
+# Pure-Rust x86/x64 disassembler + Intel formatter. No C, no GPL.
+# Apex Cap R5.4 (Sprint R-E): `disasm()` public API.
+iced-x86   = { workspace = true }
+# Byte-level needle search for family detection in the `google` module.
+memchr     = { workspace = true }
+# Structured pattern extraction (OAuth IDs, endpoints, version strings).
+regex      = { workspace = true }
+# Zero-cost memory layout validation + safe casting (BSD-2-Clause OR Apache-2.0).
+# Used in aphrody_re::headers for zero-copy ELF/PE magic header inspection.
+zerocopy   = { workspace = true }
+# Regex with backreferences + lookahead/lookbehind (MIT). Used in the `google`
+# module for OAuth client-ID and endpoint extraction with negative lookahead.
+fancy-regex = { workspace = true }
+# Google Magika ML file-type classifier (Apache-2.0). Optional: links ONNX
+# Runtime via `ort` in the final binary. Pinned 1.1.0 (latest stable on
+# crates.io, embeds the model).
+magika     = { version = "1.1.0", optional = true }
+# Pure-Rust LevelDB reader (MIT). Chosen at v4 (the maintained 2026 line on
+# crates.io, supersedes the v3 the WS6b brief drafted against): same `DB::open`
+# / `LdbIterator` surface, fewer transitive crates. `default-features = false`
+# drops the async runtimes; we re-add only `fs` so a real on-disk LevelDB
+# directory (the `PosixDiskEnv`) can be opened. No `tokio`/`async-std` pulled.
+rusty-leveldb = { version = "4", optional = true, default-features = false, features = ["fs"] }
+# Forensic safety: Chromium DBs are often live/locked, and opening a LevelDB
+# replays the WAL into the directory. We copy the dir into a scratch temp dir
+# first and open the copy, leaving the source untouched. Optional, leveldb-gated.
+tempfile   = { workspace = true, optional = true }
+# Recursive directory walker used by the `adobe` module mapper.
+walkdir    = { workspace = true }
+# Pure-Rust YARA pattern-matching engine (BSD-3-Clause). Optional: host-only,
+# compiles rules at runtime. Default-features disabled: drops the heavy default-
+# modules (pe-module, elf-module, crypto, protobuf-codegen) — we only need the
+# core scanner + string/pattern engine. Gated by the `yara` feature.
+yara-x     = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+# Round-trip tests build a temp DB on disk; reuse the workspace pin.
+tempfile   = { workspace = true }
+# GoogleTest-style rich matchers (Apache-2.0). Replaces bare `assert_eq!` in
+# the aphrody-re test suite for clearer failure messages.
+googletest = { workspace = true }
+# Criterion harness for benches/triage.rs (RE triage p50 metric, PLAN R5).
+# Reuses the existing workspace pin (also used by cli/backend benches).
+criterion  = { workspace = true }
+
+[[bench]]
+name    = "triage"
+harness = false
+
+[package.metadata.cargo-machete]
+# Optional deps guarded by feature flags — machete cannot see their uses when
+# the feature is inactive and raises false positives.
+ignored = ["magika", "yara-x"]

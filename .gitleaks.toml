@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# gitleaks config for aphrody — consumed by .github/workflows/security.yml.
+# Goal: catch any NEW secret OR re-introduction of the repo owner's personal
+# info, without noise on known-public / third-party / vendored false positives.
+# Modelled on the sibling rg monorepo's config.
+
+[extend]
+useDefault = true
+
+# --- Custom rule: owner PII must never be committed (anonymise) --------------
+# Backstop for the 2026-06-04 privacy scrub: fail CI if the owner's real name,
+# personal email, or per-user Windows path is reintroduced anywhere.
+[[rules]]
+id = "aphrody-owner-pii"
+description = "Repo owner personal name / email / home path (anonymise to neutral placeholders)"
+regex = '''(?i)(yohanpierre15@gmail\.com|\byohan\b|[\\/]Users[\\/]yohan)'''
+tags = ["pii", "anonymisation"]
+keywords = ["yohan"]
+
+[allowlist]
+description = "Known false positives — public-by-design, third-party, vendored, or generated"
+paths = [
+  # Lockfiles & dependency manifests (hashes look like secrets to gitleaks)
+  '''Cargo\.lock$''',
+  '''bun\.lock$''',
+  '''.*\.lock$''',
+  # Templates / samples / examples are placeholders by design
+  '''.*\.example$''',
+  '''.*\.sample$''',
+  '''.*\.example\..*''',
+  # Vendored / third-party doc corpora (may embed third-party keys in scraped HTML/snippets)
+  '''var/ragflow/''',
+  '''packages/material-web/docs/''',
+  '''docs/research/''',
+  # Demo recordings (asciinema casts) and binary assets
+  '''assets/.*\.cast$''',
+]
+# Allow the SPDX/placeholder e-mails we deliberately ship.
+regexes = [
+  '''owner@example\.com''',
+  '''user@example\.com''',
+  '''dev@aphrody''',
+  '''security@aphrody\.dev''',
+  '''noreply@anthropic\.com''',
+  '''<user>''',
+]
+stopwords = [
+  "example",
+  "placeholder",
+  "redacted",
+]

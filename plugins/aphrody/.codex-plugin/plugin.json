@@ -1,0 +1,42 @@
+{
+  "name": "aphrody",
+  "version": "1.0.0-canary+codex.20260905",
+  "description": "Cross-platform Rust automation and reference tools exposed through one local stdio MCP server.",
+  "author": {
+    "name": "aphrody-code",
+    "email": "37252373+aphrody-code@users.noreply.github.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "homepage": "https://github.com/aphrody-code/aphrody",
+  "repository": "https://github.com/aphrody-code/aphrody",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aphrody",
+    "rust",
+    "mcp",
+    "cross-platform",
+    "automation",
+    "reverse-engineering",
+    "documentation"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Aphrody",
+    "shortDescription": "Cross-platform Rust tools through local MCP",
+    "longDescription": "A local-only Codex plugin backed by the aphrody-mcp Rust binary. It exposes the capabilities available in the installed build for documentation, reverse-engineering triage, network inspection, voice, and bounded automation. No cloud API key is required for the local transport.",
+    "developerName": "aphrody-code",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Automation",
+      "Research",
+      "Reference"
+    ],
+    "brandColor": "#CE422B",
+    "defaultPrompt": [
+      "Inspect this repository with aphrody.",
+      "Search official developer documentation locally.",
+      "Triage a local binary with aphrody."
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "skills": {
+    "developing-genkit-js": {
+      "source": "genkit-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/developing-genkit-js/SKILL.md",
+      "computedHash": "511fbb0045b1e5150d529140055a5ddb47d504918be34052f8fde93109dba146"
+    },
+    "material": {
+      "source": "bergside/awesome-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/material/SKILL.md",
+      "computedHash": "df56c7346f3d12f4112c9d9ed028ce9dd26ba5be042e22afa98fb6f05c691a7c"
+    },
+    "material-3": {
+      "source": "hamen/material-3-skill",
+      "sourceType": "github",
+      "skillPath": "skills/material-3/SKILL.md",
+      "computedHash": "04bc70440f7edf4f8f76affca0013de7764e7cf0cea981c860b0ca5e321d4962"
+    },
+    "material-design-3-components": {
+      "source": "shelbeely/shelbeely-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/material-design-3-components/SKILL.md",
+      "computedHash": "bb76bff6da9ff964da5bfbf507fa2d16565098665e169baf9a0bb75b1002f507"
+    },
+    "material-design-3-guide": {
+      "source": "shelbeely/shelbeely-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/material-design-3-guide/SKILL.md",
+      "computedHash": "f6f94d3d1e708a3b41b461505e2eb9377d80ae6dfa4df496d2152bb8d98648d7"
+    },
+    "nextjs-typescript-tailwindcss-supabase": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "nextjs-typescript-tailwindcss-supabase/SKILL.md",
+      "computedHash": "b866ca1d166d1e9140c236a839550c1c46853113de0905d107593f3b50800a22"
+    },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion/SKILL.md",
+      "computedHash": "006f8413941b59eff54a7ce64851b8a2fb79e7a3a5f1a895e97a48f01482553d"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "80a6226e78f6d1fe464214ae0ef449d49d8ffaa3e7704f011e9b418c678ad4d1"
+    },
+    "tailwindcss": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "tailwindcss/SKILL.md",
+      "computedHash": "b1d95ac9242e613966fb11ed413fd2ff61f04641e4e8c1418e0e8258573fcc68"
+    },
+    "tailwindcss-advanced-layouts": {
+      "source": "josiahsiegel/claude-plugin-marketplace",
+      "sourceType": "github",
+      "skillPath": "plugins/tailwindcss-master/skills/tailwindcss-advanced-layouts/SKILL.md",
+      "computedHash": "159d8a8f9eb20136492a9971633fd8658be1e34d5f8dc3bcf1afe7bbb4511bdf"
+    },
+    "tailwindcss-animations": {
+      "source": "josiahsiegel/claude-plugin-marketplace",
+      "sourceType": "github",
+      "skillPath": "plugins/tailwindcss-master/skills/tailwindcss-animations/SKILL.md",
+      "computedHash": "eff5b75d37872c9e20001ec9c168688f88f8faac969af4df4e250fb7c8a71628"
+    },
+    "tailwindcss-mobile-first": {
+      "source": "josiahsiegel/claude-plugin-marketplace",
+      "sourceType": "github",
+      "skillPath": "plugins/tailwindcss-master/skills/tailwindcss-mobile-first/SKILL.md",
+      "computedHash": "b57cdd86a0bc0bfb35e5e42e6adf79c5fece774cea7340f1d992ff6e93cdc002"
+    }
+  }
+}

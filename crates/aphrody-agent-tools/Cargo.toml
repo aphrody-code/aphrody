@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-agent-tools"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Concrete ToolExecutor implementations for the aphrody agent engine: a streaming sandboxed shell-exec tool and an apply_patch tool that wraps aphrody-patch. These are the real capabilities the engine's ToolRegistry exposes to the model."
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-toolcall    = { path = "../aphrody-toolcall" }
+aphrody-agent-proto = { path = "../aphrody-agent-proto" }
+aphrody-patch       = { path = "../aphrody-patch" }
+aphrody-guard       = { path = "../aphrody-guard" }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+thiserror           = { workspace = true }
+tokio               = { workspace = true }
+async-trait         = { workspace = true }
+tracing             = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tempfile          = { workspace = true }
+tokio             = { workspace = true }

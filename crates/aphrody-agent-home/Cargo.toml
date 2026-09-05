@@ -1,0 +1,64 @@
+[package]
+name                   = "aphrody-agent-home"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+license.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+description            = "aphrody-agent-home — the agent's persistent home: Soul / Identity / User / Tools, mmap zero-copy file cache, content-addressed cache, bootstrap budget, system-prompt assembler, hot-reload, git backup."
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Git-backed workspace backup/restore via pure-Rust `gix` (no shell-out, no
+# libgit2 C). Host-only: gix does not build on wasm32. Opt-in because it adds
+# a non-trivial dependency tree.
+#   cargo build -p aphrody-agent-home --features git
+git = ["dep:gix"]
+
+[dependencies]
+# --- Typed model + (de)serialization (all targets) ------------------------
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
+# Content-addressed cache key: blake3 of file bytes (dedup identical files
+# across agents/profiles). `rayon` feature dropped — the inputs are small
+# bootstrap files, single-pass hashing is faster than the rayon fan-out.
+blake3               = { version = "1", default-features = false }
+# Grapheme-cluster aware streaming truncation (BudgetWriter). All targets.
+unicode-segmentation = { workspace = true }
+# Lock-free hot-swap of the live `Arc<AgentHome>`. All targets (the swap
+# primitive is portable; only the notify watcher that drives it is host-only).
+arc-swap             = { workspace = true }
+tracing              = { workspace = true }
+
+# --- Host-only (Linux / Windows / macOS) ----------------------------------
+# mmap zero-copy file cache + notify hot-reload. Neither builds on wasm32,
+# where the FileCache falls back to an in-memory read path (see mmap.rs).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+memmap2              = { workspace = true }
+notify               = { workspace = true }
+# Pure-Rust git (optional `git` feature). Host-only.
+gix                  = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile             = { workspace = true }
+criterion            = { workspace = true }
+
+# AH-18 — cold-load (mmap vs read) + system-prompt assembly micro-benchmarks.
+# `harness = false` lets criterion install its own main(); host-only because
+# the bench maps real files from a temp dir.
+[[bench]]
+name    = "agent_home_bench"
+harness = false
+
+[package.metadata.cargo-machete]
+# `gix` is cfg-gated behind the `git` feature + host-only target; machete
+# flags it as unused when the feature is off. `tracing` is used via macros
+# that machete's import scan misses on some passes.
+ignored = ["gix"]

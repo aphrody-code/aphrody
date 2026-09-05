@@ -1,0 +1,63 @@
+{
+  "env": {
+    "CARGO_TERM_COLOR": "always",
+    "CARGO_NET_RETRY": "5",
+    "RUST_BACKTRACE": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(cargo metadata:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo nextest:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo deny:*)",
+      "Bash(cargo machete:*)",
+      "Bash(cargo vet:*)",
+      "Bash(cargo doc:*)",
+      "Bash(cargo audit:*)",
+      "Bash(cargo ci-offline:*)",
+      "Bash(cargo xt-offline:*)",
+      "Bash(cargo dev-fast:*)",
+      "Bash(cargo lint-fast:*)",
+      "Bash(cargo smoke:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(ls:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(fd:*)",
+      "Bash(eza:*)",
+      "Bash(bat:*)",
+      "mcp__aphrody__*",
+      "mcp__plugin_aphrody_aphrody__*"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf /*:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  }
+}

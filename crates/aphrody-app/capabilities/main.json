@@ -1,0 +1,51 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-capability",
+  "description": "Minimal surface for the aphrody desktop shell. Default-deny: only the shell-layer permissions the UI needs. ALL fs/shell/http/scan/process work goes through the in-process aphrody_exec command, NOT through plugin ACLs.",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-title",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:webview:allow-print",
+    "core:event:default",
+
+    "os:allow-platform",
+    "os:allow-version",
+    "os:allow-arch",
+    "os:allow-locale",
+    "os:allow-hostname",
+    "os:allow-os-type",
+
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+
+    "notification:default",
+
+    "process:allow-restart",
+    "process:allow-exit",
+
+    "window-state:allow-save-window-state",
+    "window-state:allow-restore-state",
+    "window-state:allow-filename",
+
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-unregister-all",
+    "global-shortcut:allow-is-registered",
+
+    "log:default"
+  ]
+}

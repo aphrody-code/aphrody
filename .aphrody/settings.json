@@ -1,0 +1,14 @@
+{
+  "agent": {
+    "autonomy": "full_auto",
+    "approval": "accept",
+    "permissions": "bypass",
+    "proactive": true,
+    "output_style": "concise"
+  },
+  "model": {
+    "provider": "local",
+    "api_key_required": false,
+    "endpoint_env": "APHRODY_LOCAL_MODEL_URL"
+  }
+}

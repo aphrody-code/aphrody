@@ -1,0 +1,1097 @@
+# ============================================================================
+#  Aphrody — Workspace Manifest (Cargo 1.93+, Rust 2024, Nightly)
+#  Production-grade, Google Style — Fuchsia/Chromium aligned.
+# ============================================================================
+[workspace]
+resolver = "3"
+members = [
+    "crates/cli",
+    # aphrody-site — minimal axum/tokio origin for the blank aphrody.com page.
+    "crates/aphrody-site",
+    # aphrody-ffi — the full CLI as a native C-ABI cdylib for Bun (bun:ffi) and
+    # any C host. Wraps the `aphrody` library's run_from_args; host-only.
+    "crates/aphrody-ffi",
+    # aphrody-stdio-capture — in-process stdout/stderr capture (dup2 / SetStdHandle),
+    # shared by aphrody-ffi + the Tauri app. Distinct from aphrody-capture (screen).
+    "crates/aphrody-stdio-capture",
+    "crates/backend",
+    "crates/base",
+    "crates/google_mcp",
+    "crates/a2a",
+    "crates/a2a-client",
+    "crates/a2a-server",
+    "crates/a2a-coord",
+    "crates/a2a-grpc",
+    "crates/a2a-pb",
+    # mrx — Monorepo Real-time X-platform mapper (unified from mrx-{core,detect,audit,watch,cli})
+    "crates/mrx",
+    # aphrody-translate — comment translation + AI-isms scrub + Aphrody style
+    "crates/aphrody-translate",
+    # aphrody-xtask supprimé le 2026-05-21 (cf. memory project-workspace-lean-build) :
+    # crate de dev-tasks jugée inutile ; les tâches ponctuelles repassent en
+    # scripts ps1/sh ad hoc ou commandes cargo directes.
+    # aphrody-wasm EXTRACTED to C:\src\aphrody-ts (UI) — 2026-05-23.
+    # ievr-tools — IEVR binary inventory analysis (consumes peer-Claude scan JSON)
+    "crates/ievr-tools", "crates/aphrody-summary",
+    # M3 + shadcn pixel-perfect coverage + A2A UI (tick 36 pivot, 2026-05-17)
+    "crates/m3-tokens",      # M3 baseline tokens — KEPT (cli `design tokens` + shared by extracted UI)
+    # mui-rs* (MD3 natif wgpu/vello/winit/parley) EXTRACTED to C:\src\aphrody-ts (UI) — 2026-05-23.
+    "crates/a2a-ui",         # WASM channel viewer for .coord JSONL mailbox
+    # antigravity-sdk — native Rust SDK for Antigravity (Google AI Ultra / Gemini):
+    # OAuth token extraction from Windows Credential Manager + HTTP client.
+    "crates/antigravity-sdk",
+    # "crates/a2a-slimrpc",
+    # ↳ Re-enable once upstream agntcy-slim-mls fixes elided-lifetime + async-fn-in-trait
+    #   incompatibility with nightly 1.97+. Build path works (aws-lc-sys 0.29 + NASM
+    #   + Ninja generator validated). Tracking: upstream agntcy/agp issue queue.
+    # aphrody-memory — async MemoryBackend (JSONL/HNSW/SQLite/LanceDB) +
+    # Tier-1 MemoryProvider trait (Mem0 HTTP / Honcho HTTP / SqliteLocal).
+    "crates/aphrody-memory",
+    # aphrody-embed — local, offline text embeddings (fastembed/ONNX Runtime).
+    # Opt-in `embeddings` feature, host-only. Produces the dense vectors that
+    # aphrody-memory's HNSW/LanceDB vector stores consume (no external API).
+    "crates/aphrody-embed",
+    # aphrody-models — local model lifecycle: pinned refs, curated catalog
+    # (OCR / visual transcription / STT / embeddings), resumable digest-checked
+    # downloader, GGUF/GGML/safetensors/ONNX header inspection, LRU store under
+    # ~/.aphrody/models. The foundation layer of the local-inference toolbox.
+    "crates/aphrody-models",
+    # aphrody-infer — local ONNX inference: runtime discovery, EP selection
+    # (CUDA / DirectML / CPU fallback), session loading from the catalog.
+    "crates/aphrody-infer",
+    # aphrody-ocr — image-to-text pipeline: drives a local vision-language
+    # model over images, parses DocTags into markdown, reports textless pages.
+    "crates/aphrody-ocr",
+    # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
+    "crates/aphrody-gateway",
+    # aphrody-mcp — Native Rust OAuth 2.1 client for HTTP/SSE MCP servers (RFC 9728/8414/7591/7636)
+    "crates/aphrody-mcp",
+    # aphrody-voice — TTS + STT provider traits + ElevenLabs/Whisper adapters + Discord shim
+    "crates/aphrody-voice",
+    "crates/aphrody-icons",
+    # gemini-runtime — Gemini CLI runtime adapter (detect + version + stream)
+    "crates/gemini-runtime",
+    # obscura-runtime — façade binaire externe pour le moteur headless Obscura
+    # (pilier R4 scraping). Zéro dépendance V8/compilation : spawn `obscura`
+    # résolu via $APHRODY_OBSCURA_BIN > sibling > PATH.
+    "crates/obscura-runtime",
+    # aphrody-messaging — unified messaging (outbound connectors + bidirectional channels)
+    "crates/aphrody-messaging",
+    # aphrody-terminal-backend — native pty driver + WebSocket server for `aphrody term`.
+    # The rest of the LLM-first terminal stack (vt/wasm/llm/browser/json-out/markdown/
+    # config) + aphrody-tui were EXTRACTED to C:\src\aphrody-ts (UI) — 2026-05-23.
+    "crates/aphrody-terminal-backend",
+    # aphrody-skills — unified skills infrastructure (runtime + hooks + permissions)
+    "crates/aphrody-skills",
+    # aphrody-react-reconciler — host-side React reconciler primitives
+    # (Rust port of packages/aphrody-jsx, Phase 4.2).
+    "crates/aphrody-react-reconciler",
+    # aphrody-design + aphrody-design-agents EXTRACTED to C:\src\aphrody-ts (UI) — 2026-05-23.
+    # NOTE (2026-05-21, build-perf) : les clusters UI lourds `mui-rs*` (wgpu/vello/
+    # winit/wasmtime) et `tuono*` (Next.js/SWC/lightningcss/mdxjs/napi) ainsi que
+    # `gui` (qui agrège les deux) et `agui-bridge` ont été déplacés vers `exclude`.
+    # Aucun n'est dans la chaîne de dépendance du binaire `aphrody` (crate `cli`).
+    # Ils dominaient le temps de `cargo nextest run --workspace` sur cette machine
+    # (4c/8t, 16 Go). Pour les rebâtir explicitement : voir le bloc `exclude` ci-dessous.
+
+    # bxc rust-bridge (excluded)
+
+    # aphrody-skills-forge — programmatic SKILL.md scaffolding + registry +
+    # lint engine (Sprint D / skills-forge).
+    "crates/aphrody-skills-forge",
+    # aphrody-cron — async-friendly interval/daily/cron scheduler with
+    # pluggable JSON-backed job store (Sprint E / hermes-agent).
+    "crates/aphrody-cron",
+    # aphrody-re — reverse engineering primitives: PE/ELF triage via goblin,
+    # sections + Shannon entropy + SHA-256, ASCII/UTF-16 strings sample.
+    # Pure Rust, no GPL deps. Apex Cap R5 (Sprint R-E).
+    "crates/aphrody-re",
+    # aphrody-capture — native Windows screen and window capture to PNG.
+    # GDI BitBlt pipeline, RAII GDI guards, BGRA→RGBA conversion, image::png encoder.
+    # Non-Windows: compile to stubs returning CaptureError::Unsupported.
+    "crates/aphrody-capture",
+    # aphrody-firefly — pure-Rust Adobe Firefly Services client: IMS OAuth S2S
+    # token core, v3 async image generation + poll + download. Cross-platform
+    # (rustls), headless; shared auth core for the cloud Photoshop API.
+    "crates/aphrody-firefly",
+    # aphrody-logo — canonical icon (assets/aphrody.webp) embedded once ->
+    # multi-res .ico, scalable .svg, M3 maskable/shape PNGs, pixel-perfect
+    # terminal rendering (Kitty graphics protocol + truecolor half-blocks).
+    "crates/aphrody-logo",
+    # aphrody-marketplace — skill / MCP / hook / theme extension index
+    # (Sprint F / hermes-agent : embedded + file + http loaders, semver +
+    # tag queries, SHA-256 integrity verification).
+    "crates/aphrody-marketplace",
+
+    # aphrody-providers — single-source-of-truth `Provider` enum + ProviderError
+    # for the three-only LLM whitelist (anthropic / gemini / antigravity).
+    # Cf. memory project_aphrody_providers_3only + project_no_duplication_max_cohesion.
+    "crates/aphrody-providers",
+    # aphrody-router — LLM provider router with strict 3-only whitelist
+    # (anthropic / gemini / antigravity). Cf. memory project_aphrody_providers_3only.
+    "crates/aphrody-router",
+    # aphrody-prompts — minijinja-backed prompt template registry with typed
+    # required-variable validation, reusable `{% include %}` partials, and a
+    # configurable PII scrubber (email, phone, IBAN, IPv4, API-key markers).
+    "crates/aphrody-prompts",
+    # aphrody-llm-infra — unified LLM runtime infrastructure (cost + rateguard + retry + cache)
+    "crates/aphrody-llm-infra",
+    # aphrody-context — LLM context-window manager: heuristic token counting,
+    # sliding-window trim with pinned-message preservation, summarization
+    # triggers, JSON snapshot/restore.
+    "crates/aphrody-context",
+    # aphrody-session — conversation session tracker (turns + tool calls +
+    # token usage + cost, persistent JSONL log with atomic writes + replay).
+    "crates/aphrody-session",
+    # aphrody-tools — vendor-neutral tool descriptor registry (JSON Schema
+    # input/output) with cross-vendor exporters/importers for Anthropic
+    # tool-use, Gemini function declarations and MCP `tools/list` shapes.
+    "crates/aphrody-tools",
+
+    # aphrody-events — in-process async pub-sub event bus with topic filtering,
+    # NDJSON audit sink, memory ring buffer and counter subscribers. No external
+    # broker; complements aphrody-session (cold archive) + aphrody-hooks
+    # (external commands) with a live in-process fan-out surface.
+    "crates/aphrody-events",
+    # aphrody-secrets — secret-store abstraction (env + plaintext file +
+    # AES-256-GCM/Argon2id encrypted file + composite) with redacted Display/
+    # Debug, constant-time equality, Zeroize-on-drop SecretValue.
+    "crates/aphrody-secrets",
+    # aphrody-guard — autonomous-agent safety: pre-main process hardening
+    # (no-dump / no-ptrace / strip LD_*-DYLD_*) + a cross-platform command-safety
+    # classifier (Allow / Prompt / Forbidden) for gating agent-issued shell calls.
+    "crates/aphrody-guard",
+    # ── Phase 1 ENGINE (docs/VISION.md) — agent runtime foundations ──────────
+    # aphrody-patch — LLM-native `*** Begin Patch` edit format (parser + fuzzy
+    # seek + streaming + apply via a FS trait). Ported from Codex apply-patch.
+    "crates/aphrody-patch",
+    # aphrody-agent-proto — SQ/EQ agent protocol: Submission/Op + Event/EventMsg,
+    # NDJSON wire codec. The single fil between engine and every surface.
+    "crates/aphrody-agent-proto",
+    # aphrody-model-client — `ModelClient` trait + unified `ModelStreamEvent`
+    # + Gemini generateContent streaming impl (SSE → unified events).
+    "crates/aphrody-model-client",
+    # aphrody-toolcall — tool catalogue model: ToolDefinition, ToolExecutor
+    # trait, ToolExposure, JsonSchema with prompt-budget compaction.
+    "crates/aphrody-toolcall",
+    # aphrody-rollout — JSONL session recorder (async actor) + resume/replay.
+    "crates/aphrody-rollout",
+    # ── Phase 2/3 — agent runtime + capabilities + surface (docs/VISION.md) ───
+    # aphrody-engine — the unified agent turn loop: drives a ModelClient stream,
+    # maps ModelStreamEvent -> EventMsg, runs tool calls via ToolRegistry,
+    # re-injects results for multi-turn, records to rollout. The keystone.
+    "crates/aphrody-engine",
+    # aphrody-agent-tools — concrete ToolExecutors for the engine: sandboxed
+    # shell exec (streaming) + apply_patch (wraps aphrody-patch).
+    "crates/aphrody-agent-tools",
+    # aphrody-tui — Ratatui 0.30 full-screen agent surface over the SQ/EQ
+    # protocol (renders Event stream, emits Submission/UserInput).
+    "crates/aphrody-tui",
+    # aphrody-agent-runtime — wiring/factory that assembles a ready-to-run
+    # agent: builds a ModelClient + a ToolRegistry (shell-exec + apply-patch)
+    # + optional rollout, and spawns an engine session (the control-plane glue).
+    "crates/aphrody-agent-runtime",
+    # Codex-shaped local app-server: JSON-RPC threads and turns over stdio.
+    "crates/aphrody-app-server",
+    # aphrody-supervisor — multi-agent control plane: spawns/tracks N named
+    # engine sessions, routes submissions, fans-in their events, drives
+    # lifecycle (list / interrupt / shutdown) and per-agent autonomy policy.
+    "crates/aphrody-supervisor",
+    # aphrody-settings — hierarchical JSON settings loader (user / project /
+    # local / env) with deep-merge precedence, dotted-path navigation, env
+    # `PREFIX_FOO__BAR=baz` nested expansion, and minimum-viable JSON Schema
+    # validation (type / required / additionalProperties / properties / items).
+    "crates/aphrody-settings",
+    # aphrody-telemetry — in-process observability primitives: hierarchical
+    # spans (RAII-finalized handles), monotonic atomic counters, bucketed
+    # histograms, NDJSON file exporter. OpenTelemetry-inspired data model
+    # without OTLP / gRPC / protobuf weight.
+    "crates/aphrody-telemetry",
+    # aphrody-task-runner — parallel DAG executor (topological sort + per-task
+    # timeout/retry + Semaphore-bounded concurrency + NDJSON-friendly event
+    # stream) for background pipelines that need explicit read-after-write
+    # ordering. Complements aphrody-cron (when) and aphrody-hooks (single-shot
+    # commands) with a typed multi-step orchestrator.
+    "crates/aphrody-task-runner",
+    # aphrody-search — in-memory full-text search (regex-free tokenizer with
+    # EN+FR stop words, inverted index, BM25-lite scoring with title 2x
+    # boost, snippet highlighting, atomic JSON persistence). Backs the
+    # marketplace / memory / skill discovery UIs.
+    "crates/aphrody-search",
+    # aphrody-fsindex — persistent local-filesystem SQLite FTS5 search index
+    # (mirrors the Google desktop app's local_files.db; metadata-only).
+    "crates/aphrody-fsindex",
+    # aphrody-chat — unified turn-loop REPL composing every other aphrody
+    # building block (gemini-runtime + tools + memory + session + permissions
+    # + hooks + prompts + router + cost + context + events + cache +
+    # rateguard + retry + secrets + skills-runtime + mcp). Replaces the
+    # packaged TypeScript gemini-cli dependency with a native Rust agent.
+    "crates/aphrody-chat",
+    # aphrody-sdk — public Rust SDK for embedding aphrody in third-party
+    # programs (Agent + Session + ToolRegistry + Skills + FS + Shell).
+    # Port of packages/gemini-cli/packages/sdk (TS, ~300 LoC).
+    "crates/aphrody-sdk",
+    # notebooklm — pure-Rust client for the Google NotebookLM Boq RPC
+    # surface (ported from icebear0828/notebooklm-client + teng-lin/notebooklm-py
+    # + jacob-bd/notebooklm-mcp-cli, all MIT). No browser automation in-crate.
+    "crates/notebooklm",
+    # aphrody-mcp-smoke — end-to-end smoke test for the unified aphrody-mcp
+    # stdio server (handshake + tools/list + tools/call sweep + p50/p95 +
+    # NDJSON report). Replaces the ad-hoc bash/pwsh probes.
+    "crates/aphrody-mcp-smoke",
+    # aphrody-agent-home — the agent's persistent home (Soul / Identity / User /
+    # Tools typed model + mmap zero-copy file cache + content-addressed blake3
+    # cache + bootstrap budget + system-prompt assembler + notify hot-reload +
+    # gix git backup). Rust port of openclaw agents/{workspace,bootstrap-budget,
+    # identity}.ts, pushed past it via mmap / arc-swap / Send+Sync by construction.
+    "crates/aphrody-agent-home",
+
+    # Python/Rust PyO3 bindings for high-performance shared code in Python RAG
+    "py/aphrody",
+
+    # Next.js / Turbopack integration (excluded)
+]
+exclude = [
+    # aphrody-app — Tauri v2 desktop shell (pulls wry/tao/gtk-rs/webkit2gtk).
+    # EXCLUDED so that tree never enters the core lock or `cargo ci-offline`;
+    # it carries its own [workspace] table + Cargo.lock and is built via
+    # scripts/tauri.{ps1,sh}. Path (a): its #[tauri::command]s call
+    # `aphrody::run_captured` in-process (Rust->Rust, no FFI hop).
+    "crates/aphrody-app",
+
+    "crates/a2a-slimrpc",
+    # ------------------------------------------------------------------------
+    # Build-perf (2026-05-21) : clusters UI lourds sortis du workspace par
+    # défaut. Pas de consommateur vital (le binaire `aphrody`/`cli` n'en dépend
+    # pas). Rebâtir au besoin avec un workspace ad hoc ou en les re-listant
+    # temporairement dans `members`.
+    #   * tuono*  → Next.js SSR (swc_core v63, lightningcss, mdxjs, napi)
+    #   * mui-rs* → MD3 natif (wgpu, vello, winit, wasmtime, parley, fontique)
+    #   * gui     → agrège tuono* + mui-rs*
+    #   * agui-bridge → consomme mui-rs-components
+    # ------------------------------------------------------------------------
+    # gui / agui-bridge / tuono{,_internal,_lib,_lib_macros} EXTRACTED to
+    # C:\src\aphrody-ts (UI) — 2026-05-23 (were here as build-perf exclusions).
+    # aphrody-x-client : self-rooted workspace (intégrera root workspace
+    # plus tard quand agent-twitter-client 0.1.x stabilisé).
+    "crates/aphrody-x-client",
+    # packages/bun-rs — @aphrody-code/bun-rs native FFI lib (Sass/HCT for Bun via
+    # bun:ffi), merged from the material-web monorepo 2026-06-01. Self-contained
+    # [package] with its own target; built via `cargo build -p bun-rs` from its own
+    # dir. EXCLUDED so the core workspace lock never absorbs it.
+    "packages/bun-rs",
+    # n2b-* + bxc-engine : supprimés du dépôt le 2026-05-21 (crates retirées pour
+    # de bon, cf. memory project-workspace-lean-build). `aphrody n2b` / la logique
+    # bxc de aphrody-xtask restent des façades qui spawnent un binaire externe
+    # optionnel (APHRODY_N2B_BIN / BXC_BIN) ; aucune dep de compilation.
+    # vendor/ retiré 2026-05-18 : ne contenait que des stubs Bun/uv/depot_tools
+    # (interdits par la policy 100% Rust). Si on a besoin d'une référence Rust
+    # vendored à l'avenir, recréer le dossier ad hoc.
+]
+# Pivot 2026-05-17 :
+# - `google_os`  archivé vers C:\google-os-archive\
+# - `bun_ffi`    archivé vers C:\aphrody-archive\ (FFI Bun, pollue le Rust workspace)
+# - `n2b`        archivé vers C:\aphrody-archive\ (réintégré via upstream aphrody-code/n2b branche aphrody)
+# - `google_kv`  archivé vers C:\aphrody-archive\ (orphan, aucun consumer dans le workspace)
+# - `python_ffi` archivé vers C:\aphrody-archive\ (orphan : 0 consumer, dépend de vendor/bun ;
+#                AI tuning / MD = candle/comrak en Rust pur, pas besoin de Python bridge)
+# Upstreams aphrody intégrés (branche aphrody isolée d'upstream main) :
+# - n2b  → https://github.com/aphrody-code/n2b   (Node→Bun linter, 68 rules)
+# - bxc  → https://github.com/aphrody-code/bxc   (Bun+Lightpanda browser engine)
+# Forks UI/web dans packages/ :
+# - ui      → https://github.com/aphrody-code/ui      (fork shadcn-ui/ui)
+# - next.js → https://github.com/aphrody-code/next.js (fork vercel/next.js)
+# Le projet est `aphrody`, un CLI ultime cross-platform
+# (Linux Ubuntu 26.04 > Win11 Canary > wasm).
+
+# ----------------------------------------------------------------------------
+# Direct pin: aws-lc-sys 0.41+ ships builder fixes for newer MSVC (VS 2026).
+# Declared even if only transitively used, so the resolver picks the newer one.
+# ----------------------------------------------------------------------------
+[workspace.metadata.aws-lc-sys]
+notice = "Forced via cargo update -p aws-lc-sys --precise 0.41.0 if needed."
+
+# ----------------------------------------------------------------------------
+# Shared package metadata — inherited via `*.workspace = true`
+# ----------------------------------------------------------------------------
+[workspace.package]
+version      = "1.0.0-canary"
+edition      = "2024"
+rust-version = "1.97"
+authors      = ["aphrody-code"]
+homepage     = "https://github.com/aphrody-code/aphrody"
+repository   = "https://github.com/aphrody-code/aphrody"
+license      = "Apache-2.0"
+description  = "aphrody — the ultimate cross-platform CLI (Linux/Windows/WASM)."
+keywords     = ["cli", "cross-platform", "rust", "linux", "wasm"]
+categories   = ["command-line-utilities", "development-tools", "web-programming"]
+
+# Public-facing URLs propagated to each crate's metadata (visible on
+# crates.io / docs.rs). The X handle is the autonomous agent's own
+# account (created 2026-05-18) — distinct from the human maintainer.
+[workspace.package.metadata.urls]
+github = "https://github.com/aphrody-code/aphrody"
+x      = "https://x.com/aphrody_code"
+
+# ----------------------------------------------------------------------------
+# Centralized dependencies — every crate uses `{ workspace = true }`.
+# Caret MAJOR.MINOR; Cargo.lock pins exact patches for reproducibility.
+# ----------------------------------------------------------------------------
+[workspace.dependencies]
+# --- Async runtime & primitives -------------------------------------------
+tokio              = { version = "1.52", features = ["full"] }
+tokio-stream       = { version = "0.1" }
+tokio-rustls       = { version = "0.26" }
+futures            = { version = "0.3" }
+futures-util       = { version = "0.3" }
+async-trait        = { version = "0.1" }
+async-stream       = { version = "0.3" }
+auto_impl          = { version = "1" }
+pin-project-lite   = { version = "0.2" }
+crossbeam          = { version = "0.8" }
+crossbeam-channel  = { version = "0.5" }
+rayon              = { version = "1.12" }
+
+# --- Allocator & FFI ------------------------------------------------------
+mimalloc           = { version = "0.1", default-features = false }
+libc               = { version = "0.2" }
+bytes              = { version = "1" }
+memchr             = { version = "2" }
+memmap2            = { version = "0.9.11" }
+hashbrown          = { version = "0.14", features = ["inline-more", "raw"] }
+allocator-api2     = { version = "0.2", default-features = false, features = ["alloc"] }
+smallvec           = { version = "1", features = ["serde", "union", "const_new", "impl_bincode"] }
+bumpalo            = { version = "3", features = ["collections", "boxed"] }
+typed-arena        = { version = "2" }
+scopeguard         = { version = "1" }
+self_cell          = { version = "1" }
+once_cell          = { version = "1" }
+foldhash           = { version = "0.1" }
+rustc-hash         = { version = "2" }
+itoa               = { version = "1" }
+
+# --- Serde / data formats -------------------------------------------------
+serde              = { version = "1", features = ["derive"] }
+serde_json         = { version = "1" }
+serde_yaml         = { version = "0.9" }
+toml               = { version = "0.8" }
+bstr               = { version = "1", default-features = false, features = ["alloc"] }
+hex                = { version = "0.4" }
+base64             = { version = "0.22" }
+uuid               = { version = "1", features = ["v4", "v7"] }
+semver             = { version = "1" }
+chrono             = { version = "0.4", features = ["serde"] }
+jiff               = { version = "0.2" }
+regex              = { version = "1" }
+
+# --- Logging / errors -----------------------------------------------------
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "=0.3.22", features = ["env-filter", "fmt", "json", "regex"] }
+anyhow             = { version = "1" }
+thiserror          = { version = "2" }
+miette             = { version = "7", features = ["fancy"] }
+
+# --- CLI / TUI ------------------------------------------------------------
+clap               = { version = "4", features = ["derive", "color", "env"] }
+clap_complete      = { version = "4" }
+clap_mangen        = { version = "0.2" }
+indicatif          = { version = "0.18" }
+colored            = { version = "3" }
+crossterm          = { version = "0.29" }
+ratatui            = { version = "0.30" }
+
+# --- Bitflags / enum-utils ------------------------------------------------
+bitflags           = { version = "2" }
+enum-map           = { version = "2" }
+enumset            = { version = "1" }
+strum              = { version = "0.28", features = ["derive"] }
+const_format       = { version = "0.2" }
+phf                = { version = "0.11", features = ["macros"] }
+
+# --- Filesystem / system --------------------------------------------------
+walkdir            = { version = "2" }
+fs_extra           = { version = "1" }
+globset            = { version = "0.4" }
+glob               = { version = "0.3" }
+ignore             = { version = "0.4" }
+tempfile           = { version = "3" }
+terminal_size      = { version = "0.4" }
+filetime           = { version = "0.2" }
+notify             = { version = "8" }
+which              = { version = "8" }
+dirs               = { version = "6" }
+rustix             = { version = "1.0", default-features = false, features = ["std", "fs", "event", "process", "net"] }
+
+# --- Crypto / security ----------------------------------------------------
+aes-gcm            = { version = "0.10" }
+argon2             = { version = "0.5" }
+sha2               = { version = "0.10" }
+sha3               = { version = "0.10" }
+md-5               = { version = "0.10" }
+blake3             = { version = "1", features = ["rayon"] }
+digest             = { version = "0.10" }
+zeroize            = { version = "1", features = ["derive"] }
+rcgen              = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+rustls             = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-pemfile     = { version = "2" }
+getrandom          = { version = "0.2" }
+rand               = { version = "0.8" }
+rand_chacha        = { version = "0.3" }
+
+# --- HTTP / networking ----------------------------------------------------
+reqwest            = { version = "0.13", default-features = false, features = ["json", "stream", "charset", "http2", "system-proxy", "rustls-no-provider", "query", "form"] }
+http               = { version = "1" }
+hyper              = { version = "1" }
+axum               = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
+axum-server        = { version = "0.8", default-features = false, features = ["tls-rustls-no-provider"] }
+tower              = { version = "0.5", features = ["util"] }
+tower-http         = { version = "0.6", features = ["cors"] }
+dns-lookup         = { version = "2" }
+hostname           = { version = "0.4" }
+url                = { version = "2" }
+
+# --- aphrody-providers (single-source-of-truth Provider enum) -------------
+aphrody-providers  = { path = "crates/aphrody-providers", version = "1.0.0-canary" }
+
+# --- aphrody-embed (local offline text embeddings, fastembed/ONNX) --------
+# Default-features off so consumers opt into the heavy `embeddings` feature.
+aphrody-embed      = { path = "crates/aphrody-embed", version = "1.0.0-canary", default-features = false }
+
+# --- Local inference stack (ONNX Runtime + preprocessing) ----------------
+# Declared centrally so every backend crate links ONE version of each. The
+# versions below are NOT the newest published — they are the ones fastembed
+# already forces into the graph (`ort` is pinned `=2.0.0-rc.12` inside
+# fastembed, which drags tokenizers 0.22 and ndarray 0.16 with it). Taking
+# `ort` rc.13 / tokenizers 0.23 / ndarray 0.17 here would duplicate all three
+# in the tree and break `cargo deny`'s ban on multiple versions. Re-pin only
+# when fastembed itself moves.
+#
+# NOTE for MSVC (CLAUDE.md §7): aphrody forces `+crt-static` while the prebuilt
+# ONNX Runtime is `/MD`. A consumer must therefore select ort's
+# `load-dynamic` (runtime `libloading`, no static link) exactly as
+# aphrody-embed does; declaring the dependency here does not link anything.
+#
+# CUDA: the `cuda` feature selects the CUDA execution provider. It is NOT
+# enabled here — a consumer opts in per-crate behind its own feature, so a
+# default build never requires a CUDA toolkit. Provider selection at runtime
+# is driven by `aphrody_models::accel::probe()`.
+# Feature selection, and why each one:
+#   * default-features OFF — the default set drags `download-binaries` +
+#     `tls-native`, and aphrody is rustls-only (CLAUDE.md §7). We ship our own
+#     ONNX Runtime instead (see `aphrody-infer::runtime`).
+#   * `api-24` — MANDATORY when defaults are off. The default set includes it;
+#     without it `ort-sys` falls back to API 17 and `ort`'s own EP modules
+#     (vitis.rs among them) fail to compile against the narrower `OrtApi`
+#     struct. This is the single non-obvious part of depending on ort.
+#   * `std` / `ndarray` / `tracing` — the rest of what `default` would have
+#     given us, minus the network and TLS pieces.
+ort                = { version = "=2.0.0-rc.12", default-features = false, features = [
+    "std",
+    "api-24",
+    "ndarray",
+    "tracing",
+] }
+# Hugging Face tokenizers: what every ONNX text/vision-language pipeline needs
+# between raw text and input ids.
+tokenizers         = { version = "0.22", default-features = false }
+# N-dimensional arrays: the tensor shape plumbing around an ONNX session.
+ndarray            = { version = "0.16" }
+# SIMD image resizing. Bulk OCR spends a large share of its wall clock in the
+# resize step, and this is an order of magnitude faster than `image`'s own
+# filters; it is the difference between a GPU that stays fed and one that idles.
+fast_image_resize  = { version = "6.1" }
+# Classic image ops (threshold, morphology, contours) for OCR pre-processing
+# and for turning a detector's heatmap into text boxes.
+imageproc          = { version = "0.27", default-features = false }
+
+# --- aphrody-models (local model lifecycle: catalog + store + downloader) -
+# No optional features: the crate is pure Rust (serde/sha2/reqwest) and pulls
+# no inference runtime of its own. Backends link their own runtime and ask this
+# crate where the bytes are.
+aphrody-models     = { path = "crates/aphrody-models", version = "1.0.0-canary" }
+
+# --- aphrody-infer (local ONNX inference backend) -------------------------
+# The `onnx` feature is requested here because the only consumer (the CLI's own
+# `infer` feature) always wants the real backend; a build that does not want
+# ONNX Runtime simply does not enable the CLI feature and never links this at
+# all. Keeping `onnx` optional inside the crate is what lets its `runtime`
+# module stay usable in a build without a runtime installed.
+aphrody-infer      = { path = "crates/aphrody-infer", version = "1.0.0-canary", features = ["onnx"] }
+
+# --- aphrody-ocr (image -> text via a local vision-language model) --------
+aphrody-ocr        = { path = "crates/aphrody-ocr", version = "1.0.0-canary" }
+aphrody-stdio-capture = { path = "crates/aphrody-stdio-capture", version = "1.0.0-canary" }
+
+# `fastembed` declared ONCE here as the single source of truth (CLAUDE.md §2 /
+# §5). Pulled only by aphrody-embed behind its `embeddings` feature + a
+# `cfg(not(wasm32))` target gate. Default features disabled (they select
+# native-tls for the ort backend + hf-hub model download); the rustls variants
+# are chosen at the consumer level to honour the rustls-only TLS policy.
+# fastembed pins `ort = "=2.0.0-rc.12"` internally — identical to the pin the
+# `magika` feature already forces, so `ort` resolves to a single version
+# workspace-wide (cargo-deny duplicate-ban clean).
+fastembed          = { version = "5.13.4", default-features = false }
+
+# --- notebooklm (Google NotebookLM Boq RPC client) ------------------------
+notebooklm         = { path = "crates/notebooklm", version = "1.0.0-canary" }
+
+# --- aphrody-voice family (TTS + STT) ------------------------------------
+aphrody-voice      = { path = "crates/aphrody-voice", version = "1.0.0-canary" }
+
+# --- A2A protocol family --------------------------------------------------
+a2a                = { package = "a2a-lf",        path = "crates/a2a",        version = "0.3" }
+a2a-client         = { package = "a2a-client-lf", path = "crates/a2a-client", version = "0.1", default-features = false }
+a2a-server         = { package = "a2a-server-lf", path = "crates/a2a-server", version = "0.3",  default-features = false }
+a2a-coord          = { path = "crates/a2a-coord" }
+a2a-pb             = { package = "a2a-pb",        path = "crates/a2a-pb",     version = "0.1" }
+a2a-grpc           = { package = "a2a-grpc",      path = "crates/a2a-grpc",   version = "0.2" }
+a2a-slimrpc        = { package = "a2a-slimrpc",   path = "crates/a2a-slimrpc", version = "0.1" }
+slim_bindings      = { package = "agntcy-slim-bindings", version = "1" }
+
+# --- gRPC / protobuf ------------------------------------------------------
+tonic              = { version = "0.14" }
+tonic-build        = { version = "0.14" }
+tonic-prost        = { version = "0.14" }
+tonic-prost-build  = { version = "0.14" }
+tonic-tls          = { version = "0.7", default-features = false, features = ["rustls"] }
+prost              = { version = "0.14" }
+prost-types        = { version = "0.14" }
+pbjson             = { version = "0.9" }
+pbjson-types       = { version = "0.9" }
+pbjson-build       = { version = "0.9" }
+protoc-bin-vendored = { version = "3" }
+
+# --- Database -------------------------------------------------------------
+rusqlite           = { version = "0.37", features = ["bundled"] }
+denokv_sqlite      = { version = "0.13" }
+denokv_proto       = { version = "0.13" }
+deno_error         = { version = "0.7" }
+# LanceDB: serverless vector database, pure Rust + Arrow.  Used by
+# aphrody-memory's LanceDB backend (ported from openclaw/extensions/memory-lancedb).
+# Pinned matched arrow/arrow-array/arrow-schema versions to keep the
+# FixedSizeList vector column compatible with lancedb's expected types.
+lancedb            = { version = "0.29", default-features = false }
+arrow              = { version = "58" }
+arrow-array        = { version = "58" }
+arrow-schema       = { version = "58" }
+
+# --- UI / desktop ---------------------------------------------------------
+# (Removed dead `wry`/`tao` workspace deps — no crate used them; the desktop
+# GUI runs on the pure-Rust winit + wgpu/vello path, avoiding the GTK3 CVE
+# surface tao/wry pull on Linux. See best-stack-2026 anti-patterns.)
+
+# --- Python FFI -----------------------------------------------------------
+pyo3               = { version = "0.29", features = ["auto-initialize", "abi3-py311"] }
+
+# --- Markdown / docs renderers --------------------------------------------
+# `comrak` is the CommonMark/GFM parser used by aphrody-terminal-markdown and
+# aphrody-design-material. The `syntect` feature gates code-block highlighting
+# (which we pair with `syntect = "5.3"` below). Keep `default-features = false`
+# at the consumer level so each crate opts into the syntect bridge explicitly.
+comrak             = { version = "0.52", default-features = false }
+syntect            = { version = "5.3", default-features = false, features = ["default-fancy"] }
+
+# --- Templating -----------------------------------------------------------
+# `minijinja` powers aphrody-prompts: Jinja-compatible template engine, zero
+# unsafe, no_std-friendly. Used to render LLM prompts with typed variables
+# and reusable partials (`{% include 'name' %}`).
+minijinja          = { version = "2", default-features = false, features = ["loader", "builtins", "macros", "multi_template", "deserialization", "serde"] }
+
+# --- XML pull parser ------------------------------------------------------
+# `quick-xml` powers the streaming <artifact> block parser in
+# aphrody-design-sidecar. Encoding feature carries UTF-16/Latin-1 sniffers.
+quick-xml          = { version = "0.36", default-features = false, features = ["encoding"] }
+
+# --- Tokio helpers --------------------------------------------------------
+# `tokio-util` codec adapters (FramedRead/Write) backing the ACP newline
+# protocol in aphrody-design-agents. `futures-core` is the trait crate the
+# spawner's `Stream<Item = AgentEvent>` returns.
+tokio-util         = { version = "0.7", features = ["codec"] }
+futures-core       = { version = "0.3" }
+
+# --- ID + time primitives -------------------------------------------------
+# Crockford-base32 ULIDs (lexicographic sort = creation order, monotonic per
+# process). Used by aphrody-design-daemon's project store.
+ulid               = { version = "1", features = ["serde"] }
+# `time` is a thinner alternative to `chrono` chosen by aphrody-design-daemon
+# for `OffsetDateTime` formatting / parsing.
+time               = { version = "0.3", features = ["macros", "formatting", "parsing", "serde"] }
+
+# --- 2D vector tessellation + colorimetry ---------------------------------
+# `lyon` tessellates rounded-rect / path geometry for aphrody-wgpu-material
+# shape primitives. `palette` provides the OKLCH/HCT colour math reused by
+# Material Design 3 tonal palettes.
+lyon               = { version = "1.0" }
+palette            = { version = "0.7", default-features = false, features = ["std"] }
+
+# --- Native windowing + text shaping (wgpu host) --------------------------
+# `winit` 0.30 surface-handle API; cosmic-text glyph shaper; `pollster` to
+# block on async device init from sync `winit::application::ApplicationHandler`.
+# All gated `cfg(not(target_arch = "wasm32"))` at the consumer level.
+winit              = { version = "0.30" }
+cosmic-text        = { version = "0.19" }
+pollster           = { version = "0.3" }
+
+# --- HTML / JS tooling ----------------------------------------------------
+scraper            = { version = "0.27" }
+oxc_allocator      = { version = "0.131" }
+oxc_ast            = { version = "0.131" }
+oxc_ast_visit      = { version = "0.131" }
+oxc_parser         = { version = "0.131" }
+oxc_span           = { version = "0.131" }
+schemars           = { version = "0.8" }
+ts-rs              = { version = "12", features = ["serde-compat"] }
+similar            = { version = "3" }
+octocrab           = { version = "0.50" }
+
+# --- Next.js / Turbopack General Deps -------------------------------------
+chromiumoxide      = { version = "0.5.4", features = ["tokio-runtime"], default-features = false }
+tungstenite        = "0.20.1"
+allsorts           = { version = "0.14.0", default-features = false, features = ["flate2_rust"] }
+bincode            = { version = "2.0.1", features = ["serde"] }
+bitfield           = "0.19.4"
+bytes-str          = "0.2.7"
+concurrent-queue   = "2.5.0"
+console-subscriber = "0.4.1"
+crc32fast          = "1.4.2"
+ctor               = "0.8"
+crossbeam-utils    = "0.8"
+data-encoding      = "2.3.3"
+dhat               = { version = "0.3.2" }
+either             = "1.15.0"
+erased-serde       = "0.4.5"
+flate2             = "1.0.28"
+futures-retry      = "0.6.0"
+image              = { version = "0.25.8", default-features = false }
+indexmap           = "2.13.0"
+indoc              = "2.0.0"
+inventory          = "0.3.21"
+lzzzz              = "2.0.0"
+markdown           = "1.0.0-alpha.18"
+mime               = "0.3.16"
+napi               = { version = "2", default-features = false, features = ["napi3", "serde-json", "tokio_rt", "error_anyhow", "napi4", "napi5", "compat-mode"] }
+napi-derive        = "2"
+napi-build         = "2"
+nohash-hasher      = "0.2.0"
+owo-colors         = "4.2.2"
+parcel_selectors   = "0.28.2"
+pathdiff           = "0.2.1"
+petgraph           = "0.8.3"
+postcard           = "1.0.4"
+qstring            = "0.7.2"
+quick_cache        = { version = "0.6.14" }
+regress            = "0.10.4"
+ringmap            = "0.2.3"
+roaring            = "0.10.10"
+serde_path_to_error = "0.1.16"
+serde_qs           = "0.13.0"
+serde_with         = "3.12.0"
+shrink-to-fit      = "0.2.10"
+strsim             = "0.11.1"
+thread_local       = "1.1.8"
+triomphe           = { git = "https://github.com/sokra/triomphe", branch = "sokra/unstable" }
+xxhash-rust        = { version = "0.8.12", features = ["xxh3"] }
+unsize             = "1.1.0"
+unty               = "0.0.4"
+urlencoding        = "2.1.2"
+vergen             = { version = "9.0.6", features = ["cargo"] }
+vergen-gitcl       = { version = "1.0.8", features = ["cargo"] }
+webbrowser         = "1.0.6"
+testing            = "22.0.0"
+
+# --- MCP -----------------------------------------------------------------
+# Pinned to the locked rev so `cargo update` can't silently advance rmcp to a
+# new upstream HEAD (the git default branch is otherwise unpinned). Bump
+# deliberately when intended. Matches Cargo.lock.
+rmcp               = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "cc66e3091e1584f48ee1e0058a2a1201a1d35c81", features = ["server", "transport-io", "macros", "schemars"] }
+
+# --- Terminal emulation ---------------------------------------------------
+vte                = { version = "0.15" }
+# portable-pty: ConPTY (Windows) + openpty (Unix) via a single API.
+portable-pty       = { version = "0.8" }
+# tokio-tungstenite: async WebSocket client/server on top of tokio.
+tokio-tungstenite  = { version = "0.24" }
+
+# --- Windows bindings -----------------------------------------------------
+windows            = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_IO",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Memory",
+    "Win32_System_SystemInformation",
+] }
+windows-sys        = { version = "0.61", features = ["Win32_Foundation"] }
+winapi-util        = { version = "0.1" }
+
+# --- C / C++ FFI (Chromium-style: `cxx` primary, `bindgen` for large APIs) -
+# Use `cxx` for safe, typed bridges declared in `#[cxx::bridge(namespace = "...")]`.
+# Use `bindgen` only when the C/C++ surface is too large to wrap manually.
+# See docs/cargo/FFI_POLICY.md and docs/cargo/CHROMIUM_ANDROID_PATTERNS.md.
+cxx                = { version = "1.0" }
+cxx-build          = { version = "1.0" }
+bindgen            = { version = "0.72" }
+
+# --- Binary / archive parsers (game RE, IEVR) -----------------------------
+# `goblin` reads PE/ELF/Mach-O/COFF headers (used to inspect `nie.exe`,
+# `EOSSDK-Win64-Shipping.dll`, etc.).  `byteorder` provides LE/BE primitive
+# reads for the CRI @UTF tables that back CPK / USM / AWB containers.
+goblin             = { version = "0.10", default-features = false, features = ["std", "endian_fd", "pe32", "pe64", "elf32", "elf64"] }
+byteorder          = { version = "1.5" }
+# `iced-x86` — pure Rust x86/x64 disassembler + formatter (Intel/AT&T/Nasm/Masm).
+# No C dependencies, no GPL, compiles on all targets including wasm32.
+# Used by aphrody-re::disasm (Apex Cap R5, Sprint R-E, item R5.4).
+iced-x86           = { version = "1.21" }
+# `yara-x` — pure Rust YARA pattern-matching engine (BSD-3-Clause, no C, no GPL).
+# Used by aphrody-re::yara for `aphrody re yara --rules <rules.yara> <binary>`.
+# Host-only (reads files from disk + compiles YARA rules); not wasm-safe.
+# Pinned to the maintained Wasmtime 36 line through YARA-X 1.7 because newer
+# YARA-X releases currently require vulnerable, unpatched Wasmtime 38-45 lines.
+# `default-features = false` drops
+# the heavy default-modules bundle (pe-module, elf-module, crypto, protobuf-
+# codegen, …) — we only need the core scanner + the string/pattern engine.
+yara-x             = { version = "=1.7.0", default-features = false }
+
+# --- POSIX shim helpers (Linux/macOS bridges) -----------------------------
+nix-cross          = { package = "nix", version = "0.31", default-features = false }
+
+# --- Google Rust crates (org:google, Apache-2.0 / BSD-2-Clause / MIT) ------
+# `zerocopy` — zero-cost memory layout validation + safe casting. Used by
+# aphrody-re::headers for zero-copy PE/ELF magic header inspection.
+# BSD-2-Clause OR Apache-2.0 OR MIT; MSRV 1.56; 599M downloads; active 2026-05.
+zerocopy           = { version = "0.8", features = ["derive"] }
+# `fancy-regex` — regex with backreferences + lookahead/lookbehind. Used by
+# aphrody-re::google for OAuth client-ID pattern extraction. MIT; MSRV 1.66.
+fancy-regex        = { version = "0.18" }
+# `googletest` — GoogleTest-style matchers for Rust (dev-dep only).
+# Apache-2.0; MSRV 1.70; 6.3M downloads; active 2025-06.
+googletest         = { version = "0.14" }
+
+# --- Test / bench / fuzz --------------------------------------------------
+rstest             = { version = "0.26" }
+proptest           = { version = "1" }
+criterion          = { version = "0.8" }
+pretty_assertions  = { version = "1" }
+assert_cmd         = { version = "2" }
+predicates         = { version = "3" }
+
+# --- Agent skills (SKILL.md ecosystem) ------------------------------------
+# `skill` (docs.rs/skill) is the blazing-fast Vercel Skills CLI reborn in Rust.
+# Library + binary: SkillManager façade for discovering, installing, listing,
+# and removing agent skills declared in `.claude/skills/<name>/SKILL.md`.
+# See docs/cargo/SKILLS.md for the centralized skill inventory + format spec.
+skill              = { version = "0.8", default-features = false, features = ["network"] }
+
+# --- Aphrody upstream forks (branche `aphrody` isolée d'upstream main) ----
+# Intégration native via gh CLI : chaque fork a une branche dédiée `aphrody`
+# avec marker `.aphrody/INTEGRATION.md` et adaptations minimes (anonymisation,
+# rust-version bump). Rewrite massif possible sur cette branche sans toucher
+# au upstream main.
+#
+# n2b — supprimé du workspace le 2026-05-21. La sous-commande `aphrody n2b`
+# reste une façade qui spawne un binaire externe `n2b` (résolu via
+# APHRODY_N2B_BIN puis PATH) ; plus aucune dep de compilation git/path.
+# --- SWC ecosystem (publics crates.io) ---------------------
+swc_core                       = { version = "63", features = ["common", "ecma_parser", "ecma_codegen", "ecma_transforms"] }
+swc_sourcemap                  = { version = "10" }
+swc_plugin_backend_wasmtime    = { version = "9" }
+swc_emotion                    = { version = "3" }
+swc_relay                      = { version = "3" }
+styled_components              = { version = "3" }
+styled_jsx                     = { version = "3" }
+modularize_imports             = { version = "3" }
+react_remove_properties        = { version = "3" }
+remove_console                 = { version = "3" }
+preset_env_base                = { version = "7" }
+browserslist-rs                = { version = "0.19" }
+
+# --- Lightning CSS (Vercel/Parcel CSS processor) -------------------------
+lightningcss                   = { version = "1.0.0-alpha.60", features = ["browserslist", "serde"] }
+lightningcss-napi              = { version = "0.4" }
+
+# --- MDX (markdown + JSX) ------------------------------------------------
+mdxjs                          = { version = "1" }
+
+# --- WebGPU / WASM (cf. règle 2026-05-17 : tout nouveau projet web cible WASM/WebGPU) ---
+# Versions validées via context7 (2026-05-17) : wgpu v26 stable (v29 disponible).
+wgpu               = { version = "29" }
+# wasm-bindgen MUST be pinned EXACT — schema must match wasm-bindgen-cli byte-for-byte.
+# When bumping, run scripts/install-wasm-bindgen-cli.sh on every dev machine.
+wasm-bindgen       = { version = "=0.2.121" }
+wasm-bindgen-futures = { version = "0.4" }
+js-sys             = { version = "0.3" }
+web-sys            = { version = "0.3" }
+# Math + POD casting for wgpu pipelines. Aligned EXACTLY with
+# winclean/apps/iecode-web/crates/ievr-engine pins (handoff M1 in
+# C:/winclean/ai.json shared_resources.code_modules#ievr-engine.deps_pinned).
+# Latest crates.io as of 2026-05-17 : glam 0.32.1, bytemuck 1.25.0.
+# We hold glam at 0.30 because ievr-engine consumer pins 0.30.10 — bump together.
+glam               = { version = "0.30" }
+bytemuck           = { version = "1.25", features = ["derive"] }
+# Logging in browser WASM contexts.
+log                        = { version = "0.4" }
+console_log                = { version = "1.0" }
+console_error_panic_hook   = { version = "0.1" }
+
+# --- System info (cross-platform: Linux /proc + Windows WMI-free) ---------
+sysinfo            = { version = "0.39", default-features = false, features = ["system", "disk"] }
+
+# --- Misc -----------------------------------------------------------------
+itertools          = { version = "0.14" }
+nix                = { version = "0.31" }
+# `arc-swap` — lock-free atomic swap of an `Arc<T>`. Backs the hot-reload of
+# `Arc<AgentHome>` in aphrody-agent-home (notify watcher swaps the live home
+# without a mutex). Cross-platform, zero unsafe at the consumer level.
+arc-swap           = { version = "1.7" }
+# `gix` — pure-Rust git (no shell-out, no libgit2 C). Backs the optional `git`
+# feature of aphrody-agent-home (workspace backup: init/add/commit). Default
+# network/TLS features deliberately omitted; add `worktree-mutation` for the
+# commit-on-HEAD path.
+gix                = { version = "0.83", default-features = false, features = ["sha1", "basic", "extras", "comfort", "max-performance-safe", "revision", "index", "worktree-mutation"] }
+# aphrody-agent-home — the agent's persistent home: Soul / Identity / User /
+# Tools typed model, mmap zero-copy file cache, content-addressed cache,
+# bootstrap budget, system-prompt assembler, hot-reload, git backup.
+aphrody-agent-home = { path = "crates/aphrody-agent-home", version = "1.0.0-canary" }
+# Unicode helpers (consumed by aphrody-tui dev-deps + future TUI layout).
+unicode-width        = { version = "0.2" }
+unicode-segmentation = { version = "1" }
+
+# --- mrx (unified monorepo mapper) ----------------------------------------
+mrx                 = { path = "crates/mrx" }
+# External deps required by mrx that aren't already in the workspace above.
+notify-debouncer-full = { version = "0.6" }
+dunce              = { version = "1.0" }
+dashmap            = { version = "6" }
+parking_lot        = { version = "0.12" }
+# serde_yml removed 2026-05-17: archived upstream + RUSTSEC-2025-0068 unsound.
+# If YAML support is needed in the future, prefer `serde_yaml2` or `yaml-peg`.
+# --- mui-rs deps ---
+accesskit        = "0.24.0"
+accesskit-winit  = "0.32.2"
+vello    = "0.8.0"
+parley   = "0.8.0"
+fontique = "0.8.0"
+peniko   = "0.3"
+kurbo    = "0.11"
+tiny-skia = "0.11"
+taffy = "0.10.1"
+dark-light = "2.0.0"
+android-activity = { version = "0.6.1", features = ["game-activity"] }
+wasmtime    = { version = "47.0.4", default-features = false, features = ["cranelift", "component-model", "async"] }
+wit-bindgen = { version = "0.57.1", default-features = false, features = ["macros"] }
+wasmparser  = "0.247.0"
+walrus      = "0.26.1"
+rquickjs    = { version = "0.11.0", features = ["bindgen", "loader", "futures"] }
+half        = { version = "2.7.1", features = ["bytemuck"] }
+insta       = "1.47.2"
+wasm-bindgen-rayon = "1.3.0"
+
+tracing-wasm       = "0.2"
+proc-macro2        = { version = "1" }
+quote              = { version = "1" }
+syn                = { version = "2", features = ["full", "extra-traits"] }
+# ----------------------------------------------------------------------------
+# Workspace-wide lints — RFC 3389. Each crate opts-in with `[lints] workspace = true`.
+# ----------------------------------------------------------------------------
+[workspace.lints.rust]
+# --- Critical safety lints (kept strict) ----------------------------------
+unsafe_op_in_unsafe_fn         = "deny"
+unused_must_use                = "deny"
+non_ascii_idents               = "deny"
+absolute_paths_not_starting_with_crate = "deny"
+keyword_idents                 = { level = "deny", priority = -1 }
+ffi_unwind_calls               = "warn"
+deprecated_in_future           = "warn"
+unused_import_braces           = "warn"
+macro_use_extern_crate         = "warn"
+non_local_definitions          = "warn"
+unreachable_pub                = "warn"
+unexpected_cfgs                = "allow"
+# --- Style lints (relaxed for FFI / OS-bridge realities) ------------------
+# These are too noisy on a workspace bridging POSIX libc, Bun internals,
+# Windows-rs raw handles, and PoC kernel emulation. Re-enable per-crate
+# (e.g. `crates/base`) once a stylistic pass is done.
+missing_debug_implementations  = "allow"
+missing_copy_implementations   = "allow"
+trivial_numeric_casts          = "allow"
+trivial_casts                  = "allow"
+unused_lifetimes               = "allow"
+unused_qualifications          = "allow"
+single_use_lifetimes           = "allow"
+elided_lifetimes_in_paths      = "allow"
+let_underscore_drop            = "allow"
+explicit_outlives_requirements = "allow"
+redundant_lifetimes            = "allow"
+unused_features                = "allow"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links         = "deny"
+private_intra_doc_links        = "warn"
+missing_crate_level_docs       = "warn"
+invalid_codeblock_attributes   = "warn"
+invalid_html_tags              = "warn"
+bare_urls                      = "warn"
+
+[workspace.lints.clippy]
+# --- Antipatterns kept as deny: leftover debug noise, never legit ---------
+todo                           = "deny"
+unimplemented                  = "deny"
+dbg_macro                      = "deny"
+mem_forget                     = "deny"
+exit                           = "deny"
+lossy_float_literal            = "deny"
+float_cmp_const                = "deny"
+# --- Group strategy: opt-in per-crate via `#[warn(clippy::pedantic)]` -----
+# The workspace-wide deny set above is intentionally tight. Pedantic /
+# nursery / style / suspicious / complexity / correctness / perf are all
+# `allow` here so they don't fire across FFI / kernel-bridge / Bun-vendor
+# code that legitimately violates them. Hardened crates re-enable groups
+# in their own `[lints]` table (priority -1 so granular overrides win).
+pedantic                       = { level = "allow", priority = -1 }
+nursery                        = { level = "allow", priority = -1 }
+suspicious                     = { level = "allow", priority = -1 }
+style                          = { level = "allow", priority = -1 }
+complexity                     = { level = "allow", priority = -1 }
+correctness                    = { level = "warn",  priority = -1 }
+perf                           = { level = "warn",  priority = -1 }
+# `cargo` group: muted workspace-wide (publish=false crates lack keywords/categories).
+# Enable per-crate once publish=true. Wildcard deps already denied by cargo-deny.
+cargo                          = { level = "allow", priority = -1 }
+# Selectively re-enable the most impactful cargo lints workspace-wide:
+wildcard_dependencies          = "deny"   # version = "*" in published crates
+# Explicit allows for lints that still escape group muting (clippy bug
+# with priority handling on workspace-inherited tables).
+collapsible_if                 = "allow"
+collapsible_else_if            = "allow"
+collapsible_match              = "allow"
+
+# ============================================================================
+# Profiles — production Google-grade. Nightly enables extra LLVM passes.
+# ============================================================================
+
+# --- dev: fast iteration, debug info, no LTO -------------------------------
+[profile.dev]
+opt-level         = 0
+debug             = "line-tables-only"
+debug-assertions  = true
+overflow-checks   = true
+lto               = false
+codegen-units     = 256
+incremental       = true
+split-debuginfo   = "unpacked"
+panic             = "unwind"
+
+# Heavy build-script deps compiled with optimizations so they don't slow dev.
+[profile.dev.build-override]
+opt-level         = 3
+codegen-units     = 16
+
+# Speed up dev-time deps too (huge win on `cargo check`).
+[profile.dev.package."*"]
+opt-level         = 1
+codegen-units     = 16
+
+# --- release: the default ship target --------------------------------------
+[profile.release]
+opt-level         = 3
+debug             = false
+debug-assertions  = false
+overflow-checks   = false
+lto               = "fat"
+codegen-units     = 1
+panic             = "abort"
+strip             = "symbols"
+incremental       = false
+rpath             = false
+split-debuginfo   = "off"
+
+# --- dist: max-aggression release for binary distribution ------------------
+# Used by `cargo build --profile dist`. Adds PGO/BOLT-friendly knobs.
+[profile.dist]
+inherits          = "release"
+opt-level         = 3
+lto               = "fat"
+codegen-units     = 1
+panic             = "abort"
+strip             = "symbols"
+debug             = false
+
+# --- release-fast: CI-friendly release (parallel codegen) ------------------
+[profile.release-fast]
+inherits          = "release"
+lto               = "thin"
+codegen-units     = 16
+incremental       = false
+strip             = "symbols"
+
+# --- release-debug: prod optimizations + symbols for profiling/`perf` ------
+[profile.release-debug]
+inherits          = "release"
+debug             = "line-tables-only"
+strip             = "none"
+split-debuginfo   = "packed"
+
+# --- bench: criterion harness ----------------------------------------------
+[profile.bench]
+inherits          = "release"
+debug             = "line-tables-only"
+lto               = "thin"
+codegen-units     = 16
+strip             = "none"
+
+# --- Override: keep heavy crypto fully optimized even in dev profile ------
+[profile.dev.package.aes-gcm]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.rustls]
+opt-level = 3
+
+# --- sanitizers: AddressSanitizer (nightly) -------------------------------
+# Usage: cargo build --profile asan --target x86_64-unknown-linux-gnu
+#        (set RUSTFLAGS="-Z sanitizer=address" — handled per-target in
+#         .cargo/config.toml when building under this profile)
+[profile.asan]
+inherits          = "release-debug"
+opt-level         = 1
+debug             = "full"
+lto               = false
+codegen-units     = 16
+
+# --- careful: cargo-careful (nightly) — extra UB checks during tests ------
+[profile.careful]
+inherits          = "dev"
+debug-assertions  = true
+overflow-checks   = true
+
+# --- reproducible: deterministic dist for binary verification --------------
+# Requires SOURCE_DATE_EPOCH env var and --remap-path-prefix (see
+# .cargo/config.toml). Same byte-for-byte output across build hosts.
+[profile.reproducible]
+inherits          = "dist"
+codegen-units     = 1
+strip             = "symbols"
+
+# --- Size-optimized crates (kept: still in the `aphrody` CLI dep graph) ----
+# The browserslist-rs / handlebars / lightningcss* / markdown / mdxjs /
+# styled_jsx / swc_* size-opt overrides were removed with the UI extraction
+# (2026-05-23): those crates only entered the graph via tuono*/mui-rs*, now in
+# C:\src\aphrody-ts. wasmtime + cranelift + regalloc2 stay (still reachable).
+[profile.release.package.cranelift-codegen]
+opt-level = "s"
+[profile.release.package.regalloc2]
+opt-level = "s"
+[profile.release.package.regex-syntax]
+opt-level = "s"
+[profile.release.package.reqwest]
+opt-level = "s"
+[profile.release.package.wasmtime]
+opt-level = "s"
+[profile.release.package.wasmtime-internal-cranelift]
+opt-level = "s"
+
+[patch.crates-io]
+bincode = { git = "https://github.com/bgw/bincode.git", branch = "bgw/patches" }
+virtue = { git = "https://github.com/bgw/virtue.git", branch = "bgw/fix-generic-default-parsing" }
+# mdxjs + include_dir turbopack patches removed with the UI extraction
+# (2026-05-23): only the tuono* stack used them (now in C:\src\aphrody-ts).

@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  aphrody — CodeQL security scanning (Rust-only, 100% Rust repo)
+#  Schedule: every Monday 06:00 UTC (low CI contention window)
+#  Permissions: minimum required for security-events upload only.
+# ============================================================================
+name: codeql
+
+on:
+  push:
+    branches: [main, stable]
+  pull_request:
+    branches: [main, stable]
+  schedule:
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: rust
+            build-mode: manual
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - name: Setup Rust toolchain (nightly, pinned SHA)
+        uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+          components: rust-src
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      # CodeQL requires a build trace to extract semantic information for Rust.
+      # We use --workspace --locked --offline so the scan mirrors the same
+      # hermetic inputs used by the cross-platform CI job.
+      - name: Build workspace (CodeQL build trace)
+        run: cargo build --workspace --locked --offline
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

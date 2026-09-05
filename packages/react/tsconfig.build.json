@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "index.ts",
+    "wrappers/**/*.ts",
+    "transitions/**/*.ts",
+    "transitions/**/*.tsx",
+    "adaptive/**/*.ts",
+    "state/**/*.ts",
+    "material-web-shims.d.ts"
+  ],
+  "exclude": ["node_modules", "generate.ts", "dist"]
+}

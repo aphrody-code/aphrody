@@ -1,0 +1,16 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+CARGO_TERM_COLOR = "always"
+CARGO_NET_RETRY = "5"
+RUST_BACKTRACE = "1"
+
+[mcp_servers.aphrody]
+command = "aphrody-mcp"
+args = []
+enabled = true
+required = false
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "writes"

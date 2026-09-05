@@ -1,0 +1,71 @@
+//
+// Copyright 2026 Google LLC
+// SPDX-License-Identifier: Apache-2.0
+//
+// M3 Expressive additive shape scale.
+//
+// The canonical, generated shape token map lives in
+// ./versions/v0_192/_md-sys-shape.scss (validated and forwarded by
+// ./_md-sys-shape.scss) and ships the 7 baseline corner sizes
+// (none / extra-small / small / medium / large / extra-large / full).
+// Those files are generated ("DO NOT MODIFY BY HAND") and the supported-token
+// list in _md-sys-shape.scss is validated, so the three M3 Expressive corner
+// sizes are added here in a NON-DESTRUCTIVE, additive layer instead of being
+// folded into the canonical map:
+//
+//   - corner-large-increased        20px
+//   - corner-extra-large-increased  32px
+//   - corner-extra-extra-large      48px
+//
+// Usage: `@include md-sys-shape-expressive.theme;` next to wherever the
+// baseline shape custom properties are emitted to obtain the full 10-step
+// scale. `values()` returns the 3 additions as a token map for Sass component
+// token mappings. Consumers that never import this partial are unaffected, and
+// the canonical `bun run build:sass` pipeline is untouched.
+
+@use 'sass:map';
+
+// The three M3 Expressive corner additions, keyed like the canonical
+// `md-sys-shape` corner tokens (single-value corners).
+$_tokens: (
+  'corner-large-increased': 20px,
+  'corner-extra-large-increased': 32px,
+  'corner-extra-extra-large': 48px,
+);
+
+// Return the M3 Expressive corner additions. When
+// `$exclude-custom-properties` is false (default) each value is wrapped in a
+// `var(--md-sys-shape-<token>, <fallback>)` reference, matching the shape that
+// _md-sys-shape.scss produces for the baseline corners.
+@function values($exclude-hardcoded-values: false, $exclude-custom-properties: false) {
+  $tokens: $_tokens;
+
+  @if $exclude-hardcoded-values {
+    @each $token, $value in $tokens {
+      $tokens: map.set($tokens, $token, null);
+    }
+  }
+
+  @if not $exclude-custom-properties {
+    @each $token, $value in $tokens {
+      @if $value != null {
+        $tokens: map.set(
+          $tokens,
+          $token,
+          var(--md-sys-shape-#{$token}, #{$value})
+        );
+      }
+    }
+  }
+
+  @return $tokens;
+}
+
+// Emit the M3 Expressive corner custom properties. Include alongside the
+// baseline shape tokens (e.g. in the same `:host`/`:root` block) to expose the
+// full 10-step M3 Expressive corner scale at runtime.
+@mixin theme {
+  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-extra-large-increased: 32px;
+  --md-sys-shape-corner-extra-extra-large: 48px;
+}

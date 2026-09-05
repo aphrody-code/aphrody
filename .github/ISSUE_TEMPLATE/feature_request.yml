@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=https://json.schemastore.org/github-issue-forms.json
+name: Feature request
+description: Propose a new feature or enhancement
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. The best proposals describe the
+        **problem** before the **solution** — please resist the urge to
+        jump straight to API design.
+
+        For open-ended brainstorming, use [Discussions](https://github.com/aphrody-code/aphrody/discussions)
+        instead of opening an issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or outcome is currently impossible, painful, or surprising?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: API sketch, command syntax, config schema, or behavior change. Code-block welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you evaluate (other tools, other designs)? Why is this proposal better?
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Affected layer
+      description: Where in the project does this land?
+      options:
+        - CLI (user-visible command or flag)
+        - Library (crate API surface)
+        - CI / build / release infra
+        - Docs / DX
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platforms required
+      description: Tick every target this feature must work on.
+      multiple: true
+      options:
+        - Linux
+        - Windows
+        - WASM
+        - macOS (best effort)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: This aligns with project scope (CLI / cross-platform / production-grade, zero stubs)
+          required: true
+        - label: I am willing to implement this myself (or sponsor implementation)
+          required: false

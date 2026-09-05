@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# ============================================================================
+#  mise.toml — toolchain pinning for the aphrody Rust monorepo
+#  (https://mise.jdx.dev).
+#
+#  Rust is intentionally NOT pinned here: it is owned by `rust-toolchain.toml`
+#  (rustup), which carries the channel + components + cross-targets. mise
+#  defers to it automatically. Pinning Rust in both would create a conflict.
+#
+#  As of 2026-05-23 the non-Rust toolchains were extracted into sibling repos,
+#  each carrying its own mise.toml:
+#    * Bun (TS/JS) → C:\src\aphrody-ts
+#    * Go           → C:\src\aphrody-go
+#    * Python / uv  → C:\src\aphrody-py
+# ============================================================================
+
+[env]
+# Keep tool caches inside the repo's gitignored var/ tree so CI and local
+# builds stay hermetic and reproducible.
+APHRODY_MONOREPO_ROOT = "{{config_root}}"

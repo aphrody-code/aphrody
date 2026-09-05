@@ -1,0 +1,85 @@
+[package]
+name = "a2a-client-lf"
+publish = true
+version = "0.1.16"
+description = "A2A v1 async client with protocol binding factory"
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+keywords.workspace      = true
+categories.workspace    = true
+
+[lib]
+name = "a2a_client"
+
+# Pure-Rust port of `.claude/plugins/aphrody/skills/a2a-duel-loop/scripts/duel-cycle.ts`
+# (PLAN_RUST_ONLY.md Phase 4.5). Native-only — depends on tokio + reqwest for
+# the optional POST /msg mirror plus chrono/clap/getrandom/hex (all native-only
+# in the cfg-gated target block below). The binary is excluded on wasm targets
+# via #![cfg(not(target_family = "wasm"))] in src/bin/a2a_duel_loop.rs.
+[[bin]]
+name = "a2a-duel-loop"
+path = "src/bin/a2a_duel_loop.rs"
+required-features = []
+
+[lints]
+workspace = true
+
+[dependencies]
+a2a = { workspace = true }
+a2a-pb = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+auto_impl = { workspace = true }
+bytes = "1"
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# Native (Linux / Windows / macOS): full tokio + reqwest with TLS.
+# reqwest uses OS networking (mio, hyper, rustls) — not available on wasm32.
+# The `a2a-duel-loop` binary lives here too — its deps (chrono, clap, getrandom,
+# hex) are pulled in only on native because the binary is native-only (uses the
+# tokio-multi-thread runtime + native file APIs via std::fs).
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
+rustls = { workspace = true, optional = true, features = ["ring"] }
+clap = { workspace = true }
+chrono = { workspace = true }
+getrandom = { workspace = true }
+hex = { workspace = true }
+
+# wasm32-unknown-unknown (browser): minimal tokio + reqwest in browser-fetch mode.
+# reqwest 0.13 uses the `fetch` API only when target_os = "unknown" (not WASI).
+# Cargo does not allow overriding workspace `default-features`, so we pin the
+# version directly here.  `stream` enables bytes_stream(); `query` enables
+# RequestBuilder::query().
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "query"] }
+
+# wasm32-wasip1: minimal tokio only.  reqwest on WASI requires OS-level socket
+# syscalls (socket2/mio) that WASI p1 does not provide, so we exclude it here.
+# The HTTP transport modules (jsonrpc, rest, agent_card) are cfg-stripped on
+# WASI — only the trait definitions and data types compile.
+[target.'cfg(target_os = "wasi")'.dependencies]
+tokio = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+
+# Native-only dev deps: rcgen pulls ring + getrandom without the `js` feature
+# (it's a self-signed-cert helper that has no meaning in a browser, where TLS is
+# delegated to the host). Keep it native-only so `cargo check --tests
+# --target wasm32-unknown-unknown` stays green.
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+rcgen = { workspace = true }
+
+[features]
+default = ["rustls-tls"]
+native-tls = ["reqwest/native-tls"]
+# rustls-tls: only meaningful on native targets; wasm uses browser fetch (no TLS crate).
+rustls-tls = ["reqwest/rustls-no-provider", "dep:rustls"]

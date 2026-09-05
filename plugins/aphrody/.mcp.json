@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aphrody": {
+      "command": "aphrody-mcp",
+      "args": []
+    }
+  }
+}

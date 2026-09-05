@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "comment": [
+    "Curated local-inference model catalog for aphrody.",
+    "Every entry was resolved against the Hugging Face API on 2026-08-21: the",
+    "revision is pinned to the repository commit that was current then, and the",
+    "byte size / SHA-256 come from that commit's LFS pointers. Sidecar files",
+    "(tokenizer, config, yml) are not LFS objects, so they carry a size but no digest.",
+    "Pinning to a commit rather than a branch is what makes the digests stable:",
+    "`main` can move, a commit cannot.",
+    "`accel` lists the execution providers a backend can run this entry on;",
+    "`vram_min_bytes` is what the weights need resident (0 = comfortable on CPU);",
+    "`speed` ranks throughput within a task: fast > balanced > quality."
+  ],
+  "entries": [
+    {
+      "id": "whisper-base-en",
+      "title": "Whisper base.en (GGML)",
+      "task": "speech-to-text",
+      "backend": "whisper-cpp",
+      "summary": "English-only Whisper, 74M params. The default transcription model: fast enough for realtime on CPU, accurate enough for meeting audio.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggerganov/whisper.cpp/ggml-base.en.bin@5359861c739e955e79d9a303bcbc70fb988958b1",
+          "bytes": 147964211,
+          "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "fast"
+    },
+    {
+      "id": "whisper-small",
+      "title": "Whisper small (multilingual, GGML)",
+      "task": "speech-to-text",
+      "backend": "whisper-cpp",
+      "summary": "Multilingual Whisper, 244M params. Use when the audio is not English or when base.en's word error rate is too high.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggerganov/whisper.cpp/ggml-small.bin@5359861c739e955e79d9a303bcbc70fb988958b1",
+          "bytes": 487601967,
+          "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "balanced"
+    },
+    {
+      "id": "whisper-large-v3-turbo-q5",
+      "title": "Whisper large-v3-turbo Q5_0 (GGML)",
+      "task": "speech-to-text",
+      "backend": "whisper-cpp",
+      "summary": "Quantised large-v3-turbo: near-large accuracy at roughly a third of the disk and a fraction of the decode cost. The quality tier for batch transcription jobs.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggerganov/whisper.cpp/ggml-large-v3-turbo-q5_0.bin@5359861c739e955e79d9a303bcbc70fb988958b1",
+          "bytes": 574041195,
+          "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 1073741824,
+      "speed": "quality"
+    },
+    {
+      "id": "trocr-base-printed",
+      "title": "TrOCR base, printed text (ONNX, int8)",
+      "task": "ocr",
+      "backend": "onnx-runtime",
+      "summary": "Encoder-decoder OCR for printed text lines. Quantised to int8 so it runs on CPU. Expects a cropped text line, not a full page: pair it with a detector for document scans.",
+      "files": [
+        {
+          "role": "encoder",
+          "ref": "hf:Xenova/trocr-base-printed/onnx/encoder_model_quantized.onnx@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 88082928,
+          "sha256": "b9df248ebb648f3f0cb606e2e650d74942a324cd2dc94245206a88291ee3d52a"
+        },
+        {
+          "role": "decoder",
+          "ref": "hf:Xenova/trocr-base-printed/onnx/decoder_model_merged_quantized.onnx@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 249597124,
+          "sha256": "b5f7d6080d4b73256e3364a56e6fe2b558ffc389cb7f0b9166747b126b25a0cd"
+        },
+        {
+          "role": "tokenizer",
+          "ref": "hf:Xenova/trocr-base-printed/tokenizer.json@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 2108614
+        },
+        {
+          "role": "config",
+          "ref": "hf:Xenova/trocr-base-printed/config.json@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 4493
+        },
+        {
+          "role": "preprocessor",
+          "ref": "hf:Xenova/trocr-base-printed/preprocessor_config.json@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 378
+        },
+        {
+          "role": "generation-config",
+          "ref": "hf:Xenova/trocr-base-printed/generation_config.json@cf024f7df347684b6ee92859452962b67c6873fb",
+          "bytes": 185
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "balanced"
+    },
+    {
+      "id": "florence2-base-ft",
+      "title": "Florence-2 base fine-tuned (ONNX, q4)",
+      "task": "visual-transcription",
+      "backend": "onnx-runtime",
+      "summary": "Single vision-language model covering the whole visual-transcription surface: captioning, dense region description, and full-page OCR with bounding boxes, selected by task prompt. Four q4 graphs: vision encoder, token embeddings, text encoder, merged decoder.",
+      "files": [
+        {
+          "role": "vision-encoder",
+          "ref": "hf:onnx-community/Florence-2-base-ft/onnx/vision_encoder_q4.onnx@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 81236858,
+          "sha256": "8f211dfc176996d14e24d551f8e02530de781dd8b30d9e7d35b69b7c2d0340ce"
+        },
+        {
+          "role": "embed-tokens",
+          "ref": "hf:onnx-community/Florence-2-base-ft/onnx/embed_tokens_q4.onnx@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 157560063,
+          "sha256": "f972f338dedea6b67e10e87aacc0dfd4e247f1e18c60d3911af9e6b9edb68f32"
+        },
+        {
+          "role": "encoder",
+          "ref": "hf:onnx-community/Florence-2-base-ft/onnx/encoder_model_q4.onnx@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 30058778,
+          "sha256": "34b17bcf191dacb79bd482b94bad5cf1ba39bc770f6a4c9ae26f28b89c235e4b"
+        },
+        {
+          "role": "decoder",
+          "ref": "hf:onnx-community/Florence-2-base-ft/onnx/decoder_model_merged_q4.onnx@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 64393474,
+          "sha256": "be7a2f33e65f8d65538024772fda4d1c5a7752d60a7159aadf53f9f4798b90fa"
+        },
+        {
+          "role": "tokenizer",
+          "ref": "hf:onnx-community/Florence-2-base-ft/tokenizer.json@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 2297961
+        },
+        {
+          "role": "config",
+          "ref": "hf:onnx-community/Florence-2-base-ft/config.json@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 5432
+        },
+        {
+          "role": "preprocessor",
+          "ref": "hf:onnx-community/Florence-2-base-ft/preprocessor_config.json@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 2673
+        },
+        {
+          "role": "generation-config",
+          "ref": "hf:onnx-community/Florence-2-base-ft/generation_config.json@e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
+          "bytes": 292
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "balanced"
+    },
+    {
+      "id": "smolvlm-500m-q8",
+      "title": "SmolVLM 500M Instruct Q8_0 (GGUF)",
+      "task": "visual-transcription",
+      "backend": "llama-cpp",
+      "summary": "Small instruction-tuned vision-language model in GGUF form, for screenshot description and free-form visual question answering through a llama.cpp runtime. Needs both the language weights and the mmproj vision projector.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggml-org/SmolVLM-500M-Instruct-GGUF/SmolVLM-500M-Instruct-Q8_0.gguf@72e986006ef53e37cdd3f6d4241c90b0f01df376",
+          "bytes": 436806912,
+          "sha256": "9d4612de6a42214499e301494a3ecc2be0abdd9de44e663bda63f1152fad1bf4"
+        },
+        {
+          "role": "mmproj",
+          "ref": "hf:ggml-org/SmolVLM-500M-Instruct-GGUF/mmproj-SmolVLM-500M-Instruct-Q8_0.gguf@72e986006ef53e37cdd3f6d4241c90b0f01df376",
+          "bytes": 108783360,
+          "sha256": "d1eb8b6b23979205fdf63703ed10f788131a3f812c7b1f72e0119d5d81295150"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 1073741824,
+      "speed": "balanced"
+    },
+    {
+      "id": "bge-small-en-v1.5",
+      "title": "BGE small EN v1.5 (ONNX)",
+      "task": "text-embedding",
+      "backend": "onnx-runtime",
+      "summary": "384-dimension English sentence embeddings. The same checkpoint aphrody-embed loads through fastembed, catalogued here so it can be pre-pulled, pinned and verified like any other artefact.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:BAAI/bge-small-en-v1.5/onnx/model.onnx@5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+          "bytes": 133093490,
+          "sha256": "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35"
+        },
+        {
+          "role": "tokenizer",
+          "ref": "hf:BAAI/bge-small-en-v1.5/tokenizer.json@5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+          "bytes": 711396
+        },
+        {
+          "role": "config",
+          "ref": "hf:BAAI/bge-small-en-v1.5/config.json@5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+          "bytes": 743
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "fast"
+    },
+    {
+      "id": "ppocr-v5-mobile",
+      "title": "PP-OCRv5 mobile, detection + recognition (ONNX)",
+      "task": "ocr",
+      "backend": "onnx-runtime",
+      "summary": "The fast lane for bulk OCR: a 4.6 MB text detector plus a 16 MB CRNN recogniser, both plain ONNX. No autoregressive decoding, so throughput is bounded by convolution, not token generation — hundreds of images per minute on a mid-range GPU and still usable on CPU. Returns text plus boxes, not layout-aware markdown.",
+      "files": [
+        {
+          "role": "detector",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_mobile_det_onnx/inference.onnx@e6f4fa85f00e168c862bc462aebca69eef9b3d3d",
+          "bytes": 4826518,
+          "sha256": "a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d"
+        },
+        {
+          "role": "detector-config",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_mobile_det_onnx/inference.yml@e6f4fa85f00e168c862bc462aebca69eef9b3d3d",
+          "bytes": 903
+        },
+        {
+          "role": "recognizer",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_mobile_rec_onnx/inference.onnx@ed152b8b495f84de93cda5709d768548a9127622",
+          "bytes": 16534782,
+          "sha256": "da72dc72ca4dc220df0dfde68c1dedc31c58d3e76a25871122e5056227d50092"
+        },
+        {
+          "role": "recognizer-config",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_mobile_rec_onnx/inference.yml@ed152b8b495f84de93cda5709d768548a9127622",
+          "bytes": 148345
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "fast"
+    },
+    {
+      "id": "ppocr-v5-server",
+      "title": "PP-OCRv5 server, detection + recognition (ONNX)",
+      "task": "ocr",
+      "backend": "onnx-runtime",
+      "summary": "Same architecture as the mobile tier at roughly 18x the parameters: markedly better on small type, dense tables and degraded scans, still far faster than any VLM because nothing is generated token by token. The default when accuracy matters more than the last few images per second.",
+      "files": [
+        {
+          "role": "detector",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_server_det_onnx/inference.onnx@dcf248c4dcc064c6d030db241255f9e8fbc6733a",
+          "bytes": 88116791,
+          "sha256": "10803475a591f7dc623e24670fb5752ec94d39a1f8cf069aac1b6f0ce19cfc85"
+        },
+        {
+          "role": "detector-config",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_server_det_onnx/inference.yml@dcf248c4dcc064c6d030db241255f9e8fbc6733a",
+          "bytes": 903
+        },
+        {
+          "role": "recognizer",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_server_rec_onnx/inference.onnx@b70df217f4fd99d14f970bad092cebe7d74cc4d1",
+          "bytes": 84503027,
+          "sha256": "d9dc333c9c7b042c6dffb8e33d72b6f65c9c1d463d0a3c2f78174fea55e94752"
+        },
+        {
+          "role": "recognizer-config",
+          "ref": "hf:PaddlePaddle/PP-OCRv5_server_rec_onnx/inference.yml@b70df217f4fd99d14f970bad092cebe7d74cc4d1",
+          "bytes": 148345
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 0,
+      "speed": "balanced"
+    },
+    {
+      "id": "granite-docling-258m",
+      "title": "Granite Docling 258M Q8_0 (GGUF)",
+      "task": "visual-transcription",
+      "backend": "llama-cpp",
+      "summary": "A 258M-parameter document VLM: page image in, structured markdown out, tables and reading order preserved. Small enough that a batch keeps the GPU fed rather than the loader, which makes it the practical middle tier between raw PP-OCR text and a multi-billion-parameter OCR model.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggml-org/granite-docling-258M-GGUF/granite-docling-258M-Q8_0.gguf@684c1800c5fbd614e29b4d1a82177e6c122af1f3",
+          "bytes": 177918144,
+          "sha256": "b687245c212b59da938e411e2d4485596cbaeed1ae52706582ac38ed6a970f76"
+        },
+        {
+          "role": "mmproj",
+          "ref": "hf:ggml-org/granite-docling-258M-GGUF/mmproj-granite-docling-258M-f16.gguf@684c1800c5fbd614e29b4d1a82177e6c122af1f3",
+          "bytes": 190031552,
+          "sha256": "3b284a5869bf904427c3dc18d7af91fd4c9778fcddddb8c2256f02142c1fb58d"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 1073741824,
+      "speed": "balanced"
+    },
+    {
+      "id": "dots-ocr",
+      "title": "dots.ocr Q8_0 (GGUF)",
+      "task": "ocr",
+      "backend": "llama-cpp",
+      "summary": "The quality ceiling of this catalog for document OCR: a multilingual layout-and-text model that emits structured output for complex pages. Weights plus the f16 projector need roughly 4.5 GB of VRAM, so it fits a 8 GB card and is comfortable on 12 GB. Slowest of the OCR tiers — reach for it per-document, not per-batch.",
+      "files": [
+        {
+          "role": "weights",
+          "ref": "hf:ggml-org/dots.ocr-GGUF/dots.ocr-Q8_0.gguf@2c093a32ca360a396bc6d87d60408636130b9d9b",
+          "bytes": 1894530272,
+          "sha256": "6f2db1a75215893760b7c7185d52f11715d2e0cb7bff9cefd3f6d409fa1de7e9"
+        },
+        {
+          "role": "mmproj",
+          "ref": "hf:ggml-org/dots.ocr-GGUF/mmproj-dots.ocr-f16.gguf@2c093a32ca360a396bc6d87d60408636130b9d9b",
+          "bytes": 2526296992,
+          "sha256": "f462429dbf41729379df4252f84331c9646d80e53f092ccccfd2cb922a3b544e"
+        }
+      ],
+      "accel": [
+        "cpu",
+        "cuda"
+      ],
+      "vram_min_bytes": 5368709120,
+      "speed": "quality"
+    }
+  ]
+}

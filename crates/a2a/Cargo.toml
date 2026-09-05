@@ -1,0 +1,34 @@
+[package]
+name = "a2a-lf"
+publish = true
+version = "0.3.0"
+description = "A2A v1 protocol types and core definitions"
+readme = "README.md"
+edition.workspace       = true
+license.workspace       = true
+repository.workspace    = true
+rust-version.workspace  = true
+authors.workspace       = true
+homepage.workspace      = true
+keywords.workspace      = true
+categories.workspace    = true
+
+[lib]
+name = "a2a"
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+base64 = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+# On wasm32 targets (browser or WASI), uuid v4/v7 require a JS entropy source.
+# The `js` feature delegates to `getrandom/js` which uses `Math.random` / CSPRNG
+# available in all browser environments and Node-on-wasm runtimes.
+[target.'cfg(target_family = "wasm")'.dependencies]
+uuid = { workspace = true, features = ["js"] }

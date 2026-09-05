@@ -1,0 +1,81 @@
+{
+  "name": "@aphrody/m3-react",
+  "version": "3.2.4",
+  "description": "React wrappers (@lit/react createComponent) for every <md-*> element of the @aphrody/material-web fork.",
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/react#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/react"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/**/*.js"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./transitions": {
+      "types": "./dist/transitions/index.d.ts",
+      "default": "./dist/transitions/index.js"
+    },
+    "./adaptive": {
+      "types": "./dist/adaptive/index.d.ts",
+      "default": "./dist/adaptive/index.js"
+    },
+    "./state": {
+      "types": "./dist/state/index.d.ts",
+      "default": "./dist/state/index.js"
+    },
+    "./package.json": "./package.json",
+    "./*": {
+      "types": "./dist/wrappers/*.d.ts",
+      "default": "./dist/wrappers/*.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "generate": "bun run generate.ts",
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fast": "tsgo --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@aphrody/m3-tokens": "^3.2.4",
+    "@aphrody/material-web": "^3.2.4",
+    "@lit/react": "catalog:"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/three": "catalog:",
+    "element-internals-polyfill": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "three": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}

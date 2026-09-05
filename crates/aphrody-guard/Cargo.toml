@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-guard"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Autonomous-agent safety guardrails: pre-main process hardening (disable core dumps, block ptrace attach, strip LD_*/DYLD_* loader env) and a cross-platform shell command-safety classifier (Allow / Prompt / Forbidden) for gating agent-issued commands. Inspired by OpenAI Codex (Apache-2.0)."
+
+[lints]
+workspace = true
+
+[dependencies]
+
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

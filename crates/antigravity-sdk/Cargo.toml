@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "antigravity-sdk"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Native Rust SDK for Antigravity (Google AI Ultra / Gemini) — token extraction from Windows Credential Manager, OAuth refresh, typed HTTP client."
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# gRPC types for the local language_server bridge (compiles the .proto).
+# Pulls in tonic/prost + a build-time protoc; host-only, never in the default
+# build / CI / wasm target.
+grpc = [
+    "dep:prost",
+    "dep:tonic",
+    "dep:tonic-prost",
+    "dep:tonic-prost-build",
+    "dep:protoc-bin-vendored",
+]
+# Full local language_server bridge: spawn the proprietary binary, parse its
+# port, and speak cert-pinned HTTPS gRPC. Opt-in, host-only. (base64/sha2/rand
+# are always-on deps — used by the always-compiled oauth/state_sync modules —
+# so they are not gated here.)
+local-ls = [
+    "grpc",
+    "dep:regex",
+    "dep:rustls",
+    "dep:hyper-rustls",
+    "dep:x509-parser",
+    "tokio/process",
+    "tokio/rt-multi-thread",
+]
+
+[dependencies]
+serde         = { workspace = true, features = ["derive"] }
+serde_json    = { workspace = true }
+thiserror     = { workspace = true }
+tracing       = { workspace = true }
+# Always-on: base64/sha2/rand back the OAuth PKCE flow (oauth.rs); base64 +
+# data-encoding (base32) back the state.vscdb decoder (state_sync.rs).
+base64        = { workspace = true }
+sha2          = { workspace = true }
+rand          = { workspace = true }
+data-encoding = { workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio         = { workspace = true, features = ["macros", "rt", "net", "io-util", "time"] }
+reqwest       = { workspace = true }
+# `state_sync::read_state_db` — reads ItemTable from state.vscdb read-only.
+# Shares the workspace-pinned rusqlite (bundled libsqlite3) with aphrody-memory;
+# same `links = "sqlite3"` instance so cargo-deny sees no duplicate.
+rusqlite      = { workspace = true }
+
+# --- Optional: local language_server gRPC bridge (feature `local-ls`) ---------
+prost        = { workspace = true, optional = true }
+tonic        = { workspace = true, optional = true }
+tonic-prost  = { workspace = true, optional = true }
+regex        = { workspace = true, optional = true }
+rustls       = { workspace = true, optional = true }
+hyper-rustls = { version = "0.27", optional = true, default-features = false, features = ["http1", "http2", "ring", "tls12"] }
+x509-parser  = { version = "0.18", optional = true }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+tokio         = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+reqwest       = { version = "0.13", default-features = false, features = ["json", "stream", "query", "form"] }
+getrandom     = { version = "0.2", features = ["js"] }
+
+[target.'cfg(target_os = "wasi")'.dependencies]
+tokio         = { version = "1.52", default-features = false, features = ["sync", "macros", "rt", "time"] }
+
+
+[build-dependencies]
+tonic-prost-build   = { workspace = true, optional = true }
+protoc-bin-vendored = { workspace = true, optional = true }
+
+# --- Windows-only: Credential Manager (CredReadW / CredWriteW) ----------------
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Security_Credentials",
+] }
+
+[dev-dependencies]
+tokio             = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+pretty_assertions = { workspace = true }
+# rustls CryptoProvider must be installed before the first reqwest::Client
+# (rustls 0.23 requirement, cf. CLAUDE.md section 7).  Listed here so the
+# integration test can call `ring::default_provider().install_default()`.
+rustls            = { workspace = true }
+# config.rs round-trip test writes a temp config file.
+tempfile          = { workspace = true }
+
+[package.metadata.cargo-machete]
+# tracing: macro-only usage (debug!/warn!/error!); machete under-counts.
+# prost / tonic-prost: only referenced from build.rs-generated code in OUT_DIR.
+# tonic-prost-build / protoc-bin-vendored: build-script-only deps.
+ignored = ["tracing", "prost", "tonic-prost", "tonic-prost-build", "protoc-bin-vendored"]

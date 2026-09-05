@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "aphrody-local",
+  "owner": {
+    "name": "aphrody-code"
+  },
+  "plugins": [
+    {
+      "name": "aphrody",
+      "source": "./",
+      "description": "Plugin unifié Aphrody pour Claude Code et Codex",
+      "version": "1.0.0"
+    }
+  ]
+}

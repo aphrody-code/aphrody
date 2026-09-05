@@ -1,0 +1,47 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "aphrody-local",
+  "description": "Local marketplace for the aphrody plugin (development install).",
+  "owner": {
+    "name": "aphrody-code",
+    "email": "37252373+aphrody-code@users.noreply.github.com",
+    "url": "https://github.com/aphrody-code"
+  },
+  "plugins": [
+    {
+      "name": "aphrody",
+      "description": "Pure-Rust single-MCP-server automation surface for Claude Code. ONE native binary `aphrody-mcp` (~9 MB, sub-millisecond cold-start) exposes 42 tools: ex-google_mcp forensics/recon, voice, Context7 + Microsoft Learn docs, PE/ELF RE triage, Gemini web (chat/image/deep-research), screen capture, Adobe Firefly Services (generate/expand/fill), headless cloud Photoshop/Lightroom/Sensei edits, and live in-app Photoshop via a UXP↔WebSocket bridge (batchPlay drives any operation from the inside). Zero JS runtime in the binary, zero secondary MCP server. 2 slash commands (/status, /docs). 19 agents, 28 skills. Cross-platform: Linux #1, Windows #2, WASM #3.",
+      "author": {
+        "name": "aphrody-code",
+        "email": "37252373+aphrody-code@users.noreply.github.com",
+        "url": "https://github.com/aphrody-code"
+      },
+      "category": "productivity",
+      "source": "./aphrody",
+      "homepage": "https://github.com/aphrody-code/aphrody"
+    },
+    {
+      "name": "material-design",
+      "description": "Guides Claude toward Material Design 3, Google-style, responsive and adaptive UI: 19 skills (design guide, M3 + Google docs, component creation, spec checking, templating, correction, MUI->M3 migration, plus one per @aphrody-code package), 5 agents, a hardcoded-color guard hook, and a bundled mui-docs MCP server. Aligned with the in-repo material-web monorepo (@aphrody-code/m3-*). Merged 2026-06-01.",
+      "author": {
+        "name": "aphrody-code",
+        "email": "37252373+aphrody-code@users.noreply.github.com",
+        "url": "https://github.com/aphrody-code"
+      },
+      "category": "design",
+      "source": "./material-design",
+      "homepage": "https://github.com/aphrody-code/aphrody",
+      "keywords": [
+        "material-design",
+        "m3",
+        "design-system",
+        "responsive",
+        "adaptive",
+        "google",
+        "gemini",
+        "mui-migration",
+        "mcp"
+      ]
+    }
+  ]
+}

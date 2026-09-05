@@ -1,0 +1,50 @@
+{
+  "name": "@aphrody/m3-motion",
+  "version": "3.2.4",
+  "description": "Material 3 animation plugin powered by Motion (formerly Framer Motion)",
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/m3-motion#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/m3-motion"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fast": "tsgo --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "motion": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "motion": ">=12.0.0",
+    "react": ">=18.0.0"
+  }
+}

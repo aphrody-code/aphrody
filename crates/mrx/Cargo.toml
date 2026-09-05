@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "mrx"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "mrx — cross-platform, serverless-friendly monorepo mapper + watcher"
+publish = false
+
+[[bin]]
+name = "mrx"
+path = "src/main.rs"
+
+[dependencies]
+# --- Core deps (from mrx-core) ---
+serde = { workspace = true }
+
+# --- Detect deps (from mrx-detect) ---
+serde_json = { workspace = true }
+
+# --- Audit deps (from mrx-audit) ---
+ignore = { workspace = true }
+dashmap = { workspace = true }
+globset = { workspace = true }
+parking_lot = { workspace = true }
+blake3 = { workspace = true }
+dunce = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+# --- Watch deps (from mrx-watch) ---
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
+tokio = { workspace = true }
+
+# --- CLI deps (from mrx-cli) ---
+clap = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[lints]
+workspace = true

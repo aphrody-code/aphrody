@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-tui"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Full-screen interactive agent surface for aphrody, built on Ratatui 0.30 + crossterm. A thin client over the SQ/EQ NDJSON protocol: renders the streamed Event timeline (agent message deltas, reasoning, tool calls, exec output) and turns key input into Submission/UserInput. Inspired by the OpenAI Codex TUI (Apache-2.0)."
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-agent-proto = { path = "../aphrody-agent-proto" }
+ratatui             = { workspace = true }
+crossterm           = { workspace = true, features = ["event-stream"] }
+tokio               = { workspace = true }
+tokio-stream        = { workspace = true }
+futures             = { workspace = true }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+thiserror           = { workspace = true }
+tracing             = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio             = { workspace = true }

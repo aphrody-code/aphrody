@@ -1,0 +1,211 @@
+{
+  "$schema": "https://aka.ms/winget-packages.schema.2.0.json",
+  "os_name": "Google OS",
+  "version": "1.0.0-canary",
+  "orchestrator": "aphrody",
+  "winget_configuration": ".config/configuration.winget",
+
+  "architecture": {
+    "core": {
+      "language": "rust",
+      "ffi_bridge": "bun_ffi",
+      "system_api": "windows_nt_native"
+    },
+    "subsystems": {
+      "chromium": {
+        "manager": "depot_tools",
+        "fetch_command": "fetch chromium",
+        "build_command": "autoninja -C out/Default chrome",
+        "sync_tool": "gclient"
+      },
+      "aosp": {
+        "manager": "repo",
+        "init_command": "repo init -u https://android.googlesource.com/platform/manifest",
+        "sync_tool": "repo sync -c -j8"
+      },
+      "android_apps": {
+        "manager": "bundletool",
+        "store_api": "play_developer_api",
+        "package_format": ".aab"
+      },
+      "windows_apps": {
+        "manager": "winget",
+        "package_format": ".msix",
+        "configuration_file": ".config/configuration.winget"
+      },
+      "native_libs": {
+        "cpp": "cmake + zig c++",
+        "rust": "cargo + xwin",
+        "python": "uv",
+        "js_ts": "bun",
+        "go": "go"
+      }
+    }
+  },
+
+  "toolchain_enforcement": {
+    "rust": {
+      "_comment": "Synced with rust-toolchain.toml. Source-of-truth: rust-toolchain.toml.",
+      "channel": "nightly",
+      "targets": [
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "wasm32-unknown-unknown",
+        "wasm32-wasip1",
+        "aarch64-linux-android",
+        "armv7-linux-androideabi",
+        "x86_64-linux-android",
+        "i686-linux-android"
+      ],
+      "components": [
+        "rust-src", "rustfmt", "clippy", "miri",
+        "llvm-tools-preview", "rust-analyzer", "rustc-codegen-cranelift-preview"
+      ]
+    },
+    "cpp": {
+      "compiler": "zig c++",
+      "linter": "clang-tidy",
+      "formatter": "clang-format"
+    },
+    "python": {
+      "manager": "uv",
+      "formatter": "ruff"
+    },
+    "supply_chain": {
+      "_comment": "Google-grade supply chain (cf. supply-chain/config.toml + deny.toml).",
+      "auditor": "cargo-vet",
+      "policy_engine": "cargo-deny",
+      "audit_feeds": ["google", "mozilla", "fuchsia", "chromeos", "bytecode-alliance", "embark-studios", "zcash"]
+    }
+  },
+
+  "winget_packages": {
+    "_comment": "Packages managed via winget for the aphrody project. Run: winget configure .config/configuration.winget",
+
+    "google_installed": [
+      { "id": "Google.Chrome.EXE",         "name": "Google Chrome",            "version": "148.0.7778.168", "status": "installed" },
+      { "id": "Google.CloudSDK",           "name": "Google Cloud SDK",         "version": "568.0.0",        "status": "installed", "provides": ["gcloud", "gsutil", "bq"] },
+      { "id": "Google.WorkspaceCLI",       "name": "Google Workspace CLI",     "version": "0.22.5",         "status": "installed" },
+      { "id": "Google.PlatformTools",      "name": "Android SDK Platform-Tools","version": "37.0.0",        "status": "installed", "provides": ["adb", "fastboot"] },
+      { "id": "Google.IAPDesktop",         "name": "IAP Desktop",              "version": "2.49.1797",      "status": "installed" },
+      { "id": "Google.Antigravity",        "name": "Antigravity",              "version": "1.23.2",         "status": "installed" },
+      { "id": "WinClean.DocsMcp",          "name": "WinClean Unified Docs MCP", "version": "1.0.0-LTS",      "status": "installed", "provides": ["microsoft_docs_search", "microsoft_docs_fetch", "context7_query_docs"] },
+      { "id": "WinClean.CoreMcp",          "name": "WinClean Core MCP",         "version": "2.1.0",          "status": "installed", "provides": ["winclean_scan", "winclean_profile", "winclean_debloat"] },
+      { "id": "GoLang.Go",                 "name": "Go Programming Language",  "version": "1.26.3",         "status": "installed", "provides": ["go", "gofmt"] }
+    ],
+
+    "google_recently_installed": [
+      { "id": "Google.DartSDK",            "name": "Dart SDK",                 "version": "3.11.6",         "status": "installed", "provides": ["dart", "dartaotruntime"] },
+      { "id": "Google.FirebaseCLI",        "name": "Firebase CLI Tools",       "version": "20.18.2",        "status": "installed", "provides": ["firebase"] },
+      { "id": "Google.Protobuf",           "name": "Protocol Buffers",         "version": "34.1",           "status": "installed", "provides": ["protoc"] },
+      { "id": "Google.flatbuffers",        "name": "FlatBuffers",              "version": "25.12.19",       "status": "installed", "provides": ["flatc"] },
+      { "id": "Google.Libwebp",            "name": "libwebp",                  "version": "1.6.0",          "status": "installed", "provides": ["cwebp", "dwebp", "gif2webp", "img2webp", "vwebp", "webpmux"] },
+      { "id": "Google.Brotli",             "name": "Brotli",                   "version": "1.2.0",          "status": "installed" },
+      { "id": "Google.OSVScanner",         "name": "OSV Scanner",              "version": "2.3.8",          "status": "installed", "provides": ["osv-scanner"] },
+      { "id": "Google.Perfetto",           "name": "Perfetto",                 "version": "55.1",           "status": "installed", "provides": ["perfetto"] },
+      { "id": "Google.Magika",             "name": "Magika",                   "version": "1.1.0",          "status": "installed_via_pip", "note": "in winclean venv", "provides": ["magika"] }
+    ],
+
+    "google_available_optional": [
+      { "id": "Google.AndroidStudio",      "name": "Android Studio",           "latest": "2025.3.4.7",      "status": "installed_outside_winget", "path": "C:\\Program Files\\Android\\Android Studio" },
+      { "id": "Google.AndroidCLI",         "name": "Android CLI",              "latest": "0.7.15411012" },
+      { "id": "Google.AndroidGPUInspector","name": "Android GPU Inspector",    "latest": "3.3.3" },
+      { "id": "Google.Chrome.Canary",      "name": "Google Chrome Canary",     "latest": "150.0.7839.0" },
+      { "id": "Google.ChromeRemoteDesktopHost", "name": "Chrome Remote Desktop Host", "latest": "148.0.7778.23" },
+      { "id": "Google.EarthPro",           "name": "Google Earth Pro",         "latest": "7.3.7.1155" },
+      { "id": "Google.GoogleDrive",        "name": "Google Drive",             "latest": "125.0.0.0" },
+      { "id": "Google.GoogleWebDesigner",  "name": "Google Web Designer",      "latest": "14.2.4.0" },
+      { "id": "Google.ContainerTools.Skaffold", "name": "Skaffold",            "latest": "2.18.2" },
+      { "id": "Google.UIforETW",           "name": "UIforETW",                 "latest": "1.59" }
+    ]
+  },
+
+  "local_inventory": {
+    "_comment": "Discovered Google/Android software on this machine (2026-05-15)",
+
+    "android_sdk": {
+      "path": "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk",
+      "components": [
+        "build-tools", "cmake", "cmdline-tools", "emulator", "extras",
+        "licenses", "ndk", "platform-tools", "platforms", "sources", "system-images"
+      ],
+      "cli_available": ["adb", "fastboot", "emulator", "sdkmanager", "avdmanager"]
+    },
+
+    "android_studio": {
+      "path": "C:\\Program Files\\Android\\Android Studio",
+      "config_local": "C:\\Users\\aphrody\\AppData\\Local\\Google\\AndroidStudio2025.3.4",
+      "config_roaming": "C:\\Users\\aphrody\\AppData\\Roaming\\Google\\AndroidStudio2025.3.4"
+    },
+
+    "google_cloud_sdk": {
+      "path": "C:\\Program Files (x86)\\Google\\Cloud SDK\\google-cloud-sdk",
+      "cli_available": ["gcloud", "gsutil", "bq"]
+    },
+
+    "google_chrome": {
+      "path": "C:\\Program Files\\Google\\Chrome",
+      "profile_path": "C:\\Users\\aphrody\\AppData\\Local\\Google\\Chrome\\User Data",
+      "testing": "C:\\Users\\aphrody\\AppData\\Local\\Google\\Chrome for Testing"
+    },
+
+    "iap_desktop": {
+      "config": "C:\\Users\\aphrody\\AppData\\Roaming\\Google\\IAP Desktop"
+    },
+
+    "google_vscode_extension": {
+      "path": "C:\\Users\\aphrody\\AppData\\Local\\google-vscode-extension"
+    },
+
+    "visual_studio_2026_insiders": {
+      "path": "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders",
+      "msvc_version": "14.51.36231",
+      "cl_exe": "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+      "msbuild": "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\MSBuild\\Current\\Bin\\amd64",
+      "vcvarsall": "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Auxiliary\\Build\\vcvarsall.bat"
+    },
+
+    "build_tools_2026": {
+      "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools",
+      "msvc_version": "14.50.35717"
+    },
+
+    "visual_studio_2022": {
+      "path": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community",
+      "msvc_version": "14.44.35207"
+    },
+
+    "windows_sdk": {
+      "path": "C:\\Program Files (x86)\\Windows Kits\\10",
+      "version": "10.0.26100.0"
+    },
+
+    "path_entries": [
+      "C:\\Program Files\\Google\\Chrome\\Application",
+      "C:\\Program Files (x86)\\Google\\Cloud SDK\\google-cloud-sdk\\bin",
+      "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk\\platform-tools",
+      "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk\\cmdline-tools\\latest\\bin",
+      "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk\\emulator",
+      "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk\\tools",
+      "C:\\Users\\aphrody\\AppData\\Local\\Android\\Sdk\\tools\\bin",
+      "C:\\Users\\aphrody\\.cargo\\bin",
+      "C:\\Program Files\\LLVM\\bin",
+      "C:\\Program Files\\NASM",
+      "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64",
+      "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\MSBuild\\Current\\Bin\\amd64",
+      "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\Common7\\IDE",
+      "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\Common7\\Tools",
+      "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\bin\\Hostx64\\x64",
+      "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\MSBuild\\Current\\Bin\\amd64",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64",
+      "C:\\winclean\\bin",
+      "C:\\Program Files\\nodejs",
+      "C:\\src\\aphrody\\bin",
+      "C:\\src\\aphrody\\lib"
+    ]
+  }
+}

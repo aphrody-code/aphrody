@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "obscura-runtime"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Façade binaire pour le moteur headless Obscura (pilier R4 scraping)."
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio      = { workspace = true, features = ["process", "io-util", "macros", "rt"] }
+thiserror  = { workspace = true }
+
+[dev-dependencies]
+tokio    = { workspace = true, features = ["macros", "rt"] }
+tempfile = { workspace = true }

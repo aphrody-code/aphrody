@@ -1,0 +1,50 @@
+﻿[package]
+name                  = "base"
+publish               = true  # ladder leaf — first crate to ship
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace = true
+authors.workspace     = true
+license.workspace     = true
+homepage.workspace    = true
+repository.workspace  = true
+keywords.workspace    = true
+categories.workspace  = true
+description           = "Foundational primitives for Aphrody crates (no_std-compatible)."
+readme                = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow      = { workspace = true }
+tracing     = { workspace = true }
+aes-gcm     = { workspace = true }
+
+# getrandom is gated to wasm32 below; machete cannot see cfg-gated deps,
+# so we suppress the false-positive warning here.
+[package.metadata.cargo-machete]
+ignored = ["getrandom"]
+
+# Browser-WASM: getrandom must opt into the "js" backend so transitively
+# pulled randomness (via aes-gcm → aead → rand_core → getrandom) resolves
+# to the Web Crypto API instead of erroring out at compile-time.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Security_Cryptography",
+    "Win32_System_Memory",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+] }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name    = "base_bench"
+harness = false

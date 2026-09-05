@@ -1,0 +1,204 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Gemini web app — system design tokens (DARK theme), captured pixel-exact from
+ * the live https://gemini.google.com/app on 2026-05-22 via computed-style
+ * extraction (getComputedStyle of the cascaded `--gem-sys-*` / `--lumi-sys-*`
+ * custom properties). These are functional token values (colours, corner radii)
+ * — the canonical system layer; the app's ~1700 `--mat-*` Angular Material
+ * component tokens are derived from these and are not reproduced here.
+ *
+ * Body context observed: `dark-theme zero-state-theme`, body background
+ * #0f0f0f (= --lumi-sys-color--surface), body text #e3e3e3.
+ */
+:root {
+  /* ---- gem-sys: brand & accent palette ---- */
+  --gem-sys-color--blue-high: #e7f2ff;
+  --gem-sys-color--blue-low: #04409f;
+  --gem-sys-color--blue-medium: #76acff;
+  --gem-sys-color--blue-primary: #4e8ff8;
+  --gem-sys-color--brand-blue: #3186ff;
+  --gem-sys-color--brand-floaty-blue: #3186ff;
+  --gem-sys-color--brand-green: #0ebc5f;
+  --gem-sys-color--brand-red: #ff4641;
+  --gem-sys-color--brand-transition-blue-1: #346bf1;
+  --gem-sys-color--brand-transition-blue-2: #4fa0ff;
+  --gem-sys-color--brand-transition-orange: #ff6b2b;
+  --gem-sys-color--brand-transition-pink: #d8627e;
+  --gem-sys-color--brand-transition-purple: #a975aa;
+  --gem-sys-color--brand-transition-red: #fa506b;
+  --gem-sys-color--brand-transition-teal: #00a5b7;
+  --gem-sys-color--brand-yellow: #fc0;
+  --gem-sys-color--green-high: #ddf8d8;
+  --gem-sys-color--green-low: #00522c;
+  --gem-sys-color--green-medium: #44c265;
+  --gem-sys-color--green-primary: #1aa64a;
+  --gem-sys-color--orange-high: #ffede1;
+  --gem-sys-color--orange-low: #753403;
+  --gem-sys-color--orange-medium: #ff8d41;
+  --gem-sys-color--orange-primary: #e86e00;
+  --gem-sys-color--purple-high: #f7ecfe;
+  --gem-sys-color--purple-low: #5629a4;
+  --gem-sys-color--purple-medium: #c597ff;
+  --gem-sys-color--purple-primary: #ad72ff;
+  --gem-sys-color--red-high: #ffecee;
+  --gem-sys-color--red-low: #8a1a16;
+  --gem-sys-color--red-medium: #ff8983;
+  --gem-sys-color--red-primary: #f55e57;
+
+  /* ---- gem-sys: "gems" accent pairs (high/low) ---- */
+  --gem-sys-color--gems-blue-high: #60a9ed;
+  --gem-sys-color--gems-blue-low: #003d64;
+  --gem-sys-color--gems-cyan-high: #25b2d4;
+  --gem-sys-color--gems-cyan-low: #00404e;
+  --gem-sys-color--gems-grey-high: #a4a4a4;
+  --gem-sys-color--gems-grey-low: #3a3a3a;
+  --gem-sys-color--gems-orange-high: #ec8c4c;
+  --gem-sys-color--gems-orange-low: #612b00;
+  --gem-sys-color--gems-pink-high: #db8da7;
+  --gem-sys-color--gems-pink-low: #60263d;
+  --gem-sys-color--gems-purple-high: #c88ee1;
+  --gem-sys-color--gems-purple-low: #55226e;
+  --gem-sys-color--gems-teal-high: #00b6bc;
+  --gem-sys-color--gems-teal-low: #004144;
+  --gem-sys-color--gems-violet-high: #a299f3;
+  --gem-sys-color--gems-violet-low: #372d80;
+  --gem-sys-color--gems-yellow-high: #d89800;
+  --gem-sys-color--gems-yellow-low: #4f3500;
+
+  /* ---- gem-sys: M3 colour roles (dark) ---- */
+  --gem-sys-color--primary: #a8c7fa;
+  --gem-sys-color--on-primary: #062e6f;
+  --gem-sys-color--primary-container: #1f3760;
+  --gem-sys-color--on-primary-container: #d3e3fd;
+  --gem-sys-color--on-primary-container-emphasis-1: #bbc3ff;
+  --gem-sys-color--on-primary-emphasis-1: #311f77;
+  --gem-sys-color--primary-emphasis-1: #888dff;
+  --gem-sys-color--primary-emphasis-2: #b6bdff;
+  --gem-sys-color--primary-container-emphasis-1: #4d34cf;
+  --gem-sys-color--primary-container-emphasis-2: #9d8bff;
+  --gem-sys-color--primary-fixed: #d3e3fd;
+  --gem-sys-color--primary-fixed-dim: #a8c7fa;
+  --gem-sys-color--on-primary-fixed: #041e49;
+  --gem-sys-color--on-primary-fixed-variant: #0842a0;
+  --gem-sys-color--secondary: #7fcfff;
+  --gem-sys-color--on-secondary: #035;
+  --gem-sys-color--secondary-container: #004a77;
+  --gem-sys-color--on-secondary-container: #c2e7ff;
+  --gem-sys-color--secondary-emphasis-1: #e2eeff;
+  --gem-sys-color--secondary-emphasis-2: #ecf1ff;
+  --gem-sys-color--secondary-container-emphasis-1: #4b3ba5;
+  --gem-sys-color--secondary-container-emphasis-2: #7043c1;
+  --gem-sys-color--secondary-fixed: #c2e7ff;
+  --gem-sys-color--secondary-fixed-dim: #7fcfff;
+  --gem-sys-color--on-secondary-fixed: #001d35;
+  --gem-sys-color--on-secondary-fixed-variant: #004a77;
+  --gem-sys-color--tertiary: #6dd58c;
+  --gem-sys-color--on-tertiary: #0a3818;
+  --gem-sys-color--tertiary-container: #0f5223;
+  --gem-sys-color--on-tertiary-container: #c4eed0;
+  --gem-sys-color--tertiary-emphasis-1: #a1a8ff;
+  --gem-sys-color--tertiary-emphasis-2: #afc2ff;
+  --gem-sys-color--tertiary-container-emphasis-1: #6f7aff;
+  --gem-sys-color--tertiary-container-emphasis-2: #7297ff;
+  --gem-sys-color--tertiary-fixed: #c4eed0;
+  --gem-sys-color--tertiary-fixed-dim: #6dd58c;
+  --gem-sys-color--on-tertiary-fixed: #072711;
+  --gem-sys-color--on-tertiary-fixed-variant: #0f5223;
+  --gem-sys-color--error: #f2b8b5;
+  --gem-sys-color--on-error: #601410;
+  --gem-sys-color--error-container: #601410;
+  --gem-sys-color--on-error-container: #f9dedc;
+
+  /* ---- gem-sys: surfaces & neutrals (dark) ---- */
+  --gem-sys-color--surface: #131314;
+  --gem-sys-color--surface-dim: #131314;
+  --gem-sys-color--surface-bright: #1e1f20;
+  --gem-sys-color--surface-container-lowest: #0e0e0e;
+  --gem-sys-color--surface-container-low: #1b1b1b;
+  --gem-sys-color--surface-container: #1e1f20;
+  --gem-sys-color--surface-container-high: #282a2c;
+  --gem-sys-color--surface-container-highest: #333537;
+  --gem-sys-color--surface-variant: #444746;
+  --gem-sys-color--on-surface: #e3e3e3;
+  --gem-sys-color--on-surface-low: #9a9b9c;
+  --gem-sys-color--on-surface-variant: #c4c7c5;
+  --gem-sys-color--inverse-surface: #e3e3e3;
+  --gem-sys-color--inverse-on-surface: #303030;
+  --gem-sys-color--inverse-primary: #0b57d0;
+  --gem-sys-color--outline: #8e918f;
+  --gem-sys-color--outline-low: #444746;
+  --gem-sys-color--outline-variant: #444746;
+  --gem-sys-color--scrim: #000;
+  --gem-sys-color--shadow: #000;
+  --gem-sys-color--image-stop: #35383b;
+  --gem-sys-color--universal-stop: #5e5e5e;
+
+  /* ---- gem-sys: gradients & glows ---- */
+  --gem-sys-color--brand-text-gradient-stop-1: #4285f4;
+  --gem-sys-color--brand-text-gradient-stop-2: #9b72cb;
+  --gem-sys-color--mic-gradient-stop-1: #ffaee4;
+  --gem-sys-color--mic-gradient-stop-2: #ad72ff;
+  --gem-sys-color--mic-gradient-stop-3: #c597ff;
+  --gem-sys-color--outline-gradient-stop-1: #b7a9e5;
+  --gem-sys-color--outline-gradient-stop-2: #fdf8ff;
+  --gem-sys-color--outline-gradient-stop-3: #4c8df6;
+  --gem-sys-color--outline-solid-1: #9f8edc;
+  --gem-sys-color--outline-solid-2: #0b57d0;
+  --gem-sys-color--outline-solid-3: #fff;
+  --gem-sys-color--soft-glow-blue-1: #4c8df6;
+  --gem-sys-color--soft-glow-blue-2: #3271ea;
+  --gem-sys-color--soft-glow-pink-1: #ff7dd2;
+  --gem-sys-color--soft-glow-pink-2: #b60d6e;
+  --gem-sys-color--text-advanced-stop-high: #f55e57;
+  --gem-sys-color--text-advanced-stop-low: #620438;
+  --gem-sys-color--text-basic-stop-high: #3271ea;
+  --gem-sys-color--text-basic-stop-low: #303030;
+
+  /* ---- gem-sys: shape (corner radius scale, matches m3-tokens 10-step) ---- */
+  --gem-sys-shape--corner-none: 0px;
+  --gem-sys-shape--corner-extra-small: 4px;
+  --gem-sys-shape--corner-extra-small-top: 4px 4px 0px 0px;
+  --gem-sys-shape--corner-small: 8px;
+  --gem-sys-shape--corner-medium: 12px;
+  --gem-sys-shape--corner-large: 16px;
+  --gem-sys-shape--corner-large-increased: 20px;
+  --gem-sys-shape--corner-large-max: 24px;
+  --gem-sys-shape--corner-large-start: 16px 0px 0px 16px;
+  --gem-sys-shape--corner-large-end: 0px 16px 16px 0px;
+  --gem-sys-shape--corner-large-top: 16px 16px 0px 0px;
+  --gem-sys-shape--corner-extra-large: 28px;
+  --gem-sys-shape--corner-extra-large-increased: 32px;
+  --gem-sys-shape--corner-extra-large-max: 40px;
+  --gem-sys-shape--corner-extra-large-top: 28px 28px 0px 0px;
+  --gem-sys-shape--corner-extra-extra-large: 48px;
+  --gem-sys-shape--corner-extra-extra-large-increased: 56px;
+  --gem-sys-shape--corner-full: 9999px;
+
+  /* ---- lumi-sys: canvas / code surfaces (Gemini "Lumi") ---- */
+  --lumi-sys-color--black: #000;
+  --lumi-sys-color--white: #fff;
+  --lumi-sys-color--surface: #0f0f0f;
+  --lumi-sys-color--surface-background: #000;
+  --lumi-sys-color--surface-bright: #1f1f1f;
+  --lumi-sys-color--surface-dim: #171717;
+  --lumi-sys-color--surface-accent: #14204f;
+  --lumi-sys-color--on-surface: #e6e6e6;
+  --lumi-sys-color--error: #ff4c45;
+  --lumi-sys-color--error-container: #3c0202;
+  --lumi-sys-color--on-error-container: #ff4c45;
+  --lumi-sys-color--positive: #0ebc5f;
+  --lumi-sys-color--positive-container: #002220;
+  --lumi-sys-color--on-positive-container: #0ebc5f;
+  --lumi-sys-color--code-background: #171717;
+  --lumi-sys-color--code-primary-text: #fff;
+  --lumi-sys-color--code-blue-text: #4fa0ff;
+  --lumi-sys-color--code-green-text: #60d673;
+  --lumi-sys-color--code-grey-text: #808080;
+  --lumi-sys-color--code-pink-text: #ff96da;
+  --lumi-sys-color--code-purple-text: #969dff;
+  --lumi-sys-color--code-red-text: #ff5a59;
+  --lumi-sys-color--code-yellow-text: #ffdb0f;
+  --lumi-sys-color-acc-color--accent: #1f3b9b;
+  --lumi-sys-color-acc-color--accent-container: #192967;
+  --lumi-sys-color-acc-color--accent-fixed: #3186ff;
+}

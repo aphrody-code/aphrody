@@ -1,0 +1,129 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=https://json.schemastore.org/github-issue-forms.json
+name: Bug report
+description: Report a reproducible defect in production behavior
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill **all**
+        required fields. Incomplete reports get closed without follow-up.
+
+        Before opening: check [`docs/FAQ.md`](https://github.com/aphrody-code/aphrody/blob/main/docs/FAQ.md)
+        and search existing issues — duplicates waste maintainer time.
+
+  - type: input
+    id: version
+    attributes:
+      label: aphrody --version
+      description: Paste the full output of `aphrody --version` (or commit SHA if built from source).
+      placeholder: "aphrody 0.x.y (bf01d95d)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Affected platform
+      description: Tick every platform where you can reproduce the bug.
+      multiple: true
+      options:
+        - Linux (Ubuntu 26.04)
+        - Linux (other)
+        - Windows 11
+        - Windows 10
+        - macOS
+        - WASM (wasm32-unknown-unknown)
+        - WASM (wasm32-wasi)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: crate
+    attributes:
+      label: Affected crate
+      description: Best guess at which workspace member is implicated.
+      multiple: true
+      options:
+        - aphrody (CLI binary)
+        - base
+        - backend
+        - a2a
+        - a2a-client
+        - a2a-server
+        - a2a-pb
+        - a2a-grpc
+        - google_mcp
+        - mrx-core
+        - mrx-detect
+        - mrx-audit
+        - mrx-watch
+        - mrx-cli
+        - aphrody-translate
+        - aphrody-wasm
+        - gui (desktop only)
+        - unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic. Shell commands preferred over prose.
+      placeholder: |
+        1. `git clone https://github.com/aphrody-code/aphrody`
+        2. `cargo run -p aphrody -- <subcommand> --flag=value`
+        3. Observe …
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you thought would happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include stack trace, panic, or full stderr.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: aphrody doctor --json
+      description: Output of `aphrody doctor --json` (optional but speeds up triage massively).
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Rust toolchain, Bun version, kernel build, Windows insider build, etc.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues — no duplicate
+          required: true
+        - label: I reproduced on the latest `main` commit
+          required: true
+        - label: I redacted any secrets or tokens from the pasted output
+          required: true

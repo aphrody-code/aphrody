@@ -1,0 +1,23 @@
+[package]
+name        = "aphrody-mcp-smoke"
+version     = "0.1.0"
+edition     = "2024"
+license     = "Apache-2.0"
+description = "End-to-end smoke test runner for the unified aphrody-mcp stdio server: handshake + tools/list + tools/call sweep over all 17 tools, p50/p95 latency, NDJSON report."
+publish     = false
+
+[[bin]]
+name = "aphrody-mcp-smoke"
+path = "src/main.rs"
+
+[dependencies]
+tokio       = { workspace = true }
+serde_json  = { workspace = true }
+anyhow      = { workspace = true }
+clap        = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.cargo-machete]
+ignored = []

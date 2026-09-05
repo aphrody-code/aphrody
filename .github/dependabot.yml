@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# Dependabot config — https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # Cargo dependencies (root workspace + all crates)
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - rust
+    open-pull-requests-limit: 10
+    versioning-strategy: lockfile-only  # respect Cargo.lock pins, don't bump Cargo.toml requirements aggressively
+    commit-message:
+      prefix: deps(cargo)
+      include: scope
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+    # Deny-list deps we MUST pin (see CLAUDE.md §7 piège list)
+    ignore:
+      - dependency-name: tracing-subscriber
+        versions: [">0.3.22"]  # 0.3.23+ has mod env packaging bug
+      - dependency-name: rand
+        versions: [">=0.9"]    # 0.9 incompatible with denokv_proto
+      - dependency-name: flume
+      - dependency-name: notify-debouncer-full
+      - dependency-name: rusqlite
+      - dependency-name: schemars
+      - dependency-name: toml
+      - dependency-name: foldhash
+      - dependency-name: zod
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - github-actions
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps(ci)
+      include: scope
+
+  # npm/bun ecosystem removed: Bun/Node/npm are banned per CLAUDE.md §2.
+  # All JS/TS tooling has been migrated to Rust. No package.json to track.

@@ -1,0 +1,94 @@
+---
+name: microsoft-code-reference
+description: >-
+  Find working code samples, verify API signatures, and fix Microsoft SDK errors using official docs. Use whenever the user is writing, debugging, or reviewing code that touches any Microsoft SDK, .NET library, Azure client library, or Microsoft API — even if they don't ask for a "reference." Catches hallucinated methods, wrong signatures, and deprecated patterns. If the task involves producing or fixing Microsoft-related code, this is the right skill. Source: upstream `microsoftdocs/mcp` (MIT), imported 2026-05-19.
+license: MIT
+upstream: https://github.com/microsoftdocs/mcp/tree/main/skills/microsoft-code-reference
+---
+
+# Microsoft Code Reference
+
+Mode `/goal` permanent : décider seul, ne pas s'arrêter avant code vérifié.
+
+Live API / sample-code verification pipeline backed by native Rust tools in the `aphrody-mcp` binary (proxy `https://learn.microsoft.com/api/mcp` via `reqwest` + SSE unwrap; no separate MCP server, no JS runtime). Cross-platform (HTTP-only).
+
+## Tools
+
+| Need                    | Tool                                                   | Example                                                                 |
+| ----------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| API method/class lookup | `mcp__aphrody__microsoft_docs_search`          | `"BlobClient UploadAsync Azure.Storage.Blobs"`                          |
+| Working code sample     | `mcp__aphrody__microsoft_code_sample_search`   | `query: "upload blob managed identity", language: "python"`             |
+| Full API reference      | `mcp__aphrody__microsoft_docs_fetch`           | Fetch URL from `microsoft_docs_search` (for overloads, full signatures) |
+
+## Finding Code Samples
+
+Use `microsoft_code_sample_search` to get official, working examples:
+
+```
+microsoft_code_sample_search(query: "upload file to blob storage", language: "csharp")
+microsoft_code_sample_search(query: "authenticate with managed identity", language: "python")
+microsoft_code_sample_search(query: "send message service bus", language: "javascript")
+```
+
+**When to use:**
+
+- Before writing code — find a working pattern to follow
+- After errors — compare your code against a known-good sample
+- Unsure of initialization/setup — samples show complete context
+- Reverse-engineering Windows-only behaviour a workspace needs to mirror
+  cross-platform
+
+## API Lookups
+
+```
+# Verify method exists (include namespace for precision)
+"BlobClient UploadAsync Azure.Storage.Blobs"
+"GraphServiceClient Users Microsoft.Graph"
+
+# Find class/interface
+"DefaultAzureCredential class Azure.Identity"
+
+# Find correct package
+"Azure Blob Storage NuGet package"
+"azure-storage-blob pip package"
+```
+
+Fetch full page when method has multiple overloads or you need complete parameter details.
+
+## Error Troubleshooting
+
+Use `microsoft_code_sample_search` to find working code samples and
+compare with your implementation. For specific errors, use
+`microsoft_docs_search` and `microsoft_docs_fetch`:
+
+| Error Type         | Query                                                    |
+| ------------------ | -------------------------------------------------------- |
+| Method not found   | `"[ClassName] methods [Namespace]"`                      |
+| Type not found     | `"[TypeName] NuGet package namespace"`                   |
+| Wrong signature    | `"[ClassName] [MethodName] overloads"` → fetch full page |
+| Deprecated warning | `"[OldType] migration v12"`                              |
+| Auth failure       | `"DefaultAzureCredential troubleshooting"`               |
+| 403 Forbidden      | `"[ServiceName] RBAC permissions"`                       |
+
+## When to Verify
+
+Always verify when:
+
+- Method name seems "too convenient" (`UploadFile` vs actual `Upload`)
+- Mixing SDK versions (v11 `CloudBlobClient` vs v12 `BlobServiceClient`)
+- Package name doesn't follow conventions (`Azure.*` for .NET, `azure-*` for Python)
+- Using an API for the first time
+
+## Validation Workflow
+
+Before generating code using Microsoft SDKs, verify it's correct:
+
+1. **Confirm method or package exists** — `microsoft_docs_search(query: "[ClassName] [MethodName] [Namespace]")`
+2. **Fetch full details** (for overloads/complex params) — `microsoft_docs_fetch(url: "...")`
+3. **Find working sample** — `microsoft_code_sample_search(query: "[task]", language: "[lang]")`
+
+For simple lookups, step 1 alone may suffice. For complex API usage, complete all three steps.
+
+## Rust-specific note
+
+When the upstream sample is C# / Python / TypeScript and the host workspace is Rust, translate to Rust idioms manually — Microsoft Learn MCP has limited first-class Rust SDK coverage (Azure SDK for Rust is preview). For pure-Rust lookups, prefer the `context7` MCP or a `docs.rs` fetch via `mcp__aphrody__universal_web_fetch`.

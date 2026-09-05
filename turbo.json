@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        "lib/**",
+        "**/*.js",
+        "**/*.js.map",
+        "**/*.d.ts",
+        ".tsbuildinfo",
+        "target/release/libbun_rs.so",
+        "target/release/libbun_rs.dylib",
+        "target/release/libbun_rs.dll"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json", "tsconfig.base.json"]
+    },
+    "typecheck:fast": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json", "tsconfig.base.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:browser": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "lint": {
+      "inputs": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", ".oxlintrc.json"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

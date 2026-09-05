@@ -1,0 +1,50 @@
+# Self-rooted workspace — excluded from the root workspace (see root Cargo.toml
+# exclude list). Re-integrate into root workspace members once stabilised.
+[workspace]
+
+[package]
+name        = "aphrody-x-client"
+version     = "0.2.0"
+edition     = "2024"
+license     = "Apache-2.0"
+description = "aphrody — X / Twitter native GraphQL + REST client (cookie auth, no API key required)"
+repository  = "https://github.com/aphrody-code/aphrody"
+
+[[bin]]
+name = "aphrody-x"
+path = "src/main.rs"
+
+[lib]
+name = "aphrody_x_client"
+path = "src/lib.rs"
+
+[dependencies]
+# HTTP — rustls-tls for zero-system-tls dependency, cookies for jar support.
+reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies", "multipart"] }
+# Async runtime.
+tokio       = { version = "1.52", features = ["full"] }
+# Serde / JSON.
+serde       = { version = "1", features = ["derive"] }
+serde_json  = { version = "1" }
+# Error handling.
+thiserror   = { version = "2" }
+anyhow      = { version = "1" }
+# CLI parsing.
+clap        = { version = "4", features = ["derive", "env"] }
+# Home directory resolution for session file.
+dirs        = { version = "6" }
+# rustls CryptoProvider (ring) — must call install_default() once before Client.
+rustls      = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+# Random UUIDs / transaction-ids for human-looking stealth headers.
+uuid        = { version = "1", features = ["v4", "fast-rng"] }
+# Regex for runtime queryId extraction from X's JS bundles.
+regex       = { version = "1" }
+# Local-first config files (bird-compatible JSON5).
+json5       = { version = "0.4" }
+# Timestamps for the local store and JSONL backups.
+time        = { version = "0.3", features = ["formatting", "parsing", "macros"] }
+# Local-first store: bundled SQLite with FTS5 full-text search.
+rusqlite    = { version = "0.32", features = ["bundled"] }
+
+[dev-dependencies]
+tokio       = { version = "1.52", features = ["full"] }

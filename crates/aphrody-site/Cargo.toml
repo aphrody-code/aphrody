@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "aphrody-site"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Minimal full-Rust origin server for aphrody.com"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true

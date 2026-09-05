@@ -1,0 +1,428 @@
+﻿# ============================================================================
+#  Aphrody — .gitignore (refreshed 2026-05-21)
+#  100% Rust nightly + C/C++ (MSVC FFI wrappers only).
+#  JS/TS/Bun/Node/Python are BANNED (cf. CLAUDE.md §2) — patterns kept only
+#  to defensively block accidental reintroduction, not to support a toolchain.
+#  Order: most-frequent triggers first.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 0. Runtime / local agent state (never commit)
+# ----------------------------------------------------------------------------
+ai/heartbeat.txt
+py/aphrody/cache/
+py/ai/heartbeat.txt
+
+# ----------------------------------------------------------------------------
+# 1. Rust / Cargo
+# ----------------------------------------------------------------------------
+target/
+**/*.rs.bk
+**/*.orig
+**/Cargo.lock.tmp
+# NOTE: Cargo.lock IS tracked (lockfile-only supply chain since 2026-05-16).
+# NOTE: supply-chain/imports.lock IS tracked (cargo-vet feed pins).
+
+# ----------------------------------------------------------------------------
+# 2. Bun / Node / npm  (all FORBIDDEN — repo is 100% Rust since 2026-05-18,
+#    cf. CLAUDE.md §2 + memory feedback_aphrody_rust_only)
+# ----------------------------------------------------------------------------
+node_modules/
+bun.lock
+bun.lockb
+bunfig.toml
+turbo.json
+turbo.jsonc
+tsconfig.json
+tsconfig.*.json
+.npm/
+.npmrc
+.yarn/
+.yarnrc
+.pnp.*
+.pnpm-store/
+yarn-error.log
+yarn-debug.log*
+npm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+
+# ----------------------------------------------------------------------------
+# 3. Build outputs & generic caches
+# ----------------------------------------------------------------------------
+dist/
+out/
+build/
+.turbo/
+.cache/
+.uv-cache/
+.parcel-cache/
+.vite/
+.swc/
+.next/
+.nuxt/
+.eslintcache
+.oxlintcache
+*.tsbuildinfo
+coverage/
+*.lcov
+var/
+# Mirrored external corpora (scraped HTML / assets / manifests).
+assets/scrape/
+
+# ----------------------------------------------------------------------------
+# 4. C++ / MSVC / CMake
+# ----------------------------------------------------------------------------
+CMakeFiles/
+CMakeCache.txt
+CMakeUserPresets.json
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+*.obj
+*.ilk
+*.iobj
+*.ipdb
+*.exp
+vcpkg_installed/
+.vcpkg-root
+vcpkg-manifest-install.log
+# NOTE: compile_commands.json kept â€” clangd / clang-tidy need it.
+
+# ----------------------------------------------------------------------------
+# 5. Python tooling (uv / mypy / ruff)
+# ----------------------------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.build/
+*.dist/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+__pypackages__/
+
+# ----------------------------------------------------------------------------
+# 6. Native binary artifacts (build outputs only)
+# ----------------------------------------------------------------------------
+*.pdb
+*.so
+*.so.*
+*.dylib
+*.tgz
+*.a
+*.dll
+*.lib
+*.exe
+*.exp
+*.rlib
+*.rmeta
+*.o
+*.obj
+*.bc
+*.wasm
+*.d
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+
+# ----------------------------------------------------------------------------
+# 7. Environment & secrets (hardened 2026-05-17 — ZERO leak tolerated)
+# ----------------------------------------------------------------------------
+# Env files
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+
+# Cryptographic material
+*.pem
+*.key
+*.pkcs8
+*.pkcs12
+*.pfx
+*.p12
+*.jks
+*.keystore
+*.crt
+*.cer
+*.cert
+*.csr
+*.gpg
+*.asc
+*.kdbx
+*.kdb
+*.opvault
+*.1pif
+
+# SSH / Git
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+id_ed25519_sk
+.ssh/
+known_hosts
+.netrc
+_netrc
+
+# Tokens & PATs (any file whose basename screams "credential")
+*.token
+*.tokens
+*.pat
+*token.json
+*tokens.json
+*secret.json
+*secrets.json
+auth.json
+*credentials*.json
+*credentials*.yaml
+*credentials*.yml
+*api[-_]key*
+*apikey*
+github_token*
+gh_token*
+bearer.txt
+
+# Directories of credentials
+secrets/
+.secrets/
+.credentials/
+.creds/
+.aws/credentials
+.gcp/
+.azure/
+.kube/config
+
+# Cloud + service keys
+service-account*.json
+service_account*.json
+gcloud-key*.json
+firebase-adminsdk*.json
+*serviceaccount*.json
+
+# ----------------------------------------------------------------------------
+# 8. Logs & crash dumps
+# ----------------------------------------------------------------------------
+logs/
+*.log
+*.log.lck
+*.log.gz
+*.dmp
+*.minidmp
+crash-*.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ----------------------------------------------------------------------------
+# 9. Databases (SQLite WAL/SHM transients)
+# ----------------------------------------------------------------------------
+*.db-shm
+*.db-wal
+*.db-journal
+
+# ----------------------------------------------------------------------------
+# 10. OS / IDE / editor
+# ----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.idea/
+.idea_modules/
+*.iml
+.vscode/
+.fleet/
+.zed/
+.nova/
+.history/
+*.code-workspace
+*.swp
+*.swo
+
+# ----------------------------------------------------------------------------
+# 11. AI tooling caches
+# ----------------------------------------------------------------------------
+.copilot/
+.cursor/
+.windsurf/
+.tabnine/
+.aider*
+.claude/settings.local.json
+.opencode/settings.local.json
+
+# ----------------------------------------------------------------------------
+# 12. Auto-generated context files
+# ----------------------------------------------------------------------------
+repo.json
+profile.md
+
+# ----------------------------------------------------------------------------
+# 13. External clones / vendored research mirrors
+# ----------------------------------------------------------------------------
+# NOTE (2026-05-23): the TS/Bun surface (apps/* + packages/* UI forks) was
+# extracted to the sibling repo C:\src\aphrody-ts. The packages/ ignore is no
+# longer needed here; the forks' own .git now lives in aphrody-ts.
+shared/git/
+opt/
+vendor/
+
+# ----------------------------------------------------------------------------
+# 14. Locally-regenerated mirrors (never tracked)
+# ----------------------------------------------------------------------------
+docs/v8/
+# Mirror of root-level top-priority markdown regenerated for mdBook so it can
+# include them in docs/SUMMARY.md.
+docs/_root/
+msys64/
+msys2-base.tar.xz
+glibc/
+
+# ----------------------------------------------------------------------------
+# 16. Test outputs
+# ----------------------------------------------------------------------------
+test_outputs/
+
+# ----------------------------------------------------------------------------
+# 17. Throwaway dev scripts (cleanup 2026-05-16)
+# ----------------------------------------------------------------------------
+fix_*.py
+auto_refactor.py
+clean_cargo_*.py
+rebuild_cargo.py
+append_deps.py
+check_type_info.rs
+test_type_info.rs
+/test.exe
+/test.pdb
+/test.rs
+/test.js
+/test.ts
+/test.py
+/test.sh
+/test_mcp.jsonl
+
+# ----------------------------------------------------------------------------
+# 18. Local AI / harness scratch (project-level)
+# ----------------------------------------------------------------------------
+.claude/projects/
+.claude/todos/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/scheduled_tasks.lock
+.claude/ide/
+# Skill eval workspaces — regenerable artifacts (grade.py + benchmark.py outputs).
+# Each skill keeps its own `<name>-workspace/iteration-N/` next to the skill dir.
+.claude/plugins/aphrody/skills/*-workspace/
+.opencode/projects/
+.gemini/
+CRUSH.md
+GEMINI.md.local
+
+# ----------------------------------------------------------------------------
+# 19. Lockfile tmp / merge leftovers
+# ----------------------------------------------------------------------------
+*.orig
+*.rej
+*~
+
+# ----------------------------------------------------------------------------
+# 20. Internal reports leaked at root (mis-quoted PowerShell Write-Host
+#     interpreting backslash escapes in C:\aphrody-backup\* paths).
+# ----------------------------------------------------------------------------
+/aphrody-backup*
+/C:*
+/rename-report.json
+/rename-dryrun.json
+/rename-apply.json
+/manifest-scan.json
+/tree-scan.json
+
+# ----------------------------------------------------------------------------
+# 21. Removed sub-projects (block accidental re-introduction)
+# ----------------------------------------------------------------------------
+# crates/{coreutils,util-linux} — were git submodules excluded from workspace,
+# removed in the Rust-only pivot. Re-clone on demand if ever needed.
+crates/coreutils/
+crates/util-linux/
+
+# Pre-commit / Husky / Lefthook config — no auto hooks.
+.pre-commit-config.yaml
+.husky/
+.lefthook.yml
+lefthook.yml
+
+# ----------------------------------------------------------------------------
+# 22. Cross-Claude noise sink
+# ----------------------------------------------------------------------------
+# Peer Claude session in winclean has dropped Steam-monitor screenshots into
+# aphrody root twice this session. Off-scope here; canonical location is
+# C:/winclean/var/steam-monitor-snapshot*.png. Block at root.
+/steam.png
+/steam*.png
+
+# ----------------------------------------------------------------------------
+# 23. mrx scan artifacts (written into cwd by default)
+# ----------------------------------------------------------------------------
+# `mrx scan` and `mrx check` write path.json + monorepo-map.json into the
+# scanned root by default. They are reproducible outputs of the binary, not
+# checked-in artefacts. CI exports them as job outputs; locally they should
+# never be committed.
+/path.json
+/monorepo-map.json
+/map.json
+
+# ----------------------------------------------------------------------------
+# 24. Claude Code plugin local settings (.claude/aphrody.local.md pattern)
+# ----------------------------------------------------------------------------
+# The `aphrody` plugin reads per-project settings from
+# `.claude/aphrody.local.md` (cf. plugin-settings standard from plugin-dev).
+# These files contain user-local plugin config and must never be committed.
+.claude/*.local.md
+.claude/*.local.json
+
+
+# ----------------------------------------------------------------------------
+# 25. Structural non-trackables (stabilise checkpoint 2026-05-22)
+# ----------------------------------------------------------------------------
+# Registered git worktrees (e.g. parallel-agent sandboxes) — never commit.
+.claude/worktrees/
+# Built tool binaries (n2b etc.) — reproducible, not source.
+/bin/
+# Stray scratch outputs.
+/=ro
+/test_localsystem.txt
+/webview2_analysis_results.jsonl
+/webview2_visualization.html
+
+# ── Réunification 2026-05-27 : sous-arbres py/ go/ ts/ ─────────────────────────
+# Les patterns Rust-root ci-dessus (bun.lock, bunfig.toml, tsconfig.json,
+# secrets/, …) ne doivent PAS fuir dans les sous-arbres rapatriés : leur propre
+# .gitignore imbriqué gouverne leurs vrais artefacts (.venv, node_modules,
+# target, results_lora…). On ré-inclut ici leurs fichiers de config/lock suivis.
+!go/gogcli/internal/secrets/
+!go/**/pnpm-lock.yaml
+!go/gogcli/.lefthook.yml
+!ts/bun.lock
+!ts/bunfig.toml
+!ts/**/tsconfig.json
+!ts/**/tsconfig.*.json
+
+# --- Merged TS workspace: track build configs the publish CI needs ----------
+# The patterns above (tsconfig.json, tsconfig.*.json, turbo.json, bun.lock) were
+# inherited from aphrody's Rust-only era. The 2026-06 merge brought in the
+# @aphrody-code/* TS packages whose hand-written build configs + the workspace
+# lockfile MUST be tracked, or `release-m3-packages.yml`
+# (bun install --frozen-lockfile + turbo run build) cannot run. Re-include them:
+!/turbo.json
+!/bun.lock
+!/packages/*/tsconfig.json
+!/packages/*/tsconfig.*.json
+!/packages/*/turbo.json

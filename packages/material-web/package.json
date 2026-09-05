@@ -1,0 +1,183 @@
+{
+  "name": "@aphrody/material-web",
+  "version": "3.2.4",
+  "description": "Material Design 3 web components (Lit) — MUI + MUI X migration target",
+  "keywords": [
+    "components",
+    "design system",
+    "lit",
+    "material",
+    "material design",
+    "web components"
+  ],
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/packages/material-web#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "packages/material-web"
+  },
+  "files": [
+    "**/*.js",
+    "**/*.js.map",
+    "**/*.d.ts",
+    "**/*.scss",
+    "**/*.css",
+    "**/*.css.map",
+    "!web-test-runner.config.js",
+    "!**/test/**",
+    "!**/*_test.*",
+    "!.wireit/**",
+    "!scripts/",
+    "!**/testing/**",
+    "testing/harness.{js,js.map,d.ts}",
+    "testing/transform-pseudo-classes.{js,js.map,d.ts}"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "wireit",
+    "build:ts": "wireit",
+    "build:css-to-ts": "wireit",
+    "build:sass": "wireit",
+    "build:aphrody": "bun run aphrody-build.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:fast": "tsgo -p tsconfig.json --noEmit",
+    "typecheck:aphrody": "tsc -p tsconfig.aphrody.json",
+    "typecheck:bun": "tsc -p tsconfig.bun.json --noEmit",
+    "test": "wireit",
+    "test:browser": "bun tests-bxc/run.ts"
+  },
+  "dependencies": {
+    "@lit/context": "catalog:",
+    "lit": "catalog:",
+    "three": "catalog:",
+    "tslib": "catalog:"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "catalog:",
+    "@types/node": "catalog:",
+    "@types/three": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "bun-types": "catalog:",
+    "element-internals-polyfill": "catalog:",
+    "sass-embedded": "^1.100.0",
+    "sass-true": "catalog:",
+    "typescript": "catalog:",
+    "wireit": "catalog:"
+  },
+  "wireit": {
+    "build": {
+      "dependencies": [
+        "build:ts"
+      ]
+    },
+    "build:ts": {
+      "dependencies": [
+        "build:ts:main",
+        "build:ts:labs-gb"
+      ]
+    },
+    "build:ts:main": {
+      "command": "tsc --pretty",
+      "files": [
+        "tsconfig.json",
+        "tsconfig.base.json",
+        "**/*.ts",
+        "!**/*.d.ts",
+        "!**/*.cssresult.ts",
+        "!labs/gb/**",
+        "!scripts/"
+      ],
+      "output": [
+        ".tsbuildinfo",
+        "**/*.js",
+        "**/*.js.map",
+        "**/*.d.ts",
+        "!web-test-runner.config.js",
+        "!types/",
+        "!labs/gb/**",
+        "!scripts/"
+      ],
+      "clean": "if-file-deleted",
+      "dependencies": [
+        "build:css-to-ts"
+      ]
+    },
+    "build:ts:labs-gb": {
+      "command": "tsc --pretty -p labs/gb/tsconfig.json",
+      "files": [
+        "tsconfig.base.json",
+        "labs/gb/tsconfig.json",
+        "labs/gb/**/*.ts",
+        "!labs/gb/**/*.d.ts"
+      ],
+      "output": [
+        ".tsbuildinfo",
+        "labs/gb/**/*.js",
+        "labs/gb/**/*.js.map",
+        "labs/gb/**/*.d.ts"
+      ],
+      "clean": "if-file-deleted",
+      "dependencies": [
+        "build:css-to-ts"
+      ]
+    },
+    "build:css-to-ts": {
+      "command": "bun scripts/css-to-ts.ts",
+      "files": [
+        "**/*.css",
+        "scripts/css-to-ts.ts"
+      ],
+      "output": [
+        "**/*.cssresult.ts"
+      ],
+      "clean": "if-file-deleted",
+      "dependencies": [
+        "build:sass"
+      ]
+    },
+    "build:sass": {
+      "command": "bun scripts/compile-sass.ts",
+      "files": [
+        "**/*.scss",
+        "scripts/compile-sass.ts"
+      ],
+      "output": [
+        "**/*.css"
+      ],
+      "dependencies": [
+        "build:sass:generate"
+      ]
+    },
+    "build:sass:generate": {
+      "command": "bun scripts/generate-sass-token-meta.ts",
+      "files": [
+        "tokens/versions/**/_md-*.scss",
+        "!tokens/versions/**/*-meta.scss",
+        "scripts/generate-sass-token-meta.ts"
+      ],
+      "output": [
+        "tokens/versions/**/*-meta.scss"
+      ]
+    },
+    "test": {
+      "command": "bun test",
+      "dependencies": [
+        "build:ts"
+      ],
+      "files": [
+        "test/**",
+        "**/*.ts",
+        "!**/*.d.ts"
+      ],
+      "output": []
+    }
+  }
+}

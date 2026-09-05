@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name                   = "aphrody-ocr"
+publish                = false
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+authors.workspace      = true
+homepage.workspace     = true
+repository.workspace   = true
+license.workspace      = true
+description            = "Image-to-text pipeline for aphrody: drives a local vision-language model over one image or a whole directory, parses its DocTags output into markdown, and reports which pages carry no text at all."
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-models = { workspace = true }
+aphrody-infer  = { workspace = true }
+thiserror      = { workspace = true }
+tracing        = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+# Client HTTP synchrone pour llama-server. `blocking` parce que le pipeline OCR
+# est synchrone de bout en bout : une planche à la fois, pas de concurrence à
+# orchestrer, et un runtime async ici n'apporterait que de la cérémonie.
+reqwest        = { workspace = true, features = ["blocking"] }
+rustls         = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

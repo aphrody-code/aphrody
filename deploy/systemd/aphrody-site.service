@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+[Unit]
+Description=Aphrody.com Rust origin
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment=APHRODY_SITE_BIND=127.0.0.1:8083
+Environment=RUST_LOG=aphrody_site=info
+ExecStart=/home/ubuntu/.local/bin/aphrody-site
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

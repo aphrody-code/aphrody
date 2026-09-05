@@ -1,0 +1,39 @@
+{
+  "name": "@aphrody/m3-showcase",
+  "version": "0.0.0",
+  "description": "Bun-native showcase example for the material-web M3 monorepo (m3-react gallery, Material You dynamic color, Gemini AI Mode demo, WebGL backdrop).",
+  "homepage": "https://github.com/aphrody-code/material-web/tree/main/examples/showcase#readme",
+  "bugs": {
+    "url": "https://github.com/aphrody-code/material-web/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/material-web.git",
+    "directory": "examples/showcase"
+  },
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "start": "bun src/server.ts",
+    "build": "bun build ./src/index.html --outdir dist --minify --target browser && cp ../../packages/bun-rs/pkg/bun_rs_bg.wasm dist/",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "smoke": "bun src/smoke.ts",
+    "qa": "bun src/qa-gemini.ts"
+  },
+  "dependencies": {
+    "@aphrody/bun-rs": "workspace:*",
+    "@aphrody/m3-tokens": "workspace:*",
+    "@aphrody/material-web": "workspace:*",
+    "@material/material-color-utilities": "catalog:"
+  },
+  "devDependencies": {
+    "bun-types": "catalog:",
+    "typescript": "catalog:"
+  },
+  "optionalDependencies": {
+    "@aphrody/bxc": "^0.9.0"
+  }
+}

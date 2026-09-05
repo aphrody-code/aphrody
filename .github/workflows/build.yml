@@ -1,0 +1,77 @@
+# ============================================================================
+#  Build aphrody — workspace clippy/fmt/nextest + supply-chain.
+#  Policy: nightly toolchain, 100% Rust pipelines (no bun/node/npm).
+# ============================================================================
+name: Build aphrody
+
+on:
+  push:
+    branches: [main, stable, dev, windows, linux]
+  pull_request:
+    branches: [main, stable]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_INCREMENTAL: 0
+  # sccache via mozilla-actions/sccache-action@v0.0.10 (GHA cache backend).
+  # Aligned with cross-platform.yml and bench.yml (pipeline-optimization
+  # 2026-05-18). Each rust job ends with a non-fatal
+  # `sccache --show-stats || true` for graceful degradation.
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+
+jobs:
+  build-rust:
+    name: clippy + fmt + nextest + deny (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust (Nightly)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: build-windows
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Run tests
+        run: cargo nextest run --workspace --all-targets --all-features --locked
+
+      - name: sccache stats (non-fatal)
+        if: always()
+        shell: bash
+        run: sccache --show-stats || true
+
+      - name: Run cargo-deny
+        env:
+          # cargo-deny-action runs without sccache available in its container;
+          # unset the wrapper to avoid `sccache: command not found` on
+          # `cargo metadata`.
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: ""
+        uses: EmbarkStudios/cargo-deny-action@v2

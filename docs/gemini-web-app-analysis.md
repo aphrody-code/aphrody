@@ -1,0 +1,405 @@
+# Gemini Web App Static Code Analysis Report
+
+This report summarizes the features, interactive elements, CSS layout tokens, and backend RPC endpoints extracted from the Gemini Web App frontend code bundles.
+
+## 1. Scraped JavaScript Bundles
+Successfully resolved and analyzed **2** main script and preload bundles:
+- [m=LQaXg?wli=BardChatUi.b0hf0SeGdHE.libheifWasm.O%3A%3BBardChatUi.k33FYlW5Wow.loadWasmSipCoca.O%3A%3B](https://gemini.gstatic.com/_/mss/boq-bard-web/_/js/k=boq-bard-web.BardChatUi.en_US.2841HX_e7yY.2018.O/ck=boq-bard-web.BardChatUi.J8iAyg7ZC7k.L.B1.O/am=IQCExAAL6G8ARfgEAyDA8RpgAAAAAIQ/d=1/exm=_b/excm=_b/ed=1/wt=2/ujg=1/rs=AL3bBk3eIfVz0BBKcnv22pyLu_vcUggsdQ/ee=DGWCxb:CgYiQ;NJ1rfe:yGfSdd;Pjplud:PoEs9b;QGR0gd:Mlhmy;ScI3Yc:e7Hzgb;YIZmRd:A1yn5d;cEt90b:ws9Tlc;dowIGb:ebZ3mb;wNp4Gc:k56rsf/dti=1/m=LQaXg?wli=BardChatUi.b0hf0SeGdHE.libheifWasm.O%3A%3BBardChatUi.k33FYlW5Wow.loadWasmSipCoca.O%3A%3B)
+- [m=_b?wli=BardChatUi.b0hf0SeGdHE.libheifWasm.O%3A%3BBardChatUi.k33FYlW5Wow.loadWasmSipCoca.O%3A%3B](https://gemini.gstatic.com/_/mss/boq-bard-web/_/js/k=boq-bard-web.BardChatUi.en_US.2841HX_e7yY.2018.O/am=IQCExAAL6G8ARfgEAyDA8RpgAAAAAIQ/d=1/excm=_b/ed=1/dg=0/wt=2/ujg=1/rs=AL3bBk0LVaXuPjxs681ikncBOXCwydtERw/ee=DGWCxb:CgYiQ;NJ1rfe:yGfSdd;Pjplud:PoEs9b;QGR0gd:Mlhmy;ScI3Yc:e7Hzgb;YIZmRd:A1yn5d;cEt90b:ws9Tlc;dowIGb:ebZ3mb;wNp4Gc:k56rsf/dti=1/m=_b?wli=BardChatUi.b0hf0SeGdHE.libheifWasm.O%3A%3BBardChatUi.k33FYlW5Wow.loadWasmSipCoca.O%3A%3B)
+
+## 2. Interactive Buttons & Elements
+Found **0** distinct interactive buttons in the core page HTML shell:
+
+## 3. CSS Classes & Layout tokens
+Found **1383** distinct semantic and layout-related CSS classes (filtered by common prefixes):
+- `button--outlined`
+- `button--raised`
+- `button--unelevated`
+- `button-active-background`
+- `button-and-label`
+- `button-background`
+- `button-badge-size`
+- `button-badge-size-medium`
+- `button-badge-size-small`
+- `button-complete`
+- `button-container`
+- `button-container-color`
+- `button-container-elevation`
+- `button-container-height`
+- `button-container-shadow-color`
+- `button-container-shape`
+- `button-container-shape-end-end`
+- `button-container-shape-end-start`
+- `button-container-shape-start-end`
+- `button-container-shape-start-start`
+- `button-container-width`
+- `button-content`
+- `button-disabled`
+- `button-disabled-container-color`
+- `button-disabled-container-elevation`
+- `button-disabled-container-opacity`
+- `button-disabled-icon-color`
+- `button-disabled-icon-opacity`
+- `button-disabled-label-text-color`
+- `button-disabled-label-text-opacity`
+- `button-disabled-outline-color`
+- `button-disabled-outline-opacity`
+- `button-disabled-selected-container-color`
+- `button-disabled-selected-container-opacity`
+- `button-dropdown`
+- `button-focus-container-elevation`
+- `button-focus-icon-color`
+- `button-focus-label-text-color`
+- `button-height`
+- `button-hover-background`
+- `button-hover-container-elevation`
+- `button-hover-icon-color`
+- `button-hover-label-text-color`
+- `button-hover-state-layer-color`
+- `button-hover-state-layer-opacity`
+- `button-icon`
+- `button-icon-color`
+- `button-icon-size`
+- `button-icon-wrapper`
+- `button-label`
+- *... and 1333 more*
+
+## 4. CSS Custom Variables & Design Tokens
+Found **2639** custom properties (design variables) defining colors, spacing, and typography:
+- `---`
+- `--9kr7l`
+- `--_active-indicator-color`
+- `--_active-indicator-height`
+- `--_bottom-space`
+- `--_caret-color`
+- `--_container-color`
+- `--_container-elevation`
+- `--_container-height`
+- `--_container-shadow-color`
+- `--_container-shape-end-end`
+- `--_container-shape-end-start`
+- `--_container-shape-start-end`
+- `--_container-shape-start-start`
+- `--_container-width`
+- `--_content-color`
+- `--_content-font`
+- `--_content-line-height`
+- `--_content-size`
+- `--_content-space`
+- `--_content-weight`
+- `--_disabled-active-indicator-color`
+- `--_disabled-active-indicator-height`
+- `--_disabled-active-indicator-opacity`
+- `--_disabled-container-color`
+- `--_disabled-container-elevation`
+- `--_disabled-container-opacity`
+- `--_disabled-content-color`
+- `--_disabled-content-opacity`
+- `--_disabled-icon-color`
+- `--_disabled-icon-opacity`
+- `--_disabled-input-text-color`
+- `--_disabled-input-text-opacity`
+- `--_disabled-label-text-color`
+- `--_disabled-label-text-opacity`
+- `--_disabled-leading-content-color`
+- `--_disabled-leading-content-opacity`
+- `--_disabled-leading-icon-color`
+- `--_disabled-leading-icon-opacity`
+- `--_disabled-outline-color`
+- `--_disabled-outline-opacity`
+- `--_disabled-selected-container-color`
+- `--_disabled-selected-container-opacity`
+- `--_disabled-supporting-text-color`
+- `--_disabled-supporting-text-opacity`
+- `--_disabled-trailing-content-color`
+- `--_disabled-trailing-content-opacity`
+- `--_disabled-trailing-icon-color`
+- `--_disabled-trailing-icon-opacity`
+- `--_error-active-indicator-color`
+- `--_error-content-color`
+- `--_error-focus-active-indicator-color`
+- `--_error-focus-caret-color`
+- `--_error-focus-content-color`
+- `--_error-focus-input-text-color`
+- `--_error-focus-label-text-color`
+- `--_error-focus-leading-content-color`
+- `--_error-focus-leading-icon-color`
+- `--_error-focus-supporting-text-color`
+- `--_error-focus-trailing-content-color`
+- `--_error-focus-trailing-icon-color`
+- `--_error-hover-active-indicator-color`
+- `--_error-hover-content-color`
+- `--_error-hover-input-text-color`
+- `--_error-hover-label-text-color`
+- `--_error-hover-leading-content-color`
+- `--_error-hover-leading-icon-color`
+- `--_error-hover-state-layer-color`
+- `--_error-hover-state-layer-opacity`
+- `--_error-hover-supporting-text-color`
+- `--_error-hover-trailing-content-color`
+- `--_error-hover-trailing-icon-color`
+- `--_error-input-text-color`
+- `--_error-label-text-color`
+- `--_error-leading-content-color`
+- `--_error-leading-icon-color`
+- `--_error-supporting-text-color`
+- `--_error-trailing-content-color`
+- `--_error-trailing-icon-color`
+- `--_focus-active-indicator-color`
+- `--_focus-active-indicator-height`
+- `--_focus-caret-color`
+- `--_focus-container-elevation`
+- `--_focus-content-color`
+- `--_focus-icon-color`
+- `--_focus-input-text-color`
+- `--_focus-label-text-color`
+- `--_focus-leading-content-color`
+- `--_focus-leading-icon-color`
+- `--_focus-supporting-text-color`
+- `--_focus-trailing-content-color`
+- `--_focus-trailing-icon-color`
+- `--_hover-active-indicator-color`
+- `--_hover-active-indicator-height`
+- `--_hover-container-elevation`
+- `--_hover-content-color`
+- `--_hover-icon-color`
+- `--_hover-input-text-color`
+- `--_hover-label-text-color`
+- `--_hover-leading-content-color`
+- *... and 2539 more*
+
+## 5. JS Functions & Boq RPC Endpoints
+### Boq Action Hash to RPC Method Mappings
+Mappings used by the `batchexecute` protocol to execute remote backend actions:
+- **Bsxleb** -> `FootprintsTransparencyAndControlService.ShouldShowConsentFlow`
+- **CNgdBe** -> `BardFrontendService.ListBots`
+- **DH63Df** -> `BardFrontendService.PauseTask`
+- **DYBcR** -> `BardFrontendService.ListZeroStateContents`
+- **ESY5D** -> `BardFrontendService.ReadUserPreferences`
+- **EqPOKe** -> `BardFrontendService.GetConversationTurn`
+- **Fws7If** -> `ResponseService.Write`
+- **GPRiHf** -> `BardFrontendService.GetAbuseStatus`
+- **GzXR5e** -> `BardFrontendService.DeleteConversation`
+- **HRoTod** -> `BardFrontendService.UpdateTask`
+- **HcT8bb** -> `BardFrontendService.GetBot`
+- **Jba3ib** -> `BardFrontendService.CreateTask`
+- **KDNZr** -> `BardFrontendService.BranchConversation`
+- **L5adhe** -> `BardFrontendService.UpdateUserPreferences`
+- **LpbbXc** -> `BardFrontendService.NavigateToPreviousArtifactVersion`
+- **MaZiqc** -> `BardFrontendService.ListConversations`
+- **Nhy0te** -> `BardFrontendService.NavigateToNextArtifactVersion`
+- **NkpXw** -> `BardFrontendService.AbortGeneration`
+- **NqI12c** -> `BardFrontendService.NotifyParentalControls`
+- **OwENte** -> `BardFrontendService.GetDriveSharedConversation`
+- **PCck7e** -> `TaskService.GetCandidates`
+- **Q4Gw3c** -> `BardFrontendService.DeleteTask`
+- **UXcSJb** -> `BardFrontendService.DeleteBot`
+- **V59Ybc** -> `BardFrontendService.CreateArtifactVersion`
+- **VxUbXb** -> `BardFrontendService.CheckModeFeatureQuota`
+- **XNY2lc** -> `BardFrontendService.RecordBotUsage`
+- **XPSWpd** -> `BardFrontendService.GetAllTasks`
+- **aPya6c** -> `BardFrontendService.CheckQuota`
+- **c8o8Fe** -> `BardFrontendService.DownloadGeneratedImage`
+- **cYRIkd** -> `BardFrontendService.GetMentionableTools`
+- **dI8W6e** -> `ConsentPrimitiveDataService.RecordConsentEntryPointEvent`
+- **fuVx7** -> `BardFrontendService.CreateSharedConversation`
+- **hNvQHb** -> `BardFrontendService.ListConversationTurns`
+- **i1CNXc** -> `DasherGrowthPromotionService.RecordEvents`
+- **jbw8Gc** -> `BardFrontendService.ListImports`
+- **k81mDb** -> `BardFrontendService.MarkTasksAsRead`
+- **kHv0Vd** -> `BardFrontendService.UpdateBotMetadata`
+- **kOWVAe** -> `BardFrontendService.MarkLastConversationTurn`
+- **kwDCne** -> `BardFrontendService.GetTask`
+- **lork6d** -> `BardFrontendService.GetBotAcl`
+- **maGuAc** -> `BardFrontendService.GetAdvancedZsUpsell`
+- **oMH3Zd** -> `BardFrontendService.CreateBot`
+- **otAQ7b** -> `BardFrontendService.GetUserStatus`
+- **ozz5Z** -> `DasherGrowthPromotionService.FetchRecommendations`
+- **qO7R4d** -> `BardFrontendService.CheckThirdPartyAppConnection`
+- **qWymEb** -> `BardFrontendService.GetTasksInConversation`
+- **qpEbW** -> `BardFrontendService.CheckGeminiQuota`
+- **sJBwce** -> `BardFrontendService.GetG1Interventions`
+- **sofYMe** -> `TaskService.GetTaskForRendering`
+- **ttdQDb** -> `BardFrontendService.ConfirmTask`
+- **uFEB7** -> `BardFrontendService.ResumeTask`
+- **uPDUsc** -> `BardFrontendService.GetAllToolConsentData`
+- **ujx1Bf** -> `BardFrontendService.GetSharedConversation`
+- **ukz1Fe** -> `BardFrontendService.GenerateHeadline`
+- **vCj0tc** -> `BardFrontendService.GetArtifactVersion`
+- **zdzXAd** -> `BardFrontendService.ExportVideoToYouTube`
+
+### RPC Services
+- `assistant.lamda.ContextualDiscoveryInfo.DiscoveryFeature`
+- `assistant.lamda.DeepResearchMetadata.DeepResearchIntent`
+- `assistant.lamda.ImmersivesMetadata.ImmersivesIntent`
+
+### RPC Methods
+
+### Known Boq batchexecute hashes (e.g. conversation/UI state handlers)
+- `A1yn5d`
+- `A7QUPd`
+- `Aafksc`
+- `Accept`
+- `Access`
+- `Action`
+- `Active`
+- `Actual`
+- `AdpaDf`
+- `AfY8Hf`
+- `Ajsvkd`
+- `Always`
+- `Anyone`
+- `Apache`
+- `Arcade`
+- `Arphic`
+- `August`
+- `Austin`
+- `AutoIt`
+- `Bahyph`
+- `Banana`
+- `Banner`
+- `BdA8rf`
+- `Bearer`
+- `Before`
+- `Berlin`
+- `BigInt`
+- `BqgkJe`
+- `Br7q0d`
+- `Branch`
+- `Browse`
+- `Bsxleb`
+- `CNgdBe`
+- `Called`
+- `Canada`
+- `Cancel`
+- `Candid`
+- `Cannot`
+- `Canvas`
+- `Casual`
+- `Change`
+- `Chapel`
+- `Checks`
+- `Choice`
+- `Christ`
+- `Chrome`
+- `Clause`
+- `Client`
+- `Closes`
+- `Condor`
+- *... and 301 more*
+
+## 6. Model Identifiers & Features
+### Target Models Reference
+- `flash`
+- `gemini-2.0-flash`
+- `gemini-2.5-flash`
+- `pro`
+
+### Feature Flags
+- `disable_advanced_beta_dialog`
+- `disable_advanced_beta_non_en_banner`
+- `disable_advanced_resubscribe_ui`
+- `disable_at_mentions_discovery_tooltip`
+- `disable_autorun_fact_check_u18`
+- `disable_avatar_new_badge`
+- `disable_bot_create_tips_card`
+- `disable_bot_docs_in_gems_disclaimer`
+- `disable_bot_onboarding_dialog`
+- `disable_bot_save_reminder_tips_card`
+- `disable_bot_send_prompt_tips_card`
+- `disable_bot_shared_in_drive_disclaimer`
+- `disable_bot_try_create_tips_card`
+- `disable_colab_tooltip`
+- `disable_collapsed_tool_menu_tooltip`
+- `disable_continue_discovery_tooltip`
+- `disable_debug_info_moved_tooltip_v2`
+- `disable_enterprise_mode_dialog`
+- `disable_export_python_tooltip`
+- `disable_extension_one_time_badge`
+- `disable_extensions_discovery_dialog`
+- `disable_fact_check_tooltip_v2`
+- `disable_free_file_upload_tips_card`
+- `disable_generated_image_download_dialog`
+- `disable_get_app_banner`
+- `disable_get_app_desktop_dialog`
+- `disable_googler_in_enterprise_mode`
+- `disable_human_review_disclosure`
+- `disable_ice_open_vega_editor_tooltip`
+- `disable_image_upload_tooltip`
+- `disable_images_new_badge`
+- `disable_legal_concern_tooltip`
+- `disable_llm_history_import_disclaimer`
+- `disable_location_popup`
+- `disable_memory_discovery`
+- `disable_memory_extraction_discovery`
+- `disable_new_conversation_dialog`
+- `disable_onboarding_experience`
+- `disable_personal_context_tooltip`
+- `disable_photos_upload_disclaimer`
+- `disable_power_up_intro_tooltip`
+- `disable_remy_soft_badge`
+- `disable_scheduled_actions_mobile_notification_snackbar`
+- `disable_storybook_listen_button_tooltip`
+- `disable_streaming_settings_tooltip`
+- `disable_take_control_disclaimer`
+- `disable_teens_only_english_language_dialog`
+- `disable_temp_chat_soft_badge`
+- `disable_tier1_rebranding_tooltip`
+- `disable_try_advanced_mode_dialog`
+- *... and 21 more*
+
+## 7. Accessibility & ARIA layout
+### Interactive Roles
+- `dialog`
+- `menu`
+
+### ARIA Attributes
+- `aria-activedescendant`
+- `aria-atomic`
+- `aria-autocomplete`
+- `aria-busy`
+- `aria-checked`
+- `aria-colcount`
+- `aria-colindex`
+- `aria-colspan`
+- `aria-controls`
+- `aria-current`
+- `aria-describedby`
+- `aria-details`
+- `aria-disabled`
+- `aria-dropeffect`
+- `aria-errormessage`
+- `aria-expanded`
+- `aria-flowto`
+- `aria-grabbed`
+- `aria-haspopup`
+- `aria-hidden`
+- `aria-invalid`
+- `aria-keyshortcuts`
+- `aria-label`
+- `aria-label-selected`
+- `aria-labelledby`
+- `aria-level`
+- `aria-live`
+- `aria-modal`
+- `aria-multiline`
+- `aria-multiselectable`
+- `aria-orientation`
+- `aria-owns`
+- `aria-placeholder`
+- `aria-posinset`
+- `aria-pressed`
+- `aria-readonly`
+- `aria-relevant`
+- `aria-required`
+- `aria-roledescription`
+- `aria-rowcount`
+- `aria-rowindex`
+- `aria-rowspan`
+- `aria-selected`
+- `aria-setsize`
+- `aria-sort`
+- `aria-valuemax`
+- `aria-valuemin`
+- `aria-valuenow`
+- `aria-valuetext`

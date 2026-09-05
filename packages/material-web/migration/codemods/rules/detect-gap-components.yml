@@ -1,0 +1,16 @@
+# rules/detect-gap-components.yml — RAPPORT : composants MUI SANS équivalent md.
+#
+# Liste les usages des "gaps" (00-CONVENTIONS.md §3 "Gaps connus" + 05-gap-analysis.md).
+# Ces composants ne sont PAS transformés automatiquement : migration manuelle / shim.
+id: detect-gap-components
+language: tsx
+severity: error
+message: Composant MUI sans équivalent md (gap) — migration manuelle requise (cf. 05-gap-analysis.md).
+rule:
+  any:
+    - kind: jsx_self_closing_element
+    - kind: jsx_opening_element
+  has:
+    field: name
+    kind: identifier
+    regex: ^(Avatar|AvatarGroup|Alert|AlertTitle|Breadcrumbs|Rating|Skeleton|Backdrop|Modal|Popover|Popper|Link|Collapse|Fade|Grow|Slide|Zoom|MobileStepper|CssBaseline|ScopedCssBaseline)$

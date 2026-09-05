@@ -1,0 +1,86 @@
+# ============================================================================
+#  Docs workflow — builds rustdoc + mdBook, deploys to GitHub Pages.
+# ============================================================================
+name: docs
+
+on:
+  push:
+    branches: [main, stable]
+  pull_request:
+    branches: [main, stable]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-docs:
+    name: build rustdoc + mdBook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to nightly SHA 2026-05-17; re-pin via:
+      #   gh api repos/dtolnay/rust-toolchain/branches/nightly --jq .commit.sha
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2
+        with:
+          toolchain: nightly
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Drift check docs/SUMMARY.md
+        run: cargo run -p aphrody-summary --release --locked -- --check
+
+      - name: cargo doc (workspace, no deps)
+        env:
+          RUSTDOCFLAGS: "-D warnings --enable-index-page -Zunstable-options"
+        run: cargo doc --workspace --no-deps --all-features --locked
+
+      - name: Install mdBook
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook,mdbook-linkcheck
+
+      - name: Build mdBook
+        run: mdbook build
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p site
+          cp -r book/* site/ 2>/dev/null || true
+          mkdir -p site/api
+          cp -r target/doc/* site/api/
+          # Root index → mdBook book
+          cat > site/_index.html <<'EOF'
+          <!DOCTYPE html><meta http-equiv="refresh" content="0; url=./index.html">
+          EOF
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: deploy to GitHub Pages
+    needs: build-docs
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

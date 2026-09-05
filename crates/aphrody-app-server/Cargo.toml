@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "aphrody-app-server"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+description = "Local Codex-shaped app server for Aphrody threads and turns."
+
+[lints]
+workspace = true
+
+[dependencies]
+axum = { workspace = true }
+aphrody-agent-runtime = { path = "../aphrody-agent-runtime" }
+aphrody-agent-proto = { path = "../aphrody-agent-proto" }
+aphrody-engine = { path = "../aphrody-engine" }
+aphrody-agent-home = { path = "../aphrody-agent-home" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "macros", "rt", "sync"] }
