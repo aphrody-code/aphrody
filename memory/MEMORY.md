@@ -1,6 +1,20 @@
 # Memory index — aphrody monorepo (Claude Code)
 
-Snapshot: **2026-06-04**. Project path: `/home/ubuntu/aphrody`.
+Snapshot: **2026-09-05**. Project path: `/home/ubuntu/aphrody`.
+
+## Repository closeout (2026-09-05)
+
+- Git history was intentionally consolidated into the single root commit
+  `30d3da03` (`chore: consolidate repository history`) and force-with-lease
+  pushed to `origin/main`; local and remote `main` are synchronized.
+- Generated local artifacts `target/` and `node_modules/` were purged. Git
+  reflogs and unreachable objects were expired and garbage-collected.
+- `.coord/` remains intentionally untracked and must not be deleted.
+- No documentation was deleted because no candidate was unambiguously
+  obsolete without risking valid references.
+- The global Codex profile uses `approval_policy = "never"` and
+  `sandbox_mode = "danger-full-access"`; Aphrody remains local-model-first
+  and does not require an API key by default.
 
 ## Deploy & VPS (canonical)
 
