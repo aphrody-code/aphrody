@@ -20,6 +20,18 @@ fn shell_argv(script: &str) -> Vec<String> {
     vec!["sh".to_string(), "-c".to_string(), script.to_string()]
 }
 
+#[cfg(windows)]
+fn long_running_argv() -> Vec<String> {
+    // `sleep` is not a Windows command. Six loopback pings take longer than
+    // the 200 ms deadline while remaining available on every Windows runner.
+    shell_argv("ping 127.0.0.1 -n 6 >NUL")
+}
+
+#[cfg(not(windows))]
+fn long_running_argv() -> Vec<String> {
+    shell_argv("sleep 5")
+}
+
 #[test]
 fn guard_off_never_refuses_even_destructive() {
     // Default posture: with the guard disabled, nothing is refused — not even a
@@ -115,7 +127,7 @@ async fn timeout_yields_error_output() {
     let tool = ShellExecTool::new();
     let out = tool
         .handle(json!({
-            "command": shell_argv("sleep 5"),
+            "command": long_running_argv(),
             "timeout_ms": 200,
         }))
         .await

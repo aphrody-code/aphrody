@@ -289,26 +289,24 @@ mod real_impl {
             .map_err(|e| SttError::Other(format!("whisper full error: {e}")))?;
 
         // Collecte des segments.
-        let n_segments = state
-            .full_n_segments()
-            .map_err(|e| SttError::Other(format!("whisper full_n_segments error: {e}")))?;
+        let n_segments = state.full_n_segments();
 
         let mut full_text = String::new();
         let mut segments_out: Vec<TranscriptSegment> = Vec::with_capacity(n_segments as usize);
         let mut last_end_s: f32 = 0.0;
 
         for i in 0..n_segments {
-            let seg_text = state
-                .full_get_segment_text_lossy(i)
-                .map_err(|e| SttError::Other(format!("whisper segment text error (i={i}): {e}")))?;
+            let segment = state
+                .get_segment(i)
+                .ok_or_else(|| SttError::Other(format!("whisper segment out of bounds (i={i})")))?;
+            let seg_text = segment
+                .to_str_lossy()
+                .map_err(|e| SttError::Other(format!("whisper segment text error (i={i}): {e}")))?
+                .into_owned();
 
             // Les timestamps Whisper sont en centièmes de seconde (whisper_token_data.t0/t1).
-            let t0_cs = state
-                .full_get_segment_t0(i)
-                .unwrap_or(0);
-            let t1_cs = state
-                .full_get_segment_t1(i)
-                .unwrap_or(0);
+            let t0_cs = segment.start_timestamp();
+            let t1_cs = segment.end_timestamp();
             let start_s = t0_cs as f32 / 100.0;
             let end_s   = t1_cs as f32 / 100.0;
             last_end_s = end_s;
@@ -324,10 +322,10 @@ mod real_impl {
 
         // Langue détectée — dépend de detect_language ; on ignore les erreurs
         // car certains modèles (monolingues) ne retournent pas d'ID de langue.
-        let detected_lang: Option<String> = state
-            .full_lang_id_from_state()
-            .ok()
-            .and_then(|id| whisper_rs::get_lang_str(id))
+        let detected_lang: Option<String> = {
+            let id = state.full_lang_id_from_state();
+            (id >= 0).then(|| id).and_then(whisper_rs::get_lang_str)
+        }
             .map(str::to_owned);
 
         Ok(Transcript {

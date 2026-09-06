@@ -143,6 +143,18 @@ LIB     = { value = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\
 RUST_MIN_STACK      = { value = "16777216", force = true }
 # Override stale VS 2022 generator inherited from the system env.
 CMAKE_GENERATOR     = { value = "Ninja", force = true }
+# whisper.cpp/ggml is built with MSVC in parallel. Keep its CRT consistent
+# with this workspace's `target-feature=+crt-static`; otherwise the native
+# library is built /MD while Rust links /MT and fails with unresolved __imp_*.
+CMAKE_MSVC_RUNTIME_LIBRARY = { value = "MultiThreaded", force = true }
+# whisper-rs-sys uses RelWithDebInfo; make the CRT choice explicit because
+# CMake's generic runtime variable is not applied to these generated targets.
+CMAKE_C_FLAGS_RELWITHDEBINFO   = { value = "/MT", force = true }
+CMAKE_CXX_FLAGS_RELWITHDEBINFO = { value = "/MT", force = true }
+# sccache makes concurrent MSVC compilations share a PDB in ggml's CMake
+# targets (fatal C1041). Native builds remain parallel; disable only the
+# problematic compiler wrapper so the feature-gated Whisper backend is stable.
+GGML_CCACHE        = { value = "OFF", force = true }
 # Ninja is a single-config, single-platform generator and ABORTS if a platform
 # is specified. A VS Developer shell exports CMAKE_GENERATOR_PLATFORM=x64
 # alongside the VS generator; CMake reads that env var directly and applies it

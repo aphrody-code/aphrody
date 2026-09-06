@@ -31,7 +31,7 @@ thiserror   = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio  = { workspace = true, features = ["rt", "macros", "io-util", "fs"] }
 reqwest = { workspace = true, features = ["json", "stream", "multipart", "rustls-no-provider"] }
-whisper-rs = { version = "0.13", optional = true }
+whisper-rs = { version = "0.16", optional = true }
 
 # Browser-native deps: only compiled when targeting wasm32.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
