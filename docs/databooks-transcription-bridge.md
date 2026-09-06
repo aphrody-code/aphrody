@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Pont aphrody ↔ shenron — transcription des databooks
 
-> Branché et vérifié de bout en bout le **2026-08-21**.
+> Contrat aligné avec Shenron le **2026-09-06**. Le JSONL est produit par
+> Aphrody ; **Shenron est le juge final et l'unique écrivain** de la base.
 > Côté shenron : [`~/shenron/docs/prompt-transcription-databooks.md`](https://dragonballfr.com)
 > et `~/shenron/docs/databooks-transcription.md` (VPS `dbfr`).
 > Cap projet : [`plans/local-inference-toolbox.md`](plans/local-inference-toolbox.md).
@@ -10,8 +11,9 @@
 
 ## 1. Le problème
 
-Le corpus databooks de `dragonballfr.com` compte **318 ouvrages et 11 513
-planches** scannées, dont **11 277 sans transcription**. Les lire demande un
+Le corpus databooks de `dragonballfr.com` compte **370 ouvrages** : 355 portent
+**14 233 planches**, et 15 fiches attendent encore leurs scans. 11 504 planches
+sont transcrites lors du dernier contrôle. Les lire demande un
 modèle de vision, et les planches sont en **japonais** : titres imprimés,
 fiches techniques, postfaces, et beaucoup de bulles de manga.
 
@@ -32,13 +34,13 @@ Le pont fait circuler : planches → poste local → texte → API.
   dbfr:~/databooks-ocr/lot-NNN/          (400 planches + manifeste)
         │  scp
         ▼
-  aphrody ocr batch <images> --model dots-ocr --out lot-NNN.jsonl --skip-done
+  aphrody ocr databooks <images> --out resultats.jsonl --skip-done
         │  une ligne JSON par planche, écrite et flushée au fil de l'eau
         ▼
-  scp lot-NNN.jsonl → dbfr
+  scp resultats.jsonl → dbfr:~/databooks-ocr/lot-NNN/
         │
         ▼
-  bun scripts/depose-transcriptions.ts lot-NNN.jsonl
+  bun scripts/databooks.ts depose <lot>
         │  POST mode:"merge", par paquets de 50, par ouvrage
         ▼
   https://dragonballfr.com/api/databooks/<id>/transcription
@@ -48,8 +50,8 @@ Le pont fait circuler : planches → poste local → texte → API.
 
 | Côté | Livrable |
 |---|---|
-| aphrody | crate `aphrody-ocr` + commande `aphrody ocr page/batch` (`--features ocr`) |
-| shenron | `apps/site/scripts/depose-transcriptions.ts` |
+| aphrody | crate `aphrody-ocr` + profil `aphrody ocr databooks` (`--features ocr`) |
+| shenron | `apps/site/scripts/databooks.ts depose` : verdict final puis dépôt atomique |
 
 ---
 
@@ -154,14 +156,13 @@ déjà `null` en base, le résultat est identique et rien n'est risqué.
 scp -r dbfr:'~/databooks-ocr/lot-001' ./databooks/
 
 # 2. Lire (reprenable : relancer la même commande continue où elle en était)
-aphrody ocr batch ./databooks/lot-001/images \
-  --model dots-ocr --out lot-001.jsonl --skip-done
+aphrody ocr databooks ./databooks/lot-001/images \
+  --out ./databooks/lot-001/resultats.jsonl --skip-done
 
 # 3. Renvoyer et déposer
-scp lot-001.jsonl dbfr:'~/databooks-ocr/'
+scp ./databooks/lot-001/resultats.jsonl dbfr:'~/databooks-ocr/lot-001/'
 ssh dbfr 'cd ~/shenron/apps/site && \
-  export SHENRON_ADMIN_TOKEN=$(grep -m1 "^SHENRON_ADMIN_TOKEN=" .env | cut -d= -f2-) && \
-  bun scripts/depose-transcriptions.ts ~/databooks-ocr/lot-001.jsonl'
+  bun scripts/databooks.ts depose ~/databooks-ocr/lot-001'
 ```
 
 Ajouter `--simulation` au dépôt pour voir ce qui partirait sans rien envoyer.
@@ -169,13 +170,38 @@ Ajouter `--simulation` au dépôt pour voir ce qui partirait sans rien envoyer.
 ### Vérifier avant de déposer
 
 ```bash
-aphrody ocr audit lot-001.jsonl          # exit != 0 sur un défaut bloquant
+aphrody ocr audit ./databooks/lot-001/resultats.jsonl
+ssh dbfr 'cd ~/shenron/apps/site && bun scripts/databooks.ts verifie ~/databooks-ocr/lot-001'
 ```
 
-Un dépôt est difficile à défaire. `audit` cherche ce qu'un lot entier peut
-cacher : jeton de contrôle survivant, génération bloquée en boucle, balisage
-résiduel — tous bloquants — et les filigranes, signalés sans bloquer parce que
-c'est du bruit et non de la corruption. Chaque constat nomme sa page.
+Un dépôt est difficile à défaire. Aphrody arrête les défauts propres au modèle
+(jeton de contrôle, génération bloquée, balisage). Shenron applique ensuite le
+juge canonique au même JSONL : U+FFFD, alphabet halluciné, faux chinois, boucle
+structurelle et texte tronqué. Aucun des deux juges ne remplace l'autre.
+
+### Mesurer avant une campagne GPU
+
+Le VPS peut exporter un jeu de référence à partir des seules planches relues à
+l'image. Il transporte les scans, le texte de référence et le SHA-256 de chaque
+image ; il ne contient aucun secret et ne modifie pas la base.
+
+```bash
+# VPS : construire un lot de 64 références humaines
+cd ~/shenron/apps/site
+bun scripts/export-databooks-benchmark.ts --sortie /tmp/databooks-benchmark --taille 64
+
+# Poste GPU : lire le même lot, puis renvoyer resultats.jsonl au VPS
+aphrody ocr databooks ./databooks-benchmark/images \
+  --out ./databooks-benchmark/resultats.jsonl --skip-done
+
+# VPS : score lecture seule. Toute page manquante, sans texte ou fautive échoue.
+bun scripts/score-databooks-ocr.ts \
+  /tmp/databooks-benchmark/benchmark.jsonl \
+  /tmp/databooks-benchmark/resultats.jsonl
+```
+
+La similarité est une mesure de régression, pas une permission d'écrire. Seul
+`scripts/databooks.ts depose` peut ensuite appeler l'API de transcription.
 
 La boucle autonome l'appelle entre la lecture et le dépôt : un lot refusé
 n'arrête pas les suivants.
@@ -183,8 +209,8 @@ n'arrête pas les suivants.
 ### Rattraper des résultats produits avant une règle
 
 ```bash
-aphrody ocr batch … --raw                # conserve la sortie brute
-aphrody ocr clean lot-001.jsonl          # rejoue parsing et filtres
+aphrody ocr databooks …                  # conserve toujours la sortie brute
+aphrody ocr clean ./databooks/lot-001/resultats.jsonl
 ```
 
 Quand une règle de nettoyage est ajoutée, relire les images coûterait des heures

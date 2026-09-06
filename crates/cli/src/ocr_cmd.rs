@@ -119,6 +119,34 @@ pub(crate) enum OcrAction {
         #[arg(long, default_value_t = 8791)]
         server_port: u16,
     },
+    /// Transcribe a Shenron Dragon Ball databook lot with the safe preset.
+    ///
+    /// This is deliberately separate from generic `batch`: granite-docling is
+    /// useful for general layout, but reads Japanese databook text as pictures.
+    /// Shenron databooks require dots.ocr and raw output so cleanup can be
+    /// replayed without spending GPU time on the same scans again.
+    Databooks {
+        /// Directory containing one exported Shenron lot's images.
+        dir: PathBuf,
+        /// JSONL file to append results to. Without it, results go to stdout.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Stop after this many previously unread images.
+        #[arg(long)]
+        limit: Option<usize>,
+        /// Resume an interrupted JSONL without reading completed pages again.
+        #[arg(long)]
+        skip_done: bool,
+        /// Token budget per page. Dense Japanese reference sheets need room.
+        #[arg(long, default_value_t = 2048)]
+        max_tokens: u32,
+        /// Keep dots.ocr resident behind llama-server (experimental).
+        #[arg(long)]
+        server: bool,
+        /// Loopback port for --server.
+        #[arg(long, default_value_t = 8791)]
+        server_port: u16,
+    },
 }
 
 /// Run an `ocr` action.
@@ -156,6 +184,22 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
             raw,
             server.then_some(server_port),
         ),
+        OcrAction::Databooks { dir, out, limit, skip_done, max_tokens, server, server_port } => {
+            // Same PageResult JSONL as `batch`, accepted directly by Shenron.
+            // Raw output is forced: later deterministic cleanup must not require
+            // re-reading a long GPU batch.
+            batch(
+                &dir,
+                out.as_deref(),
+                limit,
+                skip_done,
+                "dots-ocr",
+                None,
+                max_tokens,
+                true,
+                server.then_some(server_port),
+            )
+        },
     }
 }
 
@@ -580,6 +624,15 @@ mod tests {
     fn options_without_a_prompt_keep_the_trained_instruction() {
         let opts = options("granite-docling-258m", None, 1024, false);
         assert!(opts.prompt.contains("docling"), "{}", opts.prompt);
+    }
+
+    #[test]
+    fn databooks_preset_uses_the_japanese_ocr_model_contract() {
+        let opts = options("dots-ocr", None, 2048, true);
+        assert_eq!(opts.model_id, "dots-ocr");
+        assert_eq!(opts.max_tokens, 2048);
+        assert!(opts.keep_raw);
+        assert_eq!(opts.prompt, "Extract all text from this image.");
     }
 
     #[test]
