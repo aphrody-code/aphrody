@@ -28,62 +28,18 @@
 #![warn(missing_docs)]
 #![allow(clippy::module_name_repetitions)]
 
+/// Portable, versioned result records shared with non-native consumers.
+pub use aphrody_ocr_core as ocr_core;
 /// Quality audit over a batch of transcriptions.
-pub mod audit;
+pub use aphrody_ocr_core::audit;
 /// `DocTags` parsing: the serialisation document VLMs emit.
-pub mod doctags;
-/// Resident-model backend: one `llama-server` for a whole batch.
-#[cfg(not(target_arch = "wasm32"))]
-pub mod server;
-/// Running a vision-language model over images.
-#[cfg(not(target_arch = "wasm32"))]
-pub mod vlm;
-
-pub use doctags::{Block, Document};
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use server::ServerRunner;
-pub use vlm::{OcrOptions, PageResult, PageText, VlmRunner, list_images_sorted};
-
-/// The crate's error type.
-#[derive(Debug, thiserror::Error)]
-#[non_exhaustive]
-pub enum OcrError {
-    /// No llama.cpp multimodal binary could be found.
-    #[error(
-        "llama.cpp `llama-mtmd-cli` not found — unpack a release under ~/.aphrody/runtimes/llama-<build>/ or set $APHRODY_LLAMA_DIR"
-    )]
-    NoRunner,
-
-    /// The catalog entry is missing an artefact the runner needs.
-    #[error("{0}")]
-    Infer(#[from] aphrody_infer::InferError),
-
-    /// A model referenced by the pipeline is not installed.
-    #[error("{0}")]
-    Model(#[from] aphrody_models::ModelError),
-
-    /// The model process failed.
-    #[error("`{command}` failed ({status}): {stderr}")]
-    Process {
-        /// The binary that was invoked.
-        command: String,
-        /// Its exit status, rendered.
-        status: String,
-        /// Tail of its standard error.
-        stderr: String,
-    },
-
-    /// A filesystem operation failed.
-    #[error("i/o error on `{path}`: {source}")]
-    Io {
-        /// The path involved.
-        path: std::path::PathBuf,
-        /// The underlying error.
-        #[source]
-        source: std::io::Error,
-    },
-}
-
-/// Result alias for this crate.
-pub type Result<T> = core::result::Result<T, OcrError>;
+pub use aphrody_ocr_core::doctags;
+pub use aphrody_ocr_core::{Block, Document};
+/// Deterministic PP-OCR ONNX backend for local text geometry and CTC decoding.
+pub use aphrody_ocr_onnx as onnx;
+pub use aphrody_ocr_onnx::{
+    DetectedRegion, DetectionMap, PpOcr, PpOcrDetector, PpOcrRecognizer, RecognisedRegion,
+};
+pub use aphrody_ocr_vlm::{
+    OcrError, OcrOptions, PageResult, PageText, Result, ServerRunner, VlmRunner, list_images_sorted,
+};

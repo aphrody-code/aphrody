@@ -176,21 +176,21 @@ impl Document {
                     out.push(' ');
                     out.push_str(text);
                     out.push_str("\n\n");
-                }
+                },
                 "list_item" => {
                     out.push_str("- ");
                     out.push_str(text);
                     out.push('\n');
-                }
+                },
                 "caption" => {
                     out.push('*');
                     out.push_str(text);
                     out.push_str("*\n\n");
-                }
+                },
                 _ => {
                     out.push_str(text);
                     out.push_str("\n\n");
-                }
+                },
             }
         }
         let trimmed = out.trim_end().to_owned();
@@ -313,9 +313,8 @@ fn is_bare_url(line: &str) -> bool {
         return false;
     }
     let tld_is_alpha = tld.chars().all(|c| c.is_ascii_alphabetic());
-    let host_is_hostname = host
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.' || c == '_');
+    let host_is_hostname =
+        host.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.' || c == '_');
     // `1-0001.jpg` and `12.5` must not qualify; `capsulecommentary.com` must.
     tld_is_alpha && host_is_hostname && host.chars().any(|c| c.is_ascii_alphabetic())
 }
@@ -406,14 +405,22 @@ fn strip_markers(payload: &str) -> String {
     html_to_text(payload)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const PAGE_WITH_TEXT: &str = "<doctag><section_header_level_1><loc_17><loc_68><loc_308><loc_126>APHRODY LOCAL INFERENCE</section_header_level_1>\n<text><loc_18><loc_185><loc_209><loc_252>Invoice 2026-08-21</text>\n<text><loc_18><loc_302><loc_213><loc_366>Total: 1337.42 EUR</text>\n</doctag>";
+    const PAGE_WITH_TEXT: &str =
+        "<doctag><section_header_level_1><loc_17><loc_68><loc_308><loc_126>APHRODY LOCAL \
+         INFERENCE</section_header_level_1>\n<text><loc_18><loc_185><loc_209><loc_252>Invoice \
+         2026-08-21</text>\n<text><loc_18><loc_302><loc_213><loc_366>Total: 1337.42 \
+         EUR</text>\n</doctag>";
 
-    const PICTURE_ONLY: &str = "<doctag><page_header><loc_42><loc_17><loc_213><loc_26>ORIGINAL COLOR WORKS part1</page_header>\n<picture><loc_51><loc_68><loc_228><loc_154><other></picture>\n<picture><loc_52><loc_159><loc_170><loc_261><other></picture>\n<page_footer><loc_40><loc_480><loc_52><loc_485>103</page_footer>\n<text><loc_328><loc_330><loc_397><loc_343>4# 4# 4# 4# 4#</text>\n</doctag>";
+    const PICTURE_ONLY: &str =
+        "<doctag><page_header><loc_42><loc_17><loc_213><loc_26>ORIGINAL COLOR WORKS \
+         part1</page_header>\n<picture><loc_51><loc_68><loc_228><loc_154><other></picture>\\
+         n<picture><loc_52><loc_159><loc_170><loc_261><other></picture>\\
+         n<page_footer><loc_40><loc_480><loc_52><loc_485>103</page_footer>\\
+         n<text><loc_328><loc_330><loc_397><loc_343>4# 4# 4# 4# 4#</text>\n</doctag>";
 
     #[test]
     fn a_real_page_parses_into_blocks_without_coordinates() {
@@ -495,7 +502,8 @@ mod tests {
     #[test]
     fn furniture_is_dropped_from_a_page_that_does_have_text() {
         let doc = Document::parse(
-            "<page_header><loc_1>Running head</page_header><text><loc_2>Real body text</text><page_footer><loc_3>12</page_footer>",
+            "<page_header><loc_1>Running head</page_header><text><loc_2>Real body \
+             text</text><page_footer><loc_3>12</page_footer>",
         );
         let markdown = doc.to_markdown().unwrap();
         assert_eq!(markdown, "Real body text");
@@ -506,7 +514,8 @@ mod tests {
     #[test]
     fn list_items_and_captions_get_their_markdown_form() {
         let doc = Document::parse(
-            "<list_item><loc_1>First</list_item><list_item><loc_2>Second</list_item><caption><loc_3>Figure 1</caption>",
+            "<list_item><loc_1>First</list_item><list_item><loc_2>Second</\
+             list_item><caption><loc_3>Figure 1</caption>",
         );
         let markdown = doc.to_markdown().unwrap();
         assert!(markdown.contains("- First\n- Second"), "{markdown}");
@@ -541,7 +550,8 @@ mod tests {
     #[test]
     fn html_output_is_flattened_to_readable_text() {
         // Exactly what dots.ocr returns for a tabular page.
-        let raw = "<html><body><table><tr><td>APHRODY LOCAL INFERENCE</td></tr><tr><td>Total: 1337.42 EUR</td></tr></table></body></html><|endofassistant|>";
+        let raw = "<html><body><table><tr><td>APHRODY LOCAL INFERENCE</td></tr><tr><td>Total: \
+                   1337.42 EUR</td></tr></table></body></html><|endofassistant|>";
         let doc = Document::parse(raw);
         let markdown = doc.to_markdown().unwrap();
         assert!(markdown.contains("APHRODY LOCAL INFERENCE"), "{markdown}");
@@ -601,7 +611,8 @@ mod tests {
     fn a_looping_generation_is_cut_but_its_good_prefix_is_kept() {
         // The real shape observed on a databook plate: a correct technical
         // sheet, then the same token forty times.
-        let raw = "1 カプセル ナンバー No.9 バイク ふるさ ふるさ ふるさ ふるさ ふるさ ふるさ ふるさ ふるさ";
+        let raw = "1 カプセル ナンバー No.9 バイク ふるさ ふるさ ふるさ ふるさ ふるさ ふるさ \
+                   ふるさ ふるさ";
         let (kept, looped) = truncate_loop(raw);
         assert!(looped);
         assert!(kept.starts_with("1 カプセル ナンバー No.9 バイク"), "{kept}");

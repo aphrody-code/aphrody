@@ -24,9 +24,7 @@
 //   - HTML report produced by `cargo bench -p aphrody --bench cold_start`.
 //   - Ledger row added to `docs/PERFORMANCE-HISTORY.md` on each release.
 
-use std::hint::black_box;
-use std::process::Command;
-use std::time::Instant;
+use std::{hint::black_box, process::Command, time::Instant};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 

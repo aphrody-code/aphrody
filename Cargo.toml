@@ -61,6 +61,9 @@ members = [
     "crates/aphrody-infer",
     # aphrody-ocr — image-to-text pipeline: drives a local vision-language
     # model over images, parses DocTags into markdown, reports textless pages.
+    "crates/aphrody-ocr-core",
+    "crates/aphrody-ocr-vlm",
+    "crates/aphrody-ocr-onnx",
     "crates/aphrody-ocr",
     # aphrody-gateway — provider-agnostic OpenAI-compatible AI gateway
     "crates/aphrody-gateway",
@@ -519,6 +522,9 @@ aphrody-models     = { path = "crates/aphrody-models", version = "1.0.0-canary" 
 aphrody-infer      = { path = "crates/aphrody-infer", version = "1.0.0-canary", features = ["onnx"] }
 
 # --- aphrody-ocr (image -> text via a local vision-language model) --------
+aphrody-ocr-core   = { path = "crates/aphrody-ocr-core", version = "1.0.0-canary" }
+aphrody-ocr-vlm    = { path = "crates/aphrody-ocr-vlm", version = "1.0.0-canary" }
+aphrody-ocr-onnx   = { path = "crates/aphrody-ocr-onnx", version = "1.0.0-canary" }
 aphrody-ocr        = { path = "crates/aphrody-ocr", version = "1.0.0-canary" }
 aphrody-stdio-capture = { path = "crates/aphrody-stdio-capture", version = "1.0.0-canary" }
 

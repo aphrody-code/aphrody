@@ -16,30 +16,31 @@
 
 #[cfg(not(target_arch = "wasm32"))] mod agent_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod agent_run;
-#[cfg(not(target_arch = "wasm32"))] mod app_server_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod agy_backend;
 #[cfg(not(target_arch = "wasm32"))] mod agy_loop;
 #[cfg(not(target_arch = "wasm32"))] mod antigravity_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod app_server_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod auto_command;
 #[cfg(not(target_arch = "wasm32"))] mod commands;
 #[cfg(not(target_arch = "wasm32"))] mod context;
-#[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))] mod forensics_cmd;
-#[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod design_cmd;
 #[cfg(all(not(target_arch = "wasm32"), feature = "firefly"))] mod firefly_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "forensics"))]
+mod forensics_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod ide_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "index"))] mod index_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "infer"))] mod infer_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod mcp_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod memory_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod model_cmd;
-#[cfg(all(not(target_arch = "wasm32"), feature = "infer"))] mod infer_cmd;
-#[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))] mod ocr_cmd;
 #[cfg(not(target_arch = "wasm32"))] pub(crate) mod nl_tokens;
+#[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
+#[cfg(all(not(target_arch = "wasm32"), feature = "ocr"))] mod ocr_cmd;
+#[cfg(not(target_arch = "wasm32"))] mod package_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod platform;
-#[cfg(not(target_arch = "wasm32"))] mod design_cmd;
-#[cfg(not(target_arch = "wasm32"))] mod ide_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod re_auto;
 #[cfg(not(target_arch = "wasm32"))] mod scan_cmd;
 #[cfg(not(target_arch = "wasm32"))] mod self_cmd;
-#[cfg(not(target_arch = "wasm32"))] mod oc_cmd;
-#[cfg(not(target_arch = "wasm32"))] mod package_cmd;
 
 use std::path::PathBuf;
 
@@ -48,10 +49,7 @@ use clap::{Parser, Subcommand};
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
-    commands::{
-        DoctorCommand, MirrorCommand, SubprocessExit,
-        VersionCommand,
-    },
+    commands::{DoctorCommand, MirrorCommand, SubprocessExit, VersionCommand},
     context::{GoogleContext, TerminalCommand},
 };
 
@@ -550,7 +548,8 @@ enum Commands {
     /// embedded in the binary. On platforms without a credential store the
     /// underlying SDK returns an "unsupported platform" error.
     ///
-    /// Example: aphrody antigravity chat --model gemini-2.0-flash --prompt "hi" | jq '.candidates[0].content'
+    /// Example: aphrody antigravity chat --model gemini-2.0-flash --prompt "hi" | jq
+    /// '.candidates[0].content'
     #[cfg(not(target_arch = "wasm32"))]
     Antigravity {
         #[command(subcommand)]
@@ -756,7 +755,6 @@ pub(crate) enum A2aAction {
     },
 }
 
-
 /// Actions for the `scan` kernel subcommand (repo analytics).
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum ScanAction {
@@ -814,8 +812,6 @@ pub(crate) enum SelfAction {
         check: bool,
     },
 }
-
-
 
 /// Actions for the `mcp` kernel subcommand (Model Context Protocol).
 ///
@@ -960,7 +956,8 @@ pub(crate) enum ReAction {
     /// (Shannon bits/byte, null for zero-size sections like `.bss`).
     /// High entropy (≥ 7.0) indicates compression or encryption.
     ///
-    /// Example: aphrody re sections target/release/aphrody.exe --pretty | jq '.[] | select(.entropy > 7)'
+    /// Example: aphrody re sections target/release/aphrody.exe --pretty | jq '.[] | select(.entropy
+    /// > 7)'
     Sections {
         /// Path to the binary to parse.
         path: PathBuf,
@@ -1204,9 +1201,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Re { action }) => match action {
             ReAction::Triage { path, pretty } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let report = aphrody_re::triage(&bytes)
                     .map_err(|e| miette::miette!("aphrody-re triage failed: {e}"))?;
                 let json = if pretty {
@@ -1218,9 +1214,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 println!("{json}");
             },
             ReAction::Strings { path, min_len, limit, pretty } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let strings = aphrody_re::extract_strings(&bytes, min_len, limit);
                 let json = if pretty {
                     serde_json::to_string_pretty(&strings)
@@ -1231,9 +1226,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 println!("{json}");
             },
             ReAction::Sections { path, pretty } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let report = aphrody_re::triage(&bytes)
                     .map_err(|e| miette::miette!("aphrody-re sections (via triage) failed: {e}"))?;
                 let json = if pretty {
@@ -1245,9 +1239,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 println!("{json}");
             },
             ReAction::Disasm { path, rip, limit, pretty } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let effective_limit = limit.unwrap_or(aphrody_re::DISASM_LIMIT);
                 let insns = aphrody_re::disasm(&bytes, rip, effective_limit);
                 let json = if pretty {
@@ -1259,9 +1252,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 println!("{json}");
             },
             ReAction::Google { path, pretty } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let report = aphrody_re::google::analyze_google(&bytes);
                 let json = if pretty {
                     serde_json::to_string_pretty(&report)
@@ -1294,9 +1286,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                 }
             },
             ReAction::Go { path, pretty, deep } => {
-                let bytes = std::fs::read(&path).map_err(|e| {
-                    miette::miette!("failed to read {}: {e}", path.display())
-                })?;
+                let bytes = std::fs::read(&path)
+                    .map_err(|e| miette::miette!("failed to read {}: {e}", path.display()))?;
                 let report = aphrody_re::golang::analyze_go(&bytes);
                 // Base JSON: le rapport natif, ou `{"is_go":false}`.
                 let mut value = match &report {
@@ -1315,9 +1306,8 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
                     if let serde_json::Value::Object(ref mut map) = value {
                         map.insert(
                             "redress".to_owned(),
-                            serde_json::to_value(&redress).map_err(|e| {
-                                miette::miette!("redress JSON encode failed: {e}")
-                            })?,
+                            serde_json::to_value(&redress)
+                                .map_err(|e| miette::miette!("redress JSON encode failed: {e}"))?,
                         );
                     }
                 }
@@ -1417,8 +1407,16 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         #[cfg(not(target_arch = "wasm32"))]
         Some(Commands::Agent { prompt, tui, stub, model, system, gated, cwd, verbose }) => {
             agent_run::run(agent_run::AgentArgs {
-                prompt, tui, stub, model, system, gated, cwd, verbose,
-            }).await?;
+                prompt,
+                tui,
+                stub,
+                model,
+                system,
+                gated,
+                cwd,
+                verbose,
+            })
+            .await?;
         },
         Some(Commands::Session { action }) => {
             app_server_cmd::run(action).await?;
@@ -1432,7 +1430,12 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
             // clean exit like a well-behaved filter (portable: EPIPE on Unix,
             // ERROR_BROKEN_PIPE on Windows both surface as BrokenPipe).
             let mut buf = Vec::new();
-            clap_complete::generate(clap_complete::Shell::from(shell), &mut cmd, "aphrody", &mut buf);
+            clap_complete::generate(
+                clap_complete::Shell::from(shell),
+                &mut cmd,
+                "aphrody",
+                &mut buf,
+            );
             use std::io::Write as _;
             match std::io::stdout().write_all(&buf) {
                 Ok(()) => {},
@@ -1456,39 +1459,38 @@ async fn dispatch(ctx: &GoogleContext, cli: Cli) -> miette::Result<()> {
         },
         Some(Commands::Scan { action }) => match action {
             ScanAction::Tree { root, groups, output, top_ext } => {
-                scan_cmd::TreeCommand {
-                    root,
-                    groups,
-                    output,
-                    top_ext_count: top_ext,
-                }
-                .execute(ctx)
-                .await?;
+                scan_cmd::TreeCommand { root, groups, output, top_ext_count: top_ext }
+                    .execute(ctx)
+                    .await?;
             },
             ScanAction::Manifests { root, output } => {
                 scan_cmd::ManifestsCommand { root, output }.execute(ctx).await?;
             },
         },
-        Some(Commands::OcOnboard { workspace, non_interactive, accept_risk, force, skip_bootstrap }) => {
-            oc_cmd::OnboardCommand { workspace, non_interactive, accept_risk, force, skip_bootstrap }
-                .execute(ctx)
-                .await?;
+        Some(Commands::OcOnboard {
+            workspace,
+            non_interactive,
+            accept_risk,
+            force,
+            skip_bootstrap,
+        }) => {
+            oc_cmd::OnboardCommand {
+                workspace,
+                non_interactive,
+                accept_risk,
+                force,
+                skip_bootstrap,
+            }
+            .execute(ctx)
+            .await?;
         },
         Some(Commands::OcReset { scope, yes, dry_run }) => {
             oc_cmd::ResetCommand { scope, yes, dry_run }.execute(ctx).await?;
         },
         Some(Commands::OcUninstall { service, state, workspace, app, all, yes, dry_run }) => {
-            oc_cmd::UninstallCommand {
-                service,
-                state,
-                workspace,
-                app,
-                all,
-                yes,
-                dry_run,
-            }
-            .execute(ctx)
-            .await?;
+            oc_cmd::UninstallCommand { service, state, workspace, app, all, yes, dry_run }
+                .execute(ctx)
+                .await?;
         },
         Some(Commands::OcPairing { action }) => {
             oc_cmd::PairingCommand { action }.execute(ctx).await?;
@@ -1595,10 +1597,7 @@ where
         return ocr_cmd::run_sync_server_batch(&argv);
     }
 
-    let runtime = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-    {
+    let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
         Err(err) => {
             eprintln!("aphrody: failed to start the async runtime: {err}");
@@ -1648,8 +1647,7 @@ where
             // to stderr (exit 2) — the same codes the binary produced.
             let _ = err.print();
             return match err.kind() {
-                clap::error::ErrorKind::DisplayHelp
-                | clap::error::ErrorKind::DisplayVersion => 0,
+                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => 0,
                 _ => 2,
             };
         },

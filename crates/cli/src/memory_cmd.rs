@@ -13,11 +13,10 @@
 
 use std::path::{Path, PathBuf};
 
+#[cfg(feature = "memory-lancedb")] use aphrody_memory::LanceDbAdapter;
 use aphrody_memory::{
     HonchoProvider, Mem0Provider, MemoryProvider, SqliteLocalProvider, migrate_provider,
 };
-#[cfg(feature = "memory-lancedb")]
-use aphrody_memory::LanceDbAdapter;
 use async_trait::async_trait;
 use miette::{IntoDiagnostic, WrapErr};
 
@@ -199,20 +198,20 @@ async fn build_provider(
             }
             #[cfg(feature = "memory-lancedb")]
             {
-            let path = lancedb_path.map(Path::to_path_buf).unwrap_or_else(default_lancedb_path);
-            let ndims = if lancedb_ndims == 0 { 768 } else { lancedb_ndims };
-            // Ensure directory exists before LanceDB tries to create its layout.
-            if let Some(parent) = path.parent() {
-                if !parent.as_os_str().is_empty() {
-                    std::fs::create_dir_all(parent).into_diagnostic().wrap_err_with(|| {
-                        format!("failed to create lancedb parent dir {}", parent.display())
-                    })?;
+                let path = lancedb_path.map(Path::to_path_buf).unwrap_or_else(default_lancedb_path);
+                let ndims = if lancedb_ndims == 0 { 768 } else { lancedb_ndims };
+                // Ensure directory exists before LanceDB tries to create its layout.
+                if let Some(parent) = path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        std::fs::create_dir_all(parent).into_diagnostic().wrap_err_with(|| {
+                            format!("failed to create lancedb parent dir {}", parent.display())
+                        })?;
+                    }
                 }
-            }
-            let p = LanceDbAdapter::open(&path, ndims)
-                .await
-                .map_err(|e| miette::miette!("lancedb: {e} (path={})", path.display()))?;
-            Ok(Box::new(p))
+                let p = LanceDbAdapter::open(&path, ndims)
+                    .await
+                    .map_err(|e| miette::miette!("lancedb: {e} (path={})", path.display()))?;
+                Ok(Box::new(p))
             }
         },
     }

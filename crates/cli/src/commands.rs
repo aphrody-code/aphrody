@@ -2,15 +2,12 @@
 use std::{net::SocketAddr, path::PathBuf};
 
 use async_trait::async_trait;
-
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::{
     context::{GoogleContext, TerminalCommand},
-    nl_tokens::{
-        BYPASS_ENGINES, CARGO_COMMANDS, SCRIPT_EXTS, STANDARD_ACTIONS, UV_COMMANDS,
-    },
+    nl_tokens::{BYPASS_ENGINES, CARGO_COMMANDS, SCRIPT_EXTS, STANDARD_ACTIONS, UV_COMMANDS},
     platform,
 };
 
@@ -85,8 +82,6 @@ impl TerminalCommand for MirrorCommand {
     }
 }
 
-
-
 pub(crate) struct AuthCommand {
     #[allow(dead_code)]
     pub force: bool,
@@ -97,8 +92,6 @@ impl TerminalCommand for AuthCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         println!("🔐 Tentative d'authentification Google...");
 
-
-
         // gemini-cli is deprecated — it was absorbed into the Antigravity CLI
         // (`agy`, installed at %LOCALAPPDATA%\agy\bin per the official
         // install.ps1), and `@google/gemini-cli/bundle/gemini.js` no longer
@@ -108,9 +101,7 @@ impl TerminalCommand for AuthCommand {
         if let Some(tok) = read_antigravity_oauth() {
             if let Some(access) = tok.pointer("/token/access_token").and_then(|v| v.as_str()) {
                 Self::persist_god_mode_token("antigravity", access)?;
-                println!(
-                    "🔓 Token Google extrait depuis l'Antigravity CLI (agy)."
-                );
+                println!("🔓 Token Google extrait depuis l'Antigravity CLI (agy).");
                 return Ok(());
             }
             println!("⚠️ Credential agy présent mais sans `token.access_token`.");
@@ -124,8 +115,8 @@ impl TerminalCommand for AuthCommand {
 
         Err(miette::miette!(
             "Aucune source d'authentification disponible. Connectez-vous via l'Antigravity CLI \
-             (`agy` ou `aphrody antigravity login`) puis relancez `aphrody auth`. \
-             gemini-cli n'est plus utilisé."
+             (`agy` ou `aphrody antigravity login`) puis relancez `aphrody auth`. gemini-cli \
+             n'est plus utilisé."
         ))
     }
 }
@@ -142,10 +133,11 @@ fn read_antigravity_oauth() -> Option<serde_json::Value> {
     #[cfg(unix)]
     {
         if let Some(home) = platform::home_dir().ok() {
-            for rel in [
-                [".config", "aphrody", "antigravity-token.json"],
-                [".gemini", "antigravity-cli", "antigravity-oauth-token"],
-            ] {
+            for rel in [[".config", "aphrody", "antigravity-token.json"], [
+                ".gemini",
+                "antigravity-cli",
+                "antigravity-oauth-token",
+            ]] {
                 let path = rel.iter().fold(home.clone(), |p, seg| p.join(seg));
                 if let Ok(content) = std::fs::read_to_string(&path) {
                     if let Ok(v) = serde_json::from_str(&content) {
@@ -173,11 +165,10 @@ fn read_antigravity_oauth() -> Option<serde_json::Value> {
 #[cfg(target_os = "windows")]
 fn read_antigravity_oauth_windows() -> Option<serde_json::Value> {
     use windows_sys::Win32::Security::Credentials::{
-        CRED_TYPE_GENERIC, CredFree, CredReadW, CREDENTIALW,
+        CRED_TYPE_GENERIC, CREDENTIALW, CredFree, CredReadW,
     };
 
-    let target: Vec<u16> =
-        "gemini:antigravity".encode_utf16().chain(std::iter::once(0)).collect();
+    let target: Vec<u16> = "gemini:antigravity".encode_utf16().chain(std::iter::once(0)).collect();
     // SAFETY: `target` is a NUL-terminated UTF-16 string. On success CredReadW
     // hands back one heap-allocated CREDENTIALW that we read once and free with
     // CredFree; the blob slice lives only for the duration of the read.
@@ -231,49 +222,27 @@ pub(crate) async fn dispatch_a2a(
     action: crate::A2aAction,
     _ctx: &GoogleContext,
 ) -> miette::Result<()> {
+    use std::net::SocketAddr;
+
     use a2a_coord::{
         ListenerConfig, PeerId, PeerInvoker,
         listener::{self, TickOptions},
     };
-    use std::net::SocketAddr;
 
-    let (manifest, repo_root) = a2a_coord::AiManifest::load_repo_default()
-        .map_err(|e| miette::miette!("{e}"))?;
+    let (manifest, repo_root) =
+        a2a_coord::AiManifest::load_repo_default().map_err(|e| miette::miette!("{e}"))?;
 
     match action {
         crate::A2aAction::Serve { bind } => {
-            let addr: SocketAddr = bind
-                .parse()
-                .map_err(|e| miette::miette!("invalid --bind: {e}"))?;
-            let cfg = ListenerConfig {
-                bind: addr,
-                manifest,
-                repo_root,
-                dry_run: false,
-            };
-            println!(
-                "A2A coord on http://{addr} — agent card, /ping, /msg, JSON-RPC, HTTP+REST"
-            );
-            listener::serve(cfg)
-                .await
-                .map_err(|e| miette::miette!("a2a serve failed: {e}"))?;
+            let addr: SocketAddr =
+                bind.parse().map_err(|e| miette::miette!("invalid --bind: {e}"))?;
+            let cfg = ListenerConfig { bind: addr, manifest, repo_root, dry_run: false };
+            println!("A2A coord on http://{addr} — agent card, /ping, /msg, JSON-RPC, HTTP+REST");
+            listener::serve(cfg).await.map_err(|e| miette::miette!("a2a serve failed: {e}"))?;
         },
-        crate::A2aAction::Tick {
-            iteration,
-            side,
-            peer,
-            subject,
-            body,
-            kind,
-        } => {
-            let opts = TickOptions {
-                iteration,
-                side,
-                peer: Some(peer),
-                subject,
-                body,
-                kind: Some(kind),
-            };
+        crate::A2aAction::Tick { iteration, side, peer, subject, body, kind } => {
+            let opts =
+                TickOptions { iteration, side, peer: Some(peer), subject, body, kind: Some(kind) };
             let env = listener::run_tick(&manifest, &repo_root, &opts)
                 .map_err(|e| miette::miette!("a2a tick: {e}"))?;
             println!("{}", serde_json::to_string_pretty(&env).unwrap_or_default());
@@ -436,9 +405,10 @@ impl TerminalCommand for AutoCommand {
         // (`aphrody bun add foo`). Le runtime par défaut est `cargo`.
         if self.args.is_empty() {
             eprintln!(
-                "⚠️  [Auto] No arguments. Usage: `aphrody <cmd> [args]` or `aphrody \"<NL prompt>\"`.\n   \
-                 Default engine is `cargo` (workspace 100% Rust). Use BYPASS engines explicitly: \
-                 `aphrody bun add foo`, `aphrody uv sync`, `aphrody npm i`, etc."
+                "⚠️  [Auto] No arguments. Usage: `aphrody <cmd> [args]` or `aphrody \"<NL \
+                 prompt>\"`.\n   Default engine is `cargo` (workspace 100% Rust). Use BYPASS \
+                 engines explicitly: `aphrody bun add foo`, `aphrody uv sync`, `aphrody npm i`, \
+                 etc."
             );
             return Err(miette::Report::new(SubprocessExit(2)));
         }
@@ -479,11 +449,7 @@ impl TerminalCommand for AutoCommand {
             let prompt = self.args.join(" ");
             println!("✨ [Auto] Détection de langage naturel, bascule vers l'agent A2A...");
             return dispatch_a2a(
-                crate::A2aAction::Invoke {
-                    prompt,
-                    peer: "grok".to_string(),
-                    dry_run: false,
-                },
+                crate::A2aAction::Invoke { prompt, peer: "grok".to_string(), dry_run: false },
                 _ctx,
             )
             .await;
@@ -504,10 +470,9 @@ impl TerminalCommand for AutoCommand {
             // L'utilisateur doit passer par le BYPASS explicite
             // (`aphrody bun run X.ts`) ou installer un runtime tiers.
             eprintln!(
-                "⚠️  [Auto] `{first_arg}` est un script JS/TS — le dispatcher 100% Rust ne \
-                 spawn pas de runtime JS implicitement.\n   \
-                 Utiliser le bypass explicite : `aphrody bun run {first_arg}` (ou \
-                 `aphrody node {first_arg}`, `aphrody deno run {first_arg}`)."
+                "⚠️  [Auto] `{first_arg}` est un script JS/TS — le dispatcher 100% Rust ne spawn \
+                 pas de runtime JS implicitement.\n   Utiliser le bypass explicite : `aphrody bun \
+                 run {first_arg}` (ou `aphrody node {first_arg}`, `aphrody deno run {first_arg}`)."
             );
             return Err(miette::Report::new(SubprocessExit(2)));
         } else if first_arg.ends_with(".rs") {
@@ -621,14 +586,13 @@ impl TerminalCommand for GeminiCommand {
         // project_aphrody_owned_tools : on préfère toujours l'outil maison.
         let bin_path = gemini_runtime::resolve_bin().map_err(|e| {
             miette::miette!(
-                "Failed to resolve `gemini` binary via aphrody chain: {e}.\n\n\
-                 Alternatives :\n\
-                 • `aphrody chat --stub --prompt \"…\"` — réponse stub locale, aucun binaire requis.\n\
-                 • `aphrody chat --model anthropic/claude-opus-4-7 --prompt \"…\"` \
-                   (requiert `ANTHROPIC_API_KEY`).\n\
-                 • Build fork in-tree : `cd packages/gemini-cli && bun run bundle` puis re-run.\n\
-                 • Installer le CLI Google : `bun add -g @google/gemini-cli`.\n\
-                 • Override binaire : `APHRODY_GEMINI_BIN=/abs/path aphrody gemini …`."
+                "Failed to resolve `gemini` binary via aphrody chain: {e}.\n\nAlternatives :\n• \
+                 `aphrody chat --stub --prompt \"…\"` — réponse stub locale, aucun binaire \
+                 requis.\n• `aphrody chat --model anthropic/claude-opus-4-7 --prompt \"…\"` \
+                 (requiert `ANTHROPIC_API_KEY`).\n• Build fork in-tree : `cd packages/gemini-cli \
+                 && bun run bundle` puis re-run.\n• Installer le CLI Google : `bun add -g \
+                 @google/gemini-cli`.\n• Override binaire : `APHRODY_GEMINI_BIN=/abs/path aphrody \
+                 gemini …`."
             )
         })?;
 
@@ -643,9 +607,9 @@ impl TerminalCommand for GeminiCommand {
             cmd.env("GEMINI_CLI_TRUST_WORKSPACE", "true");
         }
 
-        let status = cmd.status().map_err(|e| {
-            miette::miette!("Failed to spawn `{}`: {e}", bin_path.display())
-        })?;
+        let status = cmd
+            .status()
+            .map_err(|e| miette::miette!("Failed to spawn `{}`: {e}", bin_path.display()))?;
 
         if !status.success() {
             return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
@@ -663,8 +627,8 @@ pub(crate) const ENV_AGY_BIN: &str = "APHRODY_AGY_BIN";
 
 /// Resolve the `agy` (Antigravity CLI) binary, first match wins:
 /// 1. `$APHRODY_AGY_BIN` (must exist).
-/// 2. `%LOCALAPPDATA%\agy\bin\agy.exe` on Windows — the path the official
-///    Antigravity `install.ps1` writes.
+/// 2. `%LOCALAPPDATA%\agy\bin\agy.exe` on Windows — the path the official Antigravity `install.ps1`
+///    writes.
 /// 3. `$HOME/.local/share/agy/bin/agy` / `$HOME/.agy/bin/agy` on Unix.
 /// 4. `which("agy")` — PATH lookup.
 pub(crate) fn resolve_agy_bin() -> Option<std::path::PathBuf> {
@@ -711,12 +675,10 @@ impl TerminalCommand for AgyCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         let bin_path = resolve_agy_bin().ok_or_else(|| {
             miette::miette!(
-                "Antigravity CLI (`agy`) introuvable.\n\n\
-                 Résolution tentée : $APHRODY_AGY_BIN > \
-                 %LOCALAPPDATA%\\agy\\bin\\agy.exe > PATH.\n\
-                 • Installer l'Antigravity CLI, puis re-run, ou\n\
-                 • Override : `APHRODY_AGY_BIN=/abs/path aphrody agy …`.\n\
-                 Pour la surface API pure (sans binaire), voir `aphrody antigravity`."
+                "Antigravity CLI (`agy`) introuvable.\n\nRésolution tentée : $APHRODY_AGY_BIN > \
+                 %LOCALAPPDATA%\\agy\\bin\\agy.exe > PATH.\n• Installer l'Antigravity CLI, puis \
+                 re-run, ou\n• Override : `APHRODY_AGY_BIN=/abs/path aphrody agy …`.\nPour la \
+                 surface API pure (sans binaire), voir `aphrody antigravity`."
             )
         })?;
 
@@ -755,7 +717,9 @@ pub(crate) fn resolve_bxc_bin() -> Option<std::path::PathBuf> {
 
     #[cfg(not(target_os = "windows"))]
     if let Some(home) = std::env::var_os("HOME") {
-        for rel in [["bxc", "bin", "bxc"], [".local", "bin", "bxc"], [".local", "share/bxc", "bin/bxc"]] {
+        for rel in
+            [["bxc", "bin", "bxc"], [".local", "bin", "bxc"], [".local", "share/bxc", "bin/bxc"]]
+        {
             let mut p = std::path::PathBuf::from(&home);
             for seg in rel {
                 p.push(seg);
@@ -779,10 +743,9 @@ impl TerminalCommand for BxcCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         let bin_path = resolve_bxc_bin().ok_or_else(|| {
             miette::miette!(
-                "Bxc engine (`bxc`) introuvable.\n\n\
-                 Résolution tentée : $BXC_BIN > $HOME/.local/bin/bxc > PATH.\n\
-                 • Installer Bxc, puis re-run, ou\n\
-                 • Override : `BXC_BIN=/abs/path aphrody bxc …`."
+                "Bxc engine (`bxc`) introuvable.\n\nRésolution tentée : $BXC_BIN > \
+                 $HOME/.local/bin/bxc > PATH.\n• Installer Bxc, puis re-run, ou\n• Override : \
+                 `BXC_BIN=/abs/path aphrody bxc …`."
             )
         })?;
 
@@ -821,7 +784,9 @@ pub(crate) fn resolve_n2b_bin() -> Option<std::path::PathBuf> {
 
     #[cfg(not(target_os = "windows"))]
     if let Some(home) = std::env::var_os("HOME") {
-        for rel in [["n2b", "bin", "n2b"], [".local", "bin", "n2b"], [".local", "share/n2b", "bin/n2b"]] {
+        for rel in
+            [["n2b", "bin", "n2b"], [".local", "bin", "n2b"], [".local", "share/n2b", "bin/n2b"]]
+        {
             let mut p = std::path::PathBuf::from(&home);
             for seg in rel {
                 p.push(seg);
@@ -845,10 +810,9 @@ impl TerminalCommand for N2bCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
         let bin_path = resolve_n2b_bin().ok_or_else(|| {
             miette::miette!(
-                "n2b tool (`n2b`) introuvable.\n\n\
-                 Résolution tentée : $N2B_BIN > $HOME/.local/bin/n2b > PATH.\n\
-                 • Installer n2b, puis re-run, ou\n\
-                 • Override : `N2B_BIN=/abs/path aphrody n2b …`."
+                "n2b tool (`n2b`) introuvable.\n\nRésolution tentée : $N2B_BIN > \
+                 $HOME/.local/bin/n2b > PATH.\n• Installer n2b, puis re-run, ou\n• Override : \
+                 `N2B_BIN=/abs/path aphrody n2b …`."
             )
         })?;
 
@@ -868,34 +832,48 @@ impl TerminalCommand for N2bCommand {
 pub(crate) fn resolve_nie_bin() -> Option<std::path::PathBuf> {
     if let Ok(explicit) = std::env::var("NIE_BIN") {
         let path = std::path::PathBuf::from(explicit.trim());
-        if !explicit.trim().is_empty() && path.exists() { return Some(path); }
+        if !explicit.trim().is_empty() && path.exists() {
+            return Some(path);
+        }
     }
     #[cfg(target_os = "windows")]
     if let Some(local) = std::env::var_os("LOCALAPPDATA") {
         let path = std::path::Path::new(&local).join("Aphrody").join("bin").join("niers.exe");
-        if path.exists() { return Some(path); }
+        if path.exists() {
+            return Some(path);
+        }
     }
     #[cfg(not(target_os = "windows"))]
     if let Some(home) = std::env::var_os("HOME") {
         let path = std::path::Path::new(&home).join(".local").join("bin").join("niers");
-        if path.exists() { return Some(path); }
+        if path.exists() {
+            return Some(path);
+        }
     }
     which::which("niers").ok()
 }
 
 /// Implementation of `aphrody nie <args…>`.
-pub(crate) struct NieCommand { pub args: Vec<String> }
+pub(crate) struct NieCommand {
+    pub args: Vec<String>,
+}
 
 #[async_trait]
 impl TerminalCommand for NieCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        let bin_path = resolve_nie_bin().ok_or_else(|| miette::miette!(
-            "CLI Niers (`niers`) introuvable. Installer avec `aphrody package install nie` \
-             ou définir NIE_BIN=/chemin/absolu."
-        ))?;
-        let status = std::process::Command::new(&bin_path).args(&self.args).status()
+        let bin_path = resolve_nie_bin().ok_or_else(|| {
+            miette::miette!(
+                "CLI Niers (`niers`) introuvable. Installer avec `aphrody package install nie` ou \
+                 définir NIE_BIN=/chemin/absolu."
+            )
+        })?;
+        let status = std::process::Command::new(&bin_path)
+            .args(&self.args)
+            .status()
             .map_err(|e| miette::miette!("Échec du spawn `{}`: {e}", bin_path.display()))?;
-        if !status.success() { return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1)))); }
+        if !status.success() {
+            return Err(miette::Report::new(SubprocessExit(status.code().unwrap_or(1))));
+        }
         Ok(())
     }
 }
@@ -987,8 +965,6 @@ fn unwrap_ddg_redirect(href: &str) -> Option<String> {
     }
     parsed.query_pairs().find(|(k, _)| k == "uddg").map(|(_, v)| v.into_owned())
 }
-
-
 
 // ── aphrody doctor ───────────────────────────────────────────────────────────
 
@@ -1125,9 +1101,8 @@ async fn collect_diagnostics() -> DoctorReport {
 /// Workspace health (AH-16): opens the agent home, assembles against the
 /// default bootstrap budget, and warns on missing required files or truncation.
 fn check_workspace() -> CheckResult {
-    let home = match aphrody_agent_home::AgentHome::open(
-        aphrody_agent_home::HomeOptions::default(),
-    ) {
+    let home = match aphrody_agent_home::AgentHome::open(aphrody_agent_home::HomeOptions::default())
+    {
         Ok(h) => h,
         Err(e) => return CheckResult::Warn(format!("agent home not openable: {e}")),
     };
@@ -1140,10 +1115,9 @@ fn check_workspace() -> CheckResult {
     }
 
     let mut missing_required: Vec<&str> = Vec::new();
-    for file in [
-        aphrody_agent_home::BootstrapFile::Agents,
-        aphrody_agent_home::BootstrapFile::Tools,
-    ] {
+    for file in
+        [aphrody_agent_home::BootstrapFile::Agents, aphrody_agent_home::BootstrapFile::Tools]
+    {
         if !root.join(file.filename()).is_file() {
             missing_required.push(file.filename());
         }
@@ -1163,7 +1137,8 @@ fn check_workspace() -> CheckResult {
     }
     if let Some(report) = &view.truncation {
         return CheckResult::Warn(format!(
-            "{} ({}; {} file(s) truncated by the bootstrap budget — raise the caps or trim the files)",
+            "{} ({}; {} file(s) truncated by the bootstrap budget — raise the caps or trim the \
+             files)",
             root.display(),
             human_chars(total_chars),
             report.truncated_files
@@ -1179,11 +1154,7 @@ fn check_workspace() -> CheckResult {
 
 /// Render a char count compactly (e.g. `12.0k chars`).
 fn human_chars(n: usize) -> String {
-    if n >= 1000 {
-        format!("{:.1}k chars", n as f64 / 1000.0)
-    } else {
-        format!("{n} chars")
-    }
+    if n >= 1000 { format!("{:.1}k chars", n as f64 / 1000.0) } else { format!("{n} chars") }
 }
 
 fn print_text(r: &DoctorReport) {
@@ -1614,8 +1585,6 @@ fn parse_iso8601_approx(s: &str) -> Option<u64> {
     Some(adjusted.max(0) as u64)
 }
 
-
-
 // ── aphrody term ─────────────────────────────────────────────────────────────
 
 /// Arguments for the `term` subcommand, mirroring the clap variant fields.
@@ -1751,17 +1720,19 @@ pub(crate) struct ChatCommand {
 #[async_trait]
 impl TerminalCommand for ChatCommand {
     async fn execute(&self, _ctx: &GoogleContext) -> miette::Result<()> {
-        use aphrody_chat::backend::{ModelBackend, StubBackend};
-        use aphrody_chat::{ChatConfig, ChatLoop};
+        use aphrody_chat::{
+            ChatConfig, ChatLoop,
+            backend::{ModelBackend, StubBackend},
+        };
 
         use crate::agy_backend::AgyBackend;
 
         let Some(prompt) = self.prompt.clone() else {
             return Err(miette::miette!(
-                "interactive REPL not yet wired — use `aphrody chat --prompt <text>` \
-                 for one-shot mode. Slash commands work in one-shot too: \
-                 `--prompt /help` lists them, `--prompt \"/explain <…>\"` runs a \
-                 Cascade-style template (the ratatui REPL lands in a later sprint)"
+                "interactive REPL not yet wired — use `aphrody chat --prompt <text>` for one-shot \
+                 mode. Slash commands work in one-shot too: `--prompt /help` lists them, \
+                 `--prompt \"/explain <…>\"` runs a Cascade-style template (the ratatui REPL \
+                 lands in a later sprint)"
             ));
         };
 
@@ -1800,8 +1771,8 @@ impl TerminalCommand for ChatCommand {
                 aphrody_chat::slash::SlashKind::Meta => {
                     match parsed.spec.name {
                         "model" => println!(
-                            "active model: {}\n(switch with `--model <vendor/id>`, e.g. \
-                             `--model gemini-2.5-pro` or `--model anthropic/claude-opus-4-7`)",
+                            "active model: {}\n(switch with `--model <vendor/id>`, e.g. `--model \
+                             gemini-2.5-pro` or `--model anthropic/claude-opus-4-7`)",
                             config.model
                         ),
                         "tools" => {
@@ -1838,11 +1809,11 @@ impl TerminalCommand for ChatCommand {
         // Backend selection order — aphrody uses the `agy` (Antigravity) CLI's
         // OAuth token by default; the legacy `gemini` CLI is never bootstrapped:
         //   1. `--stub`                   → deterministic StubBackend.
-        //   2. default → AgyBackend       → agy OAuth token read at runtime from
-        //      the platform credential store (`gemini:antigravity`), driving
-        //      Gemini `generateContent`. No external binary, no PATH probe.
-        //   3. StubBackend                → last resort when the chosen live
-        //      backend cannot authenticate (with a diagnostic).
+        //   2. default → AgyBackend       → agy OAuth token read at runtime from the platform
+        //      credential store (`gemini:antigravity`), driving Gemini `generateContent`. No
+        //      external binary, no PATH probe.
+        //   3. StubBackend                → last resort when the chosen live backend cannot
+        //      authenticate (with a diagnostic).
         let backend: Box<dyn ModelBackend> = if self.stub {
             Box::new(StubBackend::with_reply(
                 "(stub backend reply — `aphrody chat --stub` mode, no live LLM call)",
@@ -1921,14 +1892,14 @@ impl TerminalCommand for NotebooklmCommand {
 fn notebooklm_session_tokens() -> miette::Result<::notebooklm::SessionTokens> {
     let at = std::env::var("NOTEBOOKLM_AT_TOKEN").map_err(|_| {
         miette::miette!(
-            "NOTEBOOKLM_AT_TOKEN must be set (extract `WIZ_global_data.SNlM0e` from \
-             a logged-in notebooklm.google.com page)"
+            "NOTEBOOKLM_AT_TOKEN must be set (extract `WIZ_global_data.SNlM0e` from a logged-in \
+             notebooklm.google.com page)"
         )
     })?;
     let bl = std::env::var("NOTEBOOKLM_BL_TOKEN").map_err(|_| {
         miette::miette!(
-            "NOTEBOOKLM_BL_TOKEN must be set (extract the `cfb2h` / `bl` field \
-             from the same bootstrap blob)"
+            "NOTEBOOKLM_BL_TOKEN must be set (extract the `cfb2h` / `bl` field from the same \
+             bootstrap blob)"
         )
     })?;
     let fsid = std::env::var("NOTEBOOKLM_FSID_TOKEN").ok().filter(|s| !s.is_empty());
@@ -1944,10 +1915,8 @@ fn notebooklm_client() -> miette::Result<::notebooklm::NotebookClient> {
 
 async fn notebooklm_list() -> miette::Result<()> {
     let client = notebooklm_client()?;
-    let notebooks = client
-        .list_notebooks()
-        .await
-        .map_err(|e| miette::miette!("list_notebooks failed: {e}"))?;
+    let notebooks =
+        client.list_notebooks().await.map_err(|e| miette::miette!("list_notebooks failed: {e}"))?;
     let json = serde_json::to_string_pretty(&notebooks)
         .map_err(|e| miette::miette!("json encode: {e}"))?;
     println!("{json}");
@@ -1992,8 +1961,7 @@ async fn notebooklm_upload(notebook_id: &str, source: &str) -> miette::Result<()
     } else {
         client.add_file(notebook_id, source).await
     };
-    let (source_id, title) =
-        result.map_err(|e| miette::miette!("add source failed: {e}"))?;
+    let (source_id, title) = result.map_err(|e| miette::miette!("add source failed: {e}"))?;
     let payload = serde_json::json!({
         "source_id": source_id,
         "title": title,
@@ -2056,11 +2024,7 @@ async fn notebooklm_download(
 ) -> miette::Result<()> {
     let client = notebooklm_client()?;
     let artifact = client
-        .poll(
-            notebook_id,
-            artifact_id,
-            std::time::Duration::from_secs(600),
-        )
+        .poll(notebook_id, artifact_id, std::time::Duration::from_secs(600))
         .await
         .map_err(|e| miette::miette!("artifact poll failed: {e}"))?;
     let url = artifact

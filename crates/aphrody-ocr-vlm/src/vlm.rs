@@ -10,13 +10,15 @@
 // `llama-server` is for, and moving to it is a contained change behind this
 // same interface once throughput matters more than isolation.
 
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use aphrody_infer::llama::{self, LlamaTool};
 use aphrody_models::{Catalog, ModelStore};
+use aphrody_ocr_core::Document;
 
-use crate::doctags::Document;
 use crate::{OcrError, Result};
 
 /// What a page turned out to hold.
@@ -196,9 +198,8 @@ impl VlmRunner {
 
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
         let document = Document::parse(&stdout);
-        let text = document
-            .to_markdown()
-            .map_or(PageText::None, |markdown| PageText::Text { markdown });
+        let text =
+            document.to_markdown().map_or(PageText::None, |markdown| PageText::Text { markdown });
 
         Ok(PageResult {
             image: image.to_path_buf(),
@@ -278,8 +279,8 @@ pub fn list_images_sorted(dir: &Path) -> Result<Vec<PathBuf>> {
 
 /// Every image file directly under `dir`.
 fn list_images(dir: &Path) -> Result<Vec<PathBuf>> {
-    let entries =
-        std::fs::read_dir(dir).map_err(|source| OcrError::Io { path: dir.to_path_buf(), source })?;
+    let entries = std::fs::read_dir(dir)
+        .map_err(|source| OcrError::Io { path: dir.to_path_buf(), source })?;
     Ok(entries
         .filter_map(core::result::Result::ok)
         .map(|entry| entry.path())

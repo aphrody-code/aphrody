@@ -16,6 +16,7 @@
 use std::{
     io::{BufRead as _, Write as _},
     path::{Path, PathBuf},
+    time::Instant,
 };
 
 use aphrody_ocr::{OcrOptions, PageResult, ServerRunner, VlmRunner};
@@ -43,6 +44,22 @@ pub(crate) enum OcrAction {
         /// Include the model's raw output.
         #[arg(long)]
         raw: bool,
+        #[command(flatten)]
+        output: OutputOpts,
+    },
+    /// Read one image with local PP-OCRv5 and emit text regions plus geometry.
+    ///
+    /// Unlike `page`, this is deterministic CTC OCR rather than document
+    /// markdown reconstruction. It never downloads weights: install the model
+    /// first with `aphrody model pull ppocr-v5-mobile`.
+    ///
+    /// Example: aphrody ocr ppocr plate.jpg --json
+    Ppocr {
+        /// Image to read.
+        image: PathBuf,
+        /// Catalog id containing paired PP-OCR detector and recognizer weights.
+        #[arg(long, default_value = "ppocr-v5-mobile")]
+        model: String,
         #[command(flatten)]
         output: OutputOpts,
     },
@@ -160,6 +177,7 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
         OcrAction::Page { image, model, prompt, max_tokens, raw, output } => {
             page(&image, &model, prompt.as_deref(), max_tokens, raw, &output)
         },
+        OcrAction::Ppocr { image, model, output } => ppocr_page(&image, &model, &output),
         OcrAction::Audit { input, output } => audit(&input, &output),
         OcrAction::Clean { input, out } => clean(&input, out.as_deref()),
         OcrAction::Batch {
@@ -201,6 +219,87 @@ pub(crate) fn run(action: OcrAction) -> miette::Result<()> {
             )
         },
     }
+}
+
+fn ppocr_page(image: &Path, model: &str, output: &OutputOpts) -> miette::Result<()> {
+    use aphrody_ocr::ocr_core::{
+        Attempt, AttemptStatus, ImageIdentity, OcrResult, OcrStatus, Quality, RESULT_SCHEMA_V2,
+        RunProvenance,
+    };
+
+    let config = aphrody_infer::SessionConfig::from_profile(&aphrody_models::accel::probe());
+    let started = Instant::now();
+    let run = |session: &aphrody_infer::SessionConfig| {
+        let mut runner = aphrody_ocr::PpOcr::load(model, session)?;
+        let regions = runner.recognise_path(image)?;
+        Ok::<_, aphrody_ocr::onnx::OnnxOcrError>((regions, runner.providers()))
+    };
+    let (regions, providers, fallback_reason) = match run(&config) {
+        Ok((regions, providers)) => (regions, providers, None),
+        Err(error)
+            if config
+                .providers
+                .first()
+                .is_some_and(|provider| *provider != aphrody_models::Accelerator::Cpu) =>
+        {
+            let requested = config.providers[0].as_str();
+            let cpu = aphrody_infer::SessionConfig::with_only(aphrody_models::Accelerator::Cpu);
+            let (regions, providers) = run(&cpu).map_err(|fallback| {
+                miette::miette!(
+                    "PP-OCR failed on {requested} ({error}); CPU retry also failed: {fallback}"
+                )
+            })?;
+            (regions, providers, Some(format!("provider fallback: {requested} failed: {error}")))
+        },
+        Err(error) => return Err(miette::miette!("{error}")),
+    };
+    let provider = (providers[0] == providers[1]).then(|| providers[0].as_str().to_owned());
+    let blocks = regions
+        .into_iter()
+        .map(aphrody_ocr::PpOcr::block)
+        .filter(|block| !block.text.is_empty())
+        .collect::<Vec<_>>();
+    let confidences = blocks.iter().filter_map(|block| block.confidence).collect::<Vec<_>>();
+    let mean_confidence = (!confidences.is_empty())
+        .then(|| confidences.iter().sum::<f32>() / confidences.len() as f32);
+    let elapsed_ms = started.elapsed().as_millis();
+    let status = if blocks.is_empty() { OcrStatus::NoText } else { OcrStatus::Text };
+    let reasons = fallback_reason.into_iter().collect::<Vec<_>>();
+    let result = OcrResult {
+        schema: RESULT_SCHEMA_V2.into(),
+        page_id: image.to_string_lossy().into_owned(),
+        image: ImageIdentity::from_path(image.to_path_buf()),
+        attempts: vec![Attempt {
+            run: RunProvenance {
+                model_id: model.into(),
+                backend: "onnx-runtime".into(),
+                provider,
+                model_digest: None,
+                prompt_digest: None,
+            },
+            status: AttemptStatus::Completed,
+            elapsed_ms,
+            quality: Quality { mean_confidence, reasons: reasons.clone() },
+            error: None,
+        }],
+        status,
+        markdown: None,
+        blocks,
+        quality: Quality { mean_confidence, reasons },
+        raw: None,
+    };
+    let mut report =
+        aphrody_models::Report::new(format!("PP-OCR {}", image.display()), &["FIELD", "VALUE"]);
+    report.push(vec!["model".into(), model.into()]);
+    report.push(vec!["elapsed".into(), format!("{elapsed_ms} ms")]);
+    report.push(vec!["regions".into(), result.blocks.len().to_string()]);
+    report.push(vec![
+        "text".into(),
+        result.blocks.iter().map(|block| block.text.as_str()).collect::<Vec<_>>().join("\\n"),
+    ]);
+    let json = serde_json::to_value(&result)
+        .map_err(|e| miette::miette!("serialise PP-OCR result: {e}"))?;
+    output.emit_report(&report, &json)
 }
 
 fn options(model: &str, prompt: Option<&str>, max_tokens: u32, raw: bool) -> OcrOptions {

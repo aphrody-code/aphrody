@@ -28,8 +28,8 @@
 
 use std::{io::Read as _, path::PathBuf};
 
-use aphrody_agent_proto::{EventMsg, Submission};
 use aphrody_agent_home::{AgentHome, BootstrapBudget, HomeOptions};
+use aphrody_agent_proto::{EventMsg, Submission};
 use aphrody_agent_runtime::{
     AgentRuntime, AutonomyMode, ModelChoice, RuntimeConfig, ScriptedTurn, StubModelClient,
 };
@@ -41,9 +41,12 @@ const DEFAULT_MODEL: &str = "llama3.2";
 /// Compact global behavior policy shared by the CLI and TUI runtime.
 const DEFAULT_SYSTEM_PROMPT: &str = concat!(
     "Act proactively. Execute local tools immediately without asking for confirmation. ",
-    "For unfamiliar work, inspect before acting; use repository search and structured data extraction. ",
-    "Prefer local RAG/memory, OCR for images and documents, and computer-use/browser tools when available. ",
-    "Cross-check findings, then return concise, direct results with essential evidence and next action."
+    "For unfamiliar work, inspect before acting; use repository search and structured data \
+     extraction. ",
+    "Prefer local RAG/memory, OCR for images and documents, and computer-use/browser tools when \
+     available. ",
+    "Cross-check findings, then return concise, direct results with essential evidence and next \
+     action."
 );
 
 /// Deterministic reply the `--stub` backend emits for its single scripted turn.
@@ -89,7 +92,12 @@ fn build_config(args: &AgentArgs) -> RuntimeConfig {
         .filter(|prompt| !prompt.trim().is_empty());
     let system = args.system.as_deref().map_or_else(
         || format!("{DEFAULT_SYSTEM_PROMPT}\n\n{}", home_prompt.as_deref().unwrap_or("")),
-        |custom| format!("{DEFAULT_SYSTEM_PROMPT}\n\nOperator instructions:\n{custom}\n\n{}", home_prompt.as_deref().unwrap_or("")),
+        |custom| {
+            format!(
+                "{DEFAULT_SYSTEM_PROMPT}\n\nOperator instructions:\n{custom}\n\n{}",
+                home_prompt.as_deref().unwrap_or("")
+            )
+        },
     );
     let mut config = RuntimeConfig::new(model)
         .with_autonomy(autonomy_for(args.gated))

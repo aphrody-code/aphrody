@@ -18,15 +18,19 @@
 // The process is owned by `ServerRunner` and killed on drop, so an interrupted
 // batch does not leave a multi-gigabyte process holding the GPU.
 
-use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
-use std::time::{Duration, Instant};
+use std::{
+    path::{Path, PathBuf},
+    process::{Child, Command, Stdio},
+    time::{Duration, Instant},
+};
 
 use aphrody_infer::llama::{self, LlamaTool};
+use aphrody_ocr_core::Document;
 
-use crate::doctags::Document;
-use crate::vlm::{OcrOptions, PageResult, PageText, resolve_artifacts};
-use crate::{OcrError, Result};
+use crate::{
+    OcrError, Result,
+    vlm::{OcrOptions, PageResult, PageText, resolve_artifacts},
+};
 
 /// How long to wait for the server to answer its health endpoint.
 ///
@@ -174,9 +178,8 @@ impl ServerRunner {
         })?;
 
         let document = Document::parse(&content);
-        let page_text = document
-            .to_markdown()
-            .map_or(PageText::None, |markdown| PageText::Text { markdown });
+        let page_text =
+            document.to_markdown().map_or(PageText::None, |markdown| PageText::Text { markdown });
 
         Ok(PageResult {
             image: image.to_path_buf(),
@@ -259,8 +262,7 @@ pub fn mime_for(path: &Path) -> &'static str {
 /// encoding that has not changed since 1987.
 #[must_use]
 pub fn base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {

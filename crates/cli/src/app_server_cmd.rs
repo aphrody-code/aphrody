@@ -2,7 +2,7 @@
 //! CLI entry point for Aphrody's local Codex-shaped app-server.
 
 use aphrody_app_server::{serve_http, serve_stdio};
-use tokio::io::{stdin, stdout, BufReader};
+use tokio::io::{BufReader, stdin, stdout};
 
 use crate::SessionAction;
 
@@ -10,13 +10,16 @@ pub(crate) async fn run(action: SessionAction) -> miette::Result<()> {
     match action {
         SessionAction::Serve { http, addr } => {
             if http {
-                let addr = addr.parse().map_err(|error| miette::miette!("app-server: invalid address: {error}"))?;
+                let addr = addr
+                    .parse()
+                    .map_err(|error| miette::miette!("app-server: invalid address: {error}"))?;
                 serve_http(addr).await.map_err(|error| miette::miette!("app-server: {error}"))?;
             } else {
-                serve_stdio(BufReader::new(stdin()), stdout()).await
+                serve_stdio(BufReader::new(stdin()), stdout())
+                    .await
                     .map_err(|error| miette::miette!("app-server: {error}"))?;
             }
-        }
+        },
     }
     Ok(())
 }

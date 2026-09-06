@@ -133,9 +133,7 @@ pub fn audit_text(text: &str) -> Vec<Finding> {
 ///
 /// `None` text means the page was reported textless, which is a verdict rather
 /// than a defect and is only counted.
-pub fn audit_batch<'a>(
-    pages: impl IntoIterator<Item = (PathBuf, Option<&'a str>)>,
-) -> AuditReport {
+pub fn audit_batch<'a>(pages: impl IntoIterator<Item = (PathBuf, Option<&'a str>)>) -> AuditReport {
     let mut report = AuditReport::default();
     for (image, text) in pages {
         let Some(text) = text else {
@@ -198,7 +196,8 @@ mod tests {
     #[test]
     fn clean_japanese_text_raises_nothing() {
         // A real transcription from the databook corpus.
-        let text = "宿敵ベジータが悟空を認める!\nブウと闘う悟空を見て、素直に悟空が上だと認めるベジータ。";
+        let text =
+            "宿敵ベジータが悟空を認める!\nブウと闘う悟空を見て、素直に悟空が上だと認めるベジータ。";
         assert!(audit_text(text).is_empty(), "{:?}", audit_text(text));
     }
 
@@ -207,7 +206,9 @@ mod tests {
         let findings = audit_text("読めた<|endofassistant|>");
         assert_eq!(findings.len(), 1);
         assert!(findings[0].is_blocking());
-        assert!(matches!(&findings[0], Finding::ControlToken { token } if token.contains("endofassistant")));
+        assert!(
+            matches!(&findings[0], Finding::ControlToken { token } if token.contains("endofassistant"))
+        );
     }
 
     #[test]
@@ -237,7 +238,9 @@ mod tests {
     #[test]
     fn arithmetic_is_not_markup() {
         // `5 < 10 > 3` must not be read as a tag.
-        assert!(!audit_text("5 < 10 > 3 toujours").iter().any(|f| matches!(f, Finding::Markup { .. })));
+        assert!(
+            !audit_text("5 < 10 > 3 toujours").iter().any(|f| matches!(f, Finding::Markup { .. }))
+        );
     }
 
     #[test]

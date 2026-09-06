@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "aphrody-ocr-onnx"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+description = "PP-OCR ONNX recognition primitives for aphrody."
+
+[lints]
+workspace = true
+
+[dependencies]
+aphrody-infer = { workspace = true }
+aphrody-models = { workspace = true }
+aphrody-ocr-core = { workspace = true }
+image = { workspace = true, features = ["jpeg", "png"] }
+ndarray = "0.17"
+ort.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true

@@ -18,17 +18,6 @@ crate-type = ["rlib"]
 workspace = true
 
 [dependencies]
-aphrody-models = { workspace = true }
-aphrody-infer  = { workspace = true }
-thiserror      = { workspace = true }
-tracing        = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-# Client HTTP synchrone pour llama-server. `blocking` parce que le pipeline OCR
-# est synchrone de bout en bout : une planche à la fois, pas de concurrence à
-# orchestrer, et un runtime async ici n'apporterait que de la cérémonie.
-reqwest        = { workspace = true, features = ["blocking"] }
-rustls         = { workspace = true }
-
-[dev-dependencies]
-tempfile = { workspace = true }
+aphrody-ocr-core = { workspace = true }
+aphrody-ocr-onnx = { workspace = true }
+aphrody-ocr-vlm = { workspace = true }

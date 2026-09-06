@@ -10,20 +10,18 @@
 //   cargo test       -p aphrody --test cli_smoke --locked
 //
 // Design constraints (mirrors `tests/doctor.rs`):
-//  - The binary under test is the freshly-built `aphrody` workspace binary,
-//    invoked through `assert_cmd` so the full argument-parsing + dispatch path
-//    is covered.
-//  - No assumption is made about any host file-system layout: every input is
-//    created in a `tempfile::tempdir()` or is the test binary itself
-//    (`Command::cargo_bin` resolves `CARGO_BIN_EXE_aphrody`).
-//  - The `aphrody` binary is itself a real PE (Windows) / ELF (Linux/macOS)
-//    executable, so `re triage`/`re sections` against it detect a concrete
-//    format and a non-empty section table on every supported platform.
-//  - No subcommand here touches the network: `re`/`scan`/`completions`/
-//    `version` are all local. The TOS/`--accept-tos` gate that the
-//    orchestrator hypothesised for `re` does NOT exist in the codebase (see
-//    the module-level note on `re_triage_self_detects_format`), so no
-//    acceptance flag is required.
+//  - The binary under test is the freshly-built `aphrody` workspace binary, invoked through
+//    `assert_cmd` so the full argument-parsing + dispatch path is covered.
+//  - No assumption is made about any host file-system layout: every input is created in a
+//    `tempfile::tempdir()` or is the test binary itself (`Command::cargo_bin` resolves
+//    `CARGO_BIN_EXE_aphrody`).
+//  - The `aphrody` binary is itself a real PE (Windows) / ELF (Linux/macOS) executable, so `re
+//    triage`/`re sections` against it detect a concrete format and a non-empty section table on
+//    every supported platform.
+//  - No subcommand here touches the network: `re`/`scan`/`completions`/ `version` are all local.
+//    The TOS/`--accept-tos` gate that the orchestrator hypothesised for `re` does NOT exist in the
+//    codebase (see the module-level note on `re_triage_self_detects_format`), so no acceptance flag
+//    is required.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -156,10 +154,7 @@ fn re_triage_self_detects_format() {
     // SHA-256 is always populated (64 lowercase hex chars).
     let sha = report["sha256"].as_str().expect("triage `sha256` must be a string");
     assert_eq!(sha.len(), 64, "sha256 must be 64 hex chars, got {} chars", sha.len());
-    assert!(
-        sha.chars().all(|c| c.is_ascii_hexdigit()),
-        "sha256 must be hex-only, got {sha:?}"
-    );
+    assert!(sha.chars().all(|c| c.is_ascii_hexdigit()), "sha256 must be hex-only, got {sha:?}");
 
     // `size` must be the byte length of the file we triaged.
     let on_disk = std::fs::metadata(self_bin()).expect("binary must be stat-able").len();
