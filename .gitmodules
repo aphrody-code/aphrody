@@ -1,0 +1,3 @@
+[submodule "packages/yolo"]
+	path = packages/yolo
+	url = https://github.com/aphrody-code/YOLO
