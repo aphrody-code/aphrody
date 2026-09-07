@@ -8,10 +8,13 @@ const libSuffix =
   process.platform === "win32" ? "dll" : process.platform === "darwin" ? "dylib" : "so";
 
 const candidates = [
+  join(import.meta.dir, `../target/release/bun_rs.${libSuffix}`),
   join(import.meta.dir, `../target/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/release/bun_rs.${libSuffix}`),
   join(import.meta.dir, `../../../target/release/libbun_rs.${libSuffix}`),
   join(import.meta.dir, `../../../target/linux-gnu/release/libbun_rs.${libSuffix}`),
   join(import.meta.dir, `../../../target/x86_64-unknown-linux-gnu/release/libbun_rs.${libSuffix}`),
+  join(import.meta.dir, `../../../target/x86_64-pc-windows-msvc/release/bun_rs.${libSuffix}`),
   join(import.meta.dir, `../../../target/x86_64-pc-windows-msvc/release/libbun_rs.${libSuffix}`),
 ];
 

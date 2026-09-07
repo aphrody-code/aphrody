@@ -26,13 +26,14 @@ export class DesignCompiler {
     if (designSystemId) {
       const possiblePaths = [
         // Self-contained fixtures shipped with the package (resolved relative
-        // to this module so the lookup is CWD-independent).
+        // to this module so the lookup is CWD-independent and cross-platform).
+        import.meta.dir ? `${import.meta.dir}/../design-systems/${designSystemId}/tokens.css` : "",
         new URL(`../design-systems/${designSystemId}/tokens.css`, import.meta.url).pathname,
         // Legacy in-repo locations kept as a fallback.
         `packages/open-design/design-systems/${designSystemId}/tokens.css`,
         `../../packages/open-design/design-systems/${designSystemId}/tokens.css`,
         `../packages/open-design/design-systems/${designSystemId}/tokens.css`,
-      ];
+      ].filter(Boolean);
       let dsPath = "";
       for (const p of possiblePaths) {
         if (fs.existsSync(p)) {

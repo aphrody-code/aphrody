@@ -6,9 +6,7 @@
   "license": "Apache-2.0",
   "workspaces": {
     "packages": [
-      "apps/*",
       "examples/*",
-      "packages/x",
       "packages/bun-rs",
       "packages/doc-ai",
       "packages/eslint-plugin-m3",
@@ -17,7 +15,8 @@
       "packages/m3-theme",
       "packages/m3-tokens",
       "packages/material-web",
-      "packages/react"
+      "packages/react",
+      "packages/yolo"
     ],
     "catalog": {
       "typescript": "^6.0.3",
@@ -55,10 +54,10 @@
   },
   "type": "module",
   "scripts": {
-    "build": "turbo run build --filter=@aphrody/*",
-    "typecheck": "turbo run typecheck --filter=@aphrody/*",
-    "test": "turbo run test --filter=@aphrody/*",
-    "test:browser": "turbo run test:browser --filter=@aphrody/material-web",
+    "build": "turbo run build --filter=\"@aphrody/*\"",
+    "typecheck": "turbo run typecheck --filter=\"@aphrody/*\"",
+    "test": "turbo run test --filter=\"@aphrody/*\"",
+    "test:browser": "turbo run test:browser --filter=\"@aphrody/material-web\"",
     "dev": "turbo run dev",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

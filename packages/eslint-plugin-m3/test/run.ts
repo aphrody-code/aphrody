@@ -7,7 +7,7 @@
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 
-const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = join(import.meta.dir, "..");
 const CONFIG = join(ROOT, "test", ".oxlintrc.json");
 
 const RULES = [

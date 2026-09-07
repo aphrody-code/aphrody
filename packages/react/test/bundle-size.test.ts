@@ -16,9 +16,11 @@ const EXTERNAL = [
   "@aphrody/material-web/*",
 ];
 
+import { resolve } from "node:path";
+
 async function gzipBytes(entry: string): Promise<number> {
   const result = await Bun.build({
-    entrypoints: [new URL(`../${entry}`, import.meta.url).pathname],
+    entrypoints: [resolve(import.meta.dir, "..", entry)],
     external: EXTERNAL,
     minify: true,
     target: "browser",
